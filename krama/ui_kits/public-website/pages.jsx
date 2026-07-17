@@ -5,6 +5,53 @@
   const TR = window.KRAMA_T || function (s) { return s; };
   const I = (n, s = 18) => <i data-lucide={n} style={{ width: s, height: s }}></i>;
 
+  // ── Top announcement bar (shared style with Find Jobs / Companies / Job Detail) ──
+  const EMPLOYERS_TOP_DEFAULT = { visible: true, theme: "saffron", icon: "briefcase", title: "Ready to hire?", message: "Post your first job free and reach 40,000+ verified candidates.", cta: "Post a job", ctaUrl: "", image: "../../assets/banners/bg-employersTopBanner.svg", fit: "cover" };
+  function loadBanner(key, def) {
+    try { const s = JSON.parse(localStorage.getItem("krama_home_settings") || "{}"); const m = Object.assign({}, def, s[key] || {}); if (!m.image && def.image) m.image = def.image; return m; }
+    catch (e) { return Object.assign({}, def); }
+  }
+  const BAR_THEMES = { saffron: { bg: "var(--saffron-500)", pill: "#fff", pillFg: "var(--saffron-700)", fg: "#fff" }, teal: { bg: "var(--teal-700)", pill: "#fff", pillFg: "var(--teal-800)", fg: "#fff" }, dark: { bg: "var(--stone-900)", pill: "var(--saffron-500)", pillFg: "#fff", fg: "#fff" }, brand: { bg: "var(--brand-700)", pill: "#fff", pillFg: "var(--brand-800)", fg: "#fff" }, blank: { bg: "var(--surface-card)", pill: "var(--brand)", pillFg: "#fff", fg: "var(--text-body)" }, transparent: { bg: "transparent", pill: "var(--brand)", pillFg: "#fff", fg: "var(--text-body)" } };
+  function resolveBarTheme(b) {
+    if (b.theme === "custom") return { bg: b.customBg || "var(--saffron-500)", pill: b.customCtaBg || "#fff", pillFg: b.customCtaFg || "var(--saffron-700)", fg: b.customFg || "#fff" };
+    const t = BAR_THEMES[b.theme] || BAR_THEMES.teal;
+    return b.customFg ? Object.assign({}, t, { fg: b.customFg }) : t;
+  }
+  function useHomeContent() {
+    const [, setTick] = React.useState(0);
+    React.useEffect(function () {
+      var apiBase = (/^(localhost|127\.0\.0\.1|::1|192\.168\.|10\.)/.test(window.location.hostname) ? 'http://127.0.0.1:8000/api' : (window.location.protocol + '//' + window.location.host + '/api'));
+      fetch(apiBase + '/settings/home_content', { cache: 'no-cache' })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (d) { if (d && d.data) { try { localStorage.setItem('krama_home_settings', JSON.stringify(JSON.parse(d.data))); setTick(1); } catch (e) {} } })
+        .catch(function () {});
+    }, []);
+  }
+  function AnnouncementBar({ b, onNav }) {
+    const [dismissed, setDismissed] = React.useState(false);
+    if (!b || !b.visible || dismissed) return null;
+    const t = resolveBarTheme(b);
+    const hasImg = !!b.image;
+    return (
+      <div style={{ position: "relative", overflow: "hidden", background: t.bg, color: t.fg, borderBottom: (b.theme === "transparent" || b.theme === "blank") ? "1px solid var(--border)" : "none" }}>
+        {hasImg
+          ? <React.Fragment>
+              <div style={{ position: "absolute", inset: 0, backgroundImage: "url('" + b.image + "')", backgroundSize: b.fit === "contain" ? "contain" : "cover", backgroundRepeat: "no-repeat", backgroundPosition: "center" }} />
+              <div style={{ position: "absolute", inset: 0, background: t.bg, opacity: (b.imgOverlay != null ? b.imgOverlay : 20) / 100 }} />
+            </React.Fragment>
+          : <div style={{ position: "absolute", inset: 0, background: "url('../../assets/krama-pattern.svg')", backgroundSize: 60, opacity: 0.10 }} />}
+        <div style={{ position: "relative", maxWidth: 1200, margin: "0 auto", display: "flex", alignItems: "center", gap: 14, padding: "10px 32px" }}>
+          {b.icon && <span style={{ display: "inline-flex", flexShrink: 0 }}>{I(b.icon, 18)}</span>}
+          <div style={{ flex: 1, fontSize: "var(--text-sm)", fontWeight: 500 }}>
+            <strong style={{ fontWeight: 700 }}>{TR(b.title)}</strong>{b.message ? " -- " + TR(b.message) : ""}
+          </div>
+          {b.cta && <span onClick={() => { if (b.ctaUrl) window.open(b.ctaUrl, b.ctaUrl.startsWith("http") ? "_blank" : "_self"); else onNav && onNav("register"); }} style={{ flexShrink: 0, background: t.pill, color: t.pillFg, fontSize: "var(--text-sm)", fontWeight: 700, padding: "7px 16px", borderRadius: "var(--radius-pill)", cursor: "pointer", whiteSpace: "nowrap" }}>{TR(b.cta)}</span>}
+          <button onClick={() => setDismissed(true)} style={{ flexShrink: 0, background: "transparent", border: "none", color: t.fg, opacity: 0.7, cursor: "pointer", display: "inline-flex", padding: 4 }}>{I("x", 16)}</button>
+        </div>
+      </div>
+    );
+  }
+
   // Live pricing — mirrors the real plans an employer sees in Billing (never hardcode plan copy here,
   // it drifts out of sync with the actual subscription tiers). If plans can't be fetched, hide the
   // cards rather than risk showing stale/incorrect pricing.
@@ -313,18 +360,38 @@
 
   function InfoPage({ slug, onNav }) {
     const c = CONTENT[slug] || CONTENT.about;
+    useHomeContent();
     React.useEffect(() => { if (window.lucide) window.lucide.createIcons(); }, [slug]);
     return (
       <div style={{ background: "var(--surface-page)", minHeight: "70vh" }}>
-        {/* top banner */}
-        <div style={{ position: "relative", background: "var(--teal-800)", overflow: "hidden", padding: "52px 32px" }}>
-          <div style={{ position: "absolute", inset: 0, background: "url('../../assets/krama-pattern.svg')", backgroundSize: 72, opacity: 0.08 }} />
-          <div style={{ position: "relative", maxWidth: 1200, margin: "0 auto" }}>
-            <div style={{ fontSize: "var(--text-xs)", fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--teal-200)" }}>{TR(c.eyebrow)}</div>
-            <h1 className="krm-info-hero-title" style={{ color: "#fff", fontSize: "var(--text-5xl)", fontWeight: 800, letterSpacing: "-0.02em", marginTop: 8 }}>{TR(c.title)}</h1>
-            <p style={{ color: "var(--stone-300)", fontSize: "var(--text-lg)", marginTop: 12, maxWidth: 640 }}>{TR(c.lead)}</p>
-          </div>
-        </div>
+        {slug === "employers" && <AnnouncementBar b={loadBanner("employersTopBanner", EMPLOYERS_TOP_DEFAULT)} onNav={onNav} />}
+        {/* page hero — For Employers uses the standard page-hero (matches Find Jobs / Companies / Job Detail); other info pages keep the larger hero */}
+        {slug === "employers"
+          ? (() => { const h = loadBanner("employersHero", { heading: c.title, sub: c.lead, image: "../../assets/banners/bg-employersHero.svg", fit: "cover", imgOverlay: 45 }); return (
+            <div className="krm-page-hero" style={{ position: "relative", background: "var(--teal-800)", overflow: "hidden", padding: "44px 32px" }}>
+              {h.image
+                ? <React.Fragment>
+                    <div style={{ position: "absolute", inset: 0, backgroundImage: "url('" + h.image + "')", backgroundSize: h.fit === "contain" ? "contain" : "cover", backgroundRepeat: "no-repeat", backgroundPosition: "center" }} />
+                    <div style={{ position: "absolute", inset: 0, background: "var(--teal-800)", opacity: (h.imgOverlay != null ? h.imgOverlay : 45) / 100 }} />
+                  </React.Fragment>
+                : <div style={{ position: "absolute", inset: 0, background: "url('../../assets/krama-pattern.svg')", backgroundSize: 72, opacity: 0.08 }} />}
+              <div style={{ position: "relative", maxWidth: 1200, margin: "0 auto" }}>
+                <div style={{ fontSize: "var(--text-xs)", fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--teal-200)" }}>{TR(c.eyebrow)}</div>
+                <h1 style={{ color: "#fff", fontSize: "var(--text-4xl)", fontWeight: 800, letterSpacing: "-0.02em", marginTop: 6 }}>{TR(h.heading)}</h1>
+                <p style={{ color: "var(--stone-300)", fontSize: "var(--text-lg)", marginTop: 8 }}>{TR(h.sub)}</p>
+              </div>
+            </div>
+          ); })()
+          : (
+            <div style={{ position: "relative", background: "var(--teal-800)", overflow: "hidden", padding: "52px 32px" }}>
+              <div style={{ position: "absolute", inset: 0, background: "url('../../assets/krama-pattern.svg')", backgroundSize: 72, opacity: 0.08 }} />
+              <div style={{ position: "relative", maxWidth: 1200, margin: "0 auto" }}>
+                <div style={{ fontSize: "var(--text-xs)", fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--teal-200)" }}>{TR(c.eyebrow)}</div>
+                <h1 className="krm-info-hero-title" style={{ color: "#fff", fontSize: "var(--text-5xl)", fontWeight: 800, letterSpacing: "-0.02em", marginTop: 8 }}>{TR(c.title)}</h1>
+                <p style={{ color: "var(--stone-300)", fontSize: "var(--text-lg)", marginTop: 12, maxWidth: 640 }}>{TR(c.lead)}</p>
+              </div>
+            </div>
+          )}
         <div style={{ maxWidth: 1200, margin: "0 auto", padding: "44px 32px 64px" }}>
           {c.render(onNav)}
         </div>

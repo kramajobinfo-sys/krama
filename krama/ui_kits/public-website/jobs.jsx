@@ -579,7 +579,7 @@
         <AnnouncementBar b={loadBanner("companiesTopBanner", CO_TOP_DEFAULT)} onNav={onNav} />
         {/* header strip */}
         {(() => { const h = loadBanner("companiesHero", CO_HERO_DEFAULT); return (
-        <div className="krm-page-hero" style={{ position: "relative", background: "var(--teal-800)", overflow: "hidden", padding: "48px 32px" }}>
+        <div className="krm-page-hero" style={{ position: "relative", background: "var(--teal-800)", overflow: "hidden", padding: "44px 32px" }}>
           {h.image
             ? <React.Fragment>
                 <div style={{ position: "absolute", inset: 0, backgroundImage: "url('" + h.image + "')", backgroundSize: h.fit === "contain" ? "contain" : "cover", backgroundRepeat: "no-repeat", backgroundPosition: "center" }} />
@@ -587,8 +587,9 @@
               </React.Fragment>
             : <div style={{ position: "absolute", inset: 0, background: "url('../../assets/krama-pattern.svg')", backgroundSize: 72, opacity: 0.08 }} />}
           <div style={{ position: "relative", maxWidth: 1200, margin: "0 auto" }}>
-            <h1 style={{ color: "#fff", fontSize: "var(--text-4xl)", fontWeight: 800, letterSpacing: "-0.02em" }}>{TR(h.heading)}</h1>
-            <p style={{ color: "var(--stone-300)", fontSize: "var(--text-lg)", marginTop: 10 }}>{TR(h.sub).replace("{count}", D.companies.length)}</p>
+            <div style={{ fontSize: "var(--text-xs)", fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--teal-200)" }}>{TR("Companies")}</div>
+            <h1 style={{ color: "#fff", fontSize: "var(--text-4xl)", fontWeight: 800, letterSpacing: "-0.02em", marginTop: 6 }}>{TR(h.heading)}</h1>
+            <p style={{ color: "var(--stone-300)", fontSize: "var(--text-lg)", marginTop: 8 }}>{TR(h.sub).replace("{count}", D.companies.length)}</p>
           </div>
         </div>
         ); })()}

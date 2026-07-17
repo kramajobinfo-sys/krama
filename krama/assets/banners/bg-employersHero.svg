@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 460" width="1600" height="460" preserveAspectRatio="xMidYMid slice">
+<defs>
+<linearGradient id="gemployersHero" x1="0%" y1="0%" x2="100%" y2="0%">
+<stop offset="0" stop-color="#083f3b"/><stop offset="1" stop-color="#0d5b54"/>
+</linearGradient>
+<radialGradient id="remployersHero" cx="82%" cy="18%" r="70%">
+<stop offset="0" stop-color="#48d8c2" stop-opacity="0.22"/><stop offset="1" stop-color="#48d8c2" stop-opacity="0"/>
+</radialGradient>
+<pattern id="demployersHero" x="0" y="0" width="29" height="29" patternUnits="userSpaceOnUse">
+<circle cx="1.4" cy="1.4" r="1.4" fill="#ffffff" opacity="0.05"/>
+</pattern>
+</defs>
+<rect width="1600" height="460" fill="url(#gemployersHero)"/>
+<rect width="1600" height="460" fill="url(#demployersHero)"/>
+<path d="M -160 101 L 1760 -60" stroke="#48d8c2" stroke-width="64" opacity="0.05" stroke-linecap="round"/>
+<circle cx="1113" cy="168" r="67" fill="#f6a23c" opacity="0.072"/><circle cx="1072" cy="376" r="180" fill="none" stroke="#48d8c2" stroke-width="2.0" opacity="0.188"/><circle cx="1414" cy="216" r="186" fill="none" stroke="#48d8c2" stroke-width="3.2" opacity="0.141"/><circle cx="1231" cy="114" r="100" fill="none" stroke="#48d8c2" stroke-width="1.7" opacity="0.127"/><circle cx="998" cy="427" r="151" fill="#f6a23c" opacity="0.093"/>
+<circle cx="844" cy="80" r="4.8" fill="#f6a23c" opacity="0.64"/><circle cx="839" cy="71" r="7.0" fill="#f6a23c" opacity="0.42"/><circle cx="1485" cy="51" r="6.1" fill="#f6a23c" opacity="0.49"/><circle cx="1313" cy="403" r="4.5" fill="#f6a23c" opacity="0.40"/>
+<rect width="1600" height="460" fill="url(#remployersHero)"/>
+</svg>
