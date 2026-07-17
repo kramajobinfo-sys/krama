@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 460" width="1600" height="460" preserveAspectRatio="xMidYMid slice">
+<defs>
+<linearGradient id="gcompaniesHero" x1="0%" y1="0%" x2="100%" y2="0%">
+<stop offset="0" stop-color="#083f3b"/><stop offset="1" stop-color="#0d5b54"/>
+</linearGradient>
+<radialGradient id="rcompaniesHero" cx="82%" cy="18%" r="70%">
+<stop offset="0" stop-color="#48d8c2" stop-opacity="0.22"/><stop offset="1" stop-color="#48d8c2" stop-opacity="0"/>
+</radialGradient>
+<pattern id="dcompaniesHero" x="0" y="0" width="29" height="29" patternUnits="userSpaceOnUse">
+<circle cx="1.4" cy="1.4" r="1.4" fill="#ffffff" opacity="0.05"/>
+</pattern>
+</defs>
+<rect width="1600" height="460" fill="url(#gcompaniesHero)"/>
+<rect width="1600" height="460" fill="url(#dcompaniesHero)"/>
+<path d="M -160 136 L 1760 -25" stroke="#48d8c2" stroke-width="64" opacity="0.05" stroke-linecap="round"/>
+<circle cx="1027" cy="268" r="90" fill="#48d8c2" opacity="0.103"/><circle cx="806" cy="289" r="181" fill="none" stroke="#48d8c2" stroke-width="2.8" opacity="0.158"/><circle cx="1333" cy="152" r="100" fill="#48d8c2" opacity="0.054"/><circle cx="1218" cy="98" r="46" fill="none" stroke="#48d8c2" stroke-width="2.1" opacity="0.180"/><circle cx="1533" cy="20" r="138" fill="none" stroke="#48d8c2" stroke-width="3.2" opacity="0.105"/><circle cx="836" cy="157" r="51" fill="none" stroke="#48d8c2" stroke-width="3.3" opacity="0.165"/>
+<circle cx="947" cy="92" r="7.3" fill="#f6a23c" opacity="0.60"/><circle cx="891" cy="77" r="7.5" fill="#f6a23c" opacity="0.46"/><circle cx="885" cy="212" r="7.5" fill="#f6a23c" opacity="0.61"/>
+<rect width="1600" height="460" fill="url(#rcompaniesHero)"/>
+</svg>

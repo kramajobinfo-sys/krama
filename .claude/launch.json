@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "krama-api",
+      "runtimeExecutable": "php",
+      "runtimeArgs": ["/Applications/XAMPP/xamppfiles/htdocs/Krama/krama-api/artisan", "serve", "--host=127.0.0.1", "--port=8000"],
+      "port": 8000
+    },
+    {
+      "name": "krama-web",
+      "runtimeExecutable": "php",
+      "runtimeArgs": ["-S", "127.0.0.1:8091", "-t", "/Applications/XAMPP/xamppfiles/htdocs/Krama"],
+      "port": 8091
+    }
+  ]
+}

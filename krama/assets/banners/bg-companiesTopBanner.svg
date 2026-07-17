@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 140" width="1600" height="140" preserveAspectRatio="xMidYMid slice">
+<defs>
+<linearGradient id="gcompaniesTopBanner" x1="0%" y1="0%" x2="100%" y2="100%">
+<stop offset="0" stop-color="#8a460b"/><stop offset="1" stop-color="#c46d17"/>
+</linearGradient>
+<radialGradient id="rcompaniesTopBanner" cx="82%" cy="18%" r="70%">
+<stop offset="0" stop-color="#ffcd86" stop-opacity="0.22"/><stop offset="1" stop-color="#ffcd86" stop-opacity="0"/>
+</radialGradient>
+<pattern id="dcompaniesTopBanner" x="0" y="0" width="10" height="10" patternUnits="userSpaceOnUse">
+<circle cx="1.4" cy="1.4" r="1.4" fill="#ffffff" opacity="0.05"/>
+</pattern>
+</defs>
+<rect width="1600" height="140" fill="url(#gcompaniesTopBanner)"/>
+<rect width="1600" height="140" fill="url(#dcompaniesTopBanner)"/>
+<path d="M -160 73 L 1760 24" stroke="#ffcd86" stroke-width="20" opacity="0.05" stroke-linecap="round"/>
+<circle cx="420" cy="100" r="38" fill="#ffcd86" opacity="0.096"/><circle cx="1206" cy="59" r="15" fill="none" stroke="#ffcd86" stroke-width="2.2" opacity="0.219"/><circle cx="1448" cy="74" r="44" fill="none" stroke="#ffcd86" stroke-width="3.1" opacity="0.189"/><circle cx="1026" cy="136" r="39" fill="#ffcd86" opacity="0.069"/>
+<circle cx="906" cy="73" r="8.4" fill="#0d5b54" opacity="0.63"/><circle cx="1379" cy="82" r="7.0" fill="#0d5b54" opacity="0.62"/><circle cx="701" cy="49" r="5.1" fill="#0d5b54" opacity="0.61"/>
+<rect width="1600" height="140" fill="url(#rcompaniesTopBanner)"/>
+</svg>

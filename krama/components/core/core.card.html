@@ -1,0 +1,74 @@
+<!-- @dsCard group="Components" viewport="700x460" name="Core — buttons, badges, tags, avatars" subtitle="Button, IconButton, Badge, StatusBadge, Tag, Avatar, Card" -->
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js"></script>
+<script src="../../_ds_bundle.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+  body{margin:0;padding:24px;background:var(--surface-page);font-family:var(--font-sans)}
+  .group{margin-bottom:22px}
+  .lbl{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:10px}
+  .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+  i[data-lucide]{width:16px;height:16px}
+</style></head>
+<body><div id="root"></div>
+<script type="text/babel">
+const I = (n) => <i data-lucide={n}></i>;
+function Demo(){
+  const { Button, IconButton, Badge, StatusBadge, Tag, Avatar, Card } = window.KramaDesignSystem_1a6f65;
+  return (
+    <div>
+      <div className="group"><div className="lbl">Buttons</div><div className="row">
+        <Button variant="primary">Apply now</Button>
+        <Button variant="accent">Post a job</Button>
+        <Button variant="secondary" iconLeft={I('bookmark')}>Save job</Button>
+        <Button variant="ghost">Cancel</Button>
+        <Button variant="danger">Reject</Button>
+        <Button variant="primary" loading>Saving</Button>
+        <Button variant="primary" disabled>Disabled</Button>
+      </div></div>
+
+      <div className="group"><div className="lbl">Sizes & icon buttons</div><div className="row">
+        <Button size="sm">Small</Button>
+        <Button size="md">Medium</Button>
+        <Button size="lg" iconRight={I('arrow-right')}>Large</Button>
+        <IconButton variant="secondary" aria-label="Save">{I('bookmark')}</IconButton>
+        <IconButton variant="ghost" aria-label="More">{I('ellipsis')}</IconButton>
+        <IconButton variant="primary" aria-label="Add">{I('plus')}</IconButton>
+      </div></div>
+
+      <div className="group"><div className="lbl">Badges & status</div><div className="row">
+        <Badge tone="accent">Featured</Badge>
+        <Badge tone="brand">Remote</Badge>
+        <Badge tone="neutral">Full-time</Badge>
+        <Badge tone="danger" solid>3</Badge>
+        <StatusBadge status="pending" />
+        <StatusBadge status="published" />
+        <StatusBadge status="rejected" />
+      </div></div>
+
+      <div className="group"><div className="lbl">Tags & avatars</div><div className="row">
+        <Tag icon={I('map-pin')}>Phnom Penh</Tag>
+        <Tag active>Full-time</Tag>
+        <Tag removable>Remote</Tag>
+        <Avatar name="Sok Dara" />
+        <Avatar name="Chan Mony" size={40} />
+        <Avatar name="ABA Bank" square size={40} />
+      </div></div>
+
+      <div className="group"><div className="lbl">Cards</div><div className="row" style={{alignItems:'stretch'}}>
+        <Card interactive style={{width:220}}><div style={{fontWeight:700,color:'var(--text-strong)'}}>Interactive card</div><div style={{fontSize:13,color:'var(--text-muted)',marginTop:4}}>Hover to lift</div></Card>
+        <Card featured style={{width:220}}><div style={{fontWeight:700,color:'var(--text-strong)'}}>Featured card</div><div style={{fontSize:13,color:'var(--text-muted)',marginTop:4}}>Saffron top accent</div></Card>
+      </div></div>
+    </div>
+  );
+}
+function mount(){
+  if(!window.KramaDesignSystem_1a6f65){return setTimeout(mount,40);}
+  ReactDOM.createRoot(document.getElementById('root')).render(<Demo/>);
+  setTimeout(()=>window.lucide && window.lucide.createIcons(), 60);
+}
+mount();
+</script></body></html>

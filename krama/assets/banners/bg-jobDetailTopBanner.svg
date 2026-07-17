@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 140" width="1600" height="140" preserveAspectRatio="xMidYMid slice">
+<defs>
+<linearGradient id="gjobDetailTopBanner" x1="0%" y1="0%" x2="100%" y2="100%">
+<stop offset="0" stop-color="#083f3b"/><stop offset="1" stop-color="#0d5b54"/>
+</linearGradient>
+<radialGradient id="rjobDetailTopBanner" cx="82%" cy="18%" r="70%">
+<stop offset="0" stop-color="#48d8c2" stop-opacity="0.22"/><stop offset="1" stop-color="#48d8c2" stop-opacity="0"/>
+</radialGradient>
+<pattern id="djobDetailTopBanner" x="0" y="0" width="10" height="10" patternUnits="userSpaceOnUse">
+<circle cx="1.4" cy="1.4" r="1.4" fill="#ffffff" opacity="0.05"/>
+</pattern>
+</defs>
+<rect width="1600" height="140" fill="url(#gjobDetailTopBanner)"/>
+<rect width="1600" height="140" fill="url(#djobDetailTopBanner)"/>
+<path d="M -160 84 L 1760 35" stroke="#48d8c2" stroke-width="20" opacity="0.05" stroke-linecap="round"/>
+<circle cx="732" cy="48" r="32" fill="none" stroke="#48d8c2" stroke-width="1.9" opacity="0.180"/><circle cx="215" cy="79" r="37" fill="none" stroke="#48d8c2" stroke-width="1.7" opacity="0.174"/><circle cx="649" cy="16" r="39" fill="none" stroke="#48d8c2" stroke-width="1.7" opacity="0.130"/><circle cx="694" cy="6" r="33" fill="none" stroke="#48d8c2" stroke-width="2.5" opacity="0.128"/>
+<circle cx="616" cy="110" r="5.1" fill="#f6a23c" opacity="0.43"/><circle cx="276" cy="59" r="6.9" fill="#f6a23c" opacity="0.55"/>
+<rect width="1600" height="140" fill="url(#rjobDetailTopBanner)"/>
+</svg>

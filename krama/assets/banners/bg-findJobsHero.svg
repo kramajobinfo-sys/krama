@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 460" width="1600" height="460" preserveAspectRatio="xMidYMid slice">
+<defs>
+<linearGradient id="gfindJobsHero" x1="0%" y1="0%" x2="100%" y2="0%">
+<stop offset="0" stop-color="#083f3b"/><stop offset="1" stop-color="#0d5b54"/>
+</linearGradient>
+<radialGradient id="rfindJobsHero" cx="82%" cy="18%" r="70%">
+<stop offset="0" stop-color="#48d8c2" stop-opacity="0.22"/><stop offset="1" stop-color="#48d8c2" stop-opacity="0"/>
+</radialGradient>
+<pattern id="dfindJobsHero" x="0" y="0" width="29" height="29" patternUnits="userSpaceOnUse">
+<circle cx="1.4" cy="1.4" r="1.4" fill="#ffffff" opacity="0.05"/>
+</pattern>
+</defs>
+<rect width="1600" height="460" fill="url(#gfindJobsHero)"/>
+<rect width="1600" height="460" fill="url(#dfindJobsHero)"/>
+<path d="M -160 248 L 1760 87" stroke="#48d8c2" stroke-width="64" opacity="0.05" stroke-linecap="round"/>
+<circle cx="1041" cy="351" r="179" fill="#f6a23c" opacity="0.114"/><circle cx="1247" cy="134" r="135" fill="none" stroke="#f6a23c" stroke-width="2.3" opacity="0.104"/><circle cx="833" cy="41" r="67" fill="none" stroke="#f6a23c" stroke-width="2.4" opacity="0.122"/><circle cx="1574" cy="114" r="59" fill="none" stroke="#48d8c2" stroke-width="2.7" opacity="0.183"/><circle cx="1419" cy="53" r="105" fill="none" stroke="#f6a23c" stroke-width="1.6" opacity="0.182"/><circle cx="1570" cy="79" r="147" fill="#48d8c2" opacity="0.096"/>
+<circle cx="840" cy="292" r="7.8" fill="#f6a23c" opacity="0.38"/><circle cx="1291" cy="175" r="8.1" fill="#f6a23c" opacity="0.43"/>
+<rect width="1600" height="460" fill="url(#rfindJobsHero)"/>
+</svg>

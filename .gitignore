@@ -1,0 +1,43 @@
+# ── OS / editor ─────────────────────────────────────────────
+.DS_Store
+**/.DS_Store
+/.idea
+/.vscode
+**/.idea
+**/.vscode
+
+# ── Claude Code (keep launch.json; ignore local settings) ────
+**/.claude/settings.local.json
+
+# ── Secrets / env ───────────────────────────────────────────
+/krama-api/.env
+/krama-api/.env.*
+!/krama-api/.env.example
+
+# ── PHP / Laravel dependencies & build ──────────────────────
+/krama-api/vendor/
+/krama-api/node_modules/
+/krama-api/.phpunit.result.cache
+/krama-api/public/hot
+/krama-api/public/storage
+
+# ── Laravel runtime (logs, caches, keys) ────────────────────
+/krama-api/storage/*.key
+/krama-api/storage/logs/*
+!/krama-api/storage/logs/.gitignore
+/krama-api/storage/framework/cache/*
+/krama-api/storage/framework/sessions/*
+/krama-api/storage/framework/views/*
+/krama-api/storage/framework/testing/*
+
+# ── User-uploaded runtime content (not source) ──────────────
+/krama-api/public/uploads/
+
+# ── Node (anywhere) ─────────────────────────────────────────
+node_modules/
+**/node_modules/
+npm-debug.log
+yarn-error.log
+
+# ── Logs / temp ─────────────────────────────────────────────
+*.log

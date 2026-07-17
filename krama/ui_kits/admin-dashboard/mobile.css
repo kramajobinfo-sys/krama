@@ -1,0 +1,113 @@
+/* ─── Krama Admin Dashboard — Mobile Responsive ──────────────────────────── */
+
+/* Always-on base styles */
+.krm-sidebar-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 199; }
+.krm-hamburger-dash   { display: none; }
+
+/* Scrollable nav so all menu items stay reachable when the list is taller than the viewport */
+.krm-sidebar-nav { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.25) transparent; }
+.krm-sidebar-nav::-webkit-scrollbar { width: 6px; }
+.krm-sidebar-nav::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 99px; }
+.krm-sidebar-nav::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.35); }
+.krm-sidebar-nav::-webkit-scrollbar-track { background: transparent; }
+
+@media (max-width: 767px) {
+  * { box-sizing: border-box; }
+  body { overflow-x: hidden; }
+
+  /* ── Login page ────────────────────────────────────────────────────── */
+  .krm-login-outer {
+    padding: 16px !important;
+    align-items: flex-start !important;
+    padding-top: 48px !important;
+  }
+  .krm-login-card {
+    padding: 24px !important;
+    border-radius: var(--radius-lg) !important;
+  }
+
+  /* ── Sidebar slides in from left ──────────────────────────────────── */
+  .krm-sidebar {
+    position: fixed !important;
+    left: -280px !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    width: 260px !important;
+    z-index: 200 !important;
+    transition: left 0.25s ease !important;
+    box-shadow: var(--shadow-xl) !important;
+    overflow-y: auto !important;
+  }
+  .krm-sidebar.open {
+    left: 0 !important;
+  }
+  .krm-sidebar-backdrop.open {
+    display: block !important;
+  }
+
+  /* ── Topbar ───────────────────────────────────────────────────────── */
+  .krm-topbar {
+    padding: 0 16px !important;
+  }
+  .krm-topbar h1 {
+    font-size: var(--text-base) !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: 160px !important;
+  }
+  .krm-hamburger-dash {
+    display: flex !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* ── Page content ─────────────────────────────────────────────────── */
+  .krm-page-pad {
+    padding: 16px !important;
+  }
+
+  /* Stats grid — 2 columns on mobile */
+  .krm-stats-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+  }
+
+  /* Data tables — horizontal scroll */
+  .krm-table-wrap {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  /* Wrapped tables keep a min width so they scroll horizontally instead of crushing */
+  .krm-table-wrap > * { min-width: 720px !important; }
+
+  /* Single-column card grids */
+  .krm-card-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* 2-col form grids collapse to 1 column */
+  .krm-form-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Settings — roles grid 2-up on mobile */
+  .krm-roles-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+  }
+
+  /* Settings — toolbar wraps to column on mobile */
+  .krm-settings-toolbar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  .krm-settings-toolbar > * {
+    width: 100% !important;
+  }
+  .krm-filter-pills {
+    overflow-x: auto !important;
+    flex-wrap: nowrap !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding-bottom: 4px !important;
+  }
+}

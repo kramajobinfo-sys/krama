@@ -1,0 +1,71 @@
+<!-- @dsCard group="Components" viewport="700x620" name="Data — job/company/stat cards, tabs, pipeline" subtitle="JobCard, CompanyCard, StatCard, Tabs, ProgressTracker, EmptyState" -->
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js"></script>
+<script src="../../_ds_bundle.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+  body{margin:0;padding:24px;background:var(--surface-page);font-family:var(--font-sans)}
+  .lbl{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);margin:0 0 10px}
+  .sec{margin-bottom:22px}
+  i[data-lucide]{width:20px;height:20px}
+</style></head>
+<body><div id="root"></div>
+<script type="text/babel">
+const I=(n)=> <i data-lucide={n}></i>;
+function Demo(){
+  const { JobCard, CompanyCard, StatCard, Tabs, ProgressTracker, EmptyState, Button } = window.KramaDesignSystem_1a6f65;
+  const [tab,setTab]=React.useState('pending');
+  const [saved,setSaved]=React.useState(true);
+  return (
+    <div>
+      <div className="sec"><div className="lbl">KPI stat cards</div>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:14}}>
+          <StatCard label="Active jobs" value="128" delta="12%" tone="brand" icon={I('briefcase')} />
+          <StatCard label="Pending approval" value="6" tone="warning" icon={I('clock')} />
+          <StatCard label="Applications" value="1,204" delta="3%" deltaDir="down" tone="info" icon={I('users')} />
+        </div>
+      </div>
+
+      <div className="sec"><div className="lbl">Job cards</div>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
+          <JobCard title="Senior Accountant" company="ABA Bank" location="Phnom Penh" salary="$800–1,200/mo" type="Full-time" remote featured postedAt="2h ago" saved={saved} onSave={()=>setSaved(!saved)} />
+          <JobCard title="Frontend Engineer" company="Wing Bank" location="Remote" salary="$1,500–2,200/mo" type="Full-time" remote postedAt="Yesterday" />
+        </div>
+      </div>
+
+      <div className="sec"><div className="lbl">Company cards</div>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:14}}>
+          <CompanyCard name="ABA Bank" industry="Financial services" location="Phnom Penh" openJobs={12} verified />
+          <CompanyCard name="Smart Axiata" industry="Telecommunications" location="Phnom Penh" openJobs={5} verified />
+          <CompanyCard name="Manulife" industry="Insurance" location="Siem Reap" openJobs={3} verified />
+        </div>
+      </div>
+
+      <div className="sec"><div className="lbl">Tabs</div>
+        <Tabs value={tab} onChange={setTab} tabs={[{value:'all',label:'All jobs',count:48},{value:'pending',label:'Pending',count:6},{value:'published',label:'Published',count:40},{value:'closed',label:'Closed',count:2}]} />
+      </div>
+
+      <div className="sec"><div className="lbl">Pipeline tracker</div>
+        <div style={{background:'var(--surface-card)',border:'1px solid var(--border)',borderRadius:'var(--radius-lg)',padding:'20px 24px'}}>
+          <ProgressTracker current={2} steps={["Applied","Reviewed","Shortlisted","Interview","Offered"]} />
+        </div>
+      </div>
+
+      <div className="sec"><div className="lbl">Empty state</div>
+        <div style={{background:'var(--surface-card)',border:'1px solid var(--border)',borderRadius:'var(--radius-lg)'}}>
+          <EmptyState icon={I('file-text')} title="No applications yet" description="When you apply, you'll track every step right here." action={<Button>Browse jobs</Button>} />
+        </div>
+      </div>
+    </div>
+  );
+}
+function mount(){
+  if(!window.KramaDesignSystem_1a6f65){return setTimeout(mount,40);}
+  ReactDOM.createRoot(document.getElementById('root')).render(<Demo/>);
+  setTimeout(()=>window.lucide && window.lucide.createIcons(), 80);
+}
+mount();
+</script></body></html>

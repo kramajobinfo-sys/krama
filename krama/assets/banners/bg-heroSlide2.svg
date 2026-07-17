@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 460" width="1600" height="460" preserveAspectRatio="xMidYMid slice">
+<defs>
+<linearGradient id="gheroSlide2" x1="0%" y1="0%" x2="100%" y2="0%">
+<stop offset="0" stop-color="#8a460b"/><stop offset="1" stop-color="#c46d17"/>
+</linearGradient>
+<radialGradient id="rheroSlide2" cx="82%" cy="18%" r="70%">
+<stop offset="0" stop-color="#ffcd86" stop-opacity="0.22"/><stop offset="1" stop-color="#ffcd86" stop-opacity="0"/>
+</radialGradient>
+<pattern id="dheroSlide2" x="0" y="0" width="29" height="29" patternUnits="userSpaceOnUse">
+<circle cx="1.4" cy="1.4" r="1.4" fill="#ffffff" opacity="0.05"/>
+</pattern>
+</defs>
+<rect width="1600" height="460" fill="url(#gheroSlide2)"/>
+<rect width="1600" height="460" fill="url(#dheroSlide2)"/>
+<path d="M -160 167 L 1760 6" stroke="#ffcd86" stroke-width="64" opacity="0.05" stroke-linecap="round"/>
+<circle cx="949" cy="296" r="187" fill="none" stroke="#ffcd86" stroke-width="3.3" opacity="0.188"/><circle cx="1630" cy="124" r="162" fill="#ffcd86" opacity="0.116"/><circle cx="1359" cy="229" r="86" fill="#ffcd86" opacity="0.074"/><circle cx="1239" cy="279" r="91" fill="none" stroke="#0d5b54" stroke-width="2.0" opacity="0.124"/>
+<circle cx="1288" cy="8" r="6.1" fill="#0d5b54" opacity="0.41"/><circle cx="976" cy="399" r="8.8" fill="#0d5b54" opacity="0.60"/><circle cx="1550" cy="231" r="4.6" fill="#0d5b54" opacity="0.40"/><circle cx="1221" cy="1" r="4.3" fill="#0d5b54" opacity="0.61"/>
+<rect width="1600" height="460" fill="url(#rheroSlide2)"/>
+</svg>

@@ -1,0 +1,7 @@
+# Prevent browser caching of HTML and JSX files so version bumps take effect immediately
+<FilesMatch "\.(html|jsx)$">
+    Header set Cache-Control "no-store, no-cache, must-revalidate"
+    Header set Pragma "no-cache"
+    Header unset ETag
+    FileETag None
+</FilesMatch>

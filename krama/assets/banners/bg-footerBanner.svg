@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 320" width="1600" height="320" preserveAspectRatio="xMidYMid slice">
+<defs>
+<linearGradient id="gfooterBanner" x1="0%" y1="0%" x2="100%" y2="100%">
+<stop offset="0" stop-color="#083f3b"/><stop offset="1" stop-color="#0d5b54"/>
+</linearGradient>
+<radialGradient id="rfooterBanner" cx="82%" cy="18%" r="70%">
+<stop offset="0" stop-color="#48d8c2" stop-opacity="0.22"/><stop offset="1" stop-color="#48d8c2" stop-opacity="0"/>
+</radialGradient>
+<pattern id="dfooterBanner" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+<circle cx="1.4" cy="1.4" r="1.4" fill="#ffffff" opacity="0.05"/>
+</pattern>
+</defs>
+<rect width="1600" height="320" fill="url(#gfooterBanner)"/>
+<rect width="1600" height="320" fill="url(#dfooterBanner)"/>
+<path d="M -160 80 L 1760 -32" stroke="#48d8c2" stroke-width="45" opacity="0.05" stroke-linecap="round"/>
+<circle cx="1155" cy="155" r="32" fill="none" stroke="#48d8c2" stroke-width="1.9" opacity="0.146"/><circle cx="1081" cy="39" r="115" fill="#48d8c2" opacity="0.080"/><circle cx="1495" cy="95" r="108" fill="none" stroke="#f6a23c" stroke-width="2.8" opacity="0.140"/><circle cx="1664" cy="247" r="38" fill="none" stroke="#f6a23c" stroke-width="2.9" opacity="0.102"/>
+<circle cx="1074" cy="79" r="7.7" fill="#f6a23c" opacity="0.59"/><circle cx="1529" cy="17" r="6.5" fill="#f6a23c" opacity="0.41"/>
+<rect width="1600" height="320" fill="url(#rfooterBanner)"/>
+</svg>

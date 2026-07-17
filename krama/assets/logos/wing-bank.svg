@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96" role="img" aria-label="wing-bank">
+  <rect width="96" height="96" rx="22" fill="#00A94F"></rect>
+  <path d="M16 74 q24 -14 64 -4" stroke="#0C7E6B" stroke-width="7" fill="none" stroke-linecap="round"></path>
+  <text x="48" y="48" dy="0.36em" text-anchor="middle" font-family="Sora, Arial, sans-serif" font-weight="800" font-size="46" fill="#FFFFFF" letter-spacing="-1">W</text>
+</svg>

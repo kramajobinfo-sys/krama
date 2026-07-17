@@ -1,0 +1,48 @@
+<!-- @dsCard group="Candidate dashboard" viewport="1280x820" name="Candidate dashboard" subtitle="Overview + application pipeline tracker" -->
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KRAMA — Candidate dashboard</title>
+<link rel="stylesheet" href="../../styles.css">
+<link rel="stylesheet" href="mobile.css?v=2">
+<script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js"></script>
+<script src="../../_ds_bundle.js?v=3"></script>
+<script src="../../brand.js"></script>
+<script>window.KramaCandidateApp = null;</script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script src="api.js?v=11"></script>
+<style>html,body{margin:0;background:var(--surface-page)}</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+fetch('app.jsx?v=26').then(function(r){ return r.text(); }).then(function(src){
+  var compiled = Babel.transform(src, { presets: ['react'] }).code;
+  var s = document.createElement('script');
+  s.text = compiled;
+  document.head.appendChild(s);
+}).catch(function(e){ console.error('Failed to compile app.jsx:', e); });
+</script>
+<script>
+class ErrBoundary extends React.Component {
+  constructor(p){ super(p); this.state={err:null}; }
+  static getDerivedStateFromError(err){ return {err}; }
+  componentDidCatch(err){ console.error("Candidate app error:", err && err.stack || err); }
+  render(){
+    if(this.state.err){
+      return React.createElement("div",{style:{padding:"40px",fontFamily:"var(--font-sans)",color:"var(--danger)"}},
+        React.createElement("h2",{style:{color:"var(--text-strong)"}},"Something went wrong"),
+        React.createElement("pre",{style:{whiteSpace:"pre-wrap",fontSize:"12px",color:"var(--text-muted)"}}, String(this.state.err && (this.state.err.stack||this.state.err.message) || this.state.err)));
+    }
+    return this.props.children;
+  }
+}
+function mount(){
+  if(!window.KramaCandidateApp||!window.KramaDesignSystem_1a6f65){return setTimeout(mount,40);}
+  ReactDOM.createRoot(document.getElementById("root")).render(
+    React.createElement(ErrBoundary,null,React.createElement(window.KramaCandidateApp))
+  );
+}
+mount();
+</script>
+</body></html>

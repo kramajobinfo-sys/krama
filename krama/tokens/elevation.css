@@ -1,0 +1,37 @@
+/* ==========================================================================
+   Krama — Radii, Borders & Shadows
+   Soft, warm-tinted shadows (never pure black). Generous but not pill-y radii.
+   ========================================================================== */
+
+:root {
+  /* Corner radii */
+  --radius-xs:   4px;
+  --radius-sm:   6px;
+  --radius-md:   10px;
+  --radius-lg:   14px;
+  --radius-xl:   20px;
+  --radius-2xl:  28px;
+  --radius-pill: 999px;
+
+  /* Border widths */
+  --border-w:    1px;
+  --border-w-2:  1.5px;
+
+  /* Shadows — warm-tinted (stone-950 @ low alpha), layered */
+  --shadow-xs:  0 1px 2px rgba(16, 15, 12, 0.06);
+  --shadow-sm:  0 1px 2px rgba(16, 15, 12, 0.06),
+                0 2px 6px rgba(16, 15, 12, 0.05);
+  --shadow-md:  0 2px 4px rgba(16, 15, 12, 0.05),
+                0 6px 16px rgba(16, 15, 12, 0.08);
+  --shadow-lg:  0 4px 8px rgba(16, 15, 12, 0.05),
+                0 16px 32px rgba(16, 15, 12, 0.10);
+  --shadow-xl:  0 8px 16px rgba(16, 15, 12, 0.06),
+                0 28px 56px rgba(16, 15, 12, 0.14);
+
+  /* Brand-tinted shadow for primary CTAs */
+  --shadow-brand: 0 4px 14px rgba(12, 126, 107, 0.30);
+  --shadow-accent: 0 4px 14px rgba(242, 107, 31, 0.28);
+
+  /* Focus ring */
+  --focus-ring: 0 0 0 3px var(--ring);
+}

@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 460" width="1600" height="460" preserveAspectRatio="xMidYMid slice">
+<defs>
+<linearGradient id="gjobDetailHero" x1="0%" y1="0%" x2="100%" y2="0%">
+<stop offset="0" stop-color="#083f3b"/><stop offset="1" stop-color="#0d5b54"/>
+</linearGradient>
+<radialGradient id="rjobDetailHero" cx="82%" cy="18%" r="70%">
+<stop offset="0" stop-color="#48d8c2" stop-opacity="0.22"/><stop offset="1" stop-color="#48d8c2" stop-opacity="0"/>
+</radialGradient>
+<pattern id="djobDetailHero" x="0" y="0" width="29" height="29" patternUnits="userSpaceOnUse">
+<circle cx="1.4" cy="1.4" r="1.4" fill="#ffffff" opacity="0.05"/>
+</pattern>
+</defs>
+<rect width="1600" height="460" fill="url(#gjobDetailHero)"/>
+<rect width="1600" height="460" fill="url(#djobDetailHero)"/>
+<path d="M -160 126 L 1760 -35" stroke="#48d8c2" stroke-width="64" opacity="0.05" stroke-linecap="round"/>
+<circle cx="893" cy="81" r="60" fill="none" stroke="#f6a23c" stroke-width="3.0" opacity="0.192"/><circle cx="1462" cy="70" r="157" fill="#48d8c2" opacity="0.120"/><circle cx="1395" cy="265" r="113" fill="none" stroke="#48d8c2" stroke-width="2.0" opacity="0.186"/><circle cx="752" cy="396" r="53" fill="#48d8c2" opacity="0.106"/><circle cx="1108" cy="212" r="191" fill="#f6a23c" opacity="0.091"/><circle cx="1676" cy="331" r="94" fill="none" stroke="#f6a23c" stroke-width="2.1" opacity="0.166"/>
+<circle cx="1526" cy="175" r="4.3" fill="#f6a23c" opacity="0.47"/><circle cx="1098" cy="391" r="4.8" fill="#f6a23c" opacity="0.36"/><circle cx="1430" cy="261" r="4.8" fill="#f6a23c" opacity="0.37"/>
+<rect width="1600" height="460" fill="url(#rjobDetailHero)"/>
+</svg>

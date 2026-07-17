@@ -1,0 +1,143 @@
+/* ==========================================================================
+   Krama — Color Tokens
+   Primary: Banyan Teal · Accent: Saffron · Neutrals: warm Stone
+   ========================================================================== */
+
+:root {
+  /* --- Banyan Teal (primary) --------------------------------------------- */
+  --teal-50:  #ECFBF6;
+  --teal-100: #D0F5EA;
+  --teal-200: #A3E9D6;
+  --teal-300: #6CD7BD;
+  --teal-400: #38BFA0;
+  --teal-500: #14A085;
+  --teal-600: #0C7E6B;
+  --teal-700: #0B6557;
+  --teal-800: #0C5046;
+  --teal-900: #0C413A;
+  --teal-950: #04221E;
+
+  /* --- Saffron (accent) -------------------------------------------------- */
+  --saffron-50:  #FFF6ED;
+  --saffron-100: #FFE9D2;
+  --saffron-200: #FFCF9F;
+  --saffron-300: #FFAE63;
+  --saffron-400: #FB8B36;
+  --saffron-500: #F26B1F;
+  --saffron-600: #DD5012;
+  --saffron-700: #B73A11;
+  --saffron-800: #922F16;
+  --saffron-900: #762915;
+  --saffron-950: #401007;
+
+  /* --- Stone (warm neutrals) --------------------------------------------- */
+  --stone-0:   #FFFFFF;
+  --stone-50:  #F8F8F6;
+  --stone-100: #F1F0EC;
+  --stone-200: #E5E3DD;
+  --stone-300: #D2CFC7;
+  --stone-400: #A8A49A;
+  --stone-500: #7C786E;
+  --stone-600: #5C594F;
+  --stone-700: #45423B;
+  --stone-800: #2D2B26;
+  --stone-900: #1C1B17;
+  --stone-950: #100F0C;
+
+  /* --- Semantic hues ----------------------------------------------------- */
+  --green-50:  #E9F8EF;
+  --green-100: #C9EDD7;
+  --green-500: #15924E;
+  --green-600: #0F7B41;
+  --green-700: #0C6234;
+
+  --amber-50:  #FDF6E3;
+  --amber-100: #FAE9BC;
+  --amber-500: #E5A100;
+  --amber-600: #C28400;
+  --amber-700: #946400;
+
+  --red-50:    #FCECEC;
+  --red-100:   #F8D2D2;
+  --red-500:   #D64545;
+  --red-600:   #BC3030;
+  --red-700:   #9A2626;
+
+  --blue-50:   #EAF2FE;
+  --blue-100:  #CFE0FC;
+  --blue-500:  #2D7FF0;
+  --blue-600:  #1C66CC;
+  --blue-700:  #1850A3;
+
+  /* ======================================================================
+     Semantic aliases — reference these in components, not raw scales
+     ====================================================================== */
+
+  /* Brand */
+  --brand:            var(--teal-600);
+  --brand-hover:      var(--teal-700);
+  --brand-active:     var(--teal-800);
+  --brand-subtle:     var(--teal-50);
+  --brand-subtle-2:   var(--teal-100);
+  --brand-border:     var(--teal-200);
+  --on-brand:         var(--stone-0);
+
+  --accent:           var(--saffron-500);
+  --accent-hover:     var(--saffron-600);
+  --accent-active:    var(--saffron-700);
+  --accent-subtle:    var(--saffron-50);
+  --accent-border:    var(--saffron-200);
+  --on-accent:        var(--stone-0);
+
+  /* Surfaces */
+  --surface-page:     var(--stone-50);
+  --surface-card:     var(--stone-0);
+  --surface-sunken:   var(--stone-100);
+  --surface-raised:   var(--stone-0);
+  --surface-inverse:  var(--stone-900);
+  --surface-hover:    var(--stone-100);
+  --surface-overlay:  rgba(16, 15, 12, 0.45);
+
+  /* Text */
+  --text-strong:      var(--stone-900);
+  --text-body:        var(--stone-700);
+  --text-muted:       var(--stone-500);
+  --text-faint:       var(--stone-400);
+  --text-on-dark:     var(--stone-50);
+  --text-on-dark-mut: var(--stone-300);
+  --text-brand:       var(--teal-700);
+  --text-link:        var(--teal-700);
+
+  /* Borders / dividers */
+  --border:           var(--stone-200);
+  --border-strong:    var(--stone-300);
+  --border-subtle:    var(--stone-100);
+  --border-focus:     var(--teal-500);
+  --ring:             rgba(20, 160, 133, 0.30);
+
+  /* Semantic feedback */
+  --success:          var(--green-600);
+  --success-subtle:   var(--green-50);
+  --success-border:   var(--green-100);
+  --warning:          var(--amber-600);
+  --warning-subtle:   var(--amber-50);
+  --warning-border:   var(--amber-100);
+  --danger:           var(--red-600);
+  --danger-subtle:    var(--red-50);
+  --danger-border:    var(--red-100);
+  --info:             var(--blue-600);
+  --info-subtle:      var(--blue-50);
+  --info-border:      var(--blue-100);
+
+  /* Job / workflow statuses */
+  --status-draft-fg:      var(--stone-600);
+  --status-draft-bg:      var(--stone-100);
+  --status-pending-fg:    var(--amber-700);
+  --status-pending-bg:    var(--amber-50);
+  --status-published-fg:  var(--green-700);
+  --status-published-bg:  var(--green-50);
+  --status-rejected-fg:   var(--red-700);
+  --status-rejected-bg:   var(--red-50);
+  --status-closed-fg:     var(--stone-500);
+  --status-closed-bg:     var(--stone-100);
+}

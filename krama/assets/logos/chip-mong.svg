@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96" role="img" aria-label="chip-mong">
+  <rect width="96" height="96" rx="22" fill="#C8102E"></rect>
+  <rect x="60" y="60" width="22" height="22" rx="5" fill="#8E0B20"></rect>
+  <text x="48" y="48" dy="0.36em" text-anchor="middle" font-family="Sora, Arial, sans-serif" font-weight="800" font-size="34" fill="#FFFFFF" letter-spacing="-1">CM</text>
+</svg>

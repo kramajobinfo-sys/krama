@@ -1,0 +1,59 @@
+<svg viewBox="0 0 2400 1040" xmlns="http://www.w3.org/2000/svg" font-family="Arial, Helvetica, sans-serif" role="img" aria-label="Krama hero banner safe-zone template, 2400 by 1040 pixels">
+  <defs>
+    <pattern id="hatch" width="18" height="18" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="18" height="18" fill="none"/>
+      <line x1="0" y1="0" x2="0" y2="18" stroke="#ffffff" stroke-width="6" opacity="0.35"/>
+    </pattern>
+  </defs>
+
+  <!-- full canvas -->
+  <rect x="0" y="0" width="2400" height="1040" fill="#eef1ef"/>
+
+  <!-- CENTER: safe zone (green) -->
+  <rect x="784" y="195" width="832" height="650" fill="#1f7a5a" opacity="0.20"/>
+
+  <!-- SIDE columns: cut on mobile (blue) -->
+  <rect x="0"    y="195" width="784" height="650" fill="#2563eb" opacity="0.16"/>
+  <rect x="1616" y="195" width="784" height="650" fill="#2563eb" opacity="0.16"/>
+  <rect x="0"    y="195" width="784" height="650" fill="url(#hatch)"/>
+  <rect x="1616" y="195" width="784" height="650" fill="url(#hatch)"/>
+
+  <!-- TOP & BOTTOM: cropped on wide monitors (red) -->
+  <rect x="0" y="0"   width="2400" height="195" fill="#dc2626" opacity="0.18"/>
+  <rect x="0" y="845" width="2400" height="195" fill="#dc2626" opacity="0.18"/>
+  <rect x="0" y="0"   width="2400" height="195" fill="url(#hatch)"/>
+  <rect x="0" y="845" width="2400" height="195" fill="url(#hatch)"/>
+
+  <!-- laptop (1440) crop reference lines -->
+  <line x1="0" y1="87"  x2="2400" y2="87"  stroke="#dc2626" stroke-width="2" stroke-dasharray="14 10" opacity="0.6"/>
+  <line x1="0" y1="953" x2="2400" y2="953" stroke="#dc2626" stroke-width="2" stroke-dasharray="14 10" opacity="0.6"/>
+  <text x="24" y="78" font-size="22" fill="#b91c1c">1440px-screen crop line</text>
+
+  <!-- zone borders -->
+  <rect x="784" y="195" width="832" height="650" fill="none" stroke="#12664a" stroke-width="3"/>
+  <rect x="0.5" y="0.5" width="2399" height="1039" fill="none" stroke="#9aa39d" stroke-width="2"/>
+
+  <!-- center crosshair (focus point) -->
+  <line x1="1200" y1="470" x2="1200" y2="570" stroke="#12664a" stroke-width="2" opacity="0.7"/>
+  <line x1="1150" y1="520" x2="1250" y2="520" stroke="#12664a" stroke-width="2" opacity="0.7"/>
+  <circle cx="1200" cy="520" r="7" fill="none" stroke="#12664a" stroke-width="2" opacity="0.7"/>
+
+  <!-- labels -->
+  <text x="1200" y="112" font-size="40" font-weight="bold" fill="#b91c1c" text-anchor="middle">CROPPED on wide monitors — keep empty</text>
+  <text x="1200" y="922" font-size="40" font-weight="bold" fill="#b91c1c" text-anchor="middle">CROPPED on wide monitors — keep empty</text>
+
+  <text x="392" y="500" font-size="34" font-weight="bold" fill="#1e40af" text-anchor="middle">CUT OFF</text>
+  <text x="392" y="545" font-size="34" font-weight="bold" fill="#1e40af" text-anchor="middle">on phones</text>
+  <text x="2008" y="500" font-size="34" font-weight="bold" fill="#1e40af" text-anchor="middle">CUT OFF</text>
+  <text x="2008" y="545" font-size="34" font-weight="bold" fill="#1e40af" text-anchor="middle">on phones</text>
+
+  <text x="1200" y="270" font-size="44" font-weight="bold" fill="#12664a" text-anchor="middle">SAFE ZONE</text>
+  <text x="1200" y="312" font-size="26" fill="#12664a" text-anchor="middle">visible on every screen size</text>
+  <text x="1200" y="760" font-size="24" fill="#12664a" text-anchor="middle">NOTE: Krama also overlays its own headline</text>
+  <text x="1200" y="792" font-size="24" fill="#12664a" text-anchor="middle">+ search bar right here — keep text out of the middle</text>
+
+  <!-- dimensions -->
+  <text x="1200" y="1012" font-size="26" fill="#4b5249" text-anchor="middle">Design at 2400 × 1040 px (2×). The site stores it as 1200 × 520 px. Aspect ratio 2.3 : 1.</text>
+  <text x="20" y="1024" font-size="22" fill="#4b5249">← 2400 px →  /  ↕ 1040 px</text>
+  <text x="1210" y="512" font-size="20" fill="#12664a">focus / center</text>
+</svg>

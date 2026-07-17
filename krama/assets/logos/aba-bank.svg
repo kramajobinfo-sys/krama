@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96" role="img" aria-label="aba-bank">
+  <rect width="96" height="96" rx="22" fill="#0A2A6B"></rect>
+  <rect x="14" y="70" width="68" height="8" rx="4" fill="#E03A3E"></rect>
+  <text x="48" y="48" dy="0.36em" text-anchor="middle" font-family="Sora, Arial, sans-serif" font-weight="800" font-size="34" fill="#FFFFFF" letter-spacing="-1">ABA</text>
+</svg>

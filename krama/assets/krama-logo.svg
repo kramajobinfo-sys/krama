@@ -1,0 +1,14 @@
+<svg width="184" height="48" viewBox="0 0 184 48" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Krama">
+  <rect width="48" height="48" rx="12" fill="#0C7E6B"></rect>
+  <rect x="12" y="8.5" width="5" height="5" rx="1" fill="#F26B1F"></rect>
+  <rect x="12" y="15" width="5" height="5" rx="1" fill="#F26B1F"></rect>
+  <rect x="12" y="21.5" width="5" height="5" rx="1" fill="#F26B1F"></rect>
+  <rect x="12" y="28" width="5" height="5" rx="1" fill="#F26B1F"></rect>
+  <rect x="12" y="34.5" width="5" height="5" rx="1" fill="#F26B1F"></rect>
+  <rect x="18.5" y="21.5" width="5" height="5" rx="1" fill="#FFF6ED"></rect>
+  <rect x="25" y="15" width="5" height="5" rx="1" fill="#F26B1F"></rect>
+  <rect x="25" y="28" width="5" height="5" rx="1" fill="#F26B1F"></rect>
+  <rect x="31.5" y="8.5" width="5" height="5" rx="1" fill="#F26B1F"></rect>
+  <rect x="31.5" y="34.5" width="5" height="5" rx="1" fill="#F26B1F"></rect>
+  <text x="62" y="32" font-family="Sora, sans-serif" font-size="26" font-weight="700" letter-spacing="-0.5" fill="#1C1B17">krama</text>
+</svg>

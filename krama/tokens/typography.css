@@ -1,0 +1,47 @@
+/* ==========================================================================
+   Krama — Typography Tokens
+   Display/Headings: Sora · UI/Body: Plus Jakarta Sans · Mono: JetBrains Mono
+   Khmer: Kantumruy Pro (script-aware fallback)
+   ========================================================================== */
+
+:root {
+  /* Families */
+  --font-display: "Sora", "Kantumruy Pro", system-ui, sans-serif;
+  --font-sans:    "Plus Jakarta Sans", "Kantumruy Pro", system-ui, -apple-system, sans-serif;
+  --font-khmer:   "Kantumruy Pro", "Noto Sans Khmer", system-ui, sans-serif;
+  --font-mono:    "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* Type scale (1.250 major-third-ish, tuned) */
+  --text-2xs:  11px;
+  --text-xs:   12px;
+  --text-sm:   13px;
+  --text-base: 15px;
+  --text-md:   16px;
+  --text-lg:   18px;
+  --text-xl:   21px;
+  --text-2xl:  25px;
+  --text-3xl:  31px;
+  --text-4xl:  39px;
+  --text-5xl:  49px;
+  --text-6xl:  61px;
+
+  /* Weights */
+  --weight-regular:  400;
+  --weight-medium:   500;
+  --weight-semibold: 600;
+  --weight-bold:     700;
+  --weight-extra:    800;
+
+  /* Line heights */
+  --leading-tight:   1.12;
+  --leading-snug:    1.28;
+  --leading-normal:  1.5;
+  --leading-relaxed: 1.65;
+
+  /* Letter spacing */
+  --tracking-tight:  -0.02em;
+  --tracking-snug:   -0.01em;
+  --tracking-normal: 0;
+  --tracking-wide:   0.04em;
+  --tracking-caps:   0.08em;
+}

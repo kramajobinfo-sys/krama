@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="800" height="600" preserveAspectRatio="xMidYMid slice">
+<defs>
+<linearGradient id="gfindJobsBanner3" x1="0%" y1="0%" x2="100%" y2="100%">
+<stop offset="0" stop-color="#8a460b"/><stop offset="1" stop-color="#c46d17"/>
+</linearGradient>
+<radialGradient id="rfindJobsBanner3" cx="82%" cy="18%" r="70%">
+<stop offset="0" stop-color="#ffcd86" stop-opacity="0.22"/><stop offset="1" stop-color="#ffcd86" stop-opacity="0"/>
+</radialGradient>
+<pattern id="dfindJobsBanner3" x="0" y="0" width="38" height="38" patternUnits="userSpaceOnUse">
+<circle cx="1.4" cy="1.4" r="1.4" fill="#ffffff" opacity="0.05"/>
+</pattern>
+</defs>
+<rect width="800" height="600" fill="url(#gfindJobsBanner3)"/>
+<rect width="800" height="600" fill="url(#dfindJobsBanner3)"/>
+<path d="M -80 230 L 880 20" stroke="#ffcd86" stroke-width="84" opacity="0.05" stroke-linecap="round"/>
+<circle cx="241" cy="209" r="213" fill="#ffcd86" opacity="0.061"/><circle cx="583" cy="324" r="165" fill="none" stroke="#ffcd86" stroke-width="1.8" opacity="0.169"/><circle cx="391" cy="315" r="113" fill="#ffcd86" opacity="0.079"/><circle cx="490" cy="215" r="175" fill="#ffcd86" opacity="0.076"/><circle cx="559" cy="421" r="243" fill="#ffcd86" opacity="0.074"/>
+<circle cx="238" cy="559" r="8.7" fill="#0d5b54" opacity="0.53"/><circle cx="722" cy="266" r="7.5" fill="#0d5b54" opacity="0.38"/><circle cx="154" cy="174" r="3.8" fill="#0d5b54" opacity="0.48"/>
+<rect width="800" height="600" fill="url(#rfindJobsBanner3)"/>
+</svg>

@@ -1,0 +1,261 @@
+parameters:
+	ignoreErrors:
+		-
+			message: "#^Offset 'account_id' on array\\{account_id\\: string, merchant_name\\?\\: string, city\\?\\: string, amount\\?\\: float\\|int\\|null, currency\\?\\: string, bill_number\\?\\: string\\} on left side of \\?\\? always exists and is not nullable\\.$#"
+			count: 1
+			path: app/Helpers/Khqr.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Application\\|Illuminate\\\\Database\\\\Eloquent\\\\Collection\\<App\\\\Models\\\\Application\\>\\:\\:\\$candidate\\.$#"
+			count: 3
+			path: app/Http/Controllers/ApplicationController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Application\\|Illuminate\\\\Database\\\\Eloquent\\\\Collection\\<App\\\\Models\\\\Application\\>\\:\\:\\$job\\.$#"
+			count: 4
+			path: app/Http/Controllers/ApplicationController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Application\\|Illuminate\\\\Database\\\\Eloquent\\\\Collection\\<App\\\\Models\\\\Application\\>\\:\\:\\$resume\\.$#"
+			count: 1
+			path: app/Http/Controllers/ApplicationController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Job\\|Illuminate\\\\Database\\\\Eloquent\\\\Collection\\<App\\\\Models\\\\Job\\>\\:\\:\\$company\\.$#"
+			count: 2
+			path: app/Http/Controllers/ApplicationController.php
+
+		-
+			message: "#^Method Illuminate\\\\Database\\\\Eloquent\\\\Model\\:\\:only\\(\\) invoked with 3 parameters, 1 required\\.$#"
+			count: 1
+			path: app/Http/Controllers/ApplicationController.php
+
+		-
+			message: "#^Relation 'job' is not found in App\\\\Models\\\\Application model\\.$#"
+			count: 1
+			path: app/Http/Controllers/ApplicationController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\User\\:\\:\\$role\\.$#"
+			count: 1
+			path: app/Http/Controllers/AuthController.php
+
+		-
+			message: "#^Parameter \\#1 \\$forceForever of static method PHPOpenSourceSaver\\\\JWTAuth\\\\JWT\\:\\:invalidate\\(\\) expects bool, PHPOpenSourceSaver\\\\JWTAuth\\\\Token\\|null given\\.$#"
+			count: 1
+			path: app/Http/Controllers/AuthController.php
+
+		-
+			message: "#^Strict comparison using \\=\\=\\= between mixed and '0' will always evaluate to false\\.$#"
+			count: 2
+			path: app/Http/Controllers/AuthController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Company\\:\\:\\$about_image_url\\.$#"
+			count: 1
+			path: app/Http/Controllers/CompanyController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Company\\:\\:\\$cover_banner_url\\.$#"
+			count: 1
+			path: app/Http/Controllers/CompanyController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Company\\:\\:\\$social_links\\.$#"
+			count: 1
+			path: app/Http/Controllers/CompanyController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Company\\|Illuminate\\\\Database\\\\Eloquent\\\\Collection\\<App\\\\Models\\\\Company\\>\\:\\:\\$cover_banner_url\\.$#"
+			count: 1
+			path: app/Http/Controllers/CompanyController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Company\\:\\:\\$location\\.$#"
+			count: 1
+			path: app/Http/Controllers/CompanyFollowerController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\CompanyReview\\:\\:\\$avg\\.$#"
+			count: 1
+			path: app/Http/Controllers/CompanyReviewController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\CompanyReview\\:\\:\\$count\\.$#"
+			count: 1
+			path: app/Http/Controllers/CompanyReviewController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\CompanyReview\\:\\:\\$r1\\.$#"
+			count: 1
+			path: app/Http/Controllers/CompanyReviewController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\CompanyReview\\:\\:\\$r2\\.$#"
+			count: 1
+			path: app/Http/Controllers/CompanyReviewController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\CompanyReview\\:\\:\\$r3\\.$#"
+			count: 1
+			path: app/Http/Controllers/CompanyReviewController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\CompanyReview\\:\\:\\$r4\\.$#"
+			count: 1
+			path: app/Http/Controllers/CompanyReviewController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\CompanyReview\\:\\:\\$r5\\.$#"
+			count: 1
+			path: app/Http/Controllers/CompanyReviewController.php
+
+		-
+			message: "#^Parameter \\#2 \\$default of method Illuminate\\\\Http\\\\Request\\:\\:query\\(\\) expects array\\|string\\|null, int given\\.$#"
+			count: 1
+			path: app/Http/Controllers/CompanyReviewController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\User\\:\\:\\$role\\.$#"
+			count: 1
+			path: app/Http/Controllers/Controller.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Resume\\:\\:\\$candidate\\.$#"
+			count: 4
+			path: app/Http/Controllers/CvMatchController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Resume\\:\\:\\$candidate\\.$#"
+			count: 7
+			path: app/Http/Controllers/EmployerCvMatchController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Resume\\|Illuminate\\\\Database\\\\Eloquent\\\\Collection\\<App\\\\Models\\\\Resume\\>\\:\\:\\$candidate\\.$#"
+			count: 1
+			path: app/Http/Controllers/EmployerCvMatchController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\JobAlert\\:\\:\\$category\\.$#"
+			count: 2
+			path: app/Http/Controllers/JobAlertController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\JobAlert\\:\\:\\$location\\.$#"
+			count: 2
+			path: app/Http/Controllers/JobAlertController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Job\\:\\:\\$company\\.$#"
+			count: 2
+			path: app/Http/Controllers/JobController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Job\\:\\:\\$location\\.$#"
+			count: 2
+			path: app/Http/Controllers/JobController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\JobAlert\\:\\:\\$candidate\\.$#"
+			count: 1
+			path: app/Http/Controllers/JobController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Job\\|Illuminate\\\\Database\\\\Eloquent\\\\Collection\\<App\\\\Models\\\\Job\\>\\:\\:\\$company\\.$#"
+			count: 4
+			path: app/Http/Controllers/JobController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Payment\\:\\:\\$max_seq\\.$#"
+			count: 1
+			path: app/Http/Controllers/JobController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Subscription\\:\\:\\$plan\\.$#"
+			count: 2
+			path: app/Http/Controllers/JobController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Subscription\\|Illuminate\\\\Database\\\\Eloquent\\\\Collection\\<App\\\\Models\\\\Subscription\\>\\:\\:\\$plan\\.$#"
+			count: 1
+			path: app/Http/Controllers/JobController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\User\\:\\:\\$role\\.$#"
+			count: 1
+			path: app/Http/Controllers/MessageController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Payment\\:\\:\\$max_seq\\.$#"
+			count: 1
+			path: app/Http/Controllers/PaymentController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Payment\\:\\:\\$subscription\\.$#"
+			count: 2
+			path: app/Http/Controllers/PaymentController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Subscription\\:\\:\\$plan\\.$#"
+			count: 2
+			path: app/Http/Controllers/PaymentController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Job\\:\\:\\$match_reasons\\.$#"
+			count: 1
+			path: app/Http/Controllers/RecommendationController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Job\\:\\:\\$jobs\\.$#"
+			count: 1
+			path: app/Http/Controllers/ReportController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Job\\:\\:\\$name\\.$#"
+			count: 1
+			path: app/Http/Controllers/ReportController.php
+
+		-
+			message: "#^Parameter \\#2 \\$operator of static method Illuminate\\\\Database\\\\Eloquent\\\\Builder\\<App\\\\Models\\\\Application\\>\\:\\:whereYear\\(\\) expects string, int given\\.$#"
+			count: 2
+			path: app/Http/Controllers/ReportController.php
+
+		-
+			message: "#^Parameter \\#2 \\$operator of static method Illuminate\\\\Database\\\\Eloquent\\\\Builder\\<App\\\\Models\\\\User\\>\\:\\:whereYear\\(\\) expects string, int given\\.$#"
+			count: 1
+			path: app/Http/Controllers/ReportController.php
+
+		-
+			message: "#^Parameter \\#2 \\$default of method Illuminate\\\\Http\\\\Request\\:\\:query\\(\\) expects array\\|string\\|null, int given\\.$#"
+			count: 1
+			path: app/Http/Controllers/ResumeController.php
+
+		-
+			message: "#^Relation 'candidate' is not found in App\\\\Models\\\\Resume model\\.$#"
+			count: 1
+			path: app/Http/Controllers/ResumeController.php
+
+		-
+			message: "#^Relation 'role' is not found in App\\\\Models\\\\User model\\.$#"
+			count: 2
+			path: app/Http/Controllers/UserController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\User\\:\\:\\$role\\.$#"
+			count: 1
+			path: app/Http/Middleware/CheckPermission.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\User\\:\\:\\$role\\.$#"
+			count: 3
+			path: app/Models/User.php
+
+		-
+			message: "#^PHPDoc tag @var above a method has no effect\\.$#"
+			count: 1
+			path: app/Providers/RouteServiceProvider.php
+
+		-
+			message: "#^PHPDoc tag @var does not specify variable name\\.$#"
+			count: 1
+			path: app/Providers/RouteServiceProvider.php

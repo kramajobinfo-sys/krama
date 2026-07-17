@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="800" height="600" preserveAspectRatio="xMidYMid slice">
+<defs>
+<linearGradient id="gsidebarBanner" x1="0%" y1="0%" x2="100%" y2="100%">
+<stop offset="0" stop-color="#083f3b"/><stop offset="1" stop-color="#0d5b54"/>
+</linearGradient>
+<radialGradient id="rsidebarBanner" cx="82%" cy="18%" r="70%">
+<stop offset="0" stop-color="#48d8c2" stop-opacity="0.22"/><stop offset="1" stop-color="#48d8c2" stop-opacity="0"/>
+</radialGradient>
+<pattern id="dsidebarBanner" x="0" y="0" width="38" height="38" patternUnits="userSpaceOnUse">
+<circle cx="1.4" cy="1.4" r="1.4" fill="#ffffff" opacity="0.05"/>
+</pattern>
+</defs>
+<rect width="800" height="600" fill="url(#gsidebarBanner)"/>
+<rect width="800" height="600" fill="url(#dsidebarBanner)"/>
+<path d="M -80 123 L 880 -87" stroke="#48d8c2" stroke-width="84" opacity="0.05" stroke-linecap="round"/>
+<circle cx="669" cy="138" r="105" fill="none" stroke="#f6a23c" stroke-width="2.1" opacity="0.175"/><circle cx="161" cy="200" r="69" fill="none" stroke="#48d8c2" stroke-width="2.1" opacity="0.151"/><circle cx="605" cy="546" r="221" fill="none" stroke="#48d8c2" stroke-width="2.5" opacity="0.136"/><circle cx="280" cy="443" r="88" fill="none" stroke="#48d8c2" stroke-width="2.1" opacity="0.216"/>
+<circle cx="655" cy="515" r="6.4" fill="#f6a23c" opacity="0.63"/><circle cx="526" cy="256" r="8.5" fill="#f6a23c" opacity="0.60"/><circle cx="355" cy="186" r="4.0" fill="#f6a23c" opacity="0.49"/>
+<rect width="800" height="600" fill="url(#rsidebarBanner)"/>
+</svg>

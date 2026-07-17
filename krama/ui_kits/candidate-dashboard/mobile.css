@@ -1,0 +1,68 @@
+/* ─── Krama Dashboard — Mobile Responsive ────────────────────────────────── */
+
+/* Always-on base styles */
+.krm-sidebar-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 199; }
+.krm-hamburger-dash   { display: none; }
+
+@media (max-width: 767px) {
+  * { box-sizing: border-box; }
+  body { overflow-x: hidden; }
+
+  /* Sidebar slides in from left */
+  .krm-sidebar {
+    position: fixed !important;
+    left: -280px !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    width: 260px !important;
+    z-index: 200 !important;
+    transition: left 0.25s ease !important;
+    box-shadow: var(--shadow-xl) !important;
+    overflow-y: auto !important;
+  }
+  .krm-sidebar.open {
+    left: 0 !important;
+  }
+  /* Backdrop only visible when sidebar is open */
+  .krm-sidebar-backdrop.open {
+    display: block !important;
+  }
+
+  /* Topbar */
+  .krm-topbar {
+    padding: 0 16px !important;
+  }
+  .krm-topbar h1 {
+    font-size: var(--text-base) !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: 180px !important;
+  }
+  .krm-hamburger-dash {
+    display: flex !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* Main content padding */
+  .krm-page-pad {
+    padding: 16px !important;
+  }
+
+  /* Stack stat cards 2-up */
+  .krm-stats-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+  }
+  /* Single column card grid */
+  .krm-card-grid {
+    grid-template-columns: 1fr !important;
+  }
+  /* 2-column form grids collapse to 1 column */
+  .krm-form-grid { grid-template-columns: 1fr !important; }
+  /* Tables scroll horizontally */
+  .krm-table-wrap {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+}
