@@ -83,6 +83,15 @@
   }
   .krm-hero p { font-size: var(--text-base) !important; }
 
+  /* Image-only page heroes (Find Jobs/Companies/Job Detail/For Employers):
+     a wide 1600x220 banner is a thin sliver at phone width, so give it a real
+     banner height and cover-fill instead of the desktop aspect-ratio. */
+  .krm-page-hero.krm-page-hero--img {
+    aspect-ratio: auto !important;
+    height: 150px !important;
+    max-height: 150px !important;
+  }
+
   /* ── Hero search bar — stack vertically ──────────────────────────────── */
   .krm-search-bar {
     flex-direction: column !important;
@@ -458,4 +467,4 @@
    overlay hero (inherits .krm-hero min-height: 520px desktop/tablet, 340px mobile),
    so toggling "show title & search over image" never changes the banner height.
 ═══════════════════════════════════════════════════════════════════════════ */
-.krm-hero.krm-hero--image-only { min-height: 0 !important; padding: 0 !important; }
+.krm-hero.krm-hero--image-only { min-height: 340px !important; padding: 0 !important; }

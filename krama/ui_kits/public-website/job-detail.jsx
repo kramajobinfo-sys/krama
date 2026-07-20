@@ -62,6 +62,14 @@
     if (!b || !b.visible || dismissed) return null;
     const t = resolveBarTheme(b);
     const hasImg = !!b.image;
+    if (b.hideText && hasImg) {
+      return (
+        <div style={{ position: "relative", overflow: "hidden", background: t.bg, width: "100%", aspectRatio: "1600 / 160", maxHeight: 160, minHeight: 60 }}>
+          <img src={b.image} alt="" style={{ display: "block", width: "100%", height: "100%", objectFit: "cover" }} />
+          <button onClick={() => setDismissed(true)} aria-label="Dismiss" style={{ position: "absolute", top: 8, right: 12, width: 28, height: 28, borderRadius: "50%", background: "rgba(0,0,0,0.35)", border: "none", color: "#fff", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>{I("x", 16)}</button>
+        </div>
+      );
+    }
     return (
       <div style={{ position: "relative", overflow: "hidden", background: t.bg, color: t.fg, borderBottom: (b.theme === "transparent" || b.theme === "blank") ? "1px solid var(--border)" : "none" }}>
         {hasImg
@@ -70,12 +78,16 @@
               <div style={{ position: "absolute", inset: 0, background: t.bg, opacity: (b.imgOverlay != null ? b.imgOverlay : 20) / 100 }} />
             </React.Fragment>
           : <div style={{ position: "absolute", inset: 0, background: "url('../../assets/krama-pattern.svg')", backgroundSize: 60, opacity: 0.10 }} />}
-        <div style={{ position: "relative", maxWidth: 1200, margin: "0 auto", display: "flex", alignItems: "center", gap: 14, padding: "10px 32px" }}>
-          {b.icon && <span style={{ display: "inline-flex", flexShrink: 0 }}>{I(b.icon, 18)}</span>}
-          <div style={{ flex: 1, fontSize: "var(--text-sm)", fontWeight: 500 }}>
-            <strong style={{ fontWeight: 700 }}>{b.title}</strong>{b.message ? " -- " + b.message : ""}
-          </div>
-          {b.cta && <span onClick={() => { if (b.ctaUrl) window.open(b.ctaUrl, b.ctaUrl.startsWith("http") ? "_blank" : "_self"); else onNav && onNav("jobs"); }} style={{ flexShrink: 0, background: t.pill, color: t.pillFg, fontSize: "var(--text-sm)", fontWeight: 700, padding: "7px 16px", borderRadius: "var(--radius-pill)", cursor: "pointer", whiteSpace: "nowrap" }}>{b.cta}</span>}
+        <div style={{ position: "relative", maxWidth: 1200, margin: "0 auto", display: "flex", alignItems: "center", gap: 14, padding: "10px 32px", minHeight: b.hideText ? 28 : undefined }}>
+          {b.hideText
+            ? <div style={{ flex: 1 }} />
+            : <React.Fragment>
+                {b.icon && <span style={{ display: "inline-flex", flexShrink: 0 }}>{I(b.icon, 18)}</span>}
+                <div style={{ flex: 1, fontSize: "var(--text-sm)", fontWeight: 500 }}>
+                  <strong style={{ fontWeight: 700 }}>{b.title}</strong>{b.message ? " -- " + b.message : ""}
+                </div>
+                {b.cta && <span onClick={() => { if (b.ctaUrl) window.open(b.ctaUrl, b.ctaUrl.startsWith("http") ? "_blank" : "_self"); else onNav && onNav("jobs"); }} style={{ flexShrink: 0, background: t.pill, color: t.pillFg, fontSize: "var(--text-sm)", fontWeight: 700, padding: "7px 16px", borderRadius: "var(--radius-pill)", cursor: "pointer", whiteSpace: "nowrap" }}>{b.cta}</span>}
+              </React.Fragment>}
           <button onClick={() => setDismissed(true)} style={{ flexShrink: 0, background: "transparent", border: "none", color: t.fg, opacity: 0.7, cursor: "pointer", display: "inline-flex", padding: 4 }}>{I("x", 16)}</button>
         </div>
       </div>
@@ -109,13 +121,14 @@
     }
     const t = resolveJdbTheme(b);
     return (
-      <div style={{ position: "relative", overflow: "hidden", borderRadius: "var(--radius-lg)", background: t.bg, color: t.fg, marginTop: 12, border: (b.theme === "transparent" || b.theme === "blank") ? "1px solid var(--border)" : "none" }}>
+      <div style={{ position: "relative", overflow: "hidden", borderRadius: "var(--radius-lg)", background: t.bg, color: t.fg, marginTop: 12, minHeight: b.hideText ? 160 : undefined, border: (b.theme === "transparent" || b.theme === "blank") ? "1px solid var(--border)" : "none" }}>
         {b.image
           ? <React.Fragment>
               <div style={{ position: "absolute", inset: 0, backgroundImage: "url('" + b.image + "')", backgroundSize: b.fit === "contain" ? "contain" : "cover", backgroundRepeat: "no-repeat", backgroundPosition: "center" }} />
               <div style={{ position: "absolute", inset: 0, background: t.bg, opacity: (b.imgOverlay != null ? b.imgOverlay : 20) / 100 }} />
             </React.Fragment>
           : <div style={{ position: "absolute", inset: 0, background: "url('../../assets/krama-pattern.svg')", backgroundSize: 48, opacity: 0.08 }} />}
+        {!b.hideText && (
         <div style={{ position: "relative", padding: "16px 18px" }}>
           {b.icon && <i data-lucide={b.icon} style={{ width: 20, height: 20, marginBottom: 8, opacity: 0.9 }} />}
           <div style={{ fontWeight: 700, fontSize: "var(--text-sm)", lineHeight: 1.35, marginBottom: 4 }}>{b.title}</div>
@@ -127,6 +140,7 @@
             >{b.cta}</button>
           )}
         </div>
+        )}
       </div>
     );
   }
@@ -141,18 +155,20 @@
     const h = loadBanner("jobDetailHero", JD_HERO_DEFAULT);
     if (!h || h.visible === false) return null;
     return (
-      <div className="krm-page-hero" style={{ position: "relative", background: "var(--teal-800)", overflow: "hidden", padding: "44px 32px" }}>
+      <div className={"krm-page-hero" + (h.hideText ? " krm-page-hero--img" : "")} style={{ position: "relative", background: "var(--teal-800)", overflow: "hidden", padding: h.hideText ? 0 : "44px 32px", aspectRatio: h.hideText ? "1600 / 220" : undefined, maxHeight: h.hideText ? 240 : undefined }}>
         {h.image
           ? <React.Fragment>
               <div style={{ position: "absolute", inset: 0, backgroundImage: "url('" + h.image + "')", backgroundSize: h.fit === "contain" ? "contain" : "cover", backgroundRepeat: "no-repeat", backgroundPosition: "center" }} />
               <div style={{ position: "absolute", inset: 0, background: "var(--teal-800)", opacity: (h.imgOverlay != null ? h.imgOverlay : 60) / 100 }} />
             </React.Fragment>
           : <div style={{ position: "absolute", inset: 0, background: "url('../../assets/krama-pattern.svg')", backgroundSize: 72, opacity: 0.08 }} />}
+        {!h.hideText && (
         <div style={{ position: "relative", maxWidth: 1200, margin: "0 auto" }}>
           <div style={{ fontSize: "var(--text-xs)", fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--teal-200)" }}>{TR("Now hiring")}</div>
           <h2 style={{ color: "#fff", fontSize: "var(--text-4xl)", fontWeight: 800, letterSpacing: "-0.02em", marginTop: 6 }}>{TR(h.heading)}</h2>
           {h.sub && <p style={{ color: "var(--stone-300)", fontSize: "var(--text-lg)", marginTop: 8 }}>{TR(h.sub)}</p>}
         </div>
+        )}
       </div>
     );
   }

@@ -2239,6 +2239,11 @@
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               <Input label="Headline" value={d.title} onChange={(e) => set("title", e.target.value)} />
               <Input label="Message" value={d.message} onChange={(e) => set("message", e.target.value)} hint="Keep it short -- it sits on one line." />
+              <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: "8px 10px", borderRadius: "var(--radius-md)", background: d.hideText ? "var(--brand-subtle)" : "var(--surface-sunken)", border: "1px solid " + (d.hideText ? "var(--brand)" : "var(--border-subtle)") }}>
+                <input type="checkbox" checked={!!d.hideText} onChange={(e) => set("hideText", e.target.checked)} style={{ width: 16, height: 16, accentColor: "var(--brand)", cursor: "pointer", flexShrink: 0 }} />
+                <span style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-strong)" }}>Show background image only</span>
+                <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>Hides the title, message &amp; button.</span>
+              </label>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
                 <Input label="Button label" value={d.cta} onChange={(e) => set("cta", e.target.value)} />
                 <Select label="Icon" value={d.icon} onChange={(e) => set("icon", e.target.value)} options={ICON_OPTS} />
@@ -2616,6 +2621,13 @@
             </div>
           )}
           <div className="krm-form-grid" style={{ marginTop: 20, paddingTop: 18, borderTop: "1px solid var(--border-subtle)", opacity: b.visible ? 1 : 0.45, pointerEvents: b.visible ? "auto" : "none", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+            <div style={{ gridColumn: "1 / -1" }}>
+              <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: "8px 10px", borderRadius: "var(--radius-md)", background: b.hideText ? "var(--brand-subtle)" : "var(--surface-sunken)", border: "1px solid " + (b.hideText ? "var(--brand)" : "var(--border-subtle)") }}>
+                <input type="checkbox" checked={!!b.hideText} onChange={(e) => setBanner(key, "hideText", e.target.checked)} style={{ width: 16, height: 16, accentColor: "var(--brand)", cursor: "pointer", flexShrink: 0 }} />
+                <span style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-strong)" }}>Show background image only</span>
+                <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>Hides the title, message &amp; button — use when your image already has the text.</span>
+              </label>
+            </div>
             <Input label="Headline" value={b.title} onChange={(e) => setBanner(key, "title", e.target.value)} />
             <Input label="Button label" value={b.cta} onChange={(e) => setBanner(key, "cta", e.target.value)} />
             <div style={{ gridColumn: "1 / -1" }}>
@@ -2875,11 +2887,18 @@
                       <div>
                         <div style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-strong)", marginBottom: 8 }}>{slideForm.imageOnly ? "Banner image" : "Background image (optional)"}</div>
                         <div style={{ display: "inline-flex", alignItems: "center", gap: 5, marginBottom: 10, fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-brand)", background: "var(--brand-subtle)", borderRadius: "var(--radius-pill)", padding: "3px 10px" }}>{I("image", 13)} Recommended image: 1600 × 480px</div>
-                        <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", marginBottom: 10, padding: "8px 10px", borderRadius: "var(--radius-md)", background: !slideForm.imageOnly ? "var(--brand-subtle)" : "var(--surface-sunken)", border: "1px solid " + (!slideForm.imageOnly ? "var(--brand)" : "var(--border-subtle)") }}>
-                          <input type="checkbox" checked={!slideForm.imageOnly} onChange={(e) => setSlideForm((f) => ({ ...f, imageOnly: !e.target.checked }))} style={{ width: 16, height: 16, accentColor: "var(--brand)", cursor: "pointer", flexShrink: 0 }} />
-                          <span style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-strong)" }}>Show title &amp; search bar over the image</span>
-                          <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>Default (off): the full image shows uncropped on desktop &amp; mobile. Turn on to overlay the title, subtitle &amp; search bar (the image is then cropped to fit).</span>
+                        <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", marginBottom: 10, padding: "8px 10px", borderRadius: "var(--radius-md)", background: slideForm.imageOnly ? "var(--brand-subtle)" : "var(--surface-sunken)", border: "1px solid " + (slideForm.imageOnly ? "var(--brand)" : "var(--border-subtle)") }}>
+                          <input type="checkbox" checked={!!slideForm.imageOnly} onChange={(e) => setSlideForm((f) => ({ ...f, imageOnly: e.target.checked }))} style={{ width: 16, height: 16, accentColor: "var(--brand)", cursor: "pointer", flexShrink: 0 }} />
+                          <span style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-strong)" }}>Hide title &amp; search bar (show banner image only)</span>
+                          <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>On: only your banner image shows, filling the hero on desktop &amp; mobile (use a 1600 × 480px image). Off: the title, subtitle &amp; search bar are shown over the image.</span>
                         </label>
+                        {!slideForm.imageOnly && (
+                        <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", marginBottom: 10, padding: "8px 10px", borderRadius: "var(--radius-md)", background: slideForm.hideTitle ? "var(--brand-subtle)" : "var(--surface-sunken)", border: "1px solid " + (slideForm.hideTitle ? "var(--brand)" : "var(--border-subtle)") }}>
+                          <input type="checkbox" checked={!!slideForm.hideTitle} onChange={(e) => setSlideForm((f) => ({ ...f, hideTitle: e.target.checked }))} style={{ width: 16, height: 16, accentColor: "var(--brand)", cursor: "pointer", flexShrink: 0 }} />
+                          <span style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-strong)" }}>Hide the title text (keep the search bar)</span>
+                          <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>Shows the image with the search bar over it, but hides the title, badge &amp; subtitle — good when your image already has its own headline.</span>
+                        </label>
+                        )}
                         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                           {(slideForm._src || slideForm.image) && <div style={{ width: 80, height: 48, borderRadius: "var(--radius-sm)", backgroundImage: "url('" + (slideForm._src || slideForm.image) + "')", backgroundSize: "cover", backgroundPosition: (slideForm.focalX != null ? slideForm.focalX : 50) + "% " + (slideForm.focalY != null ? slideForm.focalY : 50) + "%", flexShrink: 0, border: "1px solid var(--border)" }} />}
                           <div>
@@ -2967,6 +2986,11 @@
             <div style={{ display: "grid", gap: 14 }}>
               <Input label="Heading" value={eh.heading || "Hire the right people, faster."} onChange={(e) => setBanner("employersHero", "heading", e.target.value)} />
               <Textarea label="Subtitle" rows={2} value={eh.sub || ""} onChange={(e) => setBanner("employersHero", "sub", e.target.value)} />
+              <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: "8px 10px", borderRadius: "var(--radius-md)", background: eh.hideText ? "var(--brand-subtle)" : "var(--surface-sunken)", border: "1px solid " + (eh.hideText ? "var(--brand)" : "var(--border-subtle)") }}>
+                <input type="checkbox" checked={!!eh.hideText} onChange={(e) => setBanner("employersHero", "hideText", e.target.checked)} style={{ width: 16, height: 16, accentColor: "var(--brand)", cursor: "pointer", flexShrink: 0 }} />
+                <span style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-strong)" }}>Show background image only</span>
+                <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>Hides the heading &amp; subtitle.</span>
+              </label>
             </div>
             <div style={{ marginTop: 16, paddingTop: 14, borderTop: "1px solid var(--border-subtle)", display: "flex", alignItems: "center", gap: 12 }}>
               <div style={{ width: 88, height: 52, flexShrink: 0, borderRadius: "var(--radius-md)", border: "1px solid var(--border)", background: ehImg ? "transparent" : "var(--surface-sunken)", backgroundImage: ehImg ? "url('" + ehImg + "')" : "none", backgroundSize: "cover", backgroundPosition: "center", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -3125,6 +3149,11 @@
             <div style={{ display: "grid", gap: 14 }}>
               <Input label="Heading" value={fh.heading || "Find your next opportunity"} onChange={(e) => setBanner("findJobsHero", "heading", e.target.value)} />
               <Textarea label="Subtitle" rows={2} value={fh.sub || ""} onChange={(e) => setBanner("findJobsHero", "sub", e.target.value)} />
+              <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: "8px 10px", borderRadius: "var(--radius-md)", background: fh.hideText ? "var(--brand-subtle)" : "var(--surface-sunken)", border: "1px solid " + (fh.hideText ? "var(--brand)" : "var(--border-subtle)") }}>
+                <input type="checkbox" checked={!!fh.hideText} onChange={(e) => setBanner("findJobsHero", "hideText", e.target.checked)} style={{ width: 16, height: 16, accentColor: "var(--brand)", cursor: "pointer", flexShrink: 0 }} />
+                <span style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-strong)" }}>Show background image only</span>
+                <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>Hides the heading &amp; subtitle.</span>
+              </label>
             </div>
             {/* Background image */}
             <div style={{ marginTop: 16, paddingTop: 14, borderTop: "1px solid var(--border-subtle)", display: "flex", alignItems: "center", gap: 12 }}>
@@ -3193,6 +3222,13 @@
             <div style={{ gridColumn: "1 / -1" }}>
               <Textarea label="Message" rows={2} value={s.sidebarBanner.message} onChange={(e) => setSB("message", e.target.value)} />
             </div>
+            <div style={{ gridColumn: "1 / -1" }}>
+              <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: "8px 10px", borderRadius: "var(--radius-md)", background: s.sidebarBanner.hideText ? "var(--brand-subtle)" : "var(--surface-sunken)", border: "1px solid " + (s.sidebarBanner.hideText ? "var(--brand)" : "var(--border-subtle)") }}>
+                <input type="checkbox" checked={!!s.sidebarBanner.hideText} onChange={(e) => setSB("hideText", e.target.checked)} style={{ width: 16, height: 16, accentColor: "var(--brand)", cursor: "pointer", flexShrink: 0 }} />
+                <span style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-strong)" }}>Show background image only</span>
+                <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>Hides the title, message &amp; button.</span>
+              </label>
+            </div>
             <Select label="Icon" value={s.sidebarBanner.icon} onChange={(e) => setSB("icon", e.target.value)} options={[{ value: "sparkles", label: "Sparkles" }, { value: "rocket", label: "Rocket" }, { value: "bell", label: "Bell" }, { value: "gift", label: "Gift" }, { value: "file-text", label: "Résumé" }]} />
             <div>
               <div style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-strong)", marginBottom: 8 }}>Theme</div>
@@ -3246,6 +3282,11 @@
             <Input label="Button label" value={s.categoryBanner.cta} onChange={(e) => setBanner("categoryBanner", "cta", e.target.value)} />
             <div style={{ gridColumn: "1 / -1" }}>
               <Textarea label="Message" rows={2} value={s.categoryBanner.message} onChange={(e) => setBanner("categoryBanner", "message", e.target.value)} />
+              <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", marginTop: 12, padding: "8px 10px", borderRadius: "var(--radius-md)", background: s.categoryBanner.hideText ? "var(--brand-subtle)" : "var(--surface-sunken)", border: "1px solid " + (s.categoryBanner.hideText ? "var(--brand)" : "var(--border-subtle)") }}>
+                <input type="checkbox" checked={!!s.categoryBanner.hideText} onChange={(e) => setBanner("categoryBanner", "hideText", e.target.checked)} style={{ width: 16, height: 16, accentColor: "var(--brand)", cursor: "pointer", flexShrink: 0 }} />
+                <span style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-strong)" }}>Show background image only</span>
+                <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>Hides the title, message &amp; button.</span>
+              </label>
             </div>
             <div style={{ gridColumn: "1 / -1" }}>
               <Input label="Button URL (leave blank to use default action)" value={s.categoryBanner.ctaUrl || ""} onChange={(e) => setBanner("categoryBanner", "ctaUrl", e.target.value)} placeholder="https://… or /krama/ui_kits/…" iconLeft={I("link", 16)} />
@@ -3310,6 +3351,11 @@
             <div style={{ display: "grid", gap: 14 }}>
               <Input label="Heading" value={ch.heading || "Verified companies hiring now"} onChange={(e) => setBanner("companiesHero", "heading", e.target.value)} />
               <Textarea label="Subtitle" rows={2} value={ch.sub || ""} onChange={(e) => setBanner("companiesHero", "sub", e.target.value)} />
+              <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: "8px 10px", borderRadius: "var(--radius-md)", background: ch.hideText ? "var(--brand-subtle)" : "var(--surface-sunken)", border: "1px solid " + (ch.hideText ? "var(--brand)" : "var(--border-subtle)") }}>
+                <input type="checkbox" checked={!!ch.hideText} onChange={(e) => setBanner("companiesHero", "hideText", e.target.checked)} style={{ width: 16, height: 16, accentColor: "var(--brand)", cursor: "pointer", flexShrink: 0 }} />
+                <span style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-strong)" }}>Show background image only</span>
+                <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>Hides the heading &amp; subtitle.</span>
+              </label>
             </div>
             {/* Background image */}
             <div style={{ marginTop: 16, paddingTop: 14, borderTop: "1px solid var(--border-subtle)", display: "flex", alignItems: "center", gap: 12 }}>
@@ -3373,6 +3419,11 @@
             <Input label="Button label" value={s.companiesBanner.cta} onChange={(e) => setBanner("companiesBanner", "cta", e.target.value)} />
             <div style={{ gridColumn: "1 / -1" }}>
               <Textarea label="Message" rows={2} value={s.companiesBanner.message} onChange={(e) => setBanner("companiesBanner", "message", e.target.value)} />
+              <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", marginTop: 12, padding: "8px 10px", borderRadius: "var(--radius-md)", background: s.companiesBanner.hideText ? "var(--brand-subtle)" : "var(--surface-sunken)", border: "1px solid " + (s.companiesBanner.hideText ? "var(--brand)" : "var(--border-subtle)") }}>
+                <input type="checkbox" checked={!!s.companiesBanner.hideText} onChange={(e) => setBanner("companiesBanner", "hideText", e.target.checked)} style={{ width: 16, height: 16, accentColor: "var(--brand)", cursor: "pointer", flexShrink: 0 }} />
+                <span style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-strong)" }}>Show background image only</span>
+                <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>Hides the title, message &amp; button.</span>
+              </label>
             </div>
             <div style={{ gridColumn: "1 / -1" }}>
               <Input label="Button URL (leave blank to use default action)" value={s.companiesBanner.ctaUrl || ""} onChange={(e) => setBanner("companiesBanner", "ctaUrl", e.target.value)} placeholder="https://… or /krama/ui_kits/…" iconLeft={I("link", 16)} />
@@ -3430,6 +3481,11 @@
             <Input label="Button label" value={s.companiesBanner2.cta} onChange={(e) => setBanner("companiesBanner2", "cta", e.target.value)} />
             <div style={{ gridColumn: "1 / -1" }}>
               <Textarea label="Message" rows={2} value={s.companiesBanner2.message} onChange={(e) => setBanner("companiesBanner2", "message", e.target.value)} />
+              <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", marginTop: 12, padding: "8px 10px", borderRadius: "var(--radius-md)", background: s.companiesBanner2.hideText ? "var(--brand-subtle)" : "var(--surface-sunken)", border: "1px solid " + (s.companiesBanner2.hideText ? "var(--brand)" : "var(--border-subtle)") }}>
+                <input type="checkbox" checked={!!s.companiesBanner2.hideText} onChange={(e) => setBanner("companiesBanner2", "hideText", e.target.checked)} style={{ width: 16, height: 16, accentColor: "var(--brand)", cursor: "pointer", flexShrink: 0 }} />
+                <span style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-strong)" }}>Show background image only</span>
+                <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>Hides the title, message &amp; button.</span>
+              </label>
             </div>
             <div style={{ gridColumn: "1 / -1" }}>
               <Input label="Button URL (leave blank to use default action)" value={s.companiesBanner2.ctaUrl || ""} onChange={(e) => setBanner("companiesBanner2", "ctaUrl", e.target.value)} placeholder="https://… or /krama/ui_kits/…" iconLeft={I("link", 16)} />
@@ -3489,6 +3545,11 @@
             <div style={{ display: "grid", gap: 14 }}>
               <Input label="Heading" value={jh.heading || "Find the role that fits you"} onChange={(e) => setBanner("jobDetailHero", "heading", e.target.value)} />
               <Textarea label="Subtitle" rows={2} value={jh.sub || ""} onChange={(e) => setBanner("jobDetailHero", "sub", e.target.value)} />
+              <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: "8px 10px", borderRadius: "var(--radius-md)", background: jh.hideText ? "var(--brand-subtle)" : "var(--surface-sunken)", border: "1px solid " + (jh.hideText ? "var(--brand)" : "var(--border-subtle)") }}>
+                <input type="checkbox" checked={!!jh.hideText} onChange={(e) => setBanner("jobDetailHero", "hideText", e.target.checked)} style={{ width: 16, height: 16, accentColor: "var(--brand)", cursor: "pointer", flexShrink: 0 }} />
+                <span style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-strong)" }}>Show background image only</span>
+                <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>Hides the heading &amp; subtitle.</span>
+              </label>
             </div>
             {/* Background image */}
             <div style={{ marginTop: 16, paddingTop: 14, borderTop: "1px solid var(--border-subtle)", display: "flex", alignItems: "center", gap: 12 }}>

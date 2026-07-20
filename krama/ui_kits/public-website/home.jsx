@@ -47,6 +47,9 @@
                   </React.Fragment>
                 : <div style={{ position: "absolute", inset: 0, background: "url('../../assets/krama-pattern.svg')", backgroundSize: 60, opacity: 0.10 }} />}
               <div style={{ position: "relative", maxWidth: 1200, margin: "0 auto", minHeight: 52, display: "flex", alignItems: "center", gap: 14, padding: "10px 24px" }}>
+                {b.hideText
+                  ? <div style={{ flex: 1 }} />
+                  : <React.Fragment>
                 <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 12, minWidth: 0, justifyContent: center ? "center" : "flex-start" }}>
                   <span style={{ display: "inline-flex", flexShrink: 0 }}>{I(b.icon || "megaphone", 18)}</span>
                   <div style={{ fontSize: "var(--text-sm)", fontWeight: 500, lineHeight: 1.3, textAlign: center ? "center" : "left" }}>
@@ -57,6 +60,7 @@
                 {b.cta ? (
                   <span onClick={() => onNav("jobs")} style={{ flexShrink: 0, background: img ? "#fff" : t.ctaBg, color: img ? "var(--stone-900)" : t.ctaFg, fontSize: "var(--text-sm)", fontWeight: 700, padding: "7px 14px", borderRadius: "var(--radius-pill)", cursor: "pointer", whiteSpace: "nowrap" }}>{TR(b.cta)}</span>
                 ) : null}
+                    </React.Fragment>}
                 <button onClick={() => setDismissed((s) => ({ ...s, [b.id]: true }))} aria-label="Dismiss" style={{ flexShrink: 0, border: "none", background: "transparent", color: t.fg, cursor: "pointer", opacity: 0.6, display: "inline-flex", padding: 4 }}>{I("x", 16)}</button>
               </div>
             </div>
@@ -167,13 +171,14 @@
     const t = resolveFooterTheme(b);
     const handleCta = () => { if (b.ctaUrl) window.open(b.ctaUrl, "_blank"); else if (onNav) onNav("register"); };
     return (
-      <section className={"krm-footer-banner" + (b.mobileVisible === true ? " krm-banner-show-mobile" : "")} style={{ position: "relative", background: t.bg, overflow: "hidden", margin: "0 32px 56px", maxWidth: 1136, marginLeft: "auto", marginRight: "auto", borderRadius: "var(--radius-2xl)", padding: "48px", border: (b.theme === "transparent" || b.theme === "blank") ? "1px solid var(--border)" : "none" }}>
+      <section className={"krm-footer-banner" + (b.mobileVisible === true ? " krm-banner-show-mobile" : "")} style={{ position: "relative", background: t.bg, overflow: "hidden", margin: "0 32px 56px", maxWidth: 1136, marginLeft: "auto", marginRight: "auto", borderRadius: "var(--radius-2xl)", padding: b.hideText ? 0 : "48px", minHeight: b.hideText ? 160 : undefined, border: (b.theme === "transparent" || b.theme === "blank") ? "1px solid var(--border)" : "none" }}>
         {b.image
           ? <React.Fragment>
               <div style={{ position: "absolute", inset: 0, backgroundImage: "url('" + b.image + "')", backgroundSize: b.fit === "contain" ? "contain" : "cover", backgroundRepeat: "no-repeat", backgroundPosition: "center" }} />
               <div style={{ position: "absolute", inset: 0, background: t.bg, opacity: (b.imgOverlay != null ? b.imgOverlay : 20) / 100 }} />
             </React.Fragment>
           : <div style={{ position: "absolute", inset: 0, background: "url('../../assets/krama-pattern.svg')", backgroundSize: 64, opacity: 0.08 }} />}
+        {!b.hideText && (
         <div className="krm-footer-banner-inner" style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 32, flexWrap: "wrap" }}>
           <div>
             <h2 style={{ color: t.fg, fontSize: "var(--text-3xl)", fontWeight: 700 }}>{TR(b.title)}</h2>
@@ -181,6 +186,7 @@
           </div>
           {b.cta && <button className="krm-footer-cta-btn" onClick={handleCta} style={{ flexShrink: 0, height: 52, padding: "0 32px", borderRadius: "var(--radius-pill)", border: "none", background: t.ctaBg, color: t.ctaFg, fontFamily: "var(--font-sans)", fontSize: "var(--text-base)", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>{TR(b.cta)}</button>}
         </div>
+        )}
       </section>
     );
   }
@@ -225,7 +231,7 @@
 
     return (
       <section
-        className={"krm-hero" + (imageOnly ? " krm-hero--image-only" : "")} style={{ position: "relative", overflow: "hidden", background: t.bg, minHeight: imageOnly ? 0 : 480, display: "flex", flexDirection: "column", justifyContent: "center", padding: imageOnly ? 0 : "56px 32px 72px", transition: "background 0.5s ease" }}
+        className={"krm-hero" + (imageOnly ? " krm-hero--image-only" : "")} style={{ position: "relative", overflow: "hidden", background: t.bg, minHeight: isMobile ? 340 : 480, display: "flex", flexDirection: "column", justifyContent: "center", padding: imageOnly ? 0 : "56px 32px 72px", transition: "background 0.5s ease" }}
         onMouseEnter={() => setPaused(true)}
         onMouseLeave={() => setPaused(false)}
       >
@@ -239,7 +245,7 @@
                     src={heroImg}
                     alt={TR(slide.title) || "Banner"}
                     onClick={() => { if (slide.ctaUrl) window.open(slide.ctaUrl, "_blank"); }}
-                    style={{ position: "relative", zIndex: 1, display: "block", width: "100%", height: "auto", maxHeight: 480, objectFit: "contain", cursor: slide.ctaUrl ? "pointer" : "default" }}
+                    style={{ position: "relative", zIndex: 1, display: "block", width: "100%", height: isMobile ? 340 : 480, objectFit: "cover", cursor: slide.ctaUrl ? "pointer" : "default" }}
                   />
                 : <React.Fragment>
                     {/* full image shown uncropped (contain) behind the title/search overlay;
@@ -251,6 +257,7 @@
           : <div style={{ position: "absolute", inset: 0, background: "url('../../assets/krama-pattern.svg')", backgroundSize: 80, opacity: 0.08 }} />}
 
         <div style={{ position: "relative", zIndex: 3, maxWidth: 1200, margin: "0 auto", textAlign: "center", display: imageOnly ? "none" : undefined }}>
+          {!slide.hideTitle && <React.Fragment>
           {slide.badge && (
             <span style={{ display: "inline-block", background: t.fg === "#fff" ? "rgba(255,255,255,0.14)" : "rgba(0,0,0,0.08)", color: t.fg, fontSize: "var(--text-sm)", fontWeight: 600, padding: "6px 14px", borderRadius: "var(--radius-pill)", marginBottom: 22 }}>
               {TR(slide.badge)}
@@ -272,6 +279,7 @@
               >{TR(slide.ctaLabel)}</button>
             </div>
           )}
+          </React.Fragment>}
           <div className="krm-search-bar" style={{ display: "flex", gap: 8, background: "#fff", padding: 8, borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-lg)", marginTop: 32, maxWidth: 920, marginLeft: "auto", marginRight: "auto" }}>
             <div className="krm-search-input" style={{ flex: 1, display: "flex", alignItems: "center", gap: 8, padding: "0 12px" }}>
               <span style={{ color: "var(--text-faint)" }}>{I("search", 18)}</span>
