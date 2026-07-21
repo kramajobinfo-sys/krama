@@ -129,6 +129,7 @@
     { id: "candidates", label: "Candidates", icon: "users" },
     { id: "resumes",    label: "Resumes",    icon: "file-text" },
     { id: "reviews",   label: "Reviews",    icon: "star" },
+    { id: "forum",    label: "Forum",      icon: "messages-square" },
     { id: "homepage", label: "Homepage", icon: "layout-template" },
     { id: "chat", label: "Chat agent", icon: "bot" },
     { id: "social", label: "Social login", icon: "share-2" },
@@ -1075,6 +1076,272 @@
             </div>
           </div>
         )}
+      </div>
+    );
+  }
+
+  // ── Community forum moderation ───────────────────────────────────────────
+  function ForumModeration() {
+    const [tab, setTab] = React.useState("reports");
+    return (
+      <div className="krm-page-pad" style={{ padding: 28 }}>
+        <ScreenHead title="Community forum" sub="Moderate discussions, handle reports, and manage categories." />
+        <Tabs value={tab} onChange={setTab} tabs={[{ value: "reports", label: "Reports" }, { value: "threads", label: "Threads" }, { value: "categories", label: "Categories" }]} style={{ marginBottom: 20 }} />
+        {tab === "reports" && <ForumReportsTab />}
+        {tab === "threads" && <ForumThreadsTab />}
+        {tab === "categories" && <ForumCategoriesTab />}
+      </div>
+    );
+  }
+
+  function ForumReportsTab() {
+    const [rows, setRows] = React.useState([]);
+    const [page, setPage] = React.useState(1);
+    const [lastPage, setLastPage] = React.useState(1);
+    const [total, setTotal] = React.useState(0);
+    const [status, setStatus] = React.useState("open");
+    const [loading, setLoading] = React.useState(true);
+    const [busy, setBusy] = React.useState(0);
+
+    const load = React.useCallback(function () {
+      setLoading(true);
+      adm.forumReports({ status: status, page: page }).then(function (d) {
+        setRows(d.data || []); setLastPage(d.last_page || 1); setTotal(d.total || 0); setLoading(false);
+      }).catch(function () { setLoading(false); });
+    }, [status, page]);
+    React.useEffect(function () { load(); }, [load]);
+
+    const act = function (r, newStatus, action) {
+      setBusy(r.id);
+      adm.forumResolveReport(r.id, newStatus, action).then(function () { setBusy(0); load(); }).catch(function () { setBusy(0); });
+    };
+
+    const reasonTone = (x) => ({ spam: "danger", abuse: "danger", off_topic: "brand", other: "neutral" })[x] || "neutral";
+
+    return (
+      <div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+          {["open", "resolved", "dismissed"].map(function (s) {
+            const on = status === s;
+            return <button key={s} onClick={() => { setStatus(s); setPage(1); }} style={{ padding: "7px 14px", borderRadius: "var(--radius-md)", border: "1px solid " + (on ? "var(--brand)" : "var(--border-strong)"), background: on ? "var(--brand-subtle)" : "var(--surface-card)", color: on ? "var(--text-brand)" : "var(--text-muted)", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)", fontWeight: 700, textTransform: "capitalize" }}>{s}</button>;
+          })}
+        </div>
+
+        <div className="krm-table-wrap"><Card padding={0}>
+          <div style={{ display: "grid", gridTemplateColumns: "90px 2.4fr 1fr 130px 1.8fr", padding: "12px 20px", fontSize: "var(--text-xs)", fontWeight: 700, letterSpacing: ".04em", textTransform: "uppercase", color: "var(--text-faint)", borderBottom: "1px solid var(--border)" }}>
+            <span>Type</span><span>Content</span><span>Reporter</span><span>Reason</span><span>Actions</span>
+          </div>
+          {loading && <div style={{ padding: 28, textAlign: "center", color: "var(--text-muted)", fontSize: "var(--text-sm)" }}>Loading…</div>}
+          {!loading && rows.length === 0 && <div style={{ padding: 28, textAlign: "center", color: "var(--text-muted)", fontSize: "var(--text-sm)" }}>No {status} reports.</div>}
+          {!loading && rows.map(function (r, i) {
+            return (
+              <div key={r.id} style={{ display: "grid", gridTemplateColumns: "90px 2.4fr 1fr 130px 1.8fr", alignItems: "center", gap: 8, padding: "13px 20px", borderBottom: i < rows.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>
+                <span><Badge tone="neutral">{r.reportable_type}</Badge></span>
+                <div style={{ minWidth: 0 }}>
+                  {r.content_title ? <div style={{ fontWeight: 700, fontSize: "var(--text-sm)", color: "var(--text-strong)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.content_title}</div> : null}
+                  <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.content_snippet}{r.content_hidden ? " " : ""}{r.content_hidden ? <Badge tone="neutral">hidden</Badge> : null}</div>
+                </div>
+                <span style={{ fontSize: "var(--text-sm)", color: "var(--text-body)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.reporter_name}</span>
+                <span><Badge tone={reasonTone(r.reason)}>{String(r.reason).replace("_", " ")}</Badge></span>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  {r.status === "open" ? (
+                    <React.Fragment>
+                      {r.content_hidden
+                        ? <Button variant="secondary" size="sm" disabled={busy === r.id} onClick={() => act(r, "resolved", "unhide")}>Unhide</Button>
+                        : <Button variant="secondary" size="sm" disabled={busy === r.id} onClick={() => act(r, "resolved", "hide")}>Hide</Button>}
+                      <Button variant="danger" size="sm" disabled={busy === r.id} onClick={() => { if (confirm("Permanently delete this " + r.reportable_type + "?")) act(r, "resolved", "delete"); }}>Delete</Button>
+                      <Button variant="ghost" size="sm" disabled={busy === r.id} onClick={() => act(r, "dismissed", "none")}>Dismiss</Button>
+                    </React.Fragment>
+                  ) : <Badge tone={r.status === "resolved" ? "success" : "neutral"}>{r.status}</Badge>}
+                </div>
+              </div>
+            );
+          })}
+        </Card></div>
+
+        {!loading && total > 0 && (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8, marginTop: 16 }}>
+            <Button variant="secondary" size="sm" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>Previous</Button>
+            <span style={{ fontSize: "var(--text-sm)", color: "var(--text-body)", fontWeight: 600 }}>Page {page} of {lastPage}</span>
+            <Button variant="secondary" size="sm" disabled={page >= lastPage} onClick={() => setPage((p) => Math.min(lastPage, p + 1))}>Next</Button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  function ForumThreadsTab() {
+    const [rows, setRows] = React.useState([]);
+    const [page, setPage] = React.useState(1);
+    const [lastPage, setLastPage] = React.useState(1);
+    const [total, setTotal] = React.useState(0);
+    const [search, setSearch] = React.useState("");
+    const [query, setQuery] = React.useState("");
+    const [loading, setLoading] = React.useState(true);
+
+    const load = React.useCallback(function () {
+      setLoading(true);
+      adm.forumAdminThreads({ page: page, q: query }).then(function (d) {
+        setRows(d.data || []); setLastPage(d.last_page || 1); setTotal(d.total || 0); setLoading(false);
+      }).catch(function () { setLoading(false); });
+    }, [page, query]);
+    React.useEffect(function () { load(); }, [load]);
+
+    const setFlag = function (t, key) {
+      const changes = {}; changes[key] = !t[key];
+      adm.forumModerateThread(t.id, changes).then(function () {
+        setRows((rs) => rs.map((x) => x.id === t.id ? Object.assign({}, x, changes) : x));
+      }).catch(function () {});
+    };
+    const del = function (t) {
+      if (!confirm('Delete "' + t.title + '" and all its replies?')) return;
+      adm.forumDeleteThread(t.id).then(function () { load(); }).catch(function () {});
+    };
+
+    const FlagBtn = ({ t, k, label }) => (
+      <button onClick={() => setFlag(t, k)} title={label} style={{ padding: "5px 9px", borderRadius: "var(--radius-sm)", border: "1px solid " + (t[k] ? "var(--brand)" : "var(--border-strong)"), background: t[k] ? "var(--brand-subtle)" : "var(--surface-card)", color: t[k] ? "var(--text-brand)" : "var(--text-muted)", cursor: "pointer", fontSize: "var(--text-xs)", fontWeight: 700, fontFamily: "var(--font-sans)" }}>{label}</button>
+    );
+
+    return (
+      <div>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, height: 40, padding: "0 12px", border: "1px solid var(--border-strong)", borderRadius: "var(--radius-md)", background: "var(--surface-card)", width: 320 }}>
+            <span style={{ color: "var(--text-faint)" }}>{I("search", 16)}</span>
+            <input placeholder="Search threads" value={search} onChange={(e) => setSearch(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { setPage(1); setQuery(search.trim()); } }} style={{ border: "none", outline: "none", flex: 1, fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)", background: "transparent" }} />
+            {query && <button onClick={() => { setSearch(""); setQuery(""); setPage(1); }} style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--text-faint)" }}>{I("x", 14)}</button>}
+          </div>
+          <Button variant="secondary" size="sm" onClick={() => { setPage(1); setQuery(search.trim()); }}>Search</Button>
+        </div>
+
+        <div className="krm-table-wrap"><Card padding={0}>
+          <div style={{ display: "grid", gridTemplateColumns: "2.4fr 1.2fr 1fr 1.6fr 220px", padding: "12px 20px", fontSize: "var(--text-xs)", fontWeight: 700, letterSpacing: ".04em", textTransform: "uppercase", color: "var(--text-faint)", borderBottom: "1px solid var(--border)" }}>
+            <span>Title</span><span>Author</span><span>Category</span><span>Stats</span><span>Moderate</span>
+          </div>
+          {loading && <div style={{ padding: 28, textAlign: "center", color: "var(--text-muted)", fontSize: "var(--text-sm)" }}>Loading…</div>}
+          {!loading && rows.length === 0 && <div style={{ padding: 28, textAlign: "center", color: "var(--text-muted)", fontSize: "var(--text-sm)" }}>No threads found.</div>}
+          {!loading && rows.map(function (t, i) {
+            return (
+              <div key={t.id} style={{ display: "grid", gridTemplateColumns: "2.4fr 1.2fr 1fr 1.6fr 220px", alignItems: "center", gap: 8, padding: "13px 20px", borderBottom: i < rows.length - 1 ? "1px solid var(--border-subtle)" : "none", opacity: t.is_hidden ? 0.6 : 1 }}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontWeight: 700, fontSize: "var(--text-sm)", color: "var(--text-strong)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.title}</div>
+                  <div style={{ display: "flex", gap: 5, marginTop: 3 }}>
+                    {t.is_pinned ? <Badge tone="accent">pinned</Badge> : null}
+                    {t.is_locked ? <Badge tone="neutral">locked</Badge> : null}
+                    {t.is_hidden ? <Badge tone="danger">hidden</Badge> : null}
+                  </div>
+                </div>
+                <span style={{ fontSize: "var(--text-sm)", color: "var(--text-body)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.author ? t.author.name : "—"}</span>
+                <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>{t.category ? t.category.name : "—"}</span>
+                <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>{t.reply_count || 0} replies · {t.vote_score || 0} votes · {t.views || 0} views</span>
+                <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+                  <FlagBtn t={t} k="is_pinned" label="Pin" />
+                  <FlagBtn t={t} k="is_locked" label="Lock" />
+                  <FlagBtn t={t} k="is_hidden" label="Hide" />
+                  <button onClick={() => del(t)} title="Delete" style={{ padding: "5px 9px", borderRadius: "var(--radius-sm)", border: "1px solid var(--danger)", background: "var(--surface-card)", color: "var(--danger)", cursor: "pointer", fontSize: "var(--text-xs)", fontWeight: 700, fontFamily: "var(--font-sans)" }}>{I("trash-2", 13)}</button>
+                </div>
+              </div>
+            );
+          })}
+        </Card></div>
+
+        {!loading && total > 0 && (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8, marginTop: 16 }}>
+            <Button variant="secondary" size="sm" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>Previous</Button>
+            <span style={{ fontSize: "var(--text-sm)", color: "var(--text-body)", fontWeight: 600 }}>Page {page} of {lastPage}</span>
+            <Button variant="secondary" size="sm" disabled={page >= lastPage} onClick={() => setPage((p) => Math.min(lastPage, p + 1))}>Next</Button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  function ForumCategoriesTab() {
+    const [rows, setRows] = React.useState([]);
+    const [loading, setLoading] = React.useState(true);
+    const [editing, setEditing] = React.useState(null); // {id?, name, description, icon, color, is_active}
+    const [msg, setMsg] = React.useState("");
+
+    const BLANK = { name: "", description: "", icon: "messages-square", color: "teal", is_active: true };
+
+    const load = React.useCallback(function () {
+      setLoading(true);
+      adm.forumCategories().then(function (d) { setRows(d || []); setLoading(false); }).catch(function () { setLoading(false); });
+    }, []);
+    React.useEffect(function () { load(); }, [load]);
+
+    const save = function () {
+      if (!editing.name.trim()) { setMsg("Name is required."); return; }
+      const data = { name: editing.name, description: editing.description, icon: editing.icon, color: editing.color, is_active: editing.is_active };
+      const p = editing.id ? adm.forumUpdateCategory(editing.id, data) : adm.forumCreateCategory(data);
+      p.then(function () { setEditing(null); setMsg(""); load(); }).catch(function (e) { setMsg((e && e.message) || "Save failed."); });
+    };
+    const del = function (c) {
+      if (!confirm('Delete category "' + c.name + '"?')) return;
+      adm.forumDeleteCategory(c.id).then(function () { load(); }).catch(function (e) {
+        alert((e && e.message) || "This category still has threads.");
+      });
+    };
+    const toggleActive = function (c) {
+      adm.forumUpdateCategory(c.id, { is_active: !c.is_active }).then(function () {
+        setRows((rs) => rs.map((x) => x.id === c.id ? Object.assign({}, x, { is_active: !c.is_active }) : x));
+      }).catch(function () {});
+    };
+
+    return (
+      <div>
+        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 16 }}>
+          <Button variant="primary" size="sm" iconLeft={I("plus", 14)} onClick={() => { setEditing(Object.assign({}, BLANK)); setMsg(""); }}>New category</Button>
+        </div>
+
+        {editing && (
+          <Card padding={20} style={{ marginBottom: 18 }}>
+            <div style={{ fontWeight: 700, fontSize: "var(--text-base)", color: "var(--text-strong)", marginBottom: 14 }}>{editing.id ? "Edit category" : "New category"}</div>
+            {msg && <div style={{ padding: "8px 12px", background: "var(--danger-subtle)", color: "var(--danger)", borderRadius: "var(--radius-md)", fontSize: "var(--text-sm)", marginBottom: 12 }}>{msg}</div>}
+            <div style={{ display: "grid", gap: 12 }}>
+              <Input label="Name" value={editing.name} onChange={(e) => setEditing(Object.assign({}, editing, { name: e.target.value }))} />
+              <Input label="Description" value={editing.description || ""} onChange={(e) => setEditing(Object.assign({}, editing, { description: e.target.value }))} />
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <Input label="Icon (lucide name)" value={editing.icon || ""} onChange={(e) => setEditing(Object.assign({}, editing, { icon: e.target.value }))} />
+                <div>
+                  <label style={{ display: "block", fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-strong)", marginBottom: 6 }}>Colour</label>
+                  <select value={editing.color || "teal"} onChange={(e) => setEditing(Object.assign({}, editing, { color: e.target.value }))} style={{ width: "100%", height: 42, padding: "0 12px", borderRadius: "var(--radius-md)", border: "1px solid var(--border-strong)", background: "var(--surface-card)", color: "var(--text-strong)", fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)" }}>
+                    <option value="teal">Teal</option><option value="saffron">Saffron</option><option value="dark">Dark</option>
+                  </select>
+                </div>
+              </div>
+              <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                <input type="checkbox" checked={!!editing.is_active} onChange={(e) => setEditing(Object.assign({}, editing, { is_active: e.target.checked }))} style={{ width: 16, height: 16, accentColor: "var(--brand)" }} />
+                <span style={{ fontSize: "var(--text-sm)", color: "var(--text-strong)" }}>Active (visible on the public site)</span>
+              </label>
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+                <Button variant="secondary" onClick={() => setEditing(null)}>Cancel</Button>
+                <Button variant="primary" onClick={save}>{editing.id ? "Save" : "Create"}</Button>
+              </div>
+            </div>
+          </Card>
+        )}
+
+        <div className="krm-table-wrap"><Card padding={0}>
+          <div style={{ display: "grid", gridTemplateColumns: "1.4fr 2.2fr 100px 120px 160px", padding: "12px 20px", fontSize: "var(--text-xs)", fontWeight: 700, letterSpacing: ".04em", textTransform: "uppercase", color: "var(--text-faint)", borderBottom: "1px solid var(--border)" }}>
+            <span>Name</span><span>Description</span><span>Threads</span><span>Status</span><span>Actions</span>
+          </div>
+          {loading && <div style={{ padding: 28, textAlign: "center", color: "var(--text-muted)", fontSize: "var(--text-sm)" }}>Loading…</div>}
+          {!loading && rows.map(function (c, i) {
+            return (
+              <div key={c.id} style={{ display: "grid", gridTemplateColumns: "1.4fr 2.2fr 100px 120px 160px", alignItems: "center", gap: 8, padding: "13px 20px", borderBottom: i < rows.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>
+                <span style={{ fontWeight: 700, fontSize: "var(--text-sm)", color: "var(--text-strong)" }}>{c.name}</span>
+                <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.description}</span>
+                <span style={{ fontSize: "var(--text-sm)", color: "var(--text-body)" }}>{c.threads_count || 0}</span>
+                <span><Badge tone={c.is_active ? "success" : "neutral"}>{c.is_active ? "Active" : "Hidden"}</Badge></span>
+                <div style={{ display: "flex", gap: 6 }}>
+                  <Button variant="secondary" size="sm" onClick={() => { setEditing({ id: c.id, name: c.name, description: c.description || "", icon: c.icon || "messages-square", color: c.color || "teal", is_active: !!c.is_active }); setMsg(""); }}>Edit</Button>
+                  <Button variant="ghost" size="sm" onClick={() => toggleActive(c)}>{c.is_active ? "Hide" : "Show"}</Button>
+                  <button onClick={() => del(c)} title="Delete" style={{ padding: "6px 9px", borderRadius: "var(--radius-sm)", border: "1px solid var(--danger)", background: "var(--surface-card)", color: "var(--danger)", cursor: "pointer", fontFamily: "var(--font-sans)" }}>{I("trash-2", 13)}</button>
+                </div>
+              </div>
+            );
+          })}
+        </Card></div>
       </div>
     );
   }
@@ -5113,7 +5380,7 @@
 
     if (!authUser) return <AdminLogin onLogin={setAuthUser} />;
 
-    const titles = { dashboard: "Overview", jobs: "Job management", companies: "Company management", candidates: "Candidates", resumes: "Resume Builder", reviews: "Company reviews", homepage: "Homepage content", chat: "Chat agent", social: "Social login", email: "Email settings", telegram: "Telegram notifications", sms: "SMS gateway", payments: "Payment settings", reports: "Reports", banners: "Promotional banner", brand: "Brand settings", settings: "Settings · Users & roles", profile: "My Profile" };
+    const titles = { dashboard: "Overview", jobs: "Job management", companies: "Company management", candidates: "Candidates", resumes: "Resume Builder", reviews: "Company reviews", forum: "Community forum", homepage: "Homepage content", chat: "Chat agent", social: "Social login", email: "Email settings", telegram: "Telegram notifications", sms: "SMS gateway", payments: "Payment settings", reports: "Reports", banners: "Promotional banner", brand: "Brand settings", settings: "Settings · Users & roles", profile: "My Profile" };
     return (
       <div style={{ display: "flex", minHeight: "100vh", background: "var(--surface-page)" }}>
         {sidebarOpen && <div className="krm-sidebar-backdrop open" onClick={() => setSidebarOpen(false)} />}
@@ -5126,6 +5393,7 @@
           {page === "candidates" && <Candidates />}
           {page === "resumes"    && <ResumesPage />}
           {page === "reviews"   && <Reviews />}
+          {page === "forum"     && <ForumModeration />}
 
           {page === "homepage" && <Homepage />}
           {page === "chat" && <ChatAgentSettings />}

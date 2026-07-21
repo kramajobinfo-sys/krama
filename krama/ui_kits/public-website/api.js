@@ -37,6 +37,20 @@
   function authedGet(path)   { return apiFetch("GET",    path, null, getToken()); }
   function post(path, body)  { return apiFetch("POST",   path, body); }
   function authedPost(path, body) { return apiFetch("POST", path, body, getToken()); }
+  function authedPut(path, body)  { return apiFetch("PUT", path, body, getToken()); }
+  function authedDelete(path)     { return apiFetch("DELETE", path, null, getToken()); }
+  // GET that attaches the token when present (guests still allowed) — lets public
+  // reads reflect the current user's vote/subscribe state.
+  function maybeAuthedGet(path)   { return apiFetch("GET", path, null, getToken()); }
+
+  function qs(params) {
+    var parts = [];
+    Object.keys(params || {}).forEach(function (k) {
+      var v = params[k];
+      if (v !== undefined && v !== null && v !== "") parts.push(encodeURIComponent(k) + "=" + encodeURIComponent(v));
+    });
+    return parts.length ? "?" + parts.join("&") : "";
+  }
 
   // ── Data normalisation helpers ───────────────────────────────────────────
   function parseSalaryNum(s) {
@@ -318,6 +332,23 @@
     }).then(function(r) { return r.json().then(function(d) { if (!r.ok) throw new Error(d.message || (d.errors ? Object.values(d.errors).flat().join("; ") : "Failed")); return d; }); });
   }
 
+  // ── Community forum ────────────────────────────────────────────────────────
+  function forumCategories()            { return maybeAuthedGet("/forum/categories"); }
+  function forumThreads(params)         { return maybeAuthedGet("/forum/threads" + qs(params)); }
+  function forumThread(id)              { return maybeAuthedGet("/forum/threads/" + id); }
+  function forumReplies(id, page)       { return maybeAuthedGet("/forum/threads/" + id + "/replies" + qs({ page: page || 1 })); }
+  function forumCreateThread(payload)   { return authedPost("/forum/threads", payload); }
+  function forumUpdateThread(id, p)     { return authedPut("/forum/threads/" + id, p); }
+  function forumDeleteThread(id)        { return authedDelete("/forum/threads/" + id); }
+  function forumVoteThread(id)          { return authedPost("/forum/threads/" + id + "/vote", {}); }
+  function forumSubscribe(id)           { return authedPost("/forum/threads/" + id + "/subscribe", {}); }
+  function forumUnsubscribe(id)         { return authedDelete("/forum/threads/" + id + "/subscribe"); }
+  function forumCreateReply(tid, p)     { return authedPost("/forum/threads/" + tid + "/replies", p); }
+  function forumUpdateReply(id, p)      { return authedPut("/forum/replies/" + id, p); }
+  function forumDeleteReply(id)         { return authedDelete("/forum/replies/" + id); }
+  function forumVoteReply(id)           { return authedPost("/forum/replies/" + id + "/vote", {}); }
+  function forumReport(payload)         { return authedPost("/forum/report", payload); }
+
   window.KRAMA_API  = {
     init: init, login: login, register: register, requestOtp: requestOtp, logout: logout,
     socialLogin: socialLogin,
@@ -330,5 +361,10 @@
     fetchReviews: fetchReviews, submitReview: submitReview,
     getToken: getToken, authedGet: authedGet, authedPost: authedPost,
     normaliseJob: normaliseJob,
+    forumCategories: forumCategories, forumThreads: forumThreads, forumThread: forumThread, forumReplies: forumReplies,
+    forumCreateThread: forumCreateThread, forumUpdateThread: forumUpdateThread, forumDeleteThread: forumDeleteThread,
+    forumVoteThread: forumVoteThread, forumSubscribe: forumSubscribe, forumUnsubscribe: forumUnsubscribe,
+    forumCreateReply: forumCreateReply, forumUpdateReply: forumUpdateReply, forumDeleteReply: forumDeleteReply,
+    forumVoteReply: forumVoteReply, forumReport: forumReport,
   };
 })();

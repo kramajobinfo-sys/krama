@@ -102,6 +102,7 @@
       { id: "home", label: "Home" },
       { id: "jobs", label: "Find jobs" },
       { id: "companies", label: "Companies" },
+      { id: "community", label: "Community" },
       { id: "employers", label: "Members" },
     ];
     // Mobile bottom nav (app-style tab bar). Home removed (logo links home);
@@ -174,6 +175,14 @@
             }}>
               {/* Grabber */}
               <div style={{ width: 40, height: 4, borderRadius: 2, background: "var(--border)", margin: "0 auto 12px" }} />
+              {/* Quick links (things not on the bottom tab bar) */}
+              <div style={{ padding: "0 20px 10px", marginBottom: 8, borderBottom: "1px solid var(--border-subtle)" }}>
+                <button onClick={() => navTo("community")} style={{
+                  display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "10px 4px",
+                  background: "transparent", border: "none", cursor: "pointer",
+                  fontFamily: "var(--font-sans)", fontWeight: 600, color: "var(--text-strong)", fontSize: "var(--text-base)",
+                }}><i data-lucide="messages-square" style={{ width: 20, height: 20 }}></i> {t("Community")}</button>
+              </div>
               {user ? (
                 <div style={{ padding: "0 20px" }}>
                   <div style={{ fontWeight: 700, fontSize: "var(--text-sm)", color: "var(--text-strong)", marginBottom: 4 }}>{user.name}</div>
@@ -262,7 +271,7 @@
               {t("Connecting talent and verified employers across Cambodia and Southeast Asia.")}
             </p>
           </div>
-          {col("For candidates", [["Find jobs", "jobs"], ["Build résumé", "register"], ["Saved jobs", "login"], ["Career advice", "about"]])}
+          {col("For candidates", [["Find jobs", "jobs"], ["Build résumé", "register"], ["Saved jobs", "login"], ["Community", "community"]])}
           {col("Members", [["Members", "employers"], ["Post a job", "register"], ["Pricing", "pricing"], ["Companies", "companies"]])}
           {col("Company", [["About us", "about"], ["Contact", "contact"], ["Terms", "terms"], ["Privacy", "privacy"]])}
         </div>

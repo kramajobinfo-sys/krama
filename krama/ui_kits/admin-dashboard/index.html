@@ -10,7 +10,7 @@
 <script src="../../brand.js"></script>
 <script>window.KramaAdminApp = null; window.KRAMA_ADMIN_API = null;</script>
 <script src="https://unpkg.com/lucide@0.441.0"></script>
-<script src="api.js?v=24"></script>
+<script src="api.js?v=25"></script>
 <style>html,body{margin:0;background:var(--surface-page)}</style>
 </head>
 <body>
@@ -18,7 +18,7 @@
 <script>
 // Fetch, compile, and execute app.jsx manually — bypasses Babel's DOMContentLoaded
 // auto-processing which can silently fail in certain environments.
-fetch('app.jsx?v=151').then(function(r){ return r.text(); }).then(function(src){
+fetch('app.jsx?v=152').then(function(r){ return r.text(); }).then(function(src){
   var compiled = Babel.transform(src, { presets: ['react'] }).code;
   var s = document.createElement('script');
   s.text = compiled;

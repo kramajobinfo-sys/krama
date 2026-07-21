@@ -7,6 +7,7 @@ function App() {
   const [jobLocation, setJobLocation] = React.useState("");
   const [companyId, setCompanyId] = React.useState(null);
   const [companyTab, setCompanyTab] = React.useState(null);
+  const [forumThreadId, setForumThreadId] = React.useState(null);
   const [applyJob, setApplyJob] = React.useState(null);
   const [saved, setSaved] = React.useState([]);
   const [user, setUser] = React.useState(null);
@@ -24,6 +25,9 @@ function App() {
     const deepJobId = params.get("job");
     // Password-reset deep link (?reset=1&token=…&email=…) opens the reset view.
     if (params.get("reset")) { setPage("forgot"); }
+    // Community deep link (?thread=N) opens that discussion (used by digest emails).
+    const deepThreadId = params.get("thread");
+    if (deepThreadId) { setForumThreadId(deepThreadId); setPage("community"); }
     const ctrl = new AbortController();
     setTimeout(() => ctrl.abort(), 8000);
     Promise.allSettled([
@@ -87,7 +91,8 @@ function App() {
   React.useEffect(() => { if (window.lucide) window.lucide.createIcons(); });
 
   const { KramaHeader, KramaFooter, KramaHome, KramaJobs, KramaCompanies, KramaCompanyProfile, KramaJobDetail,
-          KramaLogin, KramaRegister, KramaForgotPassword, KramaApplyModal, KramaInfoPage, KramaCandidateProfile } = window;
+          KramaLogin, KramaRegister, KramaForgotPassword, KramaApplyModal, KramaInfoPage, KramaCandidateProfile,
+          KramaCommunity } = window;
 
   if (!ready) return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "var(--teal-800)", gap: 16 }}>
@@ -125,6 +130,7 @@ function App() {
       {page === "home" && <KramaHome onNav={nav} onOpenJob={openJob} saved={saved} toggleSave={toggleSave} />}
       {page === "jobs" && <KramaJobs onNav={nav} onOpenJob={openJob} saved={saved} toggleSave={toggleSave} initialCategory={jobCategory} initialCompany={jobCompany} initialKeyword={jobKeyword} initialLocation={jobLocation} />}
       {page === "companies" && <KramaCompanies onNav={nav} initialCompany={jobCompany} />}
+      {page === "community" && <KramaCommunity onNav={nav} user={user} initialThreadId={forumThreadId} />}
       {page === "company" && <KramaCompanyProfile companyId={companyId} initialTab={companyTab} onNav={nav} onOpenJob={openJob} saved={saved} toggleSave={toggleSave} />}
       {INFO.includes(page) && <KramaInfoPage slug={page} onNav={nav} />}
       {page === "detail" && <KramaJobDetail job={job} onBack={() => nav("jobs")} onOpenJob={openJob} onApply={setApplyJob} saved={saved} toggleSave={toggleSave} onNav={nav} />}

@@ -370,5 +370,26 @@
     fetchNotifUnread: function () { return req("GET", "/notifications/unread"); },
     markNotifRead: function (id) { return req("POST", "/notifications/" + id + "/read"); },
     markAllNotifRead: function () { return req("POST", "/notifications/read-all"); },
+
+    // Community forum moderation
+    forumReports: function (params) {
+      params = params || {};
+      var qs = "?status=" + encodeURIComponent(params.status || "open") + "&page=" + (params.page || 1);
+      return req("GET", "/admin/forum/reports" + qs);
+    },
+    forumResolveReport: function (id, status, action) { return req("PATCH", "/admin/forum/reports/" + id, { status: status, action: action || "none" }); },
+    forumAdminThreads: function (params) {
+      params = params || {};
+      var qs = "?page=" + (params.page || 1) + (params.q ? "&q=" + encodeURIComponent(params.q) : "") + (params.category_id ? "&category_id=" + params.category_id : "");
+      return req("GET", "/admin/forum/threads" + qs);
+    },
+    forumModerateThread: function (id, changes) { return req("PATCH", "/admin/forum/threads/" + id + "/moderate", changes); },
+    forumDeleteThread: function (id) { return req("DELETE", "/admin/forum/threads/" + id); },
+    forumModerateReply: function (id, hidden) { return req("PATCH", "/admin/forum/replies/" + id + "/moderate", { is_hidden: hidden }); },
+    forumDeleteReply: function (id) { return req("DELETE", "/admin/forum/replies/" + id); },
+    forumCategories: function () { return req("GET", "/admin/forum/categories"); },
+    forumCreateCategory: function (data) { return req("POST", "/admin/forum/categories", data); },
+    forumUpdateCategory: function (id, data) { return req("PUT", "/admin/forum/categories/" + id, data); },
+    forumDeleteCategory: function (id) { return req("DELETE", "/admin/forum/categories/" + id); },
   };
 })();
