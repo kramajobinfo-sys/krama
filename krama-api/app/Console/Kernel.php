@@ -20,6 +20,7 @@ class Kernel extends ConsoleKernel
         $schedule->command('jobs:expire')->dailyAt('00:05');
         $schedule->command('features:expire')->dailyAt('00:10');
         $schedule->command('payments:verify-pending')->everyThreeMinutes()->withoutOverlapping();
+        $schedule->command('forum:digest')->dailyAt('08:00');
         $schedule->command('queue:prune-failed', ['--hours' => 168])->weekly();
     }
 

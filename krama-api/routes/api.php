@@ -87,6 +87,12 @@ Route::get('companies/{id}/reviews',  [CompanyReviewController::class, 'index'])
 Route::get('jobs',     [JobController::class, 'index']);
 Route::get('jobs/{id}', [JobController::class, 'show']);
 
+// Community forum — public reads (guest access honours the forum.allow_guest_read setting)
+Route::get('forum/categories',            [\App\Http\Controllers\ForumCategoryController::class, 'index']);
+Route::get('forum/threads',               [\App\Http\Controllers\ForumThreadController::class, 'index']);
+Route::get('forum/threads/{id}',          [\App\Http\Controllers\ForumThreadController::class, 'show']);
+Route::get('forum/threads/{id}/replies',  [\App\Http\Controllers\ForumReplyController::class, 'index']);
+
 // Companies + Jobs — employer + candidate (requires JWT)
 Route::middleware('auth:api')->group(function () {
     // Employer: own company
@@ -198,6 +204,37 @@ Route::middleware('auth:api')->group(function () {
     Route::post('employer/team',               [TeamController::class, 'store'])->middleware('throttle:10,1');
     Route::delete('employer/team/{id}',        [TeamController::class, 'destroy']);
     Route::patch('employer/team/{id}/password',[TeamController::class, 'setPassword']);
+
+    // Community forum — participation (any authenticated user; throttled anti-spam)
+    Route::post('forum/threads',                 [\App\Http\Controllers\ForumThreadController::class, 'store'])->middleware('throttle:20,1');
+    Route::put('forum/threads/{id}',             [\App\Http\Controllers\ForumThreadController::class, 'update']);
+    Route::delete('forum/threads/{id}',          [\App\Http\Controllers\ForumThreadController::class, 'destroy']);
+    Route::post('forum/threads/{id}/vote',       [\App\Http\Controllers\ForumThreadController::class, 'vote'])->middleware('throttle:60,1');
+    Route::post('forum/threads/{id}/subscribe',  [\App\Http\Controllers\ForumThreadController::class, 'subscribe']);
+    Route::delete('forum/threads/{id}/subscribe',[\App\Http\Controllers\ForumThreadController::class, 'unsubscribe']);
+    Route::post('forum/threads/{id}/replies',    [\App\Http\Controllers\ForumReplyController::class, 'store'])->middleware('throttle:30,1');
+    Route::put('forum/replies/{id}',             [\App\Http\Controllers\ForumReplyController::class, 'update']);
+    Route::delete('forum/replies/{id}',          [\App\Http\Controllers\ForumReplyController::class, 'destroy']);
+    Route::post('forum/replies/{id}/vote',       [\App\Http\Controllers\ForumReplyController::class, 'vote'])->middleware('throttle:60,1');
+    Route::post('forum/report',                  [\App\Http\Controllers\ForumReportController::class, 'store'])->middleware('throttle:20,1');
+});
+
+// Community forum — admin moderation (requires moderate_forum permission)
+Route::middleware(['auth:api', 'permission:moderate_forum'])->group(function () {
+    Route::get('admin/forum/categories',              [\App\Http\Controllers\ForumCategoryController::class, 'adminIndex']);
+    Route::post('admin/forum/categories',             [\App\Http\Controllers\ForumCategoryController::class, 'store']);
+    Route::put('admin/forum/categories/{id}',         [\App\Http\Controllers\ForumCategoryController::class, 'update']);
+    Route::delete('admin/forum/categories/{id}',      [\App\Http\Controllers\ForumCategoryController::class, 'destroy']);
+
+    Route::get('admin/forum/threads',                 [\App\Http\Controllers\ForumThreadController::class, 'adminIndex']);
+    Route::patch('admin/forum/threads/{id}/moderate', [\App\Http\Controllers\ForumThreadController::class, 'moderate']);
+    Route::delete('admin/forum/threads/{id}',         [\App\Http\Controllers\ForumThreadController::class, 'adminDestroy']);
+
+    Route::patch('admin/forum/replies/{id}/moderate', [\App\Http\Controllers\ForumReplyController::class, 'moderate']);
+    Route::delete('admin/forum/replies/{id}',         [\App\Http\Controllers\ForumReplyController::class, 'adminDestroy']);
+
+    Route::get('admin/forum/reports',                 [\App\Http\Controllers\ForumReportController::class, 'adminIndex']);
+    Route::patch('admin/forum/reports/{id}',          [\App\Http\Controllers\ForumReportController::class, 'resolve']);
 });
 
 // Admin routes — requires JWT + site_settings permission (role-level gate)

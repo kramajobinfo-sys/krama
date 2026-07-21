@@ -149,6 +149,35 @@ class EmailTemplates
         return [$subject, self::wrapper("New matching job posted", $body)];
     }
 
+    // ── Forum digest ─────────────────────────────────────────────────────────
+
+    // $threads: list of ['title' => string, 'url' => string, 'count' => int]
+    public static function forumDigest(string $userName, array $threads): array
+    {
+        $total   = array_sum(array_column($threads, 'count'));
+        $subject = "New activity in " . count($threads) . " " . (count($threads) === 1 ? 'thread' : 'threads') . " you follow";
+
+        $rows = '';
+        foreach ($threads as $t) {
+            $n = (int) $t['count'];
+            $label = $n . ' new ' . ($n === 1 ? 'reply' : 'replies');
+            $rows .= "
+<div style='border:1px solid #e5e7eb;border-radius:10px;padding:16px 20px;margin-bottom:14px'>
+  <div style='font-size:16px;font-weight:700;color:#111827;margin-bottom:4px'>" . e($t['title']) . "</div>
+  <div style='color:#6b7280;font-size:14px;margin-bottom:12px'>{$label}</div>
+  <a href='{$t['url']}' style='display:inline-block;background:#0d9488;color:#fff;font-weight:600;text-decoration:none;padding:9px 20px;border-radius:8px;font-size:14px'>View discussion &rarr;</a>
+</div>";
+        }
+
+        $body = "
+<p style='margin:0 0 18px;color:#374151'>Hi {$userName},</p>
+<p style='margin:0 0 22px;color:#374151'>There " . ($total === 1 ? 'has' : 'have') . " been {$total} new " . ($total === 1 ? 'reply' : 'replies') . " in the community " . (count($threads) === 1 ? 'thread' : 'threads') . " you follow:</p>
+{$rows}
+<p style='margin:18px 0 0;color:#9ca3af;font-size:13px'>You received this because you follow " . (count($threads) === 1 ? 'this thread' : 'these threads') . " on Krama. Open a thread to unfollow it.</p>";
+
+        return [$subject, self::wrapper('Community digest', $body)];
+    }
+
     private static function wrapper(string $heading, string $body): string
     {
         $fromName = config('mail.from.name', 'Krama');
