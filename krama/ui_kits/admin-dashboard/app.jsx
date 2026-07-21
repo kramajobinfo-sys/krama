@@ -2734,7 +2734,7 @@
           </div>
         ) : null}
 
-        <Tabs value={hpTab} onChange={setHpTab} tabs={[{ value: "home", label: "Home page" }, { value: "findjobs", label: "Find Jobs" }, { value: "companies", label: "Companies" }, { value: "jobdetail", label: "Job Detail" }, { value: "explore", label: "Explore" }]} style={{ marginBottom: 20 }} />
+        <Tabs value={hpTab} onChange={setHpTab} tabs={[{ value: "home", label: "Home page" }, { value: "findjobs", label: "Find Jobs" }, { value: "jobdetail", label: "Job Detail" }, { value: "companies", label: "Companies" }, { value: "members", label: "Members" }, { value: "explore", label: "Explore" }]} style={{ marginBottom: 20 }} />
 
         {hpTab === "home" && <React.Fragment>
 
@@ -2975,6 +2975,10 @@
         </Card>
 
         {BannerCard("footerBanner", "Footer call-to-action banner", "The wide teal banner above the footer on the home page -- typically used to drive employer sign-ups.", "megaphone", ["var(--brand-subtle)", "var(--brand)"], { mobileToggle: true, size: "1600 × 240px" })}
+
+        </React.Fragment>}
+
+        {hpTab === "members" && <React.Fragment>
         {BannerCard("employersTopBanner", "Members -- Top announcement bar", "The full-width coloured bar at the very top of the Members page. Toggle off to hide it.", "briefcase", ["var(--saffron-50)", "var(--saffron-600)"], { size: "1600 × 160px" })}
         {/* Members Hero banner */}
         {(function() {
