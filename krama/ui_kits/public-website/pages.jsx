@@ -269,7 +269,7 @@
 
   const CONTENT = {
     employers: {
-      eyebrow: "For employers",
+      eyebrow: "Members",
       title: "Hire the right people, faster.",
       lead: "Post jobs, review applications, and manage your entire hiring pipeline — all in one place built for Cambodia and Southeast Asia.",
       render: (onNav) => <EmployerLanding onNav={onNav} />,

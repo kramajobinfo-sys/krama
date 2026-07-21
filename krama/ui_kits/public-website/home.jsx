@@ -225,32 +225,34 @@
 
     const slide = slides[idx] || slides[0];
     const t = resolveSlideTheme(slide);
-    const heroImg = (isMobile && slide.imageMobile) ? slide.imageMobile : slide.image;
+    const heroImg = slide.image;
     // Image-only ad slide: show the full poster as-is (no crop, no overlaid text/search).
     const imageOnly = !!(slide.imageOnly && heroImg);
+    const hasHeroImg = !!slide.image;
+    // Mobile + text overlay: show the whole image at its NATURAL height so it fills the width
+    // edge-to-edge with no theme-colour space around it; any title/search flow below.
+    const mobileStack = isMobile && !imageOnly && hasHeroImg;
+    const searchOnMobile = !slide.hideSearch && !slide.searchDesktopOnly;
+    const mobileHasContentBelow = !slide.hideTitle || searchOnMobile;
 
     return (
       <section
-        className={"krm-hero" + (imageOnly ? " krm-hero--image-only" : "")} style={{ position: "relative", overflow: "hidden", background: t.bg, minHeight: isMobile ? 340 : 480, display: "flex", flexDirection: "column", justifyContent: "center", padding: imageOnly ? 0 : "56px 32px 72px", transition: "background 0.5s ease" }}
+        className={"krm-hero" + (imageOnly ? " krm-hero--image-only" : "") + (mobileStack ? " krm-hero--mobile-stack" : "")} style={{ position: "relative", overflow: "hidden", background: t.bg, minHeight: (imageOnly || mobileStack) ? 0 : (isMobile ? 340 : 480), display: "flex", flexDirection: "column", justifyContent: "center", padding: (imageOnly || mobileStack) ? 0 : "56px 32px 72px", transition: "background 0.5s ease" }}
         onMouseEnter={() => setPaused(true)}
         onMouseLeave={() => setPaused(false)}
       >
-        {(isMobile && slide.imageMobile) || slide.image
+        {slide.image
           ? <React.Fragment>
-              {/* blurred zoomed copy fills the side-space (no flat bands); on mobile the
-                  image fills the width so this stays hidden behind it */}
-              <div style={{ position: "absolute", inset: 0, backgroundImage: "url('" + heroImg + "')", backgroundSize: "cover", backgroundPosition: "center", filter: "blur(28px)", transform: "scale(1.15)" }} />
               {imageOnly
                 ? <img
                     src={heroImg}
                     alt={TR(slide.title) || "Banner"}
                     onClick={() => { if (slide.ctaUrl) window.open(slide.ctaUrl, "_blank"); }}
-                    style={{ position: "relative", zIndex: 1, display: "block", width: "100%", height: isMobile ? 340 : 480, objectFit: "cover", cursor: slide.ctaUrl ? "pointer" : "default" }}
+                    style={{ position: "relative", zIndex: 1, display: "block", width: "100%", height: "auto", cursor: slide.ctaUrl ? "pointer" : "default" }}
                   />
                 : <React.Fragment>
-                    {/* full image shown uncropped (contain) behind the title/search overlay;
-                        the blurred layer fills any side/edge gap */}
-                    <div style={{ position: "absolute", inset: 0, zIndex: 1, backgroundImage: "url('" + heroImg + "')", backgroundSize: "contain", backgroundRepeat: "no-repeat", backgroundPosition: "center" }} />
+                    {/* whole image shown uncropped (contain), centered on the theme-colour background */}
+                    <div style={{ position: "absolute", inset: 0, zIndex: 1, backgroundImage: "url('" + heroImg + "')", backgroundSize: slide.fit === "contain" ? "contain" : "cover", backgroundRepeat: "no-repeat", backgroundPosition: "center" }} />
                     <div style={{ position: "absolute", inset: 0, zIndex: 2, background: t.bg, opacity: (slide.imgOverlay != null ? slide.imgOverlay : 20) / 100 }} />
                   </React.Fragment>}
             </React.Fragment>
@@ -280,6 +282,7 @@
             </div>
           )}
           </React.Fragment>}
+          {!slide.hideSearch && !(isMobile && slide.searchDesktopOnly) && <React.Fragment>
           <div className="krm-search-bar" style={{ display: "flex", gap: 8, background: "#fff", padding: 8, borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-lg)", marginTop: 32, maxWidth: 920, marginLeft: "auto", marginRight: "auto" }}>
             <div className="krm-search-input" style={{ flex: 1, display: "flex", alignItems: "center", gap: 8, padding: "0 12px" }}>
               <span style={{ color: "var(--text-faint)" }}>{I("search", 18)}</span>
@@ -298,6 +301,7 @@
               <span key={tag} onClick={() => onNav("jobs", { keyword: tag })} style={{ color: t.fg, fontSize: "var(--text-sm)", fontWeight: 500, padding: "4px 12px", border: "1px solid " + (t.fg === "#fff" ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.15)"), borderRadius: "var(--radius-pill)", cursor: "pointer" }}>{tag}</span>
             ))}
           </div>
+          </React.Fragment>}
         </div>
 
         {slides.length > 1 && (

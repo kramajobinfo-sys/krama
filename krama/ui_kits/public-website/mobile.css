@@ -467,4 +467,4 @@
    overlay hero (inherits .krm-hero min-height: 520px desktop/tablet, 340px mobile),
    so toggling "show title & search over image" never changes the banner height.
 ═══════════════════════════════════════════════════════════════════════════ */
-.krm-hero.krm-hero--image-only { min-height: 340px !important; padding: 0 !important; }
+.krm-hero.krm-hero--image-only { min-height: 0 !important; padding: 0 !important; }

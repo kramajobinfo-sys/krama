@@ -255,7 +255,7 @@
         <p style={{ color: "var(--text-muted)", marginTop: 8, marginBottom: 20 }}>{TR("It's free. Apply to jobs in two clicks.")}</p>
         <div style={{ display: "flex", gap: 4, padding: 4, background: "var(--surface-sunken)", borderRadius: "var(--radius-md)", marginBottom: 22 }}>
           {seg("candidate", TR("I'm a candidate"), role, setRole)}
-          {seg("employer", TR("I'm an employer"), role, setRole)}
+          {seg("employer", TR("I'm a member"), role, setRole)}
         </div>
         <SocialButtons onError={(msg) => setError(msg)} onSocialLogin={(provider, token) => {
           setError(""); setLoading(true);

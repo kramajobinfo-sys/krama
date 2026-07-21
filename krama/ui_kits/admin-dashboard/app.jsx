@@ -2419,6 +2419,7 @@
     const [slideForm, setSlideForm] = React.useState(SLIDE_BLANK);
     const [uploading, setUploading] = React.useState(false);
     const slideFileRef = React.useRef();
+    const slideMobileFileRef = React.useRef();
     const [banners, setBanners] = React.useState([]);
     const [bannerEditing, setBannerEditing] = React.useState(null);
     const [bannerLoading, setBannerLoading] = React.useState(true);
@@ -2509,46 +2510,37 @@
     };
     const saveSlide = () => {
       const isImageOnly = !!slideForm.imageOnly;
-      // Image-only ad slides need a picture, not a title; text slides need a title.
+      // Image-only slides need a picture; text slides need a title.
       if (isImageOnly ? (!slideForm.image && !slideForm._src) : !slideForm.title.trim()) return;
-      // A freshly-picked image lives in _src (a transient data URL). On save, crop it to
-      // both the desktop (1200x520 landscape) and mobile (768x960 portrait) shapes around
-      // the chosen focal point, upload both, and store their URLs. _src is dropped so no
-      // base64 is ever persisted. Image-only slides skip the crop and upload the whole
-      // poster (same image for desktop and mobile) so nothing is sliced off.
-      if (slideForm._src && isImageOnly) {
-        setUploading(true);
-        setSaveErr("");
+      // Freshly-picked images live in _src (desktop) / _srcMobile (mobile) as transient data
+      // URLs. On save, upload each WHOLE (no crop) → image / imageMobile. If no dedicated
+      // mobile image exists, mobile falls back to the desktop image. _src(Mobile) is dropped
+      // afterward so no base64 is ever persisted.
+      const jobs = [];
+      if (slideForm._src) jobs.push(
         dataUrlToFile(slideForm._src, "banner.jpg")
           .then(function(file) { return window.KRAMA_ADMIN_API.uploadImage(file); })
-          .then(function(url) {
-            setUploading(false);
-            commitSlide(Object.assign({}, slideForm, { image: url, imageMobile: url, _src: undefined }));
-          })
-          .catch(function(err) {
-            setUploading(false);
-            setSaveErr("Image upload failed: " + ((err && err.message) || "Unknown error"));
-          });
-        return;
-      }
-      if (slideForm._src) {
-        setUploading(true);
-        setSaveErr("");
-        const fx = slideForm.focalX != null ? slideForm.focalX : 50;
-        const fy = slideForm.focalY != null ? slideForm.focalY : 50;
-        Promise.all([
-          cropImageToFile(slideForm._src, fx, fy, 1200, 520).then(function(file) { return window.KRAMA_ADMIN_API.uploadImage(file); }),
-          cropImageToFile(slideForm._src, fx, fy, 768, 960).then(function(file) { return window.KRAMA_ADMIN_API.uploadImage(file); })
-        ]).then(function(urls) {
-          setUploading(false);
-          commitSlide(Object.assign({}, slideForm, { image: urls[0], imageMobile: urls[1], _src: undefined }));
-        }).catch(function(err) {
-          setUploading(false);
-          setSaveErr("Image processing failed: " + ((err && err.message) || "Unknown error"));
-        });
-      } else {
-        commitSlide(slideForm);
-      }
+          .then(function(url) { return ["image", url]; })
+      );
+      if (slideForm._srcMobile) jobs.push(
+        dataUrlToFile(slideForm._srcMobile, "banner-mobile.jpg")
+          .then(function(file) { return window.KRAMA_ADMIN_API.uploadImage(file); })
+          .then(function(url) { return ["imageMobile", url]; })
+      );
+      if (!jobs.length) { commitSlide(slideForm); return; }
+      setUploading(true);
+      setSaveErr("");
+      Promise.all(jobs).then(function(results) {
+        const patch = { _src: undefined, _srcMobile: undefined };
+        results.forEach(function(r) { patch[r[0]] = r[1]; });
+        // No dedicated mobile image anywhere → mobile shows the desktop image.
+        if (patch.image && !slideForm._srcMobile && !slideForm.imageMobile) patch.imageMobile = patch.image;
+        setUploading(false);
+        commitSlide(Object.assign({}, slideForm, patch));
+      }).catch(function(err) {
+        setUploading(false);
+        setSaveErr("Image upload failed: " + ((err && err.message) || "Unknown error"));
+      });
     };
     const deleteSlide = (id) => set("heroSlides", (s.heroSlides || []).filter((sl) => sl.id !== id));
     const moveSlide = (id, dir) => {
@@ -2577,6 +2569,28 @@
         });
       }).then(function(dataUrl) {
         setSlideForm((f) => ({ ...f, _src: dataUrl, focalX: f.focalX != null ? f.focalX : 50, focalY: f.focalY != null ? f.focalY : 50 }));
+        setUploading(false);
+      }).catch(function(err) {
+        setUploading(false);
+        setSaveErr("Image upload failed: " + ((err && err.message) || "Unknown error"));
+      });
+    };
+    // Separate MOBILE image — staged as _srcMobile, uploaded whole on save (see saveSlide).
+    const uploadSlideImageMobile = (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file || !/^image\//.test(file.type)) return;
+      e.target.value = "";
+      setSaveErr("");
+      setUploading(true);
+      compressImage(file, 1600, 0.9).then(function(smaller) {
+        return new Promise(function(resolve, reject) {
+          var r = new FileReader();
+          r.onload = function() { resolve(r.result); };
+          r.onerror = function() { reject(new Error("read failed")); };
+          r.readAsDataURL(smaller);
+        });
+      }).then(function(dataUrl) {
+        setSlideForm((f) => ({ ...f, _srcMobile: dataUrl }));
         setUploading(false);
       }).catch(function(err) {
         setUploading(false);
@@ -2892,13 +2906,7 @@
                           <span style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-strong)" }}>Hide title &amp; search bar (show banner image only)</span>
                           <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>On: only your banner image shows, filling the hero on desktop &amp; mobile (use a 1600 × 480px image). Off: the title, subtitle &amp; search bar are shown over the image.</span>
                         </label>
-                        {!slideForm.imageOnly && (
-                        <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", marginBottom: 10, padding: "8px 10px", borderRadius: "var(--radius-md)", background: slideForm.hideTitle ? "var(--brand-subtle)" : "var(--surface-sunken)", border: "1px solid " + (slideForm.hideTitle ? "var(--brand)" : "var(--border-subtle)") }}>
-                          <input type="checkbox" checked={!!slideForm.hideTitle} onChange={(e) => setSlideForm((f) => ({ ...f, hideTitle: e.target.checked }))} style={{ width: 16, height: 16, accentColor: "var(--brand)", cursor: "pointer", flexShrink: 0 }} />
-                          <span style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-strong)" }}>Hide the title text (keep the search bar)</span>
-                          <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>Shows the image with the search bar over it, but hides the title, badge &amp; subtitle — good when your image already has its own headline.</span>
-                        </label>
-                        )}
+                        <div style={{ fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-strong)", marginBottom: 6 }}>Banner image</div>
                         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                           {(slideForm._src || slideForm.image) && <div style={{ width: 80, height: 48, borderRadius: "var(--radius-sm)", backgroundImage: "url('" + (slideForm._src || slideForm.image) + "')", backgroundSize: "cover", backgroundPosition: (slideForm.focalX != null ? slideForm.focalX : 50) + "% " + (slideForm.focalY != null ? slideForm.focalY : 50) + "%", flexShrink: 0, border: "1px solid var(--border)" }} />}
                           <div>
@@ -2909,7 +2917,7 @@
                             {(slideForm.image || slideForm._src) && (
                               <React.Fragment>
                                 <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
-                                  <button onClick={() => setSlideForm((fm) => ({ ...fm, image: "", imageMobile: "", _src: undefined }))} style={{ height: 26, padding: "0 10px", borderRadius: "var(--radius-sm)", cursor: "pointer", border: "1px solid var(--border-strong)", background: "var(--surface-card)", color: "var(--text-muted)", fontFamily: "var(--font-sans)", fontSize: "var(--text-xs)", fontWeight: 700 }}>Remove</button>
+                                  <button onClick={() => setSlideForm((fm) => ({ ...fm, image: "", _src: undefined }))} style={{ height: 26, padding: "0 10px", borderRadius: "var(--radius-sm)", cursor: "pointer", border: "1px solid var(--border-strong)", background: "var(--surface-card)", color: "var(--text-muted)", fontFamily: "var(--font-sans)", fontSize: "var(--text-xs)", fontWeight: 700 }}>Remove</button>
                                 </div>
                                 {!slideForm.imageOnly && <p style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: 6 }}>The full image is shown uncropped on the site, with a soft blurred fill around it.</p>}
                                 <div style={{ marginTop: 10, display: slideForm.imageOnly ? "none" : undefined }}>
@@ -2924,7 +2932,6 @@
                             )}
                           </div>
                         </div>
-
 
                         {/* Image-only ad slide: full uncropped preview */}
                         {(slideForm._src || slideForm.image) && slideForm.imageOnly && (
@@ -2968,8 +2975,8 @@
         </Card>
 
         {BannerCard("footerBanner", "Footer call-to-action banner", "The wide teal banner above the footer on the home page -- typically used to drive employer sign-ups.", "megaphone", ["var(--brand-subtle)", "var(--brand)"], { mobileToggle: true, size: "1600 × 240px" })}
-        {BannerCard("employersTopBanner", "For Employers -- Top announcement bar", "The full-width coloured bar at the very top of the For Employers page. Toggle off to hide it.", "briefcase", ["var(--saffron-50)", "var(--saffron-600)"], { size: "1600 × 160px" })}
-        {/* For Employers Hero banner */}
+        {BannerCard("employersTopBanner", "Members -- Top announcement bar", "The full-width coloured bar at the very top of the Members page. Toggle off to hide it.", "briefcase", ["var(--saffron-50)", "var(--saffron-600)"], { size: "1600 × 160px" })}
+        {/* Members Hero banner */}
         {(function() {
           const eh = s.employersHero || {};
           const ehImg = eh.image || "";
@@ -2978,8 +2985,8 @@
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
               <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 36, height: 36, borderRadius: "var(--radius-md)", background: "var(--teal-50)", color: "var(--teal-700)" }}>{I("layout-panel-top", 18)}</span>
               <div>
-                <h3 style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: "var(--text-strong)" }}>For Employers -- Hero banner</h3>
-                <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>The large teal banner with the page title and subtitle on the For Employers page.</p>
+                <h3 style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: "var(--text-strong)" }}>Members -- Hero banner</h3>
+                <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>The large teal banner with the page title and subtitle on the Members page.</p>
               </div>
             </div>
             <div style={{ display: "inline-flex", alignItems: "center", gap: 5, marginBottom: 16, fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-brand)", background: "var(--brand-subtle)", borderRadius: "var(--radius-pill)", padding: "3px 10px" }}>{I("image", 13)} Recommended image: 1600 × 220px</div>
@@ -3026,7 +3033,7 @@
               <div style={{ position: "relative", background: "var(--teal-800)", color: "#fff", padding: "20px 24px", overflow: "hidden" }}>
                 {ehImg && <React.Fragment><div style={{ position: "absolute", inset: 0, backgroundImage: "url('" + ehImg + "')", backgroundSize: (eh.fit || "cover"), backgroundPosition: "center" }} /><div style={{ position: "absolute", inset: 0, background: "var(--teal-800)", opacity: (eh.imgOverlay != null ? eh.imgOverlay : 45) / 100 }} /></React.Fragment>}
                 <div style={{ position: "relative" }}>
-                  <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--teal-200)", marginBottom: 6 }}>For employers</div>
+                  <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--teal-200)", marginBottom: 6 }}>Members</div>
                   <div style={{ fontSize: 22, fontWeight: 800 }}>{eh.heading || "Hire the right people, faster."}</div>
                   <div style={{ fontSize: 14, color: "var(--stone-300)", marginTop: 6 }}>{eh.sub || ""}</div>
                 </div>
