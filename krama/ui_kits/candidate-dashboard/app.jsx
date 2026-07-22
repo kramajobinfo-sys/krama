@@ -165,7 +165,7 @@
     var [unread, setUnread] = React.useState(0);
     var [loading, setLoading] = React.useState(false);
     var ROUTE = { application_received: "applications", application_stage: "applications", job_approved: "applications", job_rejected: "applications" };
-    var ICON = { application_received: "user-plus", application_stage: "activity", job_approved: "circle-check-big", job_rejected: "circle-x" };
+    var ICON = { application_received: "user-plus", application_stage: "activity", job_approved: "circle-check-big", job_rejected: "circle-x", forum_reply: "message-circle", forum_mention: "at-sign" };
     var pollUnread = React.useCallback(function () { cand.fetchNotifUnread().then(function (d) { setUnread(d.count || 0); }).catch(function () {}); }, []);
     React.useEffect(function () { pollUnread(); var t = setInterval(pollUnread, 20000); return function () { clearInterval(t); }; }, [pollUnread]);
     function openPanel() {
@@ -176,6 +176,10 @@
     function clickNotif(n) {
       if (!n.read_at) { cand.markNotifRead(n.id).then(function () { setUnread(function (u) { return Math.max(0, u - 1); }); }).catch(function () {}); }
       setOpen(false);
+      if (n.type === "forum_reply" || n.type === "forum_mention") {
+        window.location.href = "/krama/krama/ui_kits/public-website/index.html" + (n.link ? "?thread=" + n.link : "");
+        return;
+      }
       var route = ROUTE[n.type]; if (route && onNav) onNav(route);
     }
     function fmtTime(iso) { if (!iso) return ""; var d = new Date(iso), diff = Date.now() - d.getTime(); if (diff < 60000) return "just now"; if (diff < 3600000) return Math.floor(diff / 60000) + "m ago"; if (diff < 86400000) return Math.floor(diff / 3600000) + "h ago"; return d.getDate() + " " + ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][d.getMonth()]; }

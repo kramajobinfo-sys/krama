@@ -74,7 +74,7 @@ class ForumReplyController extends Controller
         ForumSubscription::firstOrCreate(['user_id' => $userId, 'thread_id' => $thread->id]);
 
         $this->notifySubscribers($thread, $userId, $userName);
-        $this->notifyMentions($reply->body, $userId, $userName, $thread->title);
+        $this->notifyMentions($reply->body, $userId, $userName, $thread->title, $thread->id);
 
         $this->auditLog('forum.reply.created', ['thread_id' => $thread->id, 'reply_id' => $reply->id]);
 
@@ -162,7 +162,8 @@ class ForumReplyController extends Controller
                 $uid,
                 'forum_reply',
                 $actorName . ' replied',
-                'in "' . $thread->title . '"'
+                'in "' . $thread->title . '"',
+                (string) $thread->id
             );
         }
     }

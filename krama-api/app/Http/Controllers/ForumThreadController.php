@@ -130,7 +130,7 @@ class ForumThreadController extends Controller
         // Author auto-follows their own thread
         ForumSubscription::firstOrCreate(['user_id' => $userId, 'thread_id' => $thread->id]);
 
-        $this->notifyMentions($thread->body, $userId, optional(auth()->user())->name ?? 'Someone', $thread->title);
+        $this->notifyMentions($thread->body, $userId, optional(auth()->user())->name ?? 'Someone', $thread->title, $thread->id);
         $this->auditLog('forum.thread.created', ['id' => $thread->id]);
 
         return response()->json(

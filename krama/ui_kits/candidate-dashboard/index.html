@@ -16,7 +16,7 @@
 <body>
 <div id="root"></div>
 <script>
-fetch('app.jsx?v=26').then(function(r){ return r.text(); }).then(function(src){
+fetch('app.jsx?v=27').then(function(r){ return r.text(); }).then(function(src){
   var compiled = Babel.transform(src, { presets: ['react'] }).code;
   var s = document.createElement('script');
   s.text = compiled;

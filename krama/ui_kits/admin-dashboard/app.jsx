@@ -174,8 +174,8 @@
     const [list, setList] = React.useState([]);
     const [unread, setUnread] = React.useState(0);
     const [loading, setLoading] = React.useState(false);
-    const ROUTE = { company_pending: "companies", payment_pending: "payments", job_approved: "jobs", job_rejected: "jobs" };
-    const ICON = { company_pending: "building-2", payment_pending: "banknote", job_approved: "circle-check-big", job_rejected: "circle-x" };
+    const ROUTE = { company_pending: "companies", payment_pending: "payments", job_approved: "jobs", job_rejected: "jobs", forum_report: "forum" };
+    const ICON = { company_pending: "building-2", payment_pending: "banknote", job_approved: "circle-check-big", job_rejected: "circle-x", forum_report: "flag", forum_reply: "message-circle", forum_mention: "at-sign" };
     const pollUnread = React.useCallback(function () { adm.fetchNotifUnread().then(function (d) { setUnread(d.count || 0); }).catch(function () {}); }, []);
     React.useEffect(function () { pollUnread(); var t = setInterval(pollUnread, 20000); return function () { clearInterval(t); }; }, [pollUnread]);
     function openPanel() {
@@ -186,6 +186,10 @@
     function clickNotif(n) {
       if (!n.read_at) { adm.markNotifRead(n.id).then(function () { setUnread(function (u) { return Math.max(0, u - 1); }); }).catch(function () {}); setList(function (l) { return l.map(function (x) { return x.id === n.id ? Object.assign({}, x, { read_at: "x" }) : x; }); }); }
       setOpen(false);
+      if (n.type === "forum_reply" || n.type === "forum_mention") {
+        window.location.href = "/krama/krama/ui_kits/public-website/index.html" + (n.link ? "?thread=" + n.link : "");
+        return;
+      }
       var route = ROUTE[n.type]; if (route && onNav) onNav(route);
     }
     function fmtTime(iso) { if (!iso) return ""; var d = new Date(iso), diff = Date.now() - d.getTime(); if (diff < 60000) return "just now"; if (diff < 3600000) return Math.floor(diff / 60000) + "m ago"; if (diff < 86400000) return Math.floor(diff / 3600000) + "h ago"; return d.getDate() + " " + ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][d.getMonth()]; }

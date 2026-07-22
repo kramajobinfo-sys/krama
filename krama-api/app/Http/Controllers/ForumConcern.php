@@ -104,7 +104,7 @@ trait ForumConcern
      * Parse @[Name](userId) mention tokens from a body and notify those users.
      * Skips the actor themselves. Safe no-op when nothing matches.
      */
-    protected function notifyMentions(string $body, int $actorId, string $actorName, string $threadTitle): void
+    protected function notifyMentions(string $body, int $actorId, string $actorName, string $threadTitle, ?int $threadId = null): void
     {
         if (! preg_match_all('/@\[[^\]]+\]\((\d+)\)/', $body, $m)) return;
 
@@ -116,7 +116,8 @@ trait ForumConcern
                 $id,
                 'forum_mention',
                 $actorName . ' mentioned you',
-                'in "' . $threadTitle . '"'
+                'in "' . $threadTitle . '"',
+                $threadId ? (string) $threadId : null
             );
         }
     }
