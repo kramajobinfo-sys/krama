@@ -461,12 +461,12 @@
   }
 
   function JobFormModal({ open, mode, job, onClose, onCreated, onPublishRequest, user }) {
-    const BLANK = { title: "", job_type: "full_time", experience_level: "mid", category_id: "", location_id: "", salary_min: "", salary_max: "", salary_currency: "USD", salary_period: "month", is_remote: false, description: "", requirements: "", benefits: "", expires_at: "" };
+    const BLANK = { title: "", job_type: "full_time", experience_level: "mid", category_id: "", location_id: "", salary_min: "", salary_max: "", salary_currency: "USD", salary_period: "month", is_remote: false, description: "", requirements: "", benefits: "", expires_at: "", share_social: true };
     function jobToForm(j, isClone) {
       var _today = new Date(); _today.setHours(0, 0, 0, 0);
       var _rawExp = j.expires_at ? j.expires_at.split("T")[0] : "";
       var _exp = (!isClone && _rawExp && new Date(_rawExp) > _today) ? _rawExp : "";
-      return { title: isClone ? "Copy of " + (j.title || "") : (j.title || ""), job_type: j.job_type || "full_time", experience_level: j.experience_level || "mid", category_id: j.category_id ? String(j.category_id) : "", location_id: j.location_id ? String(j.location_id) : "", salary_min: j.salary_min != null ? String(j.salary_min) : "", salary_max: j.salary_max != null ? String(j.salary_max) : "", salary_currency: j.salary_currency || "USD", salary_period: j.salary_period || "month", is_remote: !!j.is_remote, description: j.description || "", requirements: j.requirements || "", benefits: j.benefits || "", expires_at: _exp };
+      return { title: isClone ? "Copy of " + (j.title || "") : (j.title || ""), job_type: j.job_type || "full_time", experience_level: j.experience_level || "mid", category_id: j.category_id ? String(j.category_id) : "", location_id: j.location_id ? String(j.location_id) : "", salary_min: j.salary_min != null ? String(j.salary_min) : "", salary_max: j.salary_max != null ? String(j.salary_max) : "", salary_currency: j.salary_currency || "USD", salary_period: j.salary_period || "month", is_remote: !!j.is_remote, description: j.description || "", requirements: j.requirements || "", benefits: j.benefits || "", expires_at: _exp, share_social: j.share_social !== undefined ? !!j.share_social : true };
     }
     const [form, setForm] = React.useState(BLANK);
     const [cats, setCats] = React.useState([]);
@@ -507,6 +507,7 @@
         salary_currency: form.salary_currency || null,
         salary_period: form.salary_period || null,
         is_remote: !!form.is_remote,
+        share_social: !!form.share_social,
         description: form.description || null,
         requirements: form.requirements || null,
         benefits: form.benefits || null,
@@ -570,6 +571,13 @@
                 <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>Candidates can work remotely.</div>
               </div>
               <Switch checked={form.is_remote} onChange={(v) => set("is_remote", typeof v === "boolean" ? v : !form.is_remote)} />
+            </div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", border: "1px solid var(--border)", borderRadius: "var(--radius-md)" }}>
+              <div>
+                <div style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-strong)" }}>Share on social media</div>
+                <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>Auto-post this job to our social channels when it's published.</div>
+              </div>
+              <Switch checked={form.share_social} onChange={(v) => set("share_social", typeof v === "boolean" ? v : !form.share_social)} />
             </div>
             <RichEditor key={"d" + resetKey} label="Description" rows={4} value={form.description} onChange={(v) => set("description", v)} placeholder="Describe the role and what the team does…" />
             <RichEditor key={"r" + resetKey} label="Requirements" rows={3} value={form.requirements} onChange={(v) => set("requirements", v)} placeholder="Skills, qualifications, experience…" />

@@ -258,6 +258,7 @@ Route::middleware(['auth:api', 'permission:site_settings'])->group(function () {
     Route::patch('admin/settings/{group}',     [SettingController::class, 'update']);
     Route::post('admin/settings/smtp/test',    [SettingController::class, 'testSmtp']);
     Route::post('admin/settings/sms/test',     [SettingController::class, 'testSms']);
+    Route::post('admin/settings/social/test',  [SettingController::class, 'testSocial']);
     Route::post('admin/settings/telegram/test', [SettingController::class, 'testTelegram']);
     Route::post('admin/settings/telegram/activate', [SettingController::class, 'activateTelegram']);
 

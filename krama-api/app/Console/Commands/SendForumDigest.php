@@ -56,7 +56,7 @@ class SendForumDigest extends Command
                 $bundles[$sub->user_id] ??= ['threads' => [], 'subIds' => []];
                 $bundles[$sub->user_id]['threads'][] = [
                     'title' => $thread->title,
-                    'url'   => $base . '/krama/krama/ui_kits/public-website/index.html?thread=' . $thread->id,
+                    'url'   => $base . '?thread=' . $thread->id,
                     'count' => $count,
                 ];
                 $bundles[$sub->user_id]['subIds'][] = $sub->id;

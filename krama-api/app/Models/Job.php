@@ -15,6 +15,7 @@ class Job extends Model
         'salary_currency', 'salary_period', 'is_remote', 'description',
         'requirements', 'benefits', 'is_featured', 'featured_until', 'status',
         'rejection_reason', 'expires_at', 'published_at',
+        'share_social', 'social_posted_at',
     ];
 
     protected $casts = [
@@ -22,9 +23,11 @@ class Job extends Model
         'salary_max'    => 'float',
         'is_remote'     => 'boolean',
         'is_featured'   => 'boolean',
+        'share_social'  => 'boolean',
         'featured_until'=> 'datetime',
         'expires_at'    => 'date',
         'published_at'  => 'datetime',
+        'social_posted_at' => 'datetime',
         'created_at'    => 'datetime',
         'updated_at'    => 'datetime',
     ];

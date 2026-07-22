@@ -108,6 +108,17 @@ class SettingController extends Controller
             'http_extra'      => 'nullable|string|max:1000',
             'http_header'     => 'nullable|string|max:255',
         ],
+        'social_post' => [
+            'enabled'             => 'boolean',
+            'telegram_enabled'    => 'boolean',
+            'telegram_channel'    => 'nullable|string|max:128',   // @channel or -100... id (reuses the shared bot)
+            'facebook_enabled'    => 'boolean',
+            'facebook_page_id'    => 'nullable|string|max:64',
+            'facebook_page_token' => 'nullable|string|max:512',
+            'linkedin_enabled'    => 'boolean',
+            'linkedin_token'      => 'nullable|string|max:1024',
+            'linkedin_author_urn' => 'nullable|string|max:128',   // urn:li:organization:123 or urn:li:person:abc
+        ],
     ];
 
     // GET /api/settings/{group} — public: safe groups only (homepage, partial chat)
@@ -345,6 +356,49 @@ class SettingController extends Controller
         }
 
         return response()->json(['message' => 'Test SMS sent to ' . $phone . '.']);
+    }
+
+    // POST /api/admin/settings/social/test — post a sample message to each
+    // enabled + configured social platform, returning a per-platform result.
+    public function testSocial(Request $request)
+    {
+        $this->requirePermission('site_settings');
+
+        $cfg  = Setting::where('group', 'social_post')->pluck('value', 'key')->toArray();
+        $on   = fn ($k) => ! empty($cfg[$k]) && (int) $cfg[$k] === 1;
+        $text = "✅ Krama — social posting test.\nThis is a sample job-share message.";
+        $results = [];
+
+        if ($on('telegram_enabled')) {
+            if (empty($cfg['telegram_channel']) || \App\Services\TelegramService::botToken() === '') {
+                $results['telegram'] = 'Set the Telegram bot token (Telegram tab) and a channel first.';
+            } else {
+                try { \App\Services\SocialPostService::postTelegram(trim($cfg['telegram_channel']), $text); $results['telegram'] = 'OK'; }
+                catch (\Throwable $e) { $results['telegram'] = 'Failed: ' . $e->getMessage(); }
+            }
+        }
+        if ($on('facebook_enabled')) {
+            if (empty($cfg['facebook_page_id']) || empty($cfg['facebook_page_token'])) {
+                $results['facebook'] = 'Enter the Page ID and Page access token first.';
+            } else {
+                try { \App\Services\SocialPostService::postFacebook($cfg['facebook_page_id'], $cfg['facebook_page_token'], $text, config('app.frontend_url')); $results['facebook'] = 'OK'; }
+                catch (\Throwable $e) { $results['facebook'] = 'Failed: ' . $e->getMessage(); }
+            }
+        }
+        if ($on('linkedin_enabled')) {
+            if (empty($cfg['linkedin_token']) || empty($cfg['linkedin_author_urn'])) {
+                $results['linkedin'] = 'Enter the access token and author URN first.';
+            } else {
+                try { \App\Services\SocialPostService::postLinkedIn($cfg['linkedin_token'], $cfg['linkedin_author_urn'], $text); $results['linkedin'] = 'OK'; }
+                catch (\Throwable $e) { $results['linkedin'] = 'Failed: ' . $e->getMessage(); }
+            }
+        }
+
+        if (empty($results)) {
+            return response()->json(['message' => 'No platforms enabled. Enable at least one and save first.'], 422);
+        }
+
+        return response()->json(['message' => 'Test complete.', 'results' => $results]);
     }
 
     // ----------------------------------------------------------------

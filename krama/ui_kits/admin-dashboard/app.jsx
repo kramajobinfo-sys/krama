@@ -136,6 +136,7 @@
     { id: "email", label: "Email", icon: "mail" },
     { id: "telegram", label: "Telegram", icon: "send" },
     { id: "sms", label: "SMS gateway", icon: "message-square" },
+    { id: "social_post", label: "Social posting", icon: "megaphone" },
     { id: "payments", label: "Payments", icon: "credit-card" },
     { id: "reports", label: "Reports", icon: "chart-line" },
     { id: "audit", label: "Audit log", icon: "scroll-text" },
@@ -5384,7 +5385,7 @@
 
     if (!authUser) return <AdminLogin onLogin={setAuthUser} />;
 
-    const titles = { dashboard: "Overview", jobs: "Job management", companies: "Company management", candidates: "Candidates", resumes: "Resume Builder", reviews: "Company reviews", forum: "Community forum", homepage: "Homepage content", chat: "Chat agent", social: "Social login", email: "Email settings", telegram: "Telegram notifications", sms: "SMS gateway", payments: "Payment settings", reports: "Reports", banners: "Promotional banner", brand: "Brand settings", settings: "Settings · Users & roles", profile: "My Profile" };
+    const titles = { dashboard: "Overview", jobs: "Job management", companies: "Company management", candidates: "Candidates", resumes: "Resume Builder", reviews: "Company reviews", forum: "Community forum", homepage: "Homepage content", chat: "Chat agent", social: "Social login", email: "Email settings", telegram: "Telegram notifications", sms: "SMS gateway", social_post: "Social posting", payments: "Payment settings", reports: "Reports", banners: "Promotional banner", brand: "Brand settings", settings: "Settings · Users & roles", profile: "My Profile" };
     return (
       <div style={{ display: "flex", minHeight: "100vh", background: "var(--surface-page)" }}>
         {sidebarOpen && <div className="krm-sidebar-backdrop open" onClick={() => setSidebarOpen(false)} />}
@@ -5405,6 +5406,7 @@
           {page === "email" && <EmailSettings />}
           {page === "telegram" && <TelegramSettings />}
           {page === "sms" && <SmsSettings />}
+          {page === "social_post" && <SocialPostingSettings />}
           {page === "payments" && <PaymentSettings />}
           {page === "reports" && <Reports />}
           {page === "audit" && <AuditLog />}
@@ -5419,6 +5421,132 @@
 
   // ── SMS Gateway Settings ─────────────────────────────────────────────────────
   const SMS_DEFAULTS = { enabled: false, driver: "twilio", twilio_sid: "", twilio_token: "", twilio_from: "", http_url: "", http_method: "GET", http_to_param: "to", http_text_param: "text", http_extra: "", http_header: "" };
+
+  const SOCIAL_POST_DEFAULTS = { enabled: false, telegram_enabled: false, telegram_channel: "", facebook_enabled: false, facebook_page_id: "", facebook_page_token: "", linkedin_enabled: false, linkedin_token: "", linkedin_author_urn: "" };
+
+  function SocialPostingSettings() {
+    const adm = window.KRAMA_ADMIN_API;
+    const [s, setS] = React.useState(SOCIAL_POST_DEFAULTS);
+    const [saved, setSaved] = React.useState(false);
+    const [testing, setTesting] = React.useState(false);
+    const [results, setResults] = React.useState(null);
+
+    React.useEffect(function () {
+      adm.fetchSettings("social_post").then(function (d) {
+        if (d && Object.keys(d).length) {
+          setS(Object.assign({}, SOCIAL_POST_DEFAULTS, {
+            enabled: !!d.enabled,
+            telegram_enabled: !!d.telegram_enabled, telegram_channel: d.telegram_channel || "",
+            facebook_enabled: !!d.facebook_enabled, facebook_page_id: d.facebook_page_id || "", facebook_page_token: d.facebook_page_token || "",
+            linkedin_enabled: !!d.linkedin_enabled, linkedin_token: d.linkedin_token || "", linkedin_author_urn: d.linkedin_author_urn || "",
+          }));
+        }
+      }).catch(function () {});
+    }, []);
+
+    const anyConfigured = (s.telegram_enabled && s.telegram_channel) || (s.facebook_enabled && s.facebook_page_id && s.facebook_page_token) || (s.linkedin_enabled && s.linkedin_token && s.linkedin_author_urn);
+    const connected = s.enabled && anyConfigured;
+    const set = (k, v) => { setS(p => ({ ...p, [k]: v })); setSaved(false); setResults(null); };
+
+    const save = () => {
+      adm.updateSettings("social_post", {
+        enabled: s.enabled,
+        telegram_enabled: s.telegram_enabled, telegram_channel: s.telegram_channel,
+        facebook_enabled: s.facebook_enabled, facebook_page_id: s.facebook_page_id, facebook_page_token: s.facebook_page_token,
+        linkedin_enabled: s.linkedin_enabled, linkedin_token: s.linkedin_token, linkedin_author_urn: s.linkedin_author_urn,
+      }).then(function () { setSaved(true); }).catch(function (e) { alert("Save failed: " + (e && e.message || "Unknown error")); });
+    };
+
+    const sendTest = () => {
+      setTesting(true); setResults(null);
+      adm.testSocial()
+        .then(function (d) { setResults(d && d.results ? d.results : { info: (d && d.message) || "Done" }); })
+        .catch(function (e) { setResults({ error: (e && e.message) || "Test failed. Save & enable a platform first." }); })
+        .finally(function () { setTesting(false); });
+    };
+
+    const fieldRow = (label, child, hint) => (
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)" }}>{label}</label>
+        {child}
+        {hint && <div style={{ fontSize: 11, color: "var(--text-muted)", lineHeight: 1.5 }}>{hint}</div>}
+      </div>
+    );
+    const inp = (k, type, placeholder) => (
+      <input type={type || "text"} value={s[k]} placeholder={placeholder || ""} onChange={e => set(k, e.target.value)}
+        style={{ width: "100%", padding: "8px 12px", borderRadius: 7, border: "1px solid var(--border)", background: "var(--surface-input)", color: "var(--text)", fontSize: 13 }} />
+    );
+    const platformCard = (key, name, icon, body, note) => (
+      <Card padding={24}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, marginBottom: s[key + "_enabled"] ? 18 : 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: 8, background: "var(--surface-card)", border: "1px solid var(--border)", color: "var(--text-muted)" }}>{I(icon, 18)}</span>
+            <div style={{ fontWeight: 600, fontSize: 14, color: "var(--text)" }}>{name}</div>
+          </div>
+          <Switch checked={s[key + "_enabled"]} onChange={v => set(key + "_enabled", v)} />
+        </div>
+        {s[key + "_enabled"] && <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>{body}{note && <div style={{ fontSize: 11, color: "var(--text-muted)", lineHeight: 1.5 }}>{note}</div>}</div>}
+      </Card>
+    );
+
+    return (
+      <div className="krm-page-pad" style={{ padding: 28, maxWidth: 1100 }}>
+        <ScreenHead title="Social posting" sub="Auto-share every newly-published job to your social channels. Members can opt a job out on the job form." action={<Button variant="primary" iconLeft={I("check", 16)} onClick={save}>Save changes</Button>} />
+        {saved && (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, background: "var(--success-bg)", color: "var(--success)", border: "1px solid var(--success-border)", borderRadius: 8, padding: "10px 16px", marginBottom: 18, fontSize: 13 }}>
+            {I("circle-check-big", 16)} Settings saved.
+          </div>
+        )}
+        <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+          <Card padding={24}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
+              <div>
+                <div style={{ fontWeight: 600, fontSize: 14, color: "var(--text)" }}>Enable social posting</div>
+                <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 4 }}>Master switch. When on, a published job is posted once to each enabled platform below.</div>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 999, background: connected ? "var(--success-bg)" : "var(--surface-card)", color: connected ? "var(--success)" : "var(--text-muted)", border: "1px solid " + (connected ? "var(--success-border)" : "var(--border)") }}>{connected ? "Live" : "Off"}</span>
+                <Switch checked={s.enabled} onChange={v => set("enabled", v)} />
+              </div>
+            </div>
+          </Card>
+
+          {platformCard("telegram", "Telegram channel", "send",
+            fieldRow("Channel", inp("telegram_channel", "text", "@yourchannel or -1001234567890"), "Uses the shared bot configured on the Telegram tab. Add that bot to your channel as an admin first."))}
+
+          {platformCard("facebook", "Facebook Page", "facebook",
+            <React.Fragment>
+              {fieldRow("Page ID", inp("facebook_page_id", "text", "1234567890"))}
+              {fieldRow("Page access token", inp("facebook_page_token", "password", "EAAB..."))}
+            </React.Fragment>,
+            "Needs a Meta app with the pages_manage_posts permission and a long-lived Page access token.")}
+
+          {platformCard("linkedin", "LinkedIn", "linkedin",
+            <React.Fragment>
+              {fieldRow("Access token", inp("linkedin_token", "password", "AQV..."))}
+              {fieldRow("Author URN", inp("linkedin_author_urn", "text", "urn:li:organization:12345"), "Your Company Page (urn:li:organization:ID) or member (urn:li:person:ID) URN.")}
+            </React.Fragment>,
+            "Requires an approved LinkedIn app with posting access (w_organization_social / w_member_social).")}
+
+          <Card padding={24}>
+            <div style={{ fontWeight: 600, fontSize: 14, color: "var(--text)", marginBottom: 6 }}>Send a test post</div>
+            <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 16 }}>Save first, then post a sample to every enabled platform to confirm your credentials.</div>
+            <Button variant="secondary" disabled={testing} iconLeft={I("send", 15)} onClick={sendTest}>{testing ? "Sending…" : "Send test post"}</Button>
+            {results && (
+              <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 8 }}>
+                {Object.keys(results).map(function (k) {
+                  const v = results[k]; const ok = v === "OK";
+                  return <div key={k} style={{ display: "flex", gap: 8, fontSize: 13, color: ok ? "var(--success)" : "var(--danger)" }}>
+                    {I(ok ? "circle-check-big" : "circle-x", 15)} <span style={{ textTransform: "capitalize", fontWeight: 600 }}>{k}:</span> <span style={{ color: "var(--text-muted)" }}>{v}</span>
+                  </div>;
+                })}
+              </div>
+            )}
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   function SmsSettings() {
     const adm = window.KRAMA_ADMIN_API;

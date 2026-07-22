@@ -114,6 +114,7 @@ class JobController extends Controller
             'salary_currency'  => 'nullable|string|max:8',
             'salary_period'    => 'nullable|in:hour,day,month,year',
             'is_remote'        => 'boolean',
+            'share_social'     => 'boolean',
             'description'      => 'nullable|string|max:20000',
             'requirements'     => 'nullable|string|max:10000',
             'benefits'         => 'nullable|string|max:5000',
@@ -153,6 +154,7 @@ class JobController extends Controller
             'salary_currency'  => 'nullable|string|max:8',
             'salary_period'    => 'nullable|in:hour,day,month,year',
             'is_remote'        => 'boolean',
+            'share_social'     => 'boolean',
             'description'      => 'nullable|string|max:20000',
             'requirements'     => 'nullable|string|max:10000',
             'benefits'         => 'nullable|string|max:5000',
@@ -329,6 +331,12 @@ class JobController extends Controller
             $this->sendFollowerEmails($job);
         } catch (\Exception $e) {
             Log::warning('Follower notification dispatch failed: ' . $e->getMessage());
+        }
+
+        try {
+            \App\Services\SocialPostService::shareJob($job);
+        } catch (\Exception $e) {
+            Log::warning('Social post dispatch failed: ' . $e->getMessage());
         }
     }
 

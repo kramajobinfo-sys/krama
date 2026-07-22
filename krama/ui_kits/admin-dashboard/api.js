@@ -322,6 +322,7 @@
     testTelegram: function () { return req("POST", "/admin/settings/telegram/test", {}); },
     activateTelegram: function () { return req("POST", "/admin/settings/telegram/activate", {}); },
     testSms: function (phone) { return req("POST", "/admin/settings/sms/test", { phone: phone }); },
+    testSocial: function () { return req("POST", "/admin/settings/social/test", {}); },
 
     // Image upload (banner/hero backgrounds — returns a public URL)
     uploadImage: function (file) {
