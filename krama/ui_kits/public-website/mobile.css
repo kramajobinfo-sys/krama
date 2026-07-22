@@ -468,3 +468,6 @@
    so toggling "show title & search over image" never changes the banner height.
 ═══════════════════════════════════════════════════════════════════════════ */
 .krm-hero.krm-hero--image-only { min-height: 0 !important; padding: 0 !important; }
+/* Any hero with a full-natural banner image sizes to the image (no forced band / no teal gap),
+   on both desktop and mobile. Title/search (if any) overlay the image absolutely. */
+.krm-hero.krm-hero--has-img { min-height: 0 !important; padding: 0 !important; }

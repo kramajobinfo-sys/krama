@@ -3178,6 +3178,22 @@
                           <span style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-strong)" }}>Hide title &amp; search bar (show banner image only)</span>
                           <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>On: only your banner image shows, filling the hero on desktop &amp; mobile (use a 1600 × 480px image). Off: the title, subtitle &amp; search bar are shown over the image.</span>
                         </label>
+                        {!slideForm.imageOnly && (
+                        <div style={{ marginBottom: 12, display: "grid", gap: 6 }}>
+                          <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: "7px 10px", borderRadius: "var(--radius-md)", background: slideForm.hideTitleDesktop ? "var(--brand-subtle)" : "var(--surface-sunken)", border: "1px solid " + (slideForm.hideTitleDesktop ? "var(--brand)" : "var(--border-subtle)") }}>
+                            <input type="checkbox" checked={!!slideForm.hideTitleDesktop} onChange={(e) => setSlideForm((f) => ({ ...f, hideTitleDesktop: e.target.checked }))} style={{ width: 16, height: 16, accentColor: "var(--brand)", cursor: "pointer", flexShrink: 0 }} />
+                            <span style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-strong)" }}>Hide title on desktop</span>
+                          </label>
+                          <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: "7px 10px", borderRadius: "var(--radius-md)", background: slideForm.hideTitleMobile ? "var(--brand-subtle)" : "var(--surface-sunken)", border: "1px solid " + (slideForm.hideTitleMobile ? "var(--brand)" : "var(--border-subtle)") }}>
+                            <input type="checkbox" checked={!!slideForm.hideTitleMobile} onChange={(e) => setSlideForm((f) => ({ ...f, hideTitleMobile: e.target.checked }))} style={{ width: 16, height: 16, accentColor: "var(--brand)", cursor: "pointer", flexShrink: 0 }} />
+                            <span style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-strong)" }}>Hide title on mobile</span>
+                          </label>
+                          <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: "7px 10px", borderRadius: "var(--radius-md)", background: slideForm.searchDesktopOnly ? "var(--brand-subtle)" : "var(--surface-sunken)", border: "1px solid " + (slideForm.searchDesktopOnly ? "var(--brand)" : "var(--border-subtle)") }}>
+                            <input type="checkbox" checked={!!slideForm.searchDesktopOnly} onChange={(e) => setSlideForm((f) => ({ ...f, searchDesktopOnly: e.target.checked }))} style={{ width: 16, height: 16, accentColor: "var(--brand)", cursor: "pointer", flexShrink: 0 }} />
+                            <span style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-strong)" }}>Show search on desktop only (hide on mobile)</span>
+                          </label>
+                        </div>
+                        )}
                         <div style={{ fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-strong)", marginBottom: 6 }}>Banner image</div>
                         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                           {(slideForm._src || slideForm.image) && <div style={{ width: 80, height: 48, borderRadius: "var(--radius-sm)", backgroundImage: "url('" + (slideForm._src || slideForm.image) + "')", backgroundSize: "cover", backgroundPosition: (slideForm.focalX != null ? slideForm.focalX : 50) + "% " + (slideForm.focalY != null ? slideForm.focalY : 50) + "%", flexShrink: 0, border: "1px solid var(--border)" }} />}

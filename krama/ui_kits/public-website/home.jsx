@@ -229,47 +229,43 @@
     // Image-only ad slide: show the full poster as-is (no crop, no overlaid text/search).
     const imageOnly = !!(slide.imageOnly && heroImg);
     const hasHeroImg = !!slide.image;
-    // Mobile + text overlay: show the whole image at its NATURAL height so it fills the width
-    // edge-to-edge with no theme-colour space around it; any title/search flow below.
-    const mobileStack = isMobile && !imageOnly && hasHeroImg;
-    const searchOnMobile = !slide.hideSearch && !slide.searchDesktopOnly;
-    const mobileHasContentBelow = !slide.hideTitle || searchOnMobile;
+    // Title hidden per-device (hideTitleDesktop / hideTitleMobile; legacy hideTitle hides on both).
+    const titleHidden = isMobile ? (slide.hideTitleMobile || slide.hideTitle) : (slide.hideTitleDesktop || slide.hideTitle);
+    const showTitle = !imageOnly && !titleHidden;
+    // Search overlays the banner; optional desktop-only (hidden on phones — search lives in the bottom menu).
+    const showSearch = !imageOnly && !slide.hideSearch && !(isMobile && slide.searchDesktopOnly);
+    const hasOverlay = showTitle || showSearch;
 
     return (
       <section
-        className={"krm-hero" + (imageOnly ? " krm-hero--image-only" : "") + (mobileStack ? " krm-hero--mobile-stack" : "")} style={{ position: "relative", overflow: "hidden", background: t.bg, minHeight: (imageOnly || mobileStack) ? 0 : (isMobile ? 340 : 480), display: "flex", flexDirection: "column", justifyContent: "center", padding: (imageOnly || mobileStack) ? 0 : "56px 32px 72px", transition: "background 0.5s ease" }}
+        className={"krm-hero" + (hasHeroImg ? " krm-hero--has-img" : "") + (imageOnly ? " krm-hero--image-only" : "")} style={{ position: "relative", overflow: "hidden", background: t.bg, minHeight: hasHeroImg ? 0 : (isMobile ? 340 : 480), display: "flex", flexDirection: "column", justifyContent: "center", padding: 0, transition: "background 0.5s ease" }}
         onMouseEnter={() => setPaused(true)}
         onMouseLeave={() => setPaused(false)}
       >
         {slide.image
-          ? <React.Fragment>
-              {imageOnly
-                ? <img
-                    src={heroImg}
-                    alt={TR(slide.title) || "Banner"}
-                    onClick={() => { if (slide.ctaUrl) window.open(slide.ctaUrl, "_blank"); }}
-                    style={{ position: "relative", zIndex: 1, display: "block", width: "100%", height: "auto", cursor: slide.ctaUrl ? "pointer" : "default" }}
-                  />
-                : <React.Fragment>
-                    {/* whole image shown uncropped (contain), centered on the theme-colour background */}
-                    <div style={{ position: "absolute", inset: 0, zIndex: 1, backgroundImage: "url('" + heroImg + "')", backgroundSize: slide.fit === "contain" ? "contain" : "cover", backgroundRepeat: "no-repeat", backgroundPosition: "center" }} />
-                    <div style={{ position: "absolute", inset: 0, zIndex: 2, background: t.bg, opacity: (slide.imgOverlay != null ? slide.imgOverlay : 20) / 100 }} />
-                  </React.Fragment>}
-            </React.Fragment>
+          ? <img
+              src={heroImg}
+              alt={TR(slide.title) || "Banner"}
+              onClick={() => { if (imageOnly && slide.ctaUrl) window.open(slide.ctaUrl, "_blank"); }}
+              style={{ position: "relative", zIndex: 1, display: "block", width: "100%", height: "auto", cursor: (imageOnly && slide.ctaUrl) ? "pointer" : "default" }}
+            />
           : <div style={{ position: "absolute", inset: 0, background: "url('../../assets/krama-pattern.svg')", backgroundSize: 80, opacity: 0.08 }} />}
 
-        <div style={{ position: "relative", zIndex: 3, maxWidth: 1200, margin: "0 auto", textAlign: "center", display: imageOnly ? "none" : undefined }}>
-          {!slide.hideTitle && <React.Fragment>
+        {hasOverlay && <div style={{ position: "absolute", inset: 0, zIndex: 2, background: t.bg, opacity: (slide.imgOverlay != null ? slide.imgOverlay : 25) / 100 }} />}
+        {hasOverlay && (
+        <div style={{ position: "absolute", inset: 0, zIndex: 3, display: "flex", flexDirection: "column", justifyContent: "center", padding: "24px 16px" }}>
+        <div style={{ maxWidth: 1200, width: "100%", margin: "0 auto", textAlign: "center" }}>
+          {showTitle && <React.Fragment>
           {slide.badge && (
             <span style={{ display: "inline-block", background: t.fg === "#fff" ? "rgba(255,255,255,0.14)" : "rgba(0,0,0,0.08)", color: t.fg, fontSize: "var(--text-sm)", fontWeight: 600, padding: "6px 14px", borderRadius: "var(--radius-pill)", marginBottom: 22 }}>
               {TR(slide.badge)}
             </span>
           )}
-          <h1 style={{ color: t.fg, fontSize: "var(--text-6xl)", fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1.05 }}>
+          <h1 style={{ color: t.fg, fontSize: "var(--text-6xl)", fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1.05, textShadow: "0 2px 14px rgba(0,0,0,0.28)" }}>
             {TR(slide.title)}
           </h1>
           {slide.subtitle && (
-            <p style={{ color: t.fg, opacity: 0.8, fontSize: "var(--text-lg)", marginTop: 18, maxWidth: 560, marginLeft: "auto", marginRight: "auto" }}>
+            <p style={{ color: t.fg, opacity: 0.92, fontSize: "var(--text-lg)", marginTop: 18, maxWidth: 560, marginLeft: "auto", marginRight: "auto", textShadow: "0 1px 10px rgba(0,0,0,0.28)" }}>
               {TR(slide.subtitle)}
             </p>
           )}
@@ -282,8 +278,8 @@
             </div>
           )}
           </React.Fragment>}
-          {!slide.hideSearch && !(isMobile && slide.searchDesktopOnly) && <React.Fragment>
-          <div className="krm-search-bar" style={{ display: "flex", gap: 8, background: "#fff", padding: 8, borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-lg)", marginTop: 32, maxWidth: 920, marginLeft: "auto", marginRight: "auto" }}>
+          {showSearch && <React.Fragment>
+          <div className="krm-search-bar" style={{ display: "flex", gap: 8, background: "#fff", padding: 8, borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-lg)", marginTop: showTitle ? 32 : 0, maxWidth: 920, marginLeft: "auto", marginRight: "auto" }}>
             <div className="krm-search-input" style={{ flex: 1, display: "flex", alignItems: "center", gap: 8, padding: "0 12px" }}>
               <span style={{ color: "var(--text-faint)" }}>{I("search", 18)}</span>
               <input value={kw} onChange={(e) => setKw(e.target.value)} onKeyDown={onKey} placeholder={TR("Job title or keyword")} style={{ flex: 1, border: "none", outline: "none", fontFamily: "var(--font-sans)", fontSize: "var(--text-base)", color: "var(--text-strong)" }} />
@@ -303,6 +299,8 @@
           </div>
           </React.Fragment>}
         </div>
+        </div>
+        )}
 
         {slides.length > 1 && (
           <React.Fragment>
