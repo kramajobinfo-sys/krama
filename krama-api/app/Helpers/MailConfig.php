@@ -26,6 +26,9 @@ class MailConfig
             'mail.mailers.smtp.encryption' => $s['encryption'] ?? 'tls',
             'mail.mailers.smtp.username'   => $s['username'] ?? '',
             'mail.mailers.smtp.password'   => $s['password'] ?? '',
+            // Fail fast on an unreachable/slow mail server (Swift socket connect + stream
+            // timeout, seconds) so a bad SMTP host can't hang a request for ~30s+.
+            'mail.mailers.smtp.timeout'    => (int) ($s['timeout'] ?? 8),
             'mail.from.address'            => $s['from_address'] ?? config('mail.from.address'),
             'mail.from.name'               => $s['from_name'] ?? config('mail.from.name'),
         ]);
