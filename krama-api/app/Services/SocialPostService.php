@@ -107,7 +107,11 @@ class SocialPostService
 
     public static function postTelegram(string $channel, string $text): void
     {
-        $res = TelegramService::sendMessage(TelegramService::botToken(), $channel, $text);
+        // The shared bot sends with parse_mode=HTML, so escape &, <, > in the
+        // (plain-text) message — otherwise a job title like "Food & Beverage"
+        // makes Telegram reject the whole message with a parse error.
+        $safe = htmlspecialchars($text, ENT_NOQUOTES, 'UTF-8');
+        $res = TelegramService::sendMessage(TelegramService::botToken(), $channel, $safe);
         if (empty($res['ok'])) throw new \RuntimeException($res['error'] ?? 'telegram send failed');
     }
 
