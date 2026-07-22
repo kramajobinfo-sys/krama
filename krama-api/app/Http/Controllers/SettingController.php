@@ -121,6 +121,17 @@ class SettingController extends Controller
         ],
     ];
 
+    // Secret/credential keys that must never be overwritten with a blank value on save
+    // (prevents losing a stored token when a form is submitted with the field empty).
+    private const SECRET_KEYS = [
+        'bot_token', 'webhook_secret',            // telegram
+        'twilio_token',                            // sms
+        'apiKey',                                  // chat (Anthropic key)
+        'password',                                // smtp
+        'bakong_token', 'aba_api_key', 'stripe_secret_key', // payment gateways
+        'facebook_page_token', 'linkedin_token',   // social_post
+    ];
+
     // GET /api/settings/{group} — public: safe groups only (homepage, partial chat)
     public function publicGroup($group)
     {
@@ -207,18 +218,27 @@ class SettingController extends Controller
         }
         $validated = $request->validate($rules);
 
+        $written = [];
         foreach ($validated as $key => $value) {
+            // Safeguard: never overwrite a stored secret (token/password/key) with a
+            // blank submission — this keeps admins from losing a saved credential when a
+            // form is saved with the field left empty. To change a secret, submit a new
+            // non-empty value.
+            if (in_array($key, self::SECRET_KEYS, true) && ($value === null || $value === '')) {
+                continue;
+            }
             Setting::updateOrInsert(
                 ['group' => $group, 'key' => $key],
                 ['value' => is_bool($value) ? (int) $value : $value]
             );
+            $written[] = $key;
         }
 
         Cache::forget("public.settings.{$group}");
         if ($group === 'smtp') {
             MailConfig::forgetCache();
         }
-        $this->auditLog('settings.updated', ['group' => $group, 'keys' => array_keys($validated)]);
+        $this->auditLog('settings.updated', ['group' => $group, 'keys' => $written]);
 
         // Return the full updated group
         $rows = Setting::where('group', $group)->get();
