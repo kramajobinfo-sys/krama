@@ -321,23 +321,30 @@ class JobController extends Controller
     // path (admin approve, employer direct-publish, and company approval).
     private function notifyNewlyPublished(Job $job): void
     {
-        try {
-            $this->sendJobAlertEmails($job);
-        } catch (\Exception $e) {
-            Log::warning('Job alert dispatch failed: ' . $e->getMessage());
-        }
+        // Run all post-publish notifications AFTER the HTTP response is sent, so a slow
+        // or unreachable SMTP server (or a social API) never blocks — or drops — the
+        // publish request. Terminating callbacks run in-process on kernel shutdown, so
+        // no queue worker is needed (safe on shared hosting). Social is done first so
+        // the job posts to social media promptly even if email delivery is slow.
+        app()->terminating(function () use ($job) {
+            try {
+                \App\Services\SocialPostService::shareJob($job);
+            } catch (\Throwable $e) {
+                Log::warning('Social post dispatch failed: ' . $e->getMessage());
+            }
 
-        try {
-            $this->sendFollowerEmails($job);
-        } catch (\Exception $e) {
-            Log::warning('Follower notification dispatch failed: ' . $e->getMessage());
-        }
+            try {
+                $this->sendJobAlertEmails($job);
+            } catch (\Throwable $e) {
+                Log::warning('Job alert dispatch failed: ' . $e->getMessage());
+            }
 
-        try {
-            \App\Services\SocialPostService::shareJob($job);
-        } catch (\Exception $e) {
-            Log::warning('Social post dispatch failed: ' . $e->getMessage());
-        }
+            try {
+                $this->sendFollowerEmails($job);
+            } catch (\Throwable $e) {
+                Log::warning('Follower notification dispatch failed: ' . $e->getMessage());
+            }
+        });
     }
 
     // PATCH /api/jobs/{id}/reject — admin rejects/takes down a job (platform moderation)
