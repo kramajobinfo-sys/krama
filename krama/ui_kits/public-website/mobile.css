@@ -4,6 +4,11 @@
 .krm-mobile-drawer { display: none; }
 .krm-bottom-nav    { display: none; }
 
+/* ── Auth pages: on desktop the split-screen Shell provides its own chrome,
+      so hide the site header/footer there (mobile re-shows them below). ────── */
+.krm-auth-page > .krm-header,
+.krm-auth-page > .krm-footer { display: none !important; }
+
 /* ═══════════════════════════════════════════════════════════════════════════
    MOBILE  ≤ 767px
 ═══════════════════════════════════════════════════════════════════════════ */
@@ -67,8 +72,8 @@
 
   /* ── Auth page titles — scale down to fit narrow screens ─────────────── */
   .krm-auth-title {
-    font-size: var(--text-2xl) !important;
-    line-height: 1.15 !important;
+    font-size: var(--text-xl) !important;
+    line-height: 1.2 !important;
   }
 
   /* ── Hero ────────────────────────────────────────────────────────────── */
@@ -373,6 +378,10 @@
   }
 
   /* ── Auth pages (Login / Register / Forgot Password) ───────────────── */
+  /* Show the standard site header (the Shell's own logo is hidden — the header
+     carries it) so the auth page matches every other page on mobile. */
+  .krm-auth-page > .krm-header { display: flex !important; }
+  .krm-auth-logo { display: none !important; }
   .krm-auth-shell {
     grid-template-columns: 1fr !important;
   }
@@ -381,8 +390,11 @@
   }
   .krm-auth-form-side {
     padding: 24px 20px !important;
-    min-height: 100vh !important;
+    /* fit between the sticky header (64px) and the fixed bottom nav (60px) */
+    min-height: calc(100vh - 124px) !important;
   }
+  /* Content sits at the top (not vertically centred) — still horizontally centred. */
+  .krm-auth-form-center { align-items: flex-start !important; }
 
   /* ── Company profile page ───────────────────────────────────────────── */
   .krm-co-hero { height: 130px !important; }

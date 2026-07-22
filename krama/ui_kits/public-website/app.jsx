@@ -105,9 +105,20 @@ function App() {
     </div>
   );
 
-  if (page === "login")    return <KramaLogin onNav={nav} onLogin={handleLogin} />;
-  if (page === "register") return <KramaRegister onNav={nav} onLogin={handleLogin} />;
-  if (page === "forgot")   return <KramaForgotPassword onNav={nav} />;
+  if (page === "login" || page === "register" || page === "forgot") {
+    // Auth pages reuse the standard site header + footer (shown on mobile so the
+    // page matches every other page; hidden on desktop via .krm-auth-page CSS so
+    // the split-screen Shell keeps its own chrome — desktop stays untouched).
+    return (
+      <div className="krm-auth-page">
+        <KramaHeader page="" onNav={nav} user={user} onLogout={handleLogout} lang={lang} onToggleLang={toggleLang} />
+        {page === "login"    && <KramaLogin onNav={nav} onLogin={handleLogin} />}
+        {page === "register" && <KramaRegister onNav={nav} onLogin={handleLogin} />}
+        {page === "forgot"   && <KramaForgotPassword onNav={nav} />}
+        <KramaFooter onNav={nav} />
+      </div>
+    );
+  }
 
   const INFO = ["about", "contact", "terms", "privacy", "pricing", "employers"];
   const headerPage = page === "detail" ? "jobs" : page === "company" ? "companies" : (INFO.includes(page) ? "" : page);

@@ -112,6 +112,7 @@
       { id: "companies", icon: "building-2", label: "Companies" },
       { id: "jobs", icon: "search", label: "Job Search", center: true },
       { id: "employers", icon: "users", label: "Members" },
+      { id: "community", icon: "messages-square", label: "Community" },
     ];
     const navTo = (id) => { setMenuOpen(false); onNav(id); };
 
@@ -152,9 +153,17 @@
             {!user && <Button variant="primary" size="sm" style={{ whiteSpace: "nowrap" }} onClick={() => navTo("register")}>{t("Post a job")}</Button>}
           </div>
 
-          {/* Language toggle — mobile only, shown in header bar */}
-          <div className="krm-mobile-lang" style={{ marginLeft: "auto", display: "none", alignItems: "center", flexShrink: 0 }}>
+          {/* Language toggle + Account — mobile only, shown in header bar */}
+          <div className="krm-mobile-lang" style={{ marginLeft: "auto", display: "none", alignItems: "center", gap: 10, flexShrink: 0 }}>
             <LangToggle />
+            <button onClick={() => { if (user) { setMenuOpen(o => !o); } else { navTo("login"); } }} aria-label={t("Account")} style={{
+              display: "inline-flex", alignItems: "center", justifyContent: "center",
+              border: "1px solid var(--border)", borderRadius: "var(--radius-pill)",
+              background: menuOpen ? "var(--brand-subtle)" : "transparent", cursor: "pointer",
+              padding: 6, flexShrink: 0, color: menuOpen ? "var(--text-brand)" : "var(--text-muted)",
+            }}>
+              <i data-lucide={user ? "circle-user" : "user"} style={{ width: 20, height: 20 }}></i>
+            </button>
           </div>
 
         </header>
@@ -175,14 +184,6 @@
             }}>
               {/* Grabber */}
               <div style={{ width: 40, height: 4, borderRadius: 2, background: "var(--border)", margin: "0 auto 12px" }} />
-              {/* Quick links (things not on the bottom tab bar) */}
-              <div style={{ padding: "0 20px 10px", marginBottom: 8, borderBottom: "1px solid var(--border-subtle)" }}>
-                <button onClick={() => navTo("community")} style={{
-                  display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "10px 4px",
-                  background: "transparent", border: "none", cursor: "pointer",
-                  fontFamily: "var(--font-sans)", fontWeight: 600, color: "var(--text-strong)", fontSize: "var(--text-base)",
-                }}><i data-lucide="messages-square" style={{ width: 20, height: 20 }}></i> {t("Community")}</button>
-              </div>
               {user ? (
                 <div style={{ padding: "0 20px" }}>
                   <div style={{ fontWeight: 700, fontSize: "var(--text-sm)", color: "var(--text-strong)", marginBottom: 4 }}>{user.name}</div>
@@ -235,13 +236,6 @@
               </button>
             );
           })}
-          {/* Account tab — opens login/register (or profile) sheet */}
-          <button className="krm-bottom-tab" onClick={() => setMenuOpen(o => !o)} style={{
-            color: menuOpen ? "var(--text-brand)" : "var(--text-muted)",
-          }}>
-            <i data-lucide={user ? "circle-user" : "user"} style={{ width: 22, height: 22 }}></i>
-            <span style={{ fontSize: 11, fontWeight: menuOpen ? 700 : 500, fontFamily: "var(--font-sans)", whiteSpace: "nowrap" }}>{t("Account")}</span>
-          </button>
         </nav>
       </React.Fragment>
     );
