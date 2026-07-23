@@ -11,7 +11,7 @@ class Plan extends Model
 
     protected $fillable = [
         'name', 'price', 'currency', 'interval', 'job_post_limit', 'trial_days',
-        'featured_credits', 'features_json', 'is_active',
+        'featured_credits', 'features_json', 'is_active', 'custom_pricing',
     ];
 
     protected $casts = [
@@ -21,5 +21,6 @@ class Plan extends Model
         'featured_credits' => 'integer',
         'features_json'    => 'array',
         'is_active'        => 'boolean',
+        'custom_pricing'   => 'boolean',
     ];
 }

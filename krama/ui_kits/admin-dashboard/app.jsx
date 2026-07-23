@@ -4125,7 +4125,7 @@
   ];
   const TX_TONE = { Paid: "success", Pending: "warning", Failed: "danger", Refunded: "neutral" };
 
-  const PLAN_BLANK = { name: "", price: "", currency: "USD", interval: "month", job_post_limit: "", trial_days: "", featured_credits: 0, features_json: [], is_active: true };
+  const PLAN_BLANK = { name: "", price: "", currency: "USD", interval: "month", job_post_limit: "", trial_days: "", featured_credits: 0, features_json: [], is_active: true, custom_pricing: false };
   const SUB_BLANK  = { company_id: "", plan_id: "", status: "active", started_at: new Date().toISOString().slice(0,10), renews_at: "", job_post_limit: "" };
 
   function PlansTab() {
@@ -4169,7 +4169,7 @@
       trial_days: pl.trial_days != null ? String(pl.trial_days) : "",
       featured_credits: pl.featured_credits || 0,
       features_json: Array.isArray(pl.features_json) ? pl.features_json : [],
-      is_active: !!pl.is_active, _id: pl.id,
+      is_active: !!pl.is_active, custom_pricing: !!pl.custom_pricing, _id: pl.id,
     }});
     const setF = (k, v) => setModal((m) => ({ ...m, data: { ...m.data, [k]: v } }));
     const addFeature = () => { setF("features_json", [...(modal.data.features_json || []), ""]); };
@@ -4184,7 +4184,7 @@
         trial_days: d.trial_days ? parseInt(d.trial_days) : null,
         featured_credits: parseInt(d.featured_credits) || 0,
         features_json: (d.features_json||[]).filter(Boolean),
-        is_active: d.is_active };
+        is_active: d.is_active, custom_pricing: !!d.custom_pricing };
       setSaving(true);
       var call = modal.mode === "edit" ? adm.updatePlan(d._id, payload) : adm.createPlan(payload);
       call.then(() => { setSaving(false); setModal(null); flash(modal.mode === "edit" ? "Plan updated." : "Plan created."); load(); })
@@ -4301,6 +4301,13 @@
                     </div>
                   ))}
                   <button onClick={addFeature} style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", border: "1px dashed var(--border)", borderRadius: "var(--radius-md)", background: "transparent", color: "var(--text-muted)", cursor: "pointer", fontSize: "var(--text-sm)", fontFamily: "var(--font-sans)" }}>{I("plus", 14)} Add feature</button>
+                </div>
+                <div style={{ gridColumn: "1 / -1", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
+                  <div>
+                    <span style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-strong)" }}>Custom pricing</span>
+                    <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: 2 }}>On the public page, show "Custom" &amp; a "Contact sales" button instead of the price (dark card).</div>
+                  </div>
+                  <Switch checked={modal.data.custom_pricing} onChange={(v) => setF("custom_pricing", v)} />
                 </div>
                 <div style={{ gridColumn: "1 / -1", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                   <span style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-strong)" }}>Active</span>

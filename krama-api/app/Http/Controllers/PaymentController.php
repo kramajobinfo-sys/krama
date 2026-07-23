@@ -523,6 +523,7 @@ class PaymentController extends Controller
             'featured_credits' => 'sometimes|integer|min:0',
             'features_json'    => 'nullable|array',
             'is_active'        => 'sometimes|boolean',
+            'custom_pricing'   => 'sometimes|boolean',
         ]);
 
         $plan->update($data);
@@ -547,6 +548,7 @@ class PaymentController extends Controller
             'featured_credits' => 'sometimes|integer|min:0',
             'features_json'    => 'nullable|array',
             'is_active'        => 'sometimes|boolean',
+            'custom_pricing'   => 'sometimes|boolean',
         ]);
 
         $plan = Plan::create($data);
