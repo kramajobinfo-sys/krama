@@ -478,8 +478,7 @@ class JobController extends Controller
         $company = $this->resolveCompany($user);
 
         [$price, $currency, $days] = $this->featuredBoostConfig();
-        $sub        = $this->primaryActiveSubscription($company);
-        $remaining  = $this->featuredCreditsRemaining($sub);
+        $remaining  = $this->featuredCreditsForCompany($company);
         $activeUntil = ($job->is_featured && $job->featured_until && $job->featured_until->isFuture())
             ? $job->featured_until : null;
 
@@ -509,26 +508,30 @@ class JobController extends Controller
         }
 
         [$price, $currency, $days] = $this->featuredBoostConfig();
-        $sub       = $this->primaryActiveSubscription($company);
-        $remaining = $this->featuredCreditsRemaining($sub);
+        $remaining = $this->featuredCreditsForCompany($company);
 
-        // 1) Free path — spend an included plan credit
-        if ($remaining > 0 && $sub) {
-            DB::transaction(function () use ($sub, $job, $days) {
-                $sub->increment('featured_credits_used');
-                $job->update(['is_featured' => true, 'featured_until' => now()->addDays($days)]);
-            });
+        // 1) Free path — spend an included credit from a plan that still has one
+        if ($remaining > 0) {
+            $creditSub = $this->subscriptionWithFeaturedCredit($company);
+            if ($creditSub) {
+                DB::transaction(function () use ($creditSub, $job, $days) {
+                    $creditSub->increment('featured_credits_used');
+                    $job->update(['is_featured' => true, 'featured_until' => now()->addDays($days)]);
+                });
 
-            return response()->json([
-                'featured'          => true,
-                'via'               => 'credit',
-                'featured_until'    => $job->fresh()->featured_until,
-                'credits_remaining' => max(0, $remaining - 1),
-                'message'           => 'Job featured for ' . $days . ' days using an included credit.',
-            ]);
+                return response()->json([
+                    'featured'          => true,
+                    'via'               => 'credit',
+                    'featured_until'    => $job->fresh()->featured_until,
+                    'credits_remaining' => max(0, $remaining - 1),
+                    'message'           => 'Job featured for ' . $days . ' days using an included credit.',
+                ]);
+            }
         }
 
-        // 2) Paid path — create a pending payment; the job features once payment is confirmed
+        // 2) Paid path — create a pending payment; the job features once payment is confirmed.
+        // Attribute the payment to the company's primary (latest active/trial) subscription.
+        $sub  = $this->primaryActiveSubscription($company);
         $data = $request->validate([
             'method' => 'nullable|in:stripe,aba,acleda,wing,khqr,cod,card,other',
         ]);
@@ -584,6 +587,41 @@ class JobController extends Controller
         if (! $sub || ! $sub->plan) return 0;
         $total = (int) ($sub->plan->featured_credits ?? 0);
         return max(0, $total - (int) $sub->featured_credits_used);
+    }
+
+    // Active/trial subscriptions, soonest-expiring first (never-expiring last), ties by cheapest
+    // plan — the same order job slots are consumed in, so short-lived allocations are used first.
+    private function activeSubscriptions(Company $company)
+    {
+        return Subscription::where('company_id', $company->id)
+            ->whereIn('status', ['active', 'trial'])
+            ->with('plan')
+            ->get()
+            ->sort(function ($a, $b) {
+                $ax = $a->renews_at ? $a->renews_at->timestamp : PHP_INT_MAX;
+                $bx = $b->renews_at ? $b->renews_at->timestamp : PHP_INT_MAX;
+                if ($ax !== $bx) return $ax <=> $bx;
+                $ap = $a->plan ? (float) $a->plan->price : PHP_INT_MAX;
+                $bp = $b->plan ? (float) $b->plan->price : PHP_INT_MAX;
+                return $ap <=> $bp;
+            })
+            ->values();
+    }
+
+    // Total featured credits still available across ALL the company's active/trial plans
+    // (not just the primary one), matching how job slots are pooled across subscriptions.
+    private function featuredCreditsForCompany(Company $company): int
+    {
+        return (int) $this->activeSubscriptions($company)
+            ->sum(fn ($s) => $this->featuredCreditsRemaining($s));
+    }
+
+    // The subscription a featured credit should be spent from: soonest-expiring one that still
+    // has a credit left, or null if none do.
+    private function subscriptionWithFeaturedCredit(Company $company): ?Subscription
+    {
+        return $this->activeSubscriptions($company)
+            ->first(fn ($s) => $this->featuredCreditsRemaining($s) > 0);
     }
 
     private function nextBoostInvoiceNo(): string
