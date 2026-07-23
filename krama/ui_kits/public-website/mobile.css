@@ -91,14 +91,21 @@
   }
   .krm-hero p { font-size: var(--text-base) !important; }
 
-  /* Image-only page heroes (Find Jobs/Companies/Job Detail/For Employers):
-     a wide 1600x220 banner is a thin sliver at phone width, so give it a real
-     banner height and cover-fill instead of the desktop aspect-ratio. */
+  /* Image-only page heroes (Find Jobs/Companies/Job Detail/Members): match the HOME
+     hero on mobile — show the full banner image at its natural height (no crop, no
+     forced band, full-bleed) and drop the teal tint. Desktop keeps its cover strip. */
   .krm-page-hero.krm-page-hero--img {
     aspect-ratio: auto !important;
-    height: 150px !important;
-    max-height: 150px !important;
+    height: auto !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    padding: 0 !important;
   }
+  .krm-page-hero--img .krm-page-hero-bg {
+    position: relative !important;
+    height: auto !important;
+  }
+  .krm-page-hero--img .krm-page-hero-tint { display: none !important; }
 
   /* ── Hero search bar — stack vertically ──────────────────────────────── */
   .krm-search-bar {
