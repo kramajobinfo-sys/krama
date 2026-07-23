@@ -9,6 +9,9 @@
 .krm-auth-page > .krm-header,
 .krm-auth-page > .krm-footer { display: none !important; }
 
+/* Pricing plan tabs are a mobile-only selector; on desktop the grid shows all cards. */
+.krm-pricing-tabs { display: none; }
+
 /* ═══════════════════════════════════════════════════════════════════════════
    MOBILE  ≤ 767px
 ═══════════════════════════════════════════════════════════════════════════ */
@@ -206,6 +209,59 @@
     font-size: var(--text-3xl) !important;
     line-height: 1.15 !important;
   }
+
+  /* ── Members / info page body — tighter padding & rhythm on phones ────── */
+  .krm-info-body { padding: 28px 16px 44px !important; }
+  .krm-emp-section { margin-bottom: 36px !important; }
+  .krm-emp-h2 { font-size: var(--text-2xl) !important; line-height: 1.2 !important; }
+  .krm-emp-sub { font-size: var(--text-base) !important; }
+  /* Stats / CTA bands: less side padding so content isn't squeezed */
+  .krm-emp-band { padding: 24px 14px !important; margin-bottom: 36px !important; }
+  /* Keep the 3 stats side-by-side (3 columns) on mobile; shrink to fit. */
+  .krm-stats-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 8px !important; }
+  .krm-emp-stat-num { font-size: var(--text-2xl) !important; }
+  .krm-emp-stat-label { font-size: var(--text-xs) !important; line-height: 1.25 !important; }
+  .krm-emp-cta { padding: 32px 22px !important; }
+  /* CTA buttons stack full-width instead of wrapping awkwardly */
+  .krm-emp-cta-btns { flex-direction: column !important; gap: 10px !important; }
+  .krm-emp-cta-btns > * { width: 100% !important; }
+
+  /* Pricing plans — tab selector + one plan panel (instead of a scrolling row). */
+  .krm-pricing-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .krm-pricing-tab {
+    flex: 1 1 calc(50% - 4px);           /* 2 per row → 2×2 grid of tabs */
+    padding: 10px 8px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--surface-sunken);
+    color: var(--text-muted);
+    font-family: var(--font-sans);
+    font-size: var(--text-sm);
+    font-weight: 700;
+    white-space: nowrap;
+    text-align: center;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+  }
+  .krm-pricing-tab.is-active {
+    background: var(--brand);
+    border-color: var(--brand);
+    color: #fff;
+  }
+  /* Show only the selected plan's card, full width. */
+  .krm-pricing-grid {
+    display: block !important;
+    grid-template-columns: none !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  .krm-pricing-grid > .krm-plan-card { display: none !important; }
+  .krm-pricing-grid > .krm-plan-card.is-active { display: block !important; }
 
   /* ── Company profile tab bar — all 5 tabs fit at once (no badges) ─────── */
   .krm-co-tabs {

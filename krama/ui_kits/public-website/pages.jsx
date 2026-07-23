@@ -69,6 +69,7 @@
   // cards rather than risk showing stale/incorrect pricing.
   function PricingSection({ onNav }) {
     const [plans, setPlans] = React.useState(null); // null = loading
+    const [active, setActive] = React.useState(0);  // mobile: which plan tab is selected
     React.useEffect(() => {
       let alive = true;
       window.KRAMA_API.fetchPlans()
@@ -79,7 +80,7 @@
 
     const isTrial = (p) => Number(p.price) === 0 && Number(p.trial_days) > 0;
     const isFree = (p) => Number(p.price) === 0 && !isTrial(p);
-    const isCustom = (p) => /enterprise/i.test(p.name || "");
+    const isCustom = (p) => !!p.custom_pricing;
     const planFeatures = (p) => Array.isArray(p.features_json) ? p.features_json : [];
 
     if (plans === null) {
@@ -87,17 +88,24 @@
     }
     if (plans.length === 0) {
       return (
-        <div style={{ textAlign: "center", padding: "60px 0", color: "var(--text-muted)" }}>
-          <p style={{ fontSize: "var(--text-base)" }}>{TR("Pricing is being updated right now.")}</p>
+        <div className="krm-emp-empty" style={{ textAlign: "center", padding: "44px 24px", color: "var(--text-muted)", background: "var(--surface-sunken)", borderRadius: "var(--radius-xl)", border: "1px solid var(--border)" }}>
+          <p style={{ fontSize: "var(--text-base)", marginTop: 0 }}>{TR("Pricing is being updated right now.")}</p>
           <Button variant="secondary" style={{ marginTop: 12 }} onClick={() => onNav && onNav("contact")}>{TR("Contact us")}</Button>
         </div>
       );
     }
 
+    const act = Math.min(active, plans.length - 1);
     return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
-        <div className="krm-info-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16, alignItems: "start" }}>
-          {plans.map((p) => {
+      <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+        {/* Mobile: tab selector. Hidden on desktop (there the grid below shows all cards). */}
+        <div className="krm-pricing-tabs">
+          {plans.map((p, i) => (
+            <button key={p.id} className={"krm-pricing-tab" + (i === act ? " is-active" : "")} onClick={() => setActive(i)}>{p.name}</button>
+          ))}
+        </div>
+        <div className="krm-info-grid krm-pricing-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16, alignItems: "start" }}>
+          {plans.map((p, i) => {
             const popular = /professional/i.test(p.name || "");
             const custom = isCustom(p);
             const free = isFree(p);
@@ -108,7 +116,7 @@
             const textBody = dark ? "rgba(255,255,255,0.9)" : "var(--text-body)";
             const checkColor = dark ? "#fff" : "var(--brand)";
             return (
-              <Card key={p.id} featured={popular} padding={22} style={{
+              <Card key={p.id} className={"krm-plan-card" + (i === act ? " is-active" : "")} featured={popular} padding={22} style={{
                 border: popular ? "1.5px solid var(--brand)" : (dark ? "none" : undefined),
                 background: dark ? "var(--stone-900, #1a1a1a)" : undefined,
               }}>
@@ -182,10 +190,10 @@
     return (
       <React.Fragment>
         {/* How it works */}
-        <div style={{ marginBottom: 56 }}>
+        <div className="krm-emp-section" style={{ marginBottom: 56 }}>
           <div style={{ textAlign: "center", marginBottom: 32 }}>
-            <h2 style={{ fontSize: "var(--text-3xl)", fontWeight: 800, color: "var(--text-strong)", letterSpacing: "-0.02em" }}>{TR("How it works")}</h2>
-            <p style={{ fontSize: "var(--text-lg)", color: "var(--text-muted)", marginTop: 8, maxWidth: 560, margin: "8px auto 0" }}>{TR("From posting to offer in three steps.")}</p>
+            <h2 className="krm-emp-h2" style={{ fontSize: "var(--text-3xl)", fontWeight: 800, color: "var(--text-strong)", letterSpacing: "-0.02em" }}>{TR("How it works")}</h2>
+            <p className="krm-emp-sub" style={{ fontSize: "var(--text-lg)", color: "var(--text-muted)", marginTop: 8, maxWidth: 560, margin: "8px auto 0" }}>{TR("From posting to offer in three steps.")}</p>
           </div>
           <div className="krm-info-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 20, alignItems: "start" }}>
             {[
@@ -207,9 +215,9 @@
         </div>
 
         {/* Feature grid */}
-        <div style={{ marginBottom: 64 }}>
+        <div className="krm-emp-section" style={{ marginBottom: 64 }}>
           <div style={{ textAlign: "center", marginBottom: 32 }}>
-            <h2 style={{ fontSize: "var(--text-3xl)", fontWeight: 800, color: "var(--text-strong)", letterSpacing: "-0.02em" }}>{TR("Everything you need to hire well")}</h2>
+            <h2 className="krm-emp-h2" style={{ fontSize: "var(--text-3xl)", fontWeight: 800, color: "var(--text-strong)", letterSpacing: "-0.02em" }}>{TR("Everything you need")}</h2>
           </div>
           <div className="krm-info-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16, alignItems: "start" }}>
             {EMPLOYER_FEATURES.map(function(f, idx) {
@@ -229,13 +237,13 @@
         </div>
 
         {/* Social proof numbers */}
-        <div style={{ background: "var(--surface-sunken)", borderRadius: "var(--radius-xl)", padding: "36px 40px", marginBottom: 64 }}>
-          <div className="krm-info-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 24, textAlign: "center" }}>
+        <div className="krm-emp-band" style={{ background: "var(--surface-sunken)", borderRadius: "var(--radius-xl)", padding: "36px 40px", marginBottom: 64 }}>
+          <div className="krm-info-grid krm-stats-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 24, textAlign: "center" }}>
             {[["486", "Verified companies"], ["40k+", "Active candidates"], ["12,480", "Live jobs posted"]].map(function(stat) {
               return (
                 <div key={stat[1]}>
-                  <div style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-5xl)", fontWeight: 800, color: "var(--brand)", lineHeight: 1 }}>{stat[0]}</div>
-                  <div style={{ fontSize: "var(--text-base)", color: "var(--text-muted)", marginTop: 6 }}>{TR(stat[1])}</div>
+                  <div className="krm-emp-stat-num" style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-5xl)", fontWeight: 800, color: "var(--brand)", lineHeight: 1 }}>{stat[0]}</div>
+                  <div className="krm-emp-stat-label" style={{ fontSize: "var(--text-base)", color: "var(--text-muted)", marginTop: 6 }}>{TR(stat[1])}</div>
                 </div>
               );
             })}
@@ -243,21 +251,21 @@
         </div>
 
         {/* Pricing */}
-        <div style={{ marginBottom: 64 }}>
+        <div className="krm-emp-section" style={{ marginBottom: 64 }}>
           <div style={{ textAlign: "center", marginBottom: 32 }}>
-            <h2 style={{ fontSize: "var(--text-3xl)", fontWeight: 800, color: "var(--text-strong)", letterSpacing: "-0.02em" }}>{TR("Plans that grow with your team")}</h2>
-            <p style={{ fontSize: "var(--text-lg)", color: "var(--text-muted)", marginTop: 8 }}>{TR("Start free, upgrade when you need more reach.")}</p>
+            <h2 className="krm-emp-h2" style={{ fontSize: "var(--text-3xl)", fontWeight: 800, color: "var(--text-strong)", letterSpacing: "-0.02em" }}>{TR("Plan grow with yours")}</h2>
+            <p className="krm-emp-sub" style={{ fontSize: "var(--text-lg)", color: "var(--text-muted)", marginTop: 8 }}>{TR("Start free, upgrade when you need more reach.")}</p>
           </div>
           <PricingSection onNav={onNav} />
         </div>
 
         {/* CTA strip */}
-        <div style={{ background: "var(--teal-800)", borderRadius: "var(--radius-xl)", padding: "44px 40px", textAlign: "center", position: "relative", overflow: "hidden" }}>
+        <div className="krm-emp-cta" style={{ background: "var(--teal-800)", borderRadius: "var(--radius-xl)", padding: "44px 40px", textAlign: "center", position: "relative", overflow: "hidden" }}>
           <div style={{ position: "absolute", inset: 0, background: "url('../../assets/krama-pattern.svg')", backgroundSize: 64, opacity: 0.08 }} />
           <div style={{ position: "relative" }}>
-            <h2 style={{ fontSize: "var(--text-3xl)", fontWeight: 800, color: "#fff", marginBottom: 12, letterSpacing: "-0.02em" }}>{TR("Ready to find your next hire?")}</h2>
-            <p style={{ color: "rgba(255,255,255,0.8)", fontSize: "var(--text-lg)", marginBottom: 28 }}>{TR("Create a free account and post your first job today.")}</p>
-            <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+            <h2 className="krm-emp-h2" style={{ fontSize: "var(--text-3xl)", fontWeight: 800, color: "#fff", marginBottom: 12, letterSpacing: "-0.02em" }}>{TR("Ready to find your next hire?")}</h2>
+            <p className="krm-emp-sub" style={{ color: "rgba(255,255,255,0.8)", fontSize: "var(--text-lg)", marginBottom: 28 }}>{TR("Create a free account and post your first job today.")}</p>
+            <div className="krm-emp-cta-btns" style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
               <Button variant="primary" style={{ background: "#fff", color: "var(--teal-800)", border: "none" }} onClick={function() { onNav && onNav("register"); }}>{TR("Post a job — it's free")}</Button>
               <Button variant="secondary" style={{ color: "#fff", borderColor: "rgba(255,255,255,0.4)", background: "transparent" }} onClick={function() { onNav && onNav("pricing"); }}>{TR("See pricing")}</Button>
             </div>
@@ -406,7 +414,7 @@
               </div>
             </div>
           )}
-        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "44px 32px 64px" }}>
+        <div className="krm-info-body" style={{ maxWidth: 1200, margin: "0 auto", padding: "44px 32px 64px" }}>
           {c.render(onNav)}
         </div>
       </div>
