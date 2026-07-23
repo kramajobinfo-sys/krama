@@ -672,6 +672,17 @@ class PaymentController extends Controller
             $data['status'] = 'active';
         }
 
+        // Admin renewal: reactivating a lapsed subscription (expired/canceled/refunded → active/
+        // trial) resets its featured-credit usage so the customer gets a fresh allocation — the
+        // same as an employer re-subscribe, which starts a brand-new row at 0. Captured against
+        // $sub->status (the pre-update value) before the update below runs.
+        if (
+            in_array($sub->status, ['expired', 'canceled', 'refunded'], true) &&
+            in_array($data['status'] ?? $sub->status, ['active', 'trial'], true)
+        ) {
+            $data['featured_credits_used'] = 0;
+        }
+
         $sub->update($data);
 
         // If admin manually expires or cancels, close the subscription's published jobs
