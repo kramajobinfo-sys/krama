@@ -179,9 +179,9 @@
       <div style={{ background: "var(--surface-page)", minHeight: "70vh" }}>
         <AnnouncementBar b={loadBanner("companyProfileTopBanner", CO_PROFILE_TOP_DEFAULT)} onNav={onNav} />
         {/* Hero band — same 191px height/teal style as the page heroes; shows the company's own cover photo when set, else a branded fallback */}
-        <div className="krm-co-hero" style={{ position: "relative", background: coverBanner ? "var(--surface-sunken)" : "var(--teal-800)", overflow: "hidden", height: 191 }}>
+        <div className={"krm-co-hero" + (coverBanner ? " krm-co-hero--img" : "")} style={{ position: "relative", background: coverBanner ? "var(--surface-sunken)" : "var(--teal-800)", overflow: "hidden", height: 191 }}>
           {coverBanner
-            ? <img src={coverBanner} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+            ? <img className="krm-co-hero-pic" src={coverBanner} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
             : <React.Fragment>
                 <div style={{ position: "absolute", inset: 0, backgroundImage: "url('../../assets/banners/bg-companyProfileHero.svg')", backgroundSize: "cover", backgroundPosition: "center" }} />
                 <div style={{ position: "absolute", inset: 0, background: "var(--teal-800)", opacity: 0.45 }} />

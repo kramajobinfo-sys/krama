@@ -461,6 +461,10 @@
 
   /* ── Company profile page ───────────────────────────────────────────── */
   .krm-co-hero { height: 130px !important; }
+  /* When the company set a cover photo, show it full-natural like the home hero
+     (the branded SVG fallback keeps the 130px band above). */
+  .krm-co-hero.krm-co-hero--img { height: auto !important; }
+  .krm-co-hero--img .krm-co-hero-pic { position: relative !important; height: auto !important; }
   .krm-co-profile-wrap { padding: 0 16px 40px !important; }
   .krm-co-header {
     flex-direction: column !important;
