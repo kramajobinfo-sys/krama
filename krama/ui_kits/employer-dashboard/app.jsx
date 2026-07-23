@@ -2104,7 +2104,9 @@
             const isCustom = planIsCustom(p);
             const isFree = planIsFree(p);
             const isTrialPlan = planIsTrial(p);
-            const freeAlreadyUsed = isFree && usedPlanIds.indexOf(p.id) !== -1;
+            // A $0 plan (free OR trial) is one-time per company — gate it client-side so the card
+            // shows "Already used" (disabled) instead of letting the employer click through to a 422.
+            const zeroCostUsed = (isFree || isTrialPlan) && usedPlanIds.indexOf(p.id) !== -1;
             const dark = isCustom;
             const textStrong = dark ? "var(--text-on-dark, #fff)" : "var(--text-strong)";
             const textMuted = dark ? "var(--text-on-dark-mut, rgba(255,255,255,0.65))" : "var(--text-muted)";
@@ -2152,15 +2154,15 @@
                 </div>
                 <Button
                   variant={current ? "secondary" : (dark ? "secondary" : (popular ? "primary" : "ghost"))}
-                  block disabled={current || freeAlreadyUsed}
-                  style={dark && !current && !freeAlreadyUsed ? { background: "#fff", color: "var(--stone-900, #1a1a1a)", border: "none" } : undefined}
+                  block disabled={current || zeroCostUsed}
+                  style={dark && !current && !zeroCostUsed ? { background: "#fff", color: "var(--stone-900, #1a1a1a)", border: "none" } : undefined}
                   onClick={() => {
-                    if (current || freeAlreadyUsed) return;
+                    if (current || zeroCostUsed) return;
                     if (isCustom) { window.location.href = "mailto:sales@krama.com?subject=" + encodeURIComponent("Enterprise plan inquiry"); return; }
                     setCheckout(p);
                   }}
                 >
-                  {current ? "Current plan" : freeAlreadyUsed ? "Already used" : isCustom ? "Contact sales" : isTrialPlan ? ("Start " + (p.trial_days || 7) + "-Day Trial") : isFree ? "Get started" : "Upgrade"}
+                  {current ? "Current plan" : zeroCostUsed ? "Already used" : isCustom ? "Contact sales" : isTrialPlan ? ("Start " + (p.trial_days || 7) + "-Day Trial") : isFree ? "Get started" : "Upgrade"}
                 </Button>
               </Card>
             );
