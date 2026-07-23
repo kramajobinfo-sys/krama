@@ -6,6 +6,68 @@
   const I = (n, s = 18) => <i data-lucide={n} style={{ width: s, height: s }}></i>;
   const API = () => window.KRAMA_API;
 
+  // ── Top banner (admin-editable via home_content -> "communityTopBanner"). Shown on both
+  //    desktop and mobile, same AnnouncementBar as the other public pages. ──────────────
+  const COMMUNITY_TOP_DEFAULT = { visible: true, theme: "teal", icon: "messages-square", title: "Join the conversation", message: "Ask questions, share tips, and connect with people hiring across Cambodia.", cta: "Start a discussion", ctaUrl: "", image: "", fit: "cover" };
+  function loadBanner(key, def) {
+    try { const s = JSON.parse(localStorage.getItem("krama_home_settings") || "{}"); const m = Object.assign({}, def, s[key] || {}); if (!m.image && def.image) m.image = def.image; return m; }
+    catch (e) { return Object.assign({}, def); }
+  }
+  function useHomeContent() {
+    const [, setTick] = React.useState(0);
+    React.useEffect(function () {
+      var apiBase = (/^(localhost|127\.0\.0\.1|::1|192\.168\.|10\.)/.test(window.location.hostname) ? 'http://127.0.0.1:8000/api' : (window.location.protocol + '//' + window.location.host + '/api'));
+      fetch(apiBase + '/settings/home_content', { cache: 'no-cache' })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (d) { if (d && d.data) { try { localStorage.setItem('krama_home_settings', JSON.stringify(JSON.parse(d.data))); setTick(1); } catch (e) {} } })
+        .catch(function () {});
+    }, []);
+  }
+  const BAR_THEMES = { saffron: { bg: "var(--saffron-500)", pill: "#fff", pillFg: "var(--saffron-700)" }, teal: { bg: "var(--teal-700)", pill: "#fff", pillFg: "var(--teal-800)" }, dark: { bg: "var(--stone-900)", pill: "var(--saffron-500)", pillFg: "#fff" }, brand: { bg: "var(--brand-700)", pill: "#fff", pillFg: "var(--brand-800)" }, blank: { bg: "var(--surface-card)", pill: "var(--brand)", pillFg: "#fff" }, transparent: { bg: "transparent", pill: "var(--brand)", pillFg: "#fff" } };
+  function resolveBarTheme(b) {
+    if (b.theme === "custom") return { bg: b.customBg || "var(--saffron-500)", pill: b.customCtaBg || "#fff", pillFg: b.customCtaFg || "var(--saffron-700)", fg: b.customFg || "#fff" };
+    const isLight = b.theme === "transparent" || b.theme === "blank";
+    const t = BAR_THEMES[b.theme] || BAR_THEMES.teal;
+    const base = Object.assign({ fg: isLight ? "var(--text-body)" : "#fff" }, t);
+    return b.customFg ? Object.assign({}, base, { fg: b.customFg }) : base;
+  }
+  function AnnouncementBar({ b, onNav, onCtaClick }) {
+    const [dismissed, setDismissed] = React.useState(false);
+    if (!b || !b.visible || dismissed) return null;
+    const t = resolveBarTheme(b);
+    const hasImg = !!b.image;
+    if (b.hideText && hasImg) {
+      return (
+        <div style={{ position: "relative", overflow: "hidden", background: t.bg, width: "100%", aspectRatio: "1600 / 160", maxHeight: 160, minHeight: 60 }}>
+          <img src={b.image} alt="" style={{ display: "block", width: "100%", height: "100%", objectFit: "cover" }} />
+          <button onClick={() => setDismissed(true)} aria-label="Dismiss" style={{ position: "absolute", top: 8, right: 12, width: 28, height: 28, borderRadius: "50%", background: "rgba(0,0,0,0.35)", border: "none", color: "#fff", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>{I("x", 16)}</button>
+        </div>
+      );
+    }
+    return (
+      <div style={{ position: "relative", overflow: "hidden", background: t.bg, color: t.fg, borderBottom: (b.theme === "transparent" || b.theme === "blank") ? "1px solid var(--border)" : "none" }}>
+        {hasImg
+          ? <React.Fragment>
+              <div style={{ position: "absolute", inset: 0, backgroundImage: "url('" + b.image + "')", backgroundSize: b.fit === "contain" ? "contain" : "cover", backgroundRepeat: "no-repeat", backgroundPosition: "center" }} />
+              <div style={{ position: "absolute", inset: 0, background: t.bg, opacity: (b.imgOverlay != null ? b.imgOverlay : 20) / 100 }} />
+            </React.Fragment>
+          : <div style={{ position: "absolute", inset: 0, background: "url('../../assets/krama-pattern.svg')", backgroundSize: 60, opacity: 0.10 }} />}
+        <div style={{ position: "relative", maxWidth: 1200, margin: "0 auto", display: "flex", alignItems: "center", gap: 14, padding: "10px 32px", minHeight: b.hideText ? 28 : undefined }}>
+          {b.hideText
+            ? <div style={{ flex: 1 }} />
+            : <React.Fragment>
+                {b.icon && <span style={{ display: "inline-flex", flexShrink: 0 }}>{I(b.icon, 18)}</span>}
+                <div style={{ flex: 1, fontSize: "var(--text-sm)", fontWeight: 500 }}>
+                  <strong style={{ fontWeight: 700 }}>{TR(b.title)}</strong>{b.message ? " -- " + TR(b.message) : ""}
+                </div>
+                {b.cta && <span onClick={() => { if (onCtaClick) { onCtaClick(); } else if (b.ctaUrl) window.open(b.ctaUrl, b.ctaUrl.startsWith("http") ? "_blank" : "_self"); else onNav && onNav("register"); }} style={{ flexShrink: 0, background: t.pill, color: t.pillFg, fontSize: "var(--text-sm)", fontWeight: 700, padding: "7px 16px", borderRadius: "var(--radius-pill)", cursor: "pointer", whiteSpace: "nowrap" }}>{TR(b.cta)}</span>}
+              </React.Fragment>}
+          <button onClick={() => setDismissed(true)} style={{ flexShrink: 0, background: "transparent", border: "none", color: t.fg, opacity: 0.7, cursor: "pointer", display: "inline-flex", padding: 4 }}>{I("x", 16)}</button>
+        </div>
+      </div>
+    );
+  }
+
   const CAT_THEME = {
     teal:    { bg: "var(--teal-50)",    fg: "var(--teal-700)" },
     saffron: { bg: "var(--saffron-50)", fg: "var(--saffron-600)" },
@@ -389,6 +451,7 @@
 
   // ── Landing + category list ──────────────────────────────────────────────────
   function Community({ onNav, user, initialThreadId }) {
+    useHomeContent();
     const [view, setView] = React.useState(initialThreadId ? "thread" : "list");
     const [activeThreadId, setActiveThreadId] = React.useState(initialThreadId || null);
     const [category, setCategory] = React.useState(null); // active category filter (object) or null
@@ -436,7 +499,9 @@
 
     // list view
     return (
-      <div style={{ maxWidth: 1000, margin: "0 auto", padding: "28px 16px 64px" }}>
+      <React.Fragment>
+        <AnnouncementBar b={loadBanner("communityTopBanner", COMMUNITY_TOP_DEFAULT)} onNav={onNav} onCtaClick={startNew} />
+        <div style={{ maxWidth: 1000, margin: "0 auto", padding: "28px 16px 64px" }}>
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, flexWrap: "wrap", marginBottom: 8 }}>
           <div>
             <h1 style={{ fontSize: "var(--text-3xl)", fontWeight: 800, color: "var(--text-strong)", margin: 0, letterSpacing: "-0.02em" }}>{TR("Community")}</h1>
@@ -502,6 +567,7 @@
 
         <Pager page={page} lastPage={lastPage} onPage={loadThreads} />
       </div>
+      </React.Fragment>
     );
   }
 
