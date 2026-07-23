@@ -46,7 +46,7 @@ class SocialPostService
         // Telegram channel — reuses the shared bot (telegram group bot_token).
         if (self::on($cfg['telegram_enabled'] ?? null) && ! empty($cfg['telegram_channel']) && TelegramService::botToken() !== '') {
             $attempted = true;
-            try { self::postTelegram(trim($cfg['telegram_channel']), $text . "\n" . $url, $image); }
+            try { self::postTelegram(trim($cfg['telegram_channel']), $text, $url, $image); }
             catch (\Throwable $e) { Log::warning('Social post (telegram) failed for job ' . $job->id . ': ' . $e->getMessage()); }
         }
 
@@ -72,16 +72,21 @@ class SocialPostService
 
     public static function buildText(Job $job): string
     {
+        // Banner (#1) is sent as the photo; the apply link (#8) is the inline button /
+        // link. This caption carries the rest as labelled lines (empty ones are skipped).
         $company = optional($job->company)->name;
         $loc     = $job->is_remote ? 'Remote' : (optional($job->location)->name ?? '');
+        $sal     = self::salary($job);
 
-        $lines = ['🆕 ' . $job->title . ($company ? ' at ' . $company : '')];
-        $meta  = [];
-        if ($loc) $meta[] = '📍 ' . $loc;
-        $sal = self::salary($job);
-        if ($sal) $meta[] = '💰 ' . $sal;
-        if ($meta) $lines[] = implode('  ·  ', $meta);
-        $lines[] = '👇 Apply on Krama:';
+        $lines = ['🆕 We\'re hiring!', ''];
+        if ($company)           $lines[] = '🏢 ' . $company;               // Company name
+        $lines[]                = '💼 ' . $job->title;                     // Position
+        if ($sal)               $lines[] = '💰 ' . $sal;                   // Salary
+        if ($job->working_days) $lines[] = '📅 ' . $job->working_days;     // Working day
+        if ($job->working_time) $lines[] = '🕐 ' . $job->working_time;     // Working time
+        if ($loc)               $lines[] = '📍 ' . $loc;                   // Location
+        $lines[]                = '';
+        $lines[]                = '👇 Apply on Krama:';
         return implode("\n", $lines);
     }
 
@@ -90,7 +95,7 @@ class SocialPostService
         if (! $job->salary_min && ! $job->salary_max) return null;
         $cur = $job->salary_currency ?: 'USD';
         $sym = $cur === 'USD' ? '$' : $cur . ' ';
-        $per = ['hour' => '/hr', 'day' => '/day', 'month' => '/mo', 'year' => '/yr'][$job->salary_period] ?? '/mo';
+        $per = ['hour' => '/hour', 'day' => '/day', 'month' => '/month', 'year' => '/year'][$job->salary_period] ?? '/month';
         $fmt = fn ($n) => number_format((float) $n);
         if ($job->salary_min && $job->salary_max) return $sym . $fmt($job->salary_min) . '–' . $fmt($job->salary_max) . $per;
         if ($job->salary_max) return 'Up to ' . $sym . $fmt($job->salary_max) . $per;
@@ -106,18 +111,26 @@ class SocialPostService
 
     // ── Platform posters — throw on failure; shareJob() wraps each in try/catch ──
 
-    public static function postTelegram(string $channel, string $text, ?string $image = null): void
+    public static function postTelegram(string $channel, string $text, string $url = '', ?string $image = null): void
     {
-        // The shared bot sends with parse_mode=HTML, so escape &, <, > in the
-        // (plain-text) message/caption — otherwise a job title like "Food & Beverage"
-        // makes Telegram reject the whole message with a parse error.
-        $safe  = htmlspecialchars($text, ENT_NOQUOTES, 'UTF-8');
         $token = TelegramService::botToken();
+        // Telegram rejects inline-button URLs that aren't a public http(s) address
+        // (localhost / private IPs are refused with "Wrong HTTP URL"), which would fail the
+        // whole send. So only use a tappable button for a public URL; otherwise fall back to
+        // the link in the message text (Telegram accepts any URL as plain text).
+        $publicUrl = $url !== ''
+            && preg_match('#^https?://#i', $url)
+            && ! preg_match('#^https?://(localhost|127\.0\.0\.1|0\.0\.0\.0|\[?::1\]?|[^/]+\.local\b|\d{1,3}(\.\d{1,3}){3})#i', $url);
+        // The shared bot sends with parse_mode=HTML, so escape &, <, > in the (plain-text)
+        // message/caption — otherwise a title like "Food & Beverage" triggers a parse error.
+        $body   = $publicUrl ? $text : trim($text . ($url !== '' ? "\n" . $url : ''));
+        $safe   = htmlspecialchars($body, ENT_NOQUOTES, 'UTF-8');
+        $markup = $publicUrl ? ['inline_keyboard' => [[['text' => '👉 View & Apply on Krama', 'url' => $url]]]] : null;
         // With a banner image, post it as a photo + caption (like a hiring poster);
         // otherwise a plain text message. (Telegram caption cap is 1024 chars.)
         $res = $image
-            ? TelegramService::sendPhoto($token, $channel, $image, mb_substr($safe, 0, 1024))
-            : TelegramService::sendMessage($token, $channel, $safe);
+            ? TelegramService::sendPhoto($token, $channel, $image, mb_substr($safe, 0, 1024), $markup)
+            : TelegramService::sendMessage($token, $channel, $safe, $markup);
         if (empty($res['ok'])) throw new \RuntimeException($res['error'] ?? 'telegram send failed');
     }
 

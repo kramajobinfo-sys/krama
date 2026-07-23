@@ -32,17 +32,19 @@ class TelegramService
     }
 
     // Low-level send. Returns ['ok' => bool, 'error' => ?string]. Never throws.
-    public static function sendMessage(string $token, string $chatId, string $text): array
+    public static function sendMessage(string $token, string $chatId, string $text, ?array $replyMarkup = null): array
     {
         try {
+            $payload = [
+                'chat_id'                  => $chatId,
+                'text'                     => $text,
+                'parse_mode'               => 'HTML',
+                'disable_web_page_preview' => true,
+            ];
+            if ($replyMarkup) $payload['reply_markup'] = json_encode($replyMarkup);
             $resp = Http::asForm()->timeout(10)->post(
                 'https://api.telegram.org/bot' . $token . '/sendMessage',
-                [
-                    'chat_id'                  => $chatId,
-                    'text'                     => $text,
-                    'parse_mode'               => 'HTML',
-                    'disable_web_page_preview' => true,
-                ]
+                $payload
             );
 
             if ($resp->successful() && $resp->json('ok') === true) {
@@ -58,11 +60,12 @@ class TelegramService
     // Send a photo with an optional HTML caption. $photo may be a local file path
     // (uploaded as multipart — works even when the URL isn't publicly reachable, e.g.
     // on localhost) or a public URL/file_id.
-    public static function sendPhoto(string $token, string $chatId, string $photo, string $caption = ''): array
+    public static function sendPhoto(string $token, string $chatId, string $photo, string $caption = '', ?array $replyMarkup = null): array
     {
         try {
             $url = 'https://api.telegram.org/bot' . $token . '/sendPhoto';
             $fields = ['chat_id' => $chatId, 'caption' => $caption, 'parse_mode' => 'HTML'];
+            if ($replyMarkup) $fields['reply_markup'] = json_encode($replyMarkup);
 
             if (is_file($photo)) {
                 $resp = Http::timeout(20)

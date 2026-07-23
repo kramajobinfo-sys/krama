@@ -16,6 +16,7 @@ class Job extends Model
         'requirements', 'benefits', 'is_featured', 'featured_until', 'status',
         'rejection_reason', 'expires_at', 'published_at',
         'share_social', 'social_image', 'social_posted_at',
+        'working_days', 'working_time', 'map_location',
     ];
 
     protected $casts = [

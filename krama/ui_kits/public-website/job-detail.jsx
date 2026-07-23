@@ -241,7 +241,18 @@
                   <Meta icon="briefcase" label={TR("Job type")}   value={j.type} />
                   <Meta icon="signal"    label={TR("Experience")} value={j.experienceLevel} />
                   <Meta icon="map-pin"   label={TR("Location")}   value={j.location} />
+                  {j.workingDays && <Meta icon="calendar-days" label={TR("Working days")} value={j.workingDays} />}
+                  {j.workingTime && <Meta icon="clock"         label={TR("Working time")} value={j.workingTime} />}
                 </div>
+                {j.mapLocation && (
+                  <div style={{ marginTop: 16 }}>
+                    <a
+                      href={/^https?:\/\//i.test(j.mapLocation) ? j.mapLocation : ("https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(j.mapLocation))}
+                      target="_blank" rel="noopener noreferrer"
+                      style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "var(--text-brand)", fontWeight: 600, fontSize: "var(--text-sm)", textDecoration: "none" }}
+                    >{I("map-pin", 15)} {/^https?:\/\//i.test(j.mapLocation) ? TR("View on map") : j.mapLocation}</a>
+                  </div>
+                )}
 
                 {/* Description */}
                 {j.description && (

@@ -461,12 +461,12 @@
   }
 
   function JobFormModal({ open, mode, job, onClose, onCreated, onPublishRequest, user }) {
-    const BLANK = { title: "", job_type: "full_time", experience_level: "mid", category_id: "", location_id: "", salary_min: "", salary_max: "", salary_currency: "USD", salary_period: "month", is_remote: false, description: "", requirements: "", benefits: "", expires_at: "", share_social: true, social_image: "" };
+    const BLANK = { title: "", job_type: "full_time", experience_level: "mid", category_id: "", location_id: "", salary_min: "", salary_max: "", salary_currency: "USD", salary_period: "month", is_remote: false, working_days: "", working_time: "", map_location: "", description: "", requirements: "", benefits: "", expires_at: "", share_social: true, social_image: "" };
     function jobToForm(j, isClone) {
       var _today = new Date(); _today.setHours(0, 0, 0, 0);
       var _rawExp = j.expires_at ? j.expires_at.split("T")[0] : "";
       var _exp = (!isClone && _rawExp && new Date(_rawExp) > _today) ? _rawExp : "";
-      return { title: isClone ? "Copy of " + (j.title || "") : (j.title || ""), job_type: j.job_type || "full_time", experience_level: j.experience_level || "mid", category_id: j.category_id ? String(j.category_id) : "", location_id: j.location_id ? String(j.location_id) : "", salary_min: j.salary_min != null ? String(j.salary_min) : "", salary_max: j.salary_max != null ? String(j.salary_max) : "", salary_currency: j.salary_currency || "USD", salary_period: j.salary_period || "month", is_remote: !!j.is_remote, description: j.description || "", requirements: j.requirements || "", benefits: j.benefits || "", expires_at: _exp, share_social: j.share_social !== undefined ? !!j.share_social : true, social_image: j.social_image || "" };
+      return { title: isClone ? "Copy of " + (j.title || "") : (j.title || ""), job_type: j.job_type || "full_time", experience_level: j.experience_level || "mid", category_id: j.category_id ? String(j.category_id) : "", location_id: j.location_id ? String(j.location_id) : "", salary_min: j.salary_min != null ? String(j.salary_min) : "", salary_max: j.salary_max != null ? String(j.salary_max) : "", salary_currency: j.salary_currency || "USD", salary_period: j.salary_period || "month", is_remote: !!j.is_remote, working_days: j.working_days || "", working_time: j.working_time || "", map_location: j.map_location || "", description: j.description || "", requirements: j.requirements || "", benefits: j.benefits || "", expires_at: _exp, share_social: j.share_social !== undefined ? !!j.share_social : true, social_image: j.social_image || "" };
     }
     const [form, setForm] = React.useState(BLANK);
     const [cats, setCats] = React.useState([]);
@@ -516,6 +516,9 @@
         salary_currency: form.salary_currency || null,
         salary_period: form.salary_period || null,
         is_remote: !!form.is_remote,
+        working_days: form.working_days || null,
+        working_time: form.working_time || null,
+        map_location: form.map_location || null,
         share_social: !!form.share_social,
         social_image: form.social_image || null,
         description: form.description || null,
@@ -582,6 +585,11 @@
               </div>
               <Switch checked={form.is_remote} onChange={(v) => set("is_remote", typeof v === "boolean" ? v : !form.is_remote)} />
             </div>
+            <div className="krm-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+              <Input label="Working days" value={form.working_days} onChange={(e) => set("working_days", e.target.value)} placeholder="e.g. Monday to Friday" />
+              <Input label="Working time" value={form.working_time} onChange={(e) => set("working_time", e.target.value)} placeholder="e.g. 8:00 AM – 5:00 PM" />
+            </div>
+            <Input label="Location / map link (optional)" value={form.map_location} onChange={(e) => set("map_location", e.target.value)} placeholder="Address or Google Maps link" />
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", border: "1px solid var(--border)", borderRadius: "var(--radius-md)" }}>
               <div>
                 <div style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-strong)" }}>Share on social media</div>
@@ -642,6 +650,9 @@
             <Row label="Job type" value={JTL[job.job_type] || job.job_type} />
             <Row label="Salary" value={fmtSalary(job)} />
             <Row label="Remote" value={job.is_remote ? "Yes" : "No"} />
+            <Row label="Working days" value={job.working_days} />
+            <Row label="Working time" value={job.working_time} />
+            <Row label="Location / map" value={job.map_location} />
             <Row label="Posted" value={fmtDate(job.created_at)} />
             <Row label="Deadline" value={fmtDate(job.expires_at)} />
             <Row label="Applicants" value={String(job.applications_count || 0)} />
