@@ -290,7 +290,20 @@ class JobController extends Controller
         $this->requirePermission('approve_jobs');
 
         $job = Job::whereIn('status', ['pending', 'company_pending'])->findOrFail($id);
-        $job->update(['status' => 'published', 'published_at' => now()]);
+
+        // Attribute the job to the company's primary (latest active/trial) subscription so it
+        // counts toward quota accounting and is auto-closed if that plan later expires — the
+        // other publish paths (submit/companyApprove) already set this. Admin override: publish
+        // even if the plan is over its job-post limit (no quota block here), and never clobber a
+        // subscription_id that was already assigned.
+        $company    = $job->company;
+        $primarySub = $company ? $this->primaryActiveSubscription($company) : null;
+
+        $job->update([
+            'status'          => 'published',
+            'published_at'    => now(),
+            'subscription_id' => $job->subscription_id ?? ($primarySub ? $primarySub->id : null),
+        ]);
 
         $this->auditLog('job.admin_approved', ['job_id' => $job->id, 'job_title' => $job->title, 'company_id' => $job->company_id]);
 
