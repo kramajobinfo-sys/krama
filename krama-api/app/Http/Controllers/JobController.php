@@ -21,11 +21,8 @@ class JobController extends Controller
     // GET /api/jobs — public listing with filters + pagination
     public function index(Request $request)
     {
-        // Expire any subscriptions whose renewal date has passed before filtering
-        Subscription::whereIn('status', ['active', 'trial'])
-            ->whereNotNull('renews_at')
-            ->where('renews_at', '<', now())
-            ->update(['status' => 'expired']);
+        // Expire overdue subscriptions (and close their now-lapsed jobs) before filtering.
+        Subscription::expireOverdue();
 
         $q = Job::with(['company:id,name,logo_url,is_verified', 'category:id,name,slug', 'location:id,name'])
             ->where('status', 'published')

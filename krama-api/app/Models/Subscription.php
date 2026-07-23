@@ -19,6 +19,31 @@ class Subscription extends Model
         'featured_credits_used' => 'integer',
     ];
 
+    /**
+     * Expire every overdue active/trial subscription (renews_at in the past) and close the
+     * published jobs tied to them, so lapsed listings leave the public site and don't linger
+     * against a renewed plan's fresh quota. Idempotent; returns the number expired.
+     */
+    public static function expireOverdue(): int
+    {
+        $ids = static::whereIn('status', ['active', 'trial'])
+            ->whereNotNull('renews_at')
+            ->where('renews_at', '<', now())
+            ->pluck('id');
+
+        if ($ids->isEmpty()) {
+            return 0;
+        }
+
+        \App\Models\Job::whereIn('subscription_id', $ids)
+            ->where('status', 'published')
+            ->update(['status' => 'closed']);
+
+        static::whereIn('id', $ids)->update(['status' => 'expired']);
+
+        return $ids->count();
+    }
+
     public function plan()
     {
         return $this->belongsTo(Plan::class);

@@ -13,10 +13,7 @@ class ExpireSubscriptions extends Command
 
     public function handle(): int
     {
-        $expired = Subscription::where('status', 'active')
-            ->whereNotNull('renews_at')
-            ->where('renews_at', '<', now())
-            ->update(['status' => 'expired']);
+        $expired = Subscription::expireOverdue();
 
         if ($expired > 0) {
             Log::channel('audit')->info('subscriptions.expired', ['count' => $expired]);

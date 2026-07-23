@@ -131,14 +131,17 @@ class PaymentController extends Controller
         $isTrial = $isFreePlan && (int) $plan->trial_days > 0;
         $trialDays = $isTrial ? (int) $plan->trial_days : 0;
 
-        // Free (non-trial) plans are one-time only — block re-subscription.
-        if ($isFreePlan && !$isTrial) {
+        // A $0 plan (free OR trial) can only be used once per company — block repeat use so a
+        // trial plan can't be re-subscribed over and over for unlimited free access.
+        if ($isFreePlan) {
             $alreadyUsed = Subscription::where('company_id', $company->id)
                 ->where('plan_id', $plan->id)
                 ->exists();
             if ($alreadyUsed) {
                 return response()->json([
-                    'message' => 'The ' . $plan->name . ' free plan can only be activated once. Please upgrade to a paid plan.',
+                    'message' => $isTrial
+                        ? 'You have already used the ' . $plan->name . ' trial. Please subscribe to a paid plan to continue.'
+                        : 'The ' . $plan->name . ' free plan can only be activated once. Please upgrade to a paid plan.',
                 ], 422);
             }
         }
@@ -580,11 +583,8 @@ class PaymentController extends Controller
     {
         $this->requirePermission('manage_payments');
 
-        // Auto-expire any active/trial subscriptions whose renews_at has passed
-        Subscription::whereIn('status', ['active', 'trial'])
-            ->whereNotNull('renews_at')
-            ->where('renews_at', '<', now())
-            ->update(['status' => 'expired']);
+        // Auto-expire overdue subscriptions (and close their lapsed jobs)
+        Subscription::expireOverdue();
 
         $q = Subscription::with([
             'plan:id,name,price,currency,interval',
