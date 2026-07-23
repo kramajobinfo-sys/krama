@@ -15,7 +15,7 @@ class Job extends Model
         'salary_currency', 'salary_period', 'is_remote', 'description',
         'requirements', 'benefits', 'is_featured', 'featured_until', 'status',
         'rejection_reason', 'expires_at', 'published_at',
-        'share_social', 'social_posted_at',
+        'share_social', 'social_image', 'social_posted_at',
     ];
 
     protected $casts = [

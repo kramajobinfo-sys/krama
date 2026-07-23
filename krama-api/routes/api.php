@@ -185,6 +185,7 @@ Route::middleware('auth:api')->group(function () {
     // Note: 'verified' middleware removed — this is a JWT API (no verification.notice route),
     // and recruiters are created programmatically without email verification.
     Route::get('employer/jobs',              [JobController::class, 'myJobs']);
+    Route::post('employer/upload/image',     [UploadController::class, 'employerImage'])->middleware('throttle:20,1');
     Route::post('jobs',                      [JobController::class, 'store'])->middleware('throttle:30,1');
     Route::put('jobs/{id}',                  [JobController::class, 'update']);
     Route::delete('jobs/{id}',               [JobController::class, 'destroy']);

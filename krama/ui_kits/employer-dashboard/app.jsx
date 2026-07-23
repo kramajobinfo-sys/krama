@@ -461,12 +461,12 @@
   }
 
   function JobFormModal({ open, mode, job, onClose, onCreated, onPublishRequest, user }) {
-    const BLANK = { title: "", job_type: "full_time", experience_level: "mid", category_id: "", location_id: "", salary_min: "", salary_max: "", salary_currency: "USD", salary_period: "month", is_remote: false, description: "", requirements: "", benefits: "", expires_at: "", share_social: true };
+    const BLANK = { title: "", job_type: "full_time", experience_level: "mid", category_id: "", location_id: "", salary_min: "", salary_max: "", salary_currency: "USD", salary_period: "month", is_remote: false, description: "", requirements: "", benefits: "", expires_at: "", share_social: true, social_image: "" };
     function jobToForm(j, isClone) {
       var _today = new Date(); _today.setHours(0, 0, 0, 0);
       var _rawExp = j.expires_at ? j.expires_at.split("T")[0] : "";
       var _exp = (!isClone && _rawExp && new Date(_rawExp) > _today) ? _rawExp : "";
-      return { title: isClone ? "Copy of " + (j.title || "") : (j.title || ""), job_type: j.job_type || "full_time", experience_level: j.experience_level || "mid", category_id: j.category_id ? String(j.category_id) : "", location_id: j.location_id ? String(j.location_id) : "", salary_min: j.salary_min != null ? String(j.salary_min) : "", salary_max: j.salary_max != null ? String(j.salary_max) : "", salary_currency: j.salary_currency || "USD", salary_period: j.salary_period || "month", is_remote: !!j.is_remote, description: j.description || "", requirements: j.requirements || "", benefits: j.benefits || "", expires_at: _exp, share_social: j.share_social !== undefined ? !!j.share_social : true };
+      return { title: isClone ? "Copy of " + (j.title || "") : (j.title || ""), job_type: j.job_type || "full_time", experience_level: j.experience_level || "mid", category_id: j.category_id ? String(j.category_id) : "", location_id: j.location_id ? String(j.location_id) : "", salary_min: j.salary_min != null ? String(j.salary_min) : "", salary_max: j.salary_max != null ? String(j.salary_max) : "", salary_currency: j.salary_currency || "USD", salary_period: j.salary_period || "month", is_remote: !!j.is_remote, description: j.description || "", requirements: j.requirements || "", benefits: j.benefits || "", expires_at: _exp, share_social: j.share_social !== undefined ? !!j.share_social : true, social_image: j.social_image || "" };
     }
     const [form, setForm] = React.useState(BLANK);
     const [cats, setCats] = React.useState([]);
@@ -475,6 +475,7 @@
     const [error, setError] = React.useState("");
     const [saving, setSaving] = React.useState(false);
     const [resetKey, setResetKey] = React.useState(0);
+    const [socialUploading, setSocialUploading] = React.useState(false);
     React.useEffect(function () {
       if (!open) return;
       setForm(job && (mode === "edit" || mode === "clone") ? jobToForm(job, mode === "clone") : BLANK);
@@ -486,6 +487,14 @@
     }, [open]);
     if (!open) return null;
     const set = (k, v) => setForm((f) => Object.assign({}, f, { [k]: v }));
+    const onSocialImage = (e) => {
+      var file = e.target.files && e.target.files[0]; e.target.value = "";
+      if (!file) return;
+      setSocialUploading(true); setError("");
+      emp.uploadJobImage(file)
+        .then(function (url) { set("social_image", url); setSocialUploading(false); })
+        .catch(function (err) { setSocialUploading(false); setError((err && err.message) || "Image upload failed."); });
+    };
     const isEdit = mode === "edit";
     const canSubmit = !isEdit || (job && (job.status === "draft" || job.status === "rejected"));
     const modalTitle = isEdit ? "Edit job" : mode === "clone" ? "Clone job" : "Post a job";
@@ -508,6 +517,7 @@
         salary_period: form.salary_period || null,
         is_remote: !!form.is_remote,
         share_social: !!form.share_social,
+        social_image: form.social_image || null,
         description: form.description || null,
         requirements: form.requirements || null,
         benefits: form.benefits || null,
@@ -579,6 +589,24 @@
               </div>
               <Switch checked={form.share_social} onChange={(v) => set("share_social", typeof v === "boolean" ? v : !form.share_social)} />
             </div>
+            {form.share_social && (
+              <div style={{ padding: "12px 14px", border: "1px solid var(--border)", borderRadius: "var(--radius-md)" }}>
+                <div style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-strong)", marginBottom: 4 }}>Banner image for the social post <span style={{ fontWeight: 400, color: "var(--text-muted)" }}>(optional)</span></div>
+                <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginBottom: 10 }}>A hiring poster shared with the job (recommended ~1200 × 630). Without one, a text-only post is shared.</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                  {form.social_image
+                    ? <img src={form.social_image} alt="Banner preview" style={{ width: 132, height: 69, objectFit: "cover", borderRadius: "var(--radius-sm)", border: "1px solid var(--border)", flexShrink: 0 }} />
+                    : <div style={{ width: 132, height: 69, borderRadius: "var(--radius-sm)", border: "1px dashed var(--border-strong)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-faint)", flexShrink: 0 }}>{I("image", 22)}</div>}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-start" }}>
+                    <label style={{ display: "inline-flex", alignItems: "center", gap: 6, cursor: socialUploading ? "not-allowed" : "pointer", opacity: socialUploading ? 0.5 : 1, fontFamily: "var(--font-sans)", fontWeight: 600, color: "var(--text-brand)", fontSize: "var(--text-sm)" }}>
+                      {I("upload", 14)} {socialUploading ? "Uploading…" : (form.social_image ? "Replace image" : "Upload image")}
+                      <input type="file" accept="image/*" disabled={socialUploading} onChange={onSocialImage} style={{ display: "none" }} />
+                    </label>
+                    {form.social_image && <button type="button" onClick={() => set("social_image", "")} style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--danger)", fontSize: "var(--text-xs)", fontWeight: 600, padding: 0 }}>Remove</button>}
+                  </div>
+                </div>
+              </div>
+            )}
             <RichEditor key={"d" + resetKey} label="Description" rows={4} value={form.description} onChange={(v) => set("description", v)} placeholder="Describe the role and what the team does…" />
             <RichEditor key={"r" + resetKey} label="Requirements" rows={3} value={form.requirements} onChange={(v) => set("requirements", v)} placeholder="Skills, qualifications, experience…" />
             <RichEditor key={"b" + resetKey} label="Benefits" rows={3} value={form.benefits} onChange={(v) => set("benefits", v)} placeholder="Perks, insurance, bonuses…" />

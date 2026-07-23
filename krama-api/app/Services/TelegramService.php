@@ -55,6 +55,32 @@ class TelegramService
         }
     }
 
+    // Send a photo with an optional HTML caption. $photo may be a local file path
+    // (uploaded as multipart — works even when the URL isn't publicly reachable, e.g.
+    // on localhost) or a public URL/file_id.
+    public static function sendPhoto(string $token, string $chatId, string $photo, string $caption = ''): array
+    {
+        try {
+            $url = 'https://api.telegram.org/bot' . $token . '/sendPhoto';
+            $fields = ['chat_id' => $chatId, 'caption' => $caption, 'parse_mode' => 'HTML'];
+
+            if (is_file($photo)) {
+                $resp = Http::timeout(20)
+                    ->attach('photo', file_get_contents($photo), basename($photo))
+                    ->post($url, $fields);
+            } else {
+                $resp = Http::asForm()->timeout(20)->post($url, $fields + ['photo' => $photo]);
+            }
+
+            if ($resp->successful() && $resp->json('ok') === true) {
+                return ['ok' => true, 'error' => null];
+            }
+            return ['ok' => false, 'error' => $resp->json('description') ?: ('HTTP ' . $resp->status())];
+        } catch (\Throwable $e) {
+            return ['ok' => false, 'error' => $e->getMessage()];
+        }
+    }
+
     // Notify the configured admin chat. No-op (returns false) if disabled/unconfigured; never throws.
     public static function notifyAdmin(string $text): bool
     {

@@ -147,6 +147,11 @@
 
     // Jobs
     fetchJobs: function () { return req("GET", "/employer/jobs?per_page=100"); },
+    uploadJobImage: function (file) {
+      var token = getToken(); var fd = new FormData(); fd.append("image", file);
+      return fetch(BASE + "/employer/upload/image", { method: "POST", headers: { Authorization: "Bearer " + token }, body: fd })
+        .then(function (r) { return r.json().then(function (d) { if (!r.ok) throw new Error(d.message || "Upload failed"); return d.url; }); });
+    },
     createJob: function (data) { return req("POST", "/jobs", data); },
     updateJob: function (id, data) { return req("PUT", "/jobs/" + id, data); },
     deleteJob: function (id) { return req("DELETE", "/jobs/" + id); },

@@ -37,22 +37,23 @@ class SocialPostService
         if ($job->social_posted_at) return;
 
         $job->loadMissing('company', 'location');
-        $text = self::buildText($job);
-        $url  = self::jobUrl($job);
+        $text  = self::buildText($job);
+        $url   = self::jobUrl($job);
+        $image = self::imageForJob($job); // local file path (preferred), public URL, or null
 
         $attempted = false;
 
         // Telegram channel — reuses the shared bot (telegram group bot_token).
         if (self::on($cfg['telegram_enabled'] ?? null) && ! empty($cfg['telegram_channel']) && TelegramService::botToken() !== '') {
             $attempted = true;
-            try { self::postTelegram(trim($cfg['telegram_channel']), $text . "\n" . $url); }
+            try { self::postTelegram(trim($cfg['telegram_channel']), $text . "\n" . $url, $image); }
             catch (\Throwable $e) { Log::warning('Social post (telegram) failed for job ' . $job->id . ': ' . $e->getMessage()); }
         }
 
-        // Facebook Page feed.
+        // Facebook Page — photo post when an image is present, else a feed link post.
         if (self::on($cfg['facebook_enabled'] ?? null) && ! empty($cfg['facebook_page_id']) && ! empty($cfg['facebook_page_token'])) {
             $attempted = true;
-            try { self::postFacebook($cfg['facebook_page_id'], $cfg['facebook_page_token'], $text, $url); }
+            try { self::postFacebook($cfg['facebook_page_id'], $cfg['facebook_page_token'], $text, $url, $image); }
             catch (\Throwable $e) { Log::warning('Social post (facebook) failed for job ' . $job->id . ': ' . $e->getMessage()); }
         }
 
@@ -105,23 +106,53 @@ class SocialPostService
 
     // ── Platform posters — throw on failure; shareJob() wraps each in try/catch ──
 
-    public static function postTelegram(string $channel, string $text): void
+    public static function postTelegram(string $channel, string $text, ?string $image = null): void
     {
         // The shared bot sends with parse_mode=HTML, so escape &, <, > in the
-        // (plain-text) message — otherwise a job title like "Food & Beverage"
+        // (plain-text) message/caption — otherwise a job title like "Food & Beverage"
         // makes Telegram reject the whole message with a parse error.
-        $safe = htmlspecialchars($text, ENT_NOQUOTES, 'UTF-8');
-        $res = TelegramService::sendMessage(TelegramService::botToken(), $channel, $safe);
+        $safe  = htmlspecialchars($text, ENT_NOQUOTES, 'UTF-8');
+        $token = TelegramService::botToken();
+        // With a banner image, post it as a photo + caption (like a hiring poster);
+        // otherwise a plain text message. (Telegram caption cap is 1024 chars.)
+        $res = $image
+            ? TelegramService::sendPhoto($token, $channel, $image, mb_substr($safe, 0, 1024))
+            : TelegramService::sendMessage($token, $channel, $safe);
         if (empty($res['ok'])) throw new \RuntimeException($res['error'] ?? 'telegram send failed');
     }
 
-    public static function postFacebook(string $pageId, string $token, string $message, string $link): void
+    public static function postFacebook(string $pageId, string $token, string $message, string $link, ?string $image = null): void
     {
-        $resp = Http::timeout(12)->asForm()->post(
-            'https://graph.facebook.com/v19.0/' . $pageId . '/feed',
-            ['message' => $message . "\n" . $link, 'link' => $link, 'access_token' => $token]
-        );
+        // Photo post when an image is present (uploads the local file so it works even
+        // when the URL isn't publicly reachable); otherwise a plain feed link post.
+        if ($image) {
+            $caption = $message . "\n" . $link;
+            $endpoint = 'https://graph.facebook.com/v19.0/' . $pageId . '/photos';
+            if (is_file($image)) {
+                $resp = Http::timeout(20)->attach('source', file_get_contents($image), basename($image))
+                    ->post($endpoint, ['caption' => $caption, 'access_token' => $token]);
+            } else {
+                $resp = Http::timeout(20)->asForm()->post($endpoint, ['url' => $image, 'caption' => $caption, 'access_token' => $token]);
+            }
+        } else {
+            $resp = Http::timeout(12)->asForm()->post(
+                'https://graph.facebook.com/v19.0/' . $pageId . '/feed',
+                ['message' => $message . "\n" . $link, 'link' => $link, 'access_token' => $token]
+            );
+        }
         if (! $resp->successful()) throw new \RuntimeException('facebook http ' . $resp->status() . ' ' . $resp->body());
+    }
+
+    // Resolve a job's social image to a local file path (preferred — lets us upload
+    // the bytes so delivery works even when the URL isn't public) or fall back to the
+    // stored URL. Returns null when the job has no image.
+    private static function imageForJob(Job $job): ?string
+    {
+        $img = $job->social_image;
+        if (! $img) return null;
+        $path  = parse_url($img, PHP_URL_PATH) ?: $img;
+        $local = public_path('uploads/' . basename($path));
+        return is_file($local) ? $local : $img;
     }
 
     public static function postLinkedIn(string $token, string $authorUrn, string $text): void
