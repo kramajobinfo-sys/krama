@@ -60,7 +60,7 @@ class SocialPostService
         // LinkedIn — organization or member author URN.
         if (self::on($cfg['linkedin_enabled'] ?? null) && ! empty($cfg['linkedin_token']) && ! empty($cfg['linkedin_author_urn'])) {
             $attempted = true;
-            try { self::postLinkedIn($cfg['linkedin_token'], $cfg['linkedin_author_urn'], $text . "\n" . $url); }
+            try { self::postLinkedIn($cfg['linkedin_token'], $cfg['linkedin_author_urn'], $text . "\n" . $url, $image); }
             catch (\Throwable $e) { Log::warning('Social post (linkedin) failed for job ' . $job->id . ': ' . $e->getMessage()); }
         }
 
@@ -155,22 +155,81 @@ class SocialPostService
         return is_file($local) ? $local : $img;
     }
 
-    public static function postLinkedIn(string $token, string $authorUrn, string $text): void
+    public static function postLinkedIn(string $token, string $authorUrn, string $text, ?string $image = null): void
     {
-        $resp = Http::timeout(12)
+        $media = null;
+
+        if ($image) {
+            // LinkedIn image share is a 3-step flow: register the upload, PUT the bytes,
+            // then create the post referencing the returned asset URN.
+            // 1) Register upload.
+            $reg = Http::timeout(15)->withToken($token)
+                ->withHeaders(['X-Restli-Protocol-Version' => '2.0.0'])
+                ->post('https://api.linkedin.com/v2/assets?action=registerUpload', [
+                    'registerUploadRequest' => [
+                        'recipes' => ['urn:li:digitalmediaRecipe:feedshare-image'],
+                        'owner'   => $authorUrn,
+                        'serviceRelationships' => [[
+                            'relationshipType' => 'OWNER',
+                            'identifier'       => 'urn:li:userGeneratedContent',
+                        ]],
+                    ],
+                ]);
+            if (! $reg->successful()) throw new \RuntimeException('linkedin registerUpload http ' . $reg->status() . ' ' . $reg->body());
+
+            $body  = $reg->json();
+            $asset = $body['value']['asset'] ?? null;
+            // uploadMechanism is keyed by a dotted class name — iterate to find the uploadUrl.
+            $uploadUrl = null;
+            foreach (($body['value']['uploadMechanism'] ?? []) as $mech) {
+                if (! empty($mech['uploadUrl'])) { $uploadUrl = $mech['uploadUrl']; break; }
+            }
+            if (! $asset || ! $uploadUrl) throw new \RuntimeException('linkedin registerUpload: missing asset/uploadUrl');
+
+            // 2) Upload the image bytes to the returned URL.
+            $bytes = self::readImageBytes($image);
+            if ($bytes === null) throw new \RuntimeException('linkedin: could not read image bytes');
+            $up = Http::timeout(30)->withToken($token)->withBody($bytes, 'application/octet-stream')->post($uploadUrl);
+            if (! $up->successful()) throw new \RuntimeException('linkedin upload http ' . $up->status());
+
+            $media = [[
+                'status'      => 'READY',
+                'media'       => $asset,
+                'description' => ['text' => mb_substr($text, 0, 200)],
+                'title'       => ['text' => 'Job opening'],
+            ]];
+        }
+
+        $share = [
+            'shareCommentary'    => ['text' => $text],
+            'shareMediaCategory' => $media ? 'IMAGE' : 'NONE',
+        ];
+        if ($media) $share['media'] = $media;
+
+        $resp = Http::timeout(15)
             ->withToken($token)
             ->withHeaders(['X-Restli-Protocol-Version' => '2.0.0'])
             ->post('https://api.linkedin.com/v2/ugcPosts', [
                 'author'          => $authorUrn,
                 'lifecycleState'  => 'PUBLISHED',
-                'specificContent' => [
-                    'com.linkedin.ugc.ShareContent' => [
-                        'shareCommentary'    => ['text' => $text],
-                        'shareMediaCategory' => 'NONE',
-                    ],
-                ],
-                'visibility' => ['com.linkedin.ugc.MemberNetworkVisibility' => 'PUBLIC'],
+                'specificContent' => ['com.linkedin.ugc.ShareContent' => $share],
+                'visibility'      => ['com.linkedin.ugc.MemberNetworkVisibility' => 'PUBLIC'],
             ]);
         if (! $resp->successful()) throw new \RuntimeException('linkedin http ' . $resp->status() . ' ' . $resp->body());
+    }
+
+    // Read an image as raw bytes — from a local file (preferred) or by fetching a URL.
+    private static function readImageBytes(string $image): ?string
+    {
+        if (is_file($image)) {
+            $bytes = @file_get_contents($image);
+            return $bytes === false ? null : $bytes;
+        }
+        try {
+            $r = Http::timeout(15)->get($image);
+            return $r->successful() ? $r->body() : null;
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 }
