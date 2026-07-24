@@ -3906,7 +3906,7 @@
                 <div>
                   <h3 style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: "var(--text-strong)" }}>Job Detail -- Hero banner</h3>
                   <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>The large teal banner at the top of every Job Detail page. Toggle off to hide it.</p>
-                  <div style={{ display: "inline-flex", alignItems: "center", gap: 5, marginTop: 8, fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-brand)", background: "var(--brand-subtle)", borderRadius: "var(--radius-pill)", padding: "3px 10px" }}>{I("image", 13)} Recommended image: 1600 × 220px</div>
+                  <div style={{ display: "inline-flex", alignItems: "center", gap: 5, marginTop: 8, fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-brand)", background: "var(--brand-subtle)", borderRadius: "var(--radius-pill)", padding: "3px 10px" }}>{I("image", 13)} Recommended image: 1600 × 480px</div>
                 </div>
               </div>
               <Switch checked={jh.visible !== false} onChange={(v) => setBanner("jobDetailHero", "visible", v)} />
