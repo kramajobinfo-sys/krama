@@ -98,7 +98,7 @@
     return (
       <aside className={"krm-sidebar" + (open ? " open" : "")} style={{ width: 248, flexShrink: 0, background: "var(--surface-card)", borderRight: "1px solid var(--border)", display: "flex", flexDirection: "column", padding: "20px 14px", position: "sticky", top: 0, height: "100vh" }}>
         <a href="/krama/krama/ui_kits/public-website/index.html" style={{ display: "flex", alignItems: "center", gap: 10, margin: "4px 8px 22px", textDecoration: "none" }}>
-          <img src={window.getKramaLogo("../../assets/krama-mark.svg")} height="36" alt="KRAMA" />
+          <img src={window.getKramaLogo("../../assets/krama-icon.png")} height="36" alt="KRAMA" />
           <span style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: "var(--text-lg)", letterSpacing: ".08em", color: "var(--text-strong)" }}>{window.KRAMA_BRAND_NAME || "KRAMA"}</span>
         </a>
         <nav style={{ display: "flex", flexDirection: "column", gap: 3 }}>
@@ -402,7 +402,7 @@
       <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--surface-page)" }}>
         <div style={{ width: "100%", maxWidth: 380, background: "var(--surface-card)", borderRadius: "var(--radius-xl)", boxShadow: "var(--shadow-xl)", padding: 36 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 24 }}>
-            <img src={window.getKramaLogo("../../assets/krama-mark.svg")} height="40" alt="KRAMA" />
+            <img src={window.getKramaLogo("../../assets/krama-icon.png")} height="40" alt="KRAMA" />
             <span style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: "var(--text-xl)", letterSpacing: ".08em", color: "var(--text-strong)" }}>{window.KRAMA_BRAND_NAME || "KRAMA"}</span>
           </div>
           <h1 style={{ fontSize: "var(--text-2xl)", fontWeight: 700, color: "var(--text-strong)", marginBottom: 6 }}>Employer login</h1>

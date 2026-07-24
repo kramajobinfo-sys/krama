@@ -100,7 +100,7 @@
       <div className="krm-login-outer" style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--stone-900)" }}>
         <div className="krm-login-card" style={{ width: "100%", maxWidth: 380, background: "var(--surface-card)", borderRadius: "var(--radius-xl)", boxShadow: "var(--shadow-xl)", padding: 36 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 24 }}>
-            <img src={window.getKramaLogo("../../assets/krama-mark.svg")} height="40" alt="KRAMA" />
+            <img src={window.getKramaLogo("../../assets/krama-icon.png")} height="40" alt="KRAMA" />
             <span style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: "var(--text-xl)", letterSpacing: ".08em", color: "var(--text-strong)" }}>{window.KRAMA_BRAND_NAME || "KRAMA"}</span>
           </div>
           <h1 style={{ fontSize: "var(--text-2xl)", fontWeight: 700, color: "var(--text-strong)", marginBottom: 6 }}>Admin console</h1>
@@ -150,7 +150,7 @@
     return (
       <aside className={"krm-sidebar" + (open ? " open" : "")} style={{ width: 248, flexShrink: 0, background: "var(--teal-800)", display: "flex", flexDirection: "column", padding: "20px 14px", position: "sticky", top: 0, height: "100vh" }}>
         <a href="/krama/krama/ui_kits/public-website/index.html" style={{ display: "flex", alignItems: "center", gap: 10, margin: "4px 8px 8px", textDecoration: "none" }}>
-          <img src={window.getKramaLogo("../../assets/krama-mark.svg")} height="34" alt="KRAMA" />
+          <img src={window.getKramaLogo("../../assets/krama-icon.png")} height="34" alt="KRAMA" />
           <span style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: "var(--text-lg)", letterSpacing: ".08em", color: "#fff" }}>{window.KRAMA_BRAND_NAME || "KRAMA"}</span>
         </a>
         <div style={{ margin: "0 8px 18px", fontSize: "var(--text-xs)", fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: "rgba(255,255,255,0.45)" }}>Admin console</div>
@@ -2133,7 +2133,7 @@
         setErr("Save failed: " + (e && e.message ? e.message : "Server error. Try using a hosted image URL instead of uploading."));
       });
     };
-    const defaultLogo = "../../assets/krama-mark.svg";
+    const defaultLogo = "../../assets/krama-icon.png";
     const previewSrc = b.logoUrl || defaultLogo;
     // Resize + compress uploaded image to keep it well under localStorage limits (~200 KB target)
     const handleFileUpload = (e) => {
@@ -5401,7 +5401,7 @@
       return (
         <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "var(--stone-900)", gap: 16 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <img src={window.getKramaLogo("../../assets/krama-mark.svg")} height="40" alt="KRAMA" />
+            <img src={window.getKramaLogo("../../assets/krama-icon.png")} height="40" alt="KRAMA" />
             <span style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: "24px", letterSpacing: ".08em", color: "#fff", opacity: 0.9 }}>{window.KRAMA_BRAND_NAME || "KRAMA"}</span>
           </div>
           <div style={{ width: 36, height: 36, border: "3px solid rgba(255,255,255,0.2)", borderTopColor: "#fff", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />

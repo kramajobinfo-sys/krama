@@ -89,7 +89,7 @@
       <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--surface-page)", padding: 16 }}>
         <Card padding={40} style={{ width: "100%", maxWidth: 380 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 28 }}>
-            <img src={window.getKramaLogo("../../assets/krama-mark.svg")} height="42" alt="KRAMA" />
+            <img src={window.getKramaLogo("../../assets/krama-icon.png")} height="42" alt="KRAMA" />
             <span style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: "var(--text-xl)", letterSpacing: ".08em", color: "var(--text-strong)" }}>{window.KRAMA_BRAND_NAME || "KRAMA"}</span>
           </div>
           <h2 style={{ fontSize: "var(--text-xl)", fontWeight: 700, color: "var(--text-strong)", marginBottom: 6 }}>Candidate sign in</h2>
@@ -121,7 +121,7 @@
     return (
       <aside className={"krm-sidebar" + (open ? " open" : "")} style={{ width: 248, flexShrink: 0, background: "var(--surface-card)", borderRight: "1px solid var(--border)", display: "flex", flexDirection: "column", padding: "20px 14px", position: "sticky", top: 0, height: "100vh" }}>
         <a href="/krama/krama/ui_kits/public-website/index.html" style={{ display: "flex", alignItems: "center", gap: 10, margin: "4px 8px 22px", textDecoration: "none" }}>
-          <img src={window.getKramaLogo("../../assets/krama-mark.svg")} height="36" alt="KRAMA" />
+          <img src={window.getKramaLogo("../../assets/krama-icon.png")} height="36" alt="KRAMA" />
           <span style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: "var(--text-lg)", letterSpacing: ".08em", color: "var(--text-strong)" }}>{window.KRAMA_BRAND_NAME || "KRAMA"}</span>
         </a>
         <nav style={{ display: "flex", flexDirection: "column", gap: 3 }}>

@@ -126,7 +126,7 @@
         }}>
           {/* Logo */}
           <div style={{ display: "flex", alignItems: "center", gap: 9, cursor: "pointer", flexShrink: 0 }} onClick={() => navTo("home")}>
-            <img src={window.getKramaLogo("../../assets/krama-mark.svg")} height="36" alt="KRAMA" />
+            <img src={window.getKramaLogo("../../assets/krama-icon.png")} height="36" alt="KRAMA" />
             <span style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: "var(--text-lg)", letterSpacing: ".08em", color: "var(--text-strong)" }}>{window.KRAMA_BRAND_NAME || "KRAMA"}</span>
           </div>
 
@@ -258,7 +258,7 @@
         <div className="krm-footer-grid" style={{ position: "relative", maxWidth: 1200, margin: "0 auto", display: "grid", gridTemplateColumns: "1.4fr 1fr 1fr 1fr", gap: 40 }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-              <img src={window.getKramaLogo("../../assets/krama-mark.svg")} height="34" alt="KRAMA" />
+              <img src={window.getKramaLogo("../../assets/krama-icon.png")} height="34" alt="KRAMA" />
               <span style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: "var(--text-lg)", letterSpacing: ".08em", color: "#fff" }}>{window.KRAMA_BRAND_NAME || "KRAMA"}</span>
             </div>
             <p style={{ color: "var(--text-on-dark-mut)", fontSize: "var(--text-sm)", marginTop: 16, maxWidth: 260, lineHeight: 1.6 }}>

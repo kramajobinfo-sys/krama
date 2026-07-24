@@ -97,7 +97,7 @@ function App() {
   if (!ready) return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "var(--teal-800)", gap: 16 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <img src={window.getKramaLogo("../../assets/krama-mark.svg")} height="40" alt="KRAMA" />
+        <img src={window.getKramaLogo("../../assets/krama-icon.png")} height="40" alt="KRAMA" />
         <span style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: "24px", letterSpacing: ".08em", color: "#fff", opacity: 0.9 }}>{window.KRAMA_BRAND_NAME || "KRAMA"}</span>
       </div>
       <div style={{ width: 36, height: 36, border: "3px solid rgba(255,255,255,0.2)", borderTopColor: "#fff", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
