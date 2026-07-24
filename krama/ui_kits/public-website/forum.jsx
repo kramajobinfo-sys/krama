@@ -503,9 +503,9 @@
     return (
       <React.Fragment>
         <AnnouncementBar b={loadBanner("communityTopBanner", COMMUNITY_TOP_DEFAULT)} onNav={onNav} onCtaClick={startNew} />
-        {/* page hero — same structure/size as the Companies page (renders identically on both devices) */}
+        {/* page hero — large 1600 × 480 banner, like the home Main Banner Slideshow (renders identically on both devices) */}
         {(() => { const h = loadBanner("communityHero", COMMUNITY_HERO_DEFAULT); return (
-        <div className={"krm-page-hero" + (h.hideText ? " krm-page-hero--img" : "")} style={{ position: "relative", background: "var(--teal-800)", overflow: "hidden", padding: h.hideText ? 0 : "44px 32px", aspectRatio: h.hideText ? "1600 / 220" : undefined, maxHeight: h.hideText ? 240 : undefined }}>
+        <div className={"krm-page-hero" + (h.hideText ? " krm-page-hero--img" : "")} style={{ position: "relative", background: "var(--teal-800)", overflow: "hidden", padding: h.hideText ? 0 : "64px 32px", aspectRatio: h.hideText ? "1600 / 480" : undefined, maxHeight: h.hideText ? 480 : undefined }}>
           {h.image
             ? <React.Fragment>
                 <img className="krm-page-hero-bg" src={h.image} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: h.fit === "contain" ? "contain" : "cover", display: "block" }} />
