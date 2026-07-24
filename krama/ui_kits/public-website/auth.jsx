@@ -128,7 +128,7 @@
         {/* form side */}
         <div className="krm-auth-form-side" style={{ display: "flex", flexDirection: "column", padding: "28px 40px" }}>
           <div className="krm-auth-logo" style={{ display: "flex", alignItems: "center", gap: 9, cursor: "pointer", alignSelf: "flex-start" }} onClick={() => onNav("home")}>
-            <img src={window.getKramaLogo("../../assets/krama-mark.svg")} height="36" alt="KRAMA" />
+            <img src={window.getKramaLogo("../../assets/krama-icon.png")} height="36" alt="KRAMA" />
             <span style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: "var(--text-lg)", letterSpacing: ".08em", color: "var(--text-strong)" }}>{window.KRAMA_BRAND_NAME || "KRAMA"}</span>
           </div>
           <div className="krm-auth-form-center" style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
