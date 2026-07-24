@@ -43,8 +43,8 @@ class SettingController extends Controller
         ],
         'brand' => [
             'brandName'  => 'nullable|string|max:80',
-            'logoUrl'    => 'nullable|string|max:65535',
-            'faviconUrl' => 'nullable|string|max:65535',
+            'logoUrl'    => 'nullable|string|max:3000000',
+            'faviconUrl' => 'nullable|string|max:3000000',
             'primaryColor'   => 'nullable|string|max:20',
             'accentColor'    => 'nullable|string|max:20',
         ],
