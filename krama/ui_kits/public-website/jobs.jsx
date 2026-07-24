@@ -387,7 +387,7 @@
         <AnnouncementBar b={fjTopBanner} onNav={onNav} onCtaClick={openAlertModal} />
         {/* top banner */}
         {(() => { const h = loadBanner("findJobsHero", FJ_HERO_DEFAULT); return (
-        <div className={"krm-page-hero" + (h.hideText ? " krm-page-hero--img" : "")} style={{ position: "relative", background: "var(--teal-800)", overflow: "hidden", padding: h.hideText ? 0 : "44px 32px", aspectRatio: h.hideText ? "1600 / 220" : undefined, maxHeight: h.hideText ? 240 : undefined }}>
+        <div className={"krm-page-hero" + (h.hideText ? " krm-page-hero--img" : "")} style={{ position: "relative", background: "var(--teal-800)", overflow: "hidden", padding: h.hideText ? 0 : "64px 32px", aspectRatio: h.hideText ? "1600 / 480" : undefined, maxHeight: h.hideText ? 480 : undefined }}>
           {h.image
             ? <React.Fragment>
                 <img className="krm-page-hero-bg" src={h.image} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: h.fit === "contain" ? "contain" : "cover", display: "block" }} />
@@ -595,7 +595,7 @@
         <AnnouncementBar b={loadBanner("companiesTopBanner", CO_TOP_DEFAULT)} onNav={onNav} />
         {/* header strip */}
         {(() => { const h = loadBanner("companiesHero", CO_HERO_DEFAULT); return (
-        <div className={"krm-page-hero" + (h.hideText ? " krm-page-hero--img" : "")} style={{ position: "relative", background: "var(--teal-800)", overflow: "hidden", padding: h.hideText ? 0 : "44px 32px", aspectRatio: h.hideText ? "1600 / 220" : undefined, maxHeight: h.hideText ? 240 : undefined }}>
+        <div className={"krm-page-hero" + (h.hideText ? " krm-page-hero--img" : "")} style={{ position: "relative", background: "var(--teal-800)", overflow: "hidden", padding: h.hideText ? 0 : "64px 32px", aspectRatio: h.hideText ? "1600 / 480" : undefined, maxHeight: h.hideText ? 480 : undefined }}>
           {h.image
             ? <React.Fragment>
                 <img className="krm-page-hero-bg" src={h.image} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: h.fit === "contain" ? "contain" : "cover", display: "block" }} />

@@ -3352,7 +3352,7 @@
                 <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>The large teal banner with the page title and subtitle on the Members page.</p>
               </div>
             </div>
-            <div style={{ display: "inline-flex", alignItems: "center", gap: 5, marginBottom: 16, fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-brand)", background: "var(--brand-subtle)", borderRadius: "var(--radius-pill)", padding: "3px 10px" }}>{I("image", 13)} Recommended image: 1600 × 220px</div>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 5, marginBottom: 16, fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-brand)", background: "var(--brand-subtle)", borderRadius: "var(--radius-pill)", padding: "3px 10px" }}>{I("image", 13)} Recommended image: 1600 × 480px</div>
             <div style={{ display: "grid", gap: 14 }}>
               <Input label="Heading" value={eh.heading || "Hire the right people, faster."} onChange={(e) => setBanner("employersHero", "heading", e.target.value)} />
               <Textarea label="Subtitle" rows={2} value={eh.sub || ""} onChange={(e) => setBanner("employersHero", "sub", e.target.value)} />
@@ -3513,7 +3513,7 @@
               <div>
                 <h3 style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: "var(--text-strong)" }}>Find Jobs -- Hero banner</h3>
                 <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>The large teal banner with the page title and subtitle. Use <code style={{fontSize:"0.85em",background:"var(--surface-sunken)",padding:"1px 4px",borderRadius:3}}>{"{count}"}</code> in subtitle to insert the live job count.</p>
-                <div style={{ display: "inline-flex", alignItems: "center", gap: 5, marginTop: 8, fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-brand)", background: "var(--brand-subtle)", borderRadius: "var(--radius-pill)", padding: "3px 10px" }}>{I("image", 13)} Recommended image: 1600 × 220px</div>
+                <div style={{ display: "inline-flex", alignItems: "center", gap: 5, marginTop: 8, fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-brand)", background: "var(--brand-subtle)", borderRadius: "var(--radius-pill)", padding: "3px 10px" }}>{I("image", 13)} Recommended image: 1600 × 480px</div>
               </div>
             </div>
             <div style={{ display: "grid", gap: 14 }}>
@@ -3715,7 +3715,7 @@
               <div>
                 <h3 style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: "var(--text-strong)" }}>Companies -- Hero banner</h3>
                 <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>The large teal banner with the page title and subtitle. Use <code style={{fontSize:"0.85em",background:"var(--surface-sunken)",padding:"1px 4px",borderRadius:3}}>{"{count}"}</code> in subtitle to insert the live company count.</p>
-                <div style={{ display: "inline-flex", alignItems: "center", gap: 5, marginTop: 8, fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-brand)", background: "var(--brand-subtle)", borderRadius: "var(--radius-pill)", padding: "3px 10px" }}>{I("image", 13)} Recommended image: 1600 × 220px</div>
+                <div style={{ display: "inline-flex", alignItems: "center", gap: 5, marginTop: 8, fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-brand)", background: "var(--brand-subtle)", borderRadius: "var(--radius-pill)", padding: "3px 10px" }}>{I("image", 13)} Recommended image: 1600 × 480px</div>
               </div>
             </div>
             <div style={{ display: "grid", gap: 14 }}>
