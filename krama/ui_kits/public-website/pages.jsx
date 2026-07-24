@@ -778,16 +778,23 @@
               )}
             </div>
           ); })()
-          : (
-            <div style={{ position: "relative", background: "var(--teal-800)", overflow: "hidden", padding: "52px 32px" }}>
-              <div style={{ position: "absolute", inset: 0, background: "url('../../assets/krama-pattern.svg')", backgroundSize: 72, opacity: 0.08 }} />
+          : (() => { const h = loadBanner(slug + "Hero", { heading: c.title, sub: c.lead, image: "", fit: "cover", imgOverlay: 45 }); return (
+            <div className={"krm-page-hero" + (h.hideText ? " krm-page-hero--img" : "")} style={{ position: "relative", background: "var(--teal-800)", overflow: "hidden", padding: h.hideText ? 0 : "64px 32px", aspectRatio: h.hideText ? "1600 / 480" : undefined, maxHeight: h.hideText ? 480 : undefined }}>
+              {h.image
+                ? <React.Fragment>
+                    <img className="krm-page-hero-bg" src={h.image} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: h.fit === "contain" ? "contain" : "cover", display: "block" }} />
+                    <div className="krm-page-hero-tint" style={{ position: "absolute", inset: 0, background: "var(--teal-800)", opacity: (h.imgOverlay != null ? h.imgOverlay : 45) / 100 }} />
+                  </React.Fragment>
+                : <div style={{ position: "absolute", inset: 0, background: "url('../../assets/krama-pattern.svg')", backgroundSize: 72, opacity: 0.08 }} />}
+              {!h.hideText && (
               <div style={{ position: "relative", maxWidth: 1200, margin: "0 auto" }}>
                 <div style={{ fontSize: "var(--text-xs)", fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--teal-200)" }}>{TR(c.eyebrow)}</div>
-                <h1 className="krm-info-hero-title" style={{ color: "#fff", fontSize: "var(--text-5xl)", fontWeight: 800, letterSpacing: "-0.02em", marginTop: 8 }}>{TR(c.title)}</h1>
-                <p style={{ color: "var(--stone-300)", fontSize: "var(--text-lg)", marginTop: 12, maxWidth: 640 }}>{TR(c.lead)}</p>
+                <h1 className="krm-info-hero-title" style={{ color: "#fff", fontSize: "var(--text-5xl)", fontWeight: 800, letterSpacing: "-0.02em", marginTop: 8 }}>{TR(h.heading || c.title)}</h1>
+                <p style={{ color: "var(--stone-300)", fontSize: "var(--text-lg)", marginTop: 12, maxWidth: 640 }}>{TR(h.sub || c.lead)}</p>
               </div>
+              )}
             </div>
-          )}
+          ); })()}
         <div className="krm-info-body" style={{ maxWidth: 1200, margin: "0 auto", padding: "44px 32px 64px" }}>
           {c.render(onNav)}
         </div>
