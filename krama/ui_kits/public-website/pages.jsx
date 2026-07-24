@@ -158,7 +158,7 @@
                   block
                   style={dark ? { background: "#fff", color: "var(--stone-900, #1a1a1a)", border: "none" } : undefined}
                   onClick={() => {
-                    if (custom) { window.location.href = "mailto:sales@krama.com?subject=" + encodeURIComponent("Enterprise plan inquiry"); return; }
+                    if (custom) { window.location.href = "mailto:info@kramajob.com?subject=" + encodeURIComponent("Enterprise plan inquiry"); return; }
                     onNav && onNav("register");
                   }}
                 >
@@ -290,24 +290,85 @@
     about: {
       eyebrow: "About us", title: "Work that fits your life.",
       lead: "Krama connects ambitious people with verified employers across Cambodia and Southeast Asia.",
-      render: () => (
-        <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-          <p style={{ fontSize: "var(--text-lg)", color: "var(--text-body)", lineHeight: 1.65 }}>
-            {TR("We started Krama with one belief: finding work -- and hiring -- should be hopeful and human. Every company on Krama is verified, every job is reviewed before it goes live, and every candidate is treated as more than a CV.")}
-          </p>
-          <div className="krm-info-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16 }}>
-            {[["12,480", "Open jobs"], ["486", "Verified companies"], ["40k+", "Candidates"]].map(([n, l]) => (
-              <Card key={l} padding={24}>
-                <div style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: "var(--text-4xl)", color: "var(--brand)" }}>{n}</div>
-                <div style={{ fontSize: "var(--text-base)", color: "var(--text-muted)", marginTop: 4 }}>{TR(l)}</div>
-              </Card>
-            ))}
+      render: (onNav) => {
+        const H = ({ children }) => (
+          <h2 style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-2xl)", fontWeight: 800, color: "var(--text-strong)", letterSpacing: "-0.01em", margin: 0 }}>{children}</h2>
+        );
+        const FeatureCard = ({ icon, title, body }) => (
+          <Card padding={28}>
+            <div style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 48, height: 48, borderRadius: "var(--radius-md)", background: "var(--brand-subtle)", color: "var(--brand)", marginBottom: 14 }}>{I(icon, 22)}</div>
+            <div style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: "var(--text-strong)", marginBottom: 6 }}>{TR(title)}</div>
+            <p style={{ fontSize: "var(--text-base)", color: "var(--text-muted)", lineHeight: 1.6, margin: 0 }}>{TR(body)}</p>
+          </Card>
+        );
+        const VALUES = [
+          ["shield-check", "Verified & trusted", "Every company is checked and every job is reviewed before it goes live."],
+          ["map-pin", "Local-first", "Built for Cambodia and the region, with payments that work here — KHQR, ABA, and Wing."],
+          ["heart", "Human & hopeful", "We treat every candidate as more than a CV, and every employer as a partner."],
+          ["languages", "Bilingual", "Khmer and English as first-class peers, across the whole experience."],
+        ];
+        return (
+          <div style={{ display: "flex", flexDirection: "column", gap: 44 }}>
+            {/* Mission */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: 760 }}>
+              <p style={{ fontSize: "var(--text-xl)", color: "var(--text-strong)", lineHeight: 1.6, fontWeight: 600, margin: 0 }}>
+                {TR("Krama exists to make finding work — and hiring — feel hopeful and human.")}
+              </p>
+              <p style={{ fontSize: "var(--text-base)", color: "var(--text-body)", lineHeight: 1.7, margin: 0 }}>
+                {TR("Every company on Krama is verified and every job is reviewed before it goes live, so candidates apply with confidence and employers reach people who are genuinely a fit. We're a Cambodia-first team building for the whole region — with Khmer and English side by side, and local payment options from KHQR to ABA and Wing.")}
+              </p>
+            </div>
+
+            {/* Stats band */}
+            <Card padding={0}>
+              <div className="krm-info-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)" }}>
+                {[["12,480", "Open jobs"], ["486", "Verified companies"], ["40k+", "Candidates"]].map(([n, l], i) => (
+                  <div key={l} style={{ padding: "28px 24px", textAlign: "center", borderLeft: i ? "1px solid var(--border)" : "none" }}>
+                    <div style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: "var(--text-4xl)", color: "var(--brand)" }}>{n}</div>
+                    <div style={{ fontSize: "var(--text-base)", color: "var(--text-muted)", marginTop: 4 }}>{TR(l)}</div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+
+            {/* What we do */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+              <H>{TR("What we do")}</H>
+              <div className="krm-info-grid" style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 16 }}>
+                <FeatureCard icon="search" title="For candidates" body="Search thousands of verified jobs, build a résumé, save roles, follow companies, and apply in a few taps — with your CV visibility always under your control." />
+                <FeatureCard icon="briefcase" title="Employers" body="Post jobs, reach verified candidates, and manage your entire hiring pipeline — from application to offer — with tools built for local teams." />
+              </div>
+            </div>
+
+            {/* Values */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+              <H>{TR("What we stand for")}</H>
+              <div className="krm-info-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16 }}>
+                {VALUES.map(([icon, title, body]) => (
+                  <Card key={title} padding={22}>
+                    <div style={{ color: "var(--brand)", marginBottom: 10 }}>{I(icon, 24)}</div>
+                    <div style={{ fontSize: "var(--text-base)", fontWeight: 700, color: "var(--text-strong)", marginBottom: 6 }}>{TR(title)}</div>
+                    <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", lineHeight: 1.55, margin: 0 }}>{TR(body)}</p>
+                  </Card>
+                ))}
+              </div>
+            </div>
+
+            {/* CTA */}
+            <div style={{ position: "relative", overflow: "hidden", borderRadius: "var(--radius-lg)", background: "var(--teal-800)", padding: "40px 32px", textAlign: "center" }}>
+              <div style={{ position: "absolute", inset: 0, background: "url('../../assets/krama-pattern.svg')", backgroundSize: 72, opacity: 0.08 }} />
+              <div style={{ position: "relative" }}>
+                <h2 style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-2xl)", fontWeight: 800, color: "#fff", margin: 0 }}>{TR("Ready to get started?")}</h2>
+                <p style={{ color: "var(--stone-300)", fontSize: "var(--text-base)", marginTop: 8, marginBottom: 20 }}>{TR("Find your next role or hire your next teammate on Krama.")}</p>
+                <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+                  <Button variant="primary" onClick={() => onNav && onNav("jobs")}>{TR("Find jobs")}</Button>
+                  <Button variant="secondary" onClick={() => onNav && onNav("employers")}>{TR("Employers")}</Button>
+                </div>
+              </div>
+            </div>
           </div>
-          <p style={{ fontSize: "var(--text-base)", color: "var(--text-body)", lineHeight: 1.65 }}>
-            {TR("We're a Cambodia-first team building for the whole region -- with Khmer and English as first-class peers, and payment options that work locally, from KHQR to ABA and Wing.")}
-          </p>
-        </div>
-      ),
+        );
+      },
     },
     contact: {
       eyebrow: "Contact", title: "We'd love to hear from you.",
@@ -326,7 +387,7 @@
             </div>
           </Card>
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            {[["map-pin", "Office", "#148, Preah Sihanouk Blvd, Phnom Penh"], ["mail", "Email", "hello@krama.com"], ["phone", "Phone", "+855 23 900 100"], ["clock", "Hours", "Mon-Fri · 8:00-17:30"]].map(([ic, k, v]) => (
+            {[["map-pin", "Office", "Wat Samrong andet, Khan Sensok, Phnom Penh, Cambodia"], ["mail", "Email", "info@kramajob.com"], ["phone", "Phone", "087 767 272"], ["globe", "Website", "kramajob.com"], ["clock", "Hours", "Mon-Fri · 8:00-17:30"]].map(([ic, k, v]) => (
               <div key={k} style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
                 <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 42, height: 42, borderRadius: "var(--radius-md)", background: "var(--brand-subtle)", color: "var(--brand)", flexShrink: 0 }}>{I(ic, 18)}</span>
                 <div>
@@ -341,27 +402,13 @@
     },
     terms: {
       eyebrow: "Legal", title: "Terms of Service",
-      lead: "The rules for using Krama. Last updated 18 June 2026.",
-      render: () => prose([
-        ["1. Acceptance", "By creating an account or using Krama, you agree to these terms. If you don't agree, please don't use the service."],
-        ["2. Accounts", "You're responsible for your account and for keeping your password secure. Employers must provide accurate company information for verification."],
-        ["3. Job postings", "All jobs are reviewed before publishing. We may reject or remove postings that are misleading, discriminatory, or violate local law."],
-        ["4. Candidate conduct", "Apply honestly. Misrepresenting your experience or identity may result in account suspension."],
-        ["5. Payments", "Paid plans renew on their billing date until cancelled. Fees are non-refundable except where required by law."],
-        ["6. Liability", "Krama is a marketplace; we don't guarantee employment or hiring outcomes and aren't party to any employment contract."],
-      ]),
+      lead: "The rules for using Krama Job. Last updated 24 July 2026.",
+      render: () => <TermsContent />,
     },
     privacy: {
       eyebrow: "Legal", title: "Privacy Policy",
-      lead: "How we handle your data. Last updated 18 June 2026.",
-      render: () => prose([
-        ["1. What we collect", "Account details, résumé content you provide, and usage data needed to run the service."],
-        ["2. How we use it", "To match you with jobs or candidates, process applications, and improve recommendations. We don't sell your personal data."],
-        ["3. Sharing", "When you apply, your résumé is shared with that employer. Verified employers can search résumés only if you opt in."],
-        ["4. Security", "Data is encrypted in transit and at rest. Access is role-based and audit-logged."],
-        ["5. Your rights", "You can view, export, or delete your data at any time from your profile, or by contacting us."],
-        ["6. Contact", "Questions about privacy? Email privacy@krama.com."],
-      ]),
+      lead: "How Krama Job collects, uses, and protects your information. Last updated 24 July 2026.",
+      render: () => <PrivacyContent />,
     },
   };
 
@@ -374,6 +421,333 @@
             <p style={{ fontSize: "var(--text-base)", color: "var(--text-body)", lineHeight: 1.6 }}>{b}</p>
           </div>
         ))}
+      </div>
+    );
+  }
+
+  // ── Full Privacy Policy (Facebook-review ready: social-login disclosure + data-deletion path) ──
+  function PrivacyContent() {
+    const P = ({ children }) => <p style={{ fontSize: "var(--text-base)", color: "var(--text-body)", lineHeight: 1.65, margin: 0 }}>{children}</p>;
+    const List = ({ items }) => (
+      <ul style={{ margin: "4px 0 0", paddingLeft: 20, display: "flex", flexDirection: "column", gap: 7 }}>
+        {items.map((it, i) => <li key={i} style={{ fontSize: "var(--text-base)", color: "var(--text-body)", lineHeight: 1.6 }}>{it}</li>)}
+      </ul>
+    );
+    const Section = ({ n, h, children }) => (
+      <div>
+        <h3 style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: "var(--text-strong)", marginBottom: 8 }}>{n}. {h}</h3>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>{children}</div>
+      </div>
+    );
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 24, maxWidth: 760 }}>
+        <P>
+          Krama Job (“Krama”, “we”, “us”, or “our”) operates the kramajob.com website and related services
+          (the “Service”) — an online job board and recruitment platform serving Cambodia and Southeast Asia.
+          This Privacy Policy explains what personal information we collect, how we use and share it, and the
+          choices and rights you have. By creating an account or using the Service, you agree to the practices
+          described in this policy.
+        </P>
+
+        <Section n={1} h="Information We Collect">
+          <P>We collect the following categories of information:</P>
+          <List items={[
+            "Account & profile: your name, email address, phone number, password, and profile photo. For candidates, this includes résumé/CV content you provide such as work experience, education, skills, and languages.",
+            "Employer & company: company name, registration details, address, logo, and the content of job postings.",
+            "Applications & activity: jobs you apply to, jobs you save, companies you follow, messages you exchange with employers, company reviews, and community forum posts.",
+            "Social login: if you sign in with Facebook or Google, we receive basic profile information from that provider — typically your name, email address, and profile picture — as permitted by the permissions you grant. We never receive your social-media password.",
+            "Payment information: when you buy a paid plan or feature, payments are handled by our payment providers (KHQR/Bakong, ABA PayWay, and Stripe). We receive confirmation of payment and limited transaction details; we do not collect or store your full card number or bank credentials.",
+            "Automatically collected: device and browser type, IP address, pages viewed, and actions taken — collected through cookies, browser local storage, and server logs to operate and secure the Service.",
+          ]} />
+        </Section>
+
+        <Section n={2} h="How We Use Your Information">
+          <List items={[
+            "Create and manage your account and profile.",
+            "Match candidates with jobs and employers with candidates, and power recommendations.",
+            "Process job applications and share them with the relevant employer.",
+            "Process payments, subscriptions, and featured listings.",
+            "Send you transactional messages — email, SMS one-time codes, and Telegram alerts — about your account and activity.",
+            "Provide customer support, including our AI-assisted chat.",
+            "Maintain security, prevent fraud and abuse, and keep audit logs.",
+            "Comply with legal obligations and enforce our Terms of Service.",
+          ]} />
+        </Section>
+
+        <Section n={3} h="How We Share Your Information">
+          <P>We do not sell your personal information. We share it only in these ways:</P>
+          <List items={[
+            "With employers: when you apply to a job, your application and résumé are shared with that employer. Verified employers can search résumés only if you have opted in through your CV visibility setting.",
+            "With service providers who process data on our behalf — payment processors (Bakong/KHQR, ABA PayWay, Stripe), messaging providers (Telegram, our SMS gateway, and our email provider), and AI providers used for the support assistant and CV matching — each only to the extent needed to provide their service.",
+            "With social-login providers (Facebook, Google) to authenticate you, as described below.",
+            "For legal reasons: to comply with applicable law, respond to lawful requests, or protect the rights, safety, and property of Krama, our users, or the public.",
+            "In a business transfer: if Krama is involved in a merger, acquisition, or sale of assets, your information may be transferred as part of that transaction.",
+          ]} />
+        </Section>
+
+        <Section n={4} h="Facebook Login and Data">
+          <P>If you choose to connect your Facebook account:</P>
+          <List items={[
+            "We request only basic profile information (name, email address, and profile picture) needed to create or sign you into your Krama account.",
+            "We use this information solely to authenticate you and populate your Krama profile. We do not post to your Facebook account and we do not access your friends list.",
+            "You can disconnect Krama from Facebook at any time in your Facebook settings under “Settings → Apps and Websites”.",
+          ]} />
+        </Section>
+
+        <Section n={5} h="Data Deletion">
+          <P>You can request deletion of your account and associated personal data at any time:</P>
+          <List items={[
+            "From your Krama profile settings, or",
+            "By emailing info@kramajob.com with the subject “Data deletion request”.",
+          ]} />
+          <P>
+            Once we verify your request, we will delete your personal data within 30 days, except information we
+            are required to retain for legal, accounting, or fraud-prevention purposes.
+          </P>
+        </Section>
+
+        <Section n={6} h="Cookies and Similar Technologies">
+          <P>
+            We use cookies and browser local storage to keep you signed in, remember your preferences (such as
+            language), and understand how the Service is used. You can control cookies through your browser
+            settings; disabling them may affect some features of the Service.
+          </P>
+        </Section>
+
+        <Section n={7} h="Data Retention">
+          <P>
+            We keep your personal information for as long as your account is active or as needed to provide the
+            Service. We may retain certain information after your account is closed where required for legal, tax,
+            security, or dispute-resolution purposes.
+          </P>
+        </Section>
+
+        <Section n={8} h="Data Security">
+          <P>
+            We protect your data using encryption in transit and at rest, role-based access controls, and audit
+            logging. No method of transmission or storage is completely secure, but we work to safeguard your
+            information and will notify you and the relevant authorities of any breach as required by law.
+          </P>
+        </Section>
+
+        <Section n={9} h="Your Rights and Choices">
+          <List items={[
+            "Access, update, or correct your information from your profile.",
+            "Export or delete your data (see “Data Deletion” above).",
+            "Control your CV visibility to employers.",
+            "Withdraw consent or opt out of non-essential communications.",
+            "Contact us to exercise any right available to you under applicable law.",
+          ]} />
+        </Section>
+
+        <Section n={10} h="Children’s Privacy">
+          <P>
+            The Service is intended for users aged 18 and over. We do not knowingly collect personal information
+            from children. If you believe a child has provided us with information, please contact us and we will
+            delete it.
+          </P>
+        </Section>
+
+        <Section n={11} h="International Transfers">
+          <P>
+            We are based in Cambodia and may process information in other countries where our service providers
+            operate. Where we transfer data internationally, we take steps to ensure it remains protected.
+          </P>
+        </Section>
+
+        <Section n={12} h="Changes to This Policy">
+          <P>
+            We may update this Privacy Policy from time to time. We will post the updated version on this page and
+            revise the “Last updated” date above. Significant changes will be communicated through the Service.
+          </P>
+        </Section>
+
+        <Section n={13} h="Contact Us">
+          <P>If you have any questions about this Privacy Policy or your data, please contact us:</P>
+          <div style={{ fontSize: "var(--text-base)", color: "var(--text-body)", lineHeight: 1.7 }}>
+            <div style={{ fontWeight: 700, color: "var(--text-strong)" }}>Krama Job</div>
+            <div>Wat Samrong andet, Khan Sensok, Phnom Penh, Cambodia</div>
+            <div>Email: <a href="mailto:info@kramajob.com" style={{ color: "var(--text-brand)" }}>info@kramajob.com</a></div>
+            <div>Phone: <a href="tel:087767272" style={{ color: "var(--text-brand)" }}>087 767 272</a></div>
+            <div>Website: <a href="https://kramajob.com" target="_blank" rel="noopener noreferrer" style={{ color: "var(--text-brand)" }}>kramajob.com</a></div>
+          </div>
+        </Section>
+      </div>
+    );
+  }
+
+  // ── Full Terms of Service ──
+  function TermsContent() {
+    const P = ({ children }) => <p style={{ fontSize: "var(--text-base)", color: "var(--text-body)", lineHeight: 1.65, margin: 0 }}>{children}</p>;
+    const List = ({ items }) => (
+      <ul style={{ margin: "4px 0 0", paddingLeft: 20, display: "flex", flexDirection: "column", gap: 7 }}>
+        {items.map((it, i) => <li key={i} style={{ fontSize: "var(--text-base)", color: "var(--text-body)", lineHeight: 1.6 }}>{it}</li>)}
+      </ul>
+    );
+    const Section = ({ n, h, children }) => (
+      <div>
+        <h3 style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: "var(--text-strong)", marginBottom: 8 }}>{n}. {h}</h3>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>{children}</div>
+      </div>
+    );
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 24, maxWidth: 760 }}>
+        <P>
+          These Terms of Service (“Terms”) govern your access to and use of the kramajob.com website and related
+          services (the “Service”) operated by Krama Job (“Krama”, “we”, “us”, or “our”), an online job board and
+          recruitment platform serving Cambodia and Southeast Asia. Please read them carefully. By creating an
+          account or using the Service, you agree to these Terms and to our Privacy Policy. If you do not agree,
+          please do not use the Service.
+        </P>
+
+        <Section n={1} h="Eligibility & Acceptance">
+          <List items={[
+            "You must be at least 18 years old and able to form a legally binding contract to use the Service.",
+            "By registering or using the Service, you accept these Terms and our Privacy Policy.",
+            "If you use the Service on behalf of a company or organization, you represent that you are authorized to bind that entity to these Terms.",
+          ]} />
+        </Section>
+
+        <Section n={2} h="Accounts & Security">
+          <List items={[
+            "You must provide accurate, current information and keep it up to date.",
+            "You are responsible for all activity under your account and for keeping your password confidential.",
+            "You may sign in using your email or phone, or a connected Facebook or Google account; you are responsible for the security of any linked account.",
+            "Notify us immediately at info@kramajob.com of any unauthorized use of your account.",
+          ]} />
+        </Section>
+
+        <Section n={3} h="Candidates">
+          <List items={[
+            "You may create a profile, build a résumé, search and apply to jobs, save jobs, and follow companies.",
+            "Apply honestly — misrepresenting your identity, qualifications, or experience may result in suspension.",
+            "When you apply, your application and résumé are shared with the relevant employer (see our Privacy Policy).",
+            "You control your CV visibility to employers through your profile settings.",
+          ]} />
+        </Section>
+
+        <Section n={4} h="Employers">
+          <List items={[
+            "You must provide accurate company information and are subject to verification.",
+            "Job postings must be genuine, lawful, non-discriminatory, and for real vacancies.",
+            "All jobs are reviewed before publishing; we may reject, edit, or remove postings that are misleading, discriminatory, fraudulent, or that violate these Terms or applicable law.",
+            "You must handle candidate data lawfully, use it only for legitimate recruitment, and comply with applicable data-protection and employment laws.",
+            "You are solely responsible for your hiring decisions, interviews, offers, and employment relationships.",
+          ]} />
+        </Section>
+
+        <Section n={5} h="Acceptable Use">
+          <P>You agree not to:</P>
+          <List items={[
+            "Post false, misleading, unlawful, discriminatory, or infringing content.",
+            "Harass, defraud, impersonate, or harm other users.",
+            "Scrape, harvest, or collect data from the Service by automated means.",
+            "Upload malware or interfere with, disrupt, or attempt to gain unauthorized access to the Service.",
+            "Use the Service to send spam, or for any purpose other than genuine job search or recruitment.",
+          ]} />
+        </Section>
+
+        <Section n={6} h="User Content & Community Forum">
+          <List items={[
+            "You retain ownership of the content you submit (profile, résumé, job posts, reviews, and forum posts).",
+            "You grant Krama a non-exclusive, worldwide, royalty-free license to host, display, and use that content as needed to operate and promote the Service.",
+            "You are responsible for your content and must have the rights necessary to post it.",
+            "We may moderate, remove, or restrict content that violates these Terms, and may suspend repeat offenders.",
+          ]} />
+        </Section>
+
+        <Section n={7} h="Payments, Subscriptions & Refunds">
+          <List items={[
+            "Certain features — subscription plans, featured job boosts, and CV-match credits — are paid.",
+            "Prices are shown in the Service and may be charged in USD or KHR through our payment providers (KHQR/Bakong, ABA PayWay, or Stripe).",
+            "Paid subscriptions renew on their billing date until cancelled; you may cancel before the renewal date.",
+            "Fees are non-refundable except where required by law. Featured boosts and credit purchases are one-time and non-refundable once activated.",
+            "We may change plans and pricing prospectively; changes will not affect a term you have already paid for.",
+          ]} />
+        </Section>
+
+        <Section n={8} h="Verification & No Guarantee">
+          <List items={[
+            "A “Verified” label means we performed a basic check; it is not an endorsement or guarantee of any employer, candidate, or job.",
+            "Krama is a marketplace that connects candidates and employers. We are not a party to any employment contract and do not guarantee employment, hiring outcomes, the accuracy of listings, or the conduct of any user.",
+          ]} />
+        </Section>
+
+        <Section n={9} h="Intellectual Property">
+          <P>
+            The Service — including its software, design, logos, and content (excluding user content) — is owned
+            by Krama and protected by applicable law. You may not copy, modify, distribute, or create derivative
+            works from the Service without our prior written permission.
+          </P>
+        </Section>
+
+        <Section n={10} h="Third-Party Services">
+          <P>
+            The Service integrates third-party providers (including Facebook, Google, Stripe, ABA PayWay, Bakong,
+            Telegram, and AI providers). Your use of those services is governed by their own terms and privacy
+            policies. We are not responsible for third-party services or for external websites linked from the
+            Service.
+          </P>
+        </Section>
+
+        <Section n={11} h="Suspension & Termination">
+          <List items={[
+            "You may stop using the Service and delete your account at any time.",
+            "We may suspend or terminate your access if you violate these Terms, create legal risk or exposure, or for prolonged inactivity.",
+            "Provisions that by their nature should survive termination — such as payment obligations, disclaimers, and limitation of liability — will survive.",
+          ]} />
+        </Section>
+
+        <Section n={12} h="Disclaimers">
+          <P>
+            The Service is provided “as is” and “as available”, without warranties of any kind, whether express or
+            implied, including warranties of merchantability, fitness for a particular purpose, and
+            non-infringement, to the fullest extent permitted by law.
+          </P>
+        </Section>
+
+        <Section n={13} h="Limitation of Liability">
+          <P>
+            To the maximum extent permitted by law, Krama will not be liable for any indirect, incidental, special,
+            consequential, or punitive damages, or for any loss of profits, data, or goodwill, arising from or
+            related to your use of the Service.
+          </P>
+        </Section>
+
+        <Section n={14} h="Indemnification">
+          <P>
+            You agree to indemnify and hold Krama harmless from any claims, losses, liabilities, and expenses
+            (including reasonable legal fees) arising from your content, your use of the Service, or your violation
+            of these Terms or applicable law.
+          </P>
+        </Section>
+
+        <Section n={15} h="Changes to These Terms">
+          <P>
+            We may update these Terms from time to time. We will post the updated version on this page and revise
+            the “Last updated” date above. Your continued use of the Service after changes take effect means you
+            accept the revised Terms.
+          </P>
+        </Section>
+
+        <Section n={16} h="Governing Law">
+          <P>
+            These Terms are governed by the laws of the Kingdom of Cambodia, without regard to its conflict-of-laws
+            rules. Any disputes arising from these Terms or the Service will be subject to the competent courts of
+            Cambodia.
+          </P>
+        </Section>
+
+        <Section n={17} h="Contact Us">
+          <P>If you have any questions about these Terms, please contact us:</P>
+          <div style={{ fontSize: "var(--text-base)", color: "var(--text-body)", lineHeight: 1.7 }}>
+            <div style={{ fontWeight: 700, color: "var(--text-strong)" }}>Krama Job</div>
+            <div>Wat Samrong andet, Khan Sensok, Phnom Penh, Cambodia</div>
+            <div>Email: <a href="mailto:info@kramajob.com" style={{ color: "var(--text-brand)" }}>info@kramajob.com</a></div>
+            <div>Phone: <a href="tel:087767272" style={{ color: "var(--text-brand)" }}>087 767 272</a></div>
+            <div>Website: <a href="https://kramajob.com" target="_blank" rel="noopener noreferrer" style={{ color: "var(--text-brand)" }}>kramajob.com</a></div>
+          </div>
+        </Section>
       </div>
     );
   }

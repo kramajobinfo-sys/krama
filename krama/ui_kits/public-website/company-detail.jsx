@@ -90,13 +90,16 @@
 
   function CompanyProfile({ companyId, initialTab, onNav, onOpenJob, saved, toggleSave }) {
     const summary = (D.companies || []).find((c) => String(c.id) === String(companyId)) || {};
+    // On phones the company profile leads with Jobs (default tab) and moves About to the end.
+    const isMobile = (function () { try { return !!(window.matchMedia && window.matchMedia("(max-width: 767px)").matches); } catch (e) { return false; } })();
     const [company, setCompany] = React.useState(null);
     const [companyJobs, setCompanyJobs] = React.useState(null);
     const [loading, setLoading] = React.useState(true);
-    const [tab, setTab] = React.useState(initialTab || "about");
+    const [tab, setTab] = React.useState(initialTab || (isMobile ? "jobs" : "about"));
     const [jobsPage, setJobsPage] = React.useState(0);
     const [galleryPage, setGalleryPage] = React.useState(0);
-    const [jobsView, setJobsView] = React.useState("grid");
+    // Jobs tab defaults to List view on mobile (grid on larger screens).
+    const [jobsView, setJobsView] = React.useState(isMobile ? "list" : "grid");
     const [galleryView, setGalleryView] = React.useState("grid");
     const [awardsView, setAwardsView] = React.useState("grid");
     const [following, setFollowing] = React.useState(false);
@@ -164,13 +167,15 @@
     const jobCount = jobs.length;
 
     const reviewCount = revData ? revData.stats && revData.stats.count : null;
-    const TABS = [
-      { key: "about",   label: "About" },
-      { key: "jobs",    label: "Jobs", count: jobCount },
-      { key: "gallery", label: "Gallery", count: gallery.length || null },
-      { key: "awards",  label: "Awards", count: awards.length || null },
-      { key: "reviews", label: "Reviews", count: reviewCount || null },
-    ];
+    const _tabAbout   = { key: "about",   label: "About" };
+    const _tabJobs    = { key: "jobs",    label: "Jobs", count: jobCount };
+    const _tabGallery = { key: "gallery", label: "Gallery", count: gallery.length || null };
+    const _tabAwards  = { key: "awards",  label: "Awards", count: awards.length || null };
+    const _tabReviews = { key: "reviews", label: "Reviews", count: reviewCount || null };
+    // Mobile: Jobs first, About moved to the end (after Reviews). Desktop: original order.
+    const TABS = isMobile
+      ? [_tabJobs, _tabGallery, _tabAwards, _tabReviews, _tabAbout]
+      : [_tabAbout, _tabJobs, _tabGallery, _tabAwards, _tabReviews];
 
     const stripTags = (html) => (html || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 

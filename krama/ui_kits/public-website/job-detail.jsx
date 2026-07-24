@@ -176,6 +176,8 @@
   function JobDetail({ job, onBack, onOpenJob, onApply, saved, toggleSave, onNav }) {
     const j = job || (D.jobs && D.jobs[0]);
     const [applied, setApplied] = React.useState(false);
+    // Similar jobs view — List by default, with a Grid option.
+    const [similarView, setSimilarView] = React.useState("list");
     React.useEffect(() => {
       let alive = true;
       setApplied(false);
@@ -199,7 +201,7 @@
         return { job: x, score };
       })
       .sort((a, b) => b.score - a.score)
-      .slice(0, 4)
+      .slice(0, 5)
       .map((x) => x.job);
 
     const ApplyButton = () => applied
@@ -215,7 +217,7 @@
             {I("arrow-left", 16)} Back to jobs
           </button>
 
-          <div className="krm-jd-layout" style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: 28, alignItems: "start" }}>
+          <div className="krm-jd-layout" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 340px", gap: 28, alignItems: "start" }}>
             <main>
               <Card padding={28}>
                 {/* Header */}
@@ -302,12 +304,40 @@
               {/* Similar jobs */}
               {similarJobs.length > 0 && (
                 <div className="krm-jd-similar" style={{ marginTop: 40 }}>
-                  <h3 style={{ fontSize: "var(--text-2xl)", fontWeight: 700, color: "var(--text-strong)", marginBottom: 18 }}>{TR("Similar jobs")}</h3>
-                  <div className="krm-jd-similar-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-                    {similarJobs.map((x) => (
-                      <JobCard key={x.id} {...x} saved={saved.includes(x.id)} onSave={() => toggleSave(x.id)} onClick={() => onOpenJob(x)} />
-                    ))}
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 18 }}>
+                    <h3 style={{ fontSize: "var(--text-2xl)", fontWeight: 700, color: "var(--text-strong)" }}>{TR("Similar jobs")}</h3>
+                    <div style={{ display: "flex", gap: 4 }}>
+                      {[["list", "list"], ["grid", "layout-grid"]].map(([v, ic]) => (
+                        <button key={v} onClick={() => setSimilarView(v)} aria-label={v === "list" ? "List view" : "Grid view"} style={{
+                          width: 34, height: 34, borderRadius: "var(--radius-sm)", cursor: "pointer",
+                          border: "1px solid " + (similarView === v ? "var(--brand)" : "var(--border-strong)"),
+                          background: similarView === v ? "var(--brand-subtle)" : "var(--surface-card)",
+                          color: similarView === v ? "var(--text-brand)" : "var(--text-muted)",
+                          display: "inline-flex", alignItems: "center", justifyContent: "center",
+                        }}>{I(ic, 16)}</button>
+                      ))}
+                    </div>
                   </div>
+                  {similarView === "grid" ? (
+                    <div className="krm-jd-similar-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                      {similarJobs.map((x) => (
+                        <JobCard key={x.id} {...x} saved={saved.includes(x.id)} onSave={() => toggleSave(x.id)} onClick={() => onOpenJob(x)} />
+                      ))}
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      {similarJobs.map((x) => (
+                        <div key={x.id} onClick={() => onOpenJob(x)} style={{ display: "flex", alignItems: "center", gap: 14, padding: "12px 16px", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", background: "var(--surface-card)", cursor: "pointer" }}>
+                          <Avatar src={x.logo} name={x.company} square size={40} />
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontWeight: 700, color: "var(--text-strong)", fontSize: "var(--text-sm)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{x.title}</div>
+                            <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{[x.company, x.location, x.salary].filter(Boolean).join("  ·  ")}</div>
+                          </div>
+                          {x.postedAt && <span style={{ fontSize: "var(--text-xs)", color: "var(--text-faint)", flexShrink: 0 }}>{x.postedAt}</span>}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </main>

@@ -9,6 +9,8 @@
   // ── Top banner (admin-editable via home_content -> "communityTopBanner"). Shown on both
   //    desktop and mobile, same AnnouncementBar as the other public pages. ──────────────
   const COMMUNITY_TOP_DEFAULT = { visible: true, theme: "teal", icon: "messages-square", title: "Join the conversation", message: "Ask questions, share tips, and connect with people hiring across Cambodia.", cta: "Start a discussion", ctaUrl: "", image: "", fit: "cover" };
+  // Page hero — same structure/size as the Companies page (admin-editable via home_content -> "communityHero").
+  const COMMUNITY_HERO_DEFAULT = { heading: "Connect with the Krama community", sub: "Ask questions, share knowledge, and find people hiring across Cambodia.", image: "", fit: "cover", imgOverlay: 45 };
   function loadBanner(key, def) {
     try { const s = JSON.parse(localStorage.getItem("krama_home_settings") || "{}"); const m = Object.assign({}, def, s[key] || {}); if (!m.image && def.image) m.image = def.image; return m; }
     catch (e) { return Object.assign({}, def); }
@@ -501,12 +503,26 @@
     return (
       <React.Fragment>
         <AnnouncementBar b={loadBanner("communityTopBanner", COMMUNITY_TOP_DEFAULT)} onNav={onNav} onCtaClick={startNew} />
-        <div style={{ maxWidth: 1000, margin: "0 auto", padding: "28px 16px 64px" }}>
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, flexWrap: "wrap", marginBottom: 8 }}>
-          <div>
-            <h1 style={{ fontSize: "var(--text-3xl)", fontWeight: 800, color: "var(--text-strong)", margin: 0, letterSpacing: "-0.02em" }}>{TR("Community")}</h1>
-            <p style={{ color: "var(--text-muted)", marginTop: 6, fontSize: "var(--text-base)" }}>{TR("Ask questions, share knowledge, and connect with others on Krama.")}</p>
+        {/* page hero — same structure/size as the Companies page (renders identically on both devices) */}
+        {(() => { const h = loadBanner("communityHero", COMMUNITY_HERO_DEFAULT); return (
+        <div className={"krm-page-hero" + (h.hideText ? " krm-page-hero--img" : "")} style={{ position: "relative", background: "var(--teal-800)", overflow: "hidden", padding: h.hideText ? 0 : "44px 32px", aspectRatio: h.hideText ? "1600 / 220" : undefined, maxHeight: h.hideText ? 240 : undefined }}>
+          {h.image
+            ? <React.Fragment>
+                <img className="krm-page-hero-bg" src={h.image} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: h.fit === "contain" ? "contain" : "cover", display: "block" }} />
+                <div className="krm-page-hero-tint" style={{ position: "absolute", inset: 0, background: "var(--teal-800)", opacity: (h.imgOverlay != null ? h.imgOverlay : 60) / 100 }} />
+              </React.Fragment>
+            : <div style={{ position: "absolute", inset: 0, background: "url('../../assets/krama-pattern.svg')", backgroundSize: 72, opacity: 0.08 }} />}
+          {!h.hideText && (
+          <div style={{ position: "relative", maxWidth: 1200, margin: "0 auto" }}>
+            <div style={{ fontSize: "var(--text-xs)", fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--teal-200)" }}>{TR("Community")}</div>
+            <h1 style={{ color: "#fff", fontSize: "var(--text-4xl)", fontWeight: 800, letterSpacing: "-0.02em", marginTop: 6 }}>{TR(h.heading)}</h1>
+            <p style={{ color: "var(--stone-300)", fontSize: "var(--text-lg)", marginTop: 8 }}>{TR(h.sub)}</p>
           </div>
+          )}
+        </div>
+        ); })()}
+        <div style={{ maxWidth: 1000, margin: "0 auto", padding: "28px 16px 64px" }}>
+        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 16 }}>
           <Button variant="primary" iconLeft={I("plus", 15)} onClick={startNew}>{TR("New discussion")}</Button>
         </div>
 

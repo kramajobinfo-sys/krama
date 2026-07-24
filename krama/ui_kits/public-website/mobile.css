@@ -184,13 +184,21 @@
   /* List/Grid view toggle — shown on mobile only */
   .krm-view-toggle { display: flex !important; }
 
-  /* ── Pagination — shrink & wrap so it never overflows ────────────────── */
-  .krm-pagination { gap: 6px !important; }
+  /* ── Pagination — keep on ONE line; scroll sideways if there are many pages ── */
+  .krm-pagination {
+    gap: 6px !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto;
+    justify-content: safe center !important;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 2px;
+  }
   .krm-pagination > button {
     width: 34px !important;
     min-width: 34px !important;
     height: 34px !important;
     padding: 0 !important;
+    flex: 0 0 auto;
   }
 
   /* ── Featured companies grid — 2 columns ────────────────────────────── */
@@ -417,6 +425,8 @@
     grid-template-columns: 1fr !important;
     gap: 16px !important;
   }
+  /* Grid/flex children must be allowed to shrink so nothing forces horizontal overflow. */
+  .krm-jd-layout > *, .krm-jd-container { min-width: 0 !important; }
   /* Hide the desktop aside on mobile — replaced by krm-jd-apply-above-similar */
   .krm-jd-aside {
     display: none !important;
