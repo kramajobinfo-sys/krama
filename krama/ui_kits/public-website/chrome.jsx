@@ -116,6 +116,26 @@
     ];
     const navTo = (id) => { setMenuOpen(false); onNav(id); };
 
+    // Dashboard routing for the mobile account sheet (mirrors the desktop UserMenu).
+    const roleSlug = user && user.role && user.role.slug;
+    const isAdmin = roleSlug === "admin" || roleSlug === "super_admin";
+    const dashboardLabel = roleSlug === "employer" ? "Employer Dashboard"
+      : isAdmin ? "Admin Dashboard"
+      : "Candidate Dashboard";
+    const goToDashboard = () => {
+      setMenuOpen(false);
+      const token = localStorage.getItem("krama_access_token");
+      if (roleSlug === "employer") {
+        if (token) localStorage.setItem("krama_employer_token", token);
+        window.location.href = "/krama/krama/ui_kits/employer-dashboard/index.html";
+      } else if (isAdmin) {
+        if (token) localStorage.setItem("krama_admin_token", token);
+        window.location.href = "/krama/krama/ui_kits/admin-dashboard/index.html";
+      } else {
+        window.location.href = "/krama/krama/ui_kits/candidate-dashboard/index.html";
+      }
+    };
+
     return (
       <React.Fragment>
         <header className="krm-header" style={{
@@ -185,9 +205,26 @@
               {/* Grabber */}
               <div style={{ width: 40, height: 4, borderRadius: 2, background: "var(--border)", margin: "0 auto 12px" }} />
               {user ? (
-                <div style={{ padding: "0 20px" }}>
-                  <div style={{ fontWeight: 700, fontSize: "var(--text-sm)", color: "var(--text-strong)", marginBottom: 4 }}>{user.name}</div>
-                  <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginBottom: 12 }}>{user.email}</div>
+                <div style={{ padding: "0 20px", display: "flex", flexDirection: "column", gap: 10 }}>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: "var(--text-sm)", color: "var(--text-strong)", marginBottom: 2 }}>{user.name}</div>
+                    <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>{user.email}</div>
+                    {roleSlug && <div style={{ marginTop: 4, fontSize: "var(--text-xs)", color: "var(--text-brand)", fontWeight: 600, textTransform: "capitalize" }}>{roleSlug}</div>}
+                  </div>
+                  <button onClick={goToDashboard} style={{
+                    width: "100%", padding: "11px", border: "none",
+                    borderRadius: "var(--radius-md)", background: "var(--brand)", cursor: "pointer",
+                    fontFamily: "var(--font-sans)", fontWeight: 700, color: "#fff",
+                    fontSize: "var(--text-base)",
+                  }}>{t(dashboardLabel)}</button>
+                  {!isAdmin && (
+                    <button onClick={() => { setMenuOpen(false); onNav("candidateProfile"); }} style={{
+                      width: "100%", padding: "11px", border: "1px solid var(--border)",
+                      borderRadius: "var(--radius-md)", background: "transparent", cursor: "pointer",
+                      fontFamily: "var(--font-sans)", fontWeight: 600, color: "var(--text-strong)",
+                      fontSize: "var(--text-base)",
+                    }}>{t("My profile")}</button>
+                  )}
                   <button onClick={() => { setMenuOpen(false); onLogout(); }} style={{
                     width: "100%", padding: "10px", border: "1px solid var(--border)",
                     borderRadius: "var(--radius-md)", background: "transparent", cursor: "pointer",

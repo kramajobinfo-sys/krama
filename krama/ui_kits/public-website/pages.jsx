@@ -859,7 +859,7 @@
       if (newPwd !== conPwd) { setPwdMsg({ ok: false, text: "New passwords do not match." }); return; }
       if (newPwd.length < 8) { setPwdMsg({ ok: false, text: "Password must be at least 8 characters." }); return; }
       setPwdBusy(true); setPwdMsg(null);
-      fetch((window.KRAMA_API._base || ((/^(localhost|127\.0\.0\.1|::1|192\.168\.|10\.)/.test(window.location.hostname) ? "http://127.0.0.1:8000/api" : (window.location.protocol + "//" + window.location.host + "/api")))) + "/auth/change-password", {
+      fetch((window.KRAMA_API._base || ((/^(localhost|127\.0\.0\.1|::1|192\.168\.|10\.)/.test(window.location.hostname) ? "http://127.0.0.1:8000/api" : (window.location.protocol + "//" + window.location.host + "/api")))) + "/auth/me/password", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": "Bearer " + api.getToken() },
         body: JSON.stringify({ current_password: curPwd, password: newPwd, password_confirmation: conPwd }),
@@ -886,11 +886,11 @@
       setUploading(true);
       const fd = new FormData();
       fd.append("avatar", file);
-      fetch(((/^(localhost|127\.0\.0\.1|::1|192\.168\.|10\.)/.test(window.location.hostname) ? "http://127.0.0.1:8000/api" : (window.location.protocol + "//" + window.location.host + "/api"))) + "/auth/avatar", {
+      fetch(((/^(localhost|127\.0\.0\.1|::1|192\.168\.|10\.)/.test(window.location.hostname) ? "http://127.0.0.1:8000/api" : (window.location.protocol + "//" + window.location.host + "/api"))) + "/auth/me/avatar", {
         method: "POST",
         headers: { "Authorization": "Bearer " + api.getToken() },
         body: fd,
-      }).then(function (r) { return r.json(); }).then(function (u) {
+      }).then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); }).then(function (u) {
         setPreview(u.avatar_url || "");
         if (onUserUpdate) onUserUpdate(u);
         setUploading(false); setMsg({ ok: true, text: "Photo updated!" });
