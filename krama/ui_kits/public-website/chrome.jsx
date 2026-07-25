@@ -24,7 +24,7 @@
       }
     };
 
-    const dashboardLabel = roleSlug === "employer" ? "Member Dashboard"
+    const dashboardLabel = roleSlug === "employer" ? "Employer Dashboard"
       : isAdmin ? "Admin Dashboard"
       : "Candidate Dashboard";
 
@@ -103,7 +103,7 @@
       { id: "jobs", label: "Find jobs" },
       { id: "companies", label: "Companies" },
       { id: "community", label: "Community" },
-      { id: "employers", label: "Members" },
+      { id: "employers", label: "Employers" },
     ];
     // Mobile bottom nav (app-style tab bar). Home removed (logo links home);
     // "Job Search" is a raised action button in the centre.
@@ -111,7 +111,7 @@
       { id: "home", icon: "home", label: "Home" },
       { id: "companies", icon: "building-2", label: "Companies" },
       { id: "jobs", icon: "search", label: "Job Search", center: true },
-      { id: "employers", icon: "users", label: "Members" },
+      { id: "employers", icon: "users", label: "Employers" },
       { id: "community", icon: "messages-square", label: "Community" },
     ];
     const navTo = (id) => { setMenuOpen(false); onNav(id); };
@@ -266,11 +266,11 @@
             </p>
           </div>
           {col("For candidates", [["Find jobs", "jobs"], ["Build résumé", "register"], ["Saved jobs", "login"], ["Community", "community"]])}
-          {col("Members", [["Members", "employers"], ["Post a job", "register"], ["Pricing", "pricing"], ["Companies", "companies"]])}
+          {col("Employers", [["Employers", "employers"], ["Post a job", "register"], ["Pricing", "pricing"], ["Companies", "companies"]])}
           {col("Company", [["About us", "about"], ["Contact", "contact"], ["Terms", "terms"], ["Privacy", "privacy"]])}
         </div>
         <div className="krm-footer-bottom" style={{ position: "relative", maxWidth: 1200, margin: "32px auto 0", paddingTop: 20, borderTop: "1px solid rgba(255,255,255,0.1)", display: "flex", justifyContent: "center", textAlign: "center", color: "var(--text-on-dark-mut)", fontSize: "var(--text-xs)" }}>
-          <span>© 2026 Krama. {t("All rights reserved.")}</span>
+          <span>© 2026 Krama Job. {t("All rights reserved.")}</span>
         </div>
       </footer>
     );

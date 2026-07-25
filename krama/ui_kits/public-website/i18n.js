@@ -7,7 +7,7 @@
     // ── Header / nav ──────────────────────────────────────────────
     "Find jobs": "រកការងារ",
     "Companies": "ក្រុមហ៊ុន",
-    "Members": "សមាជិក",
+    "Employers": "និយោជក",
     "Community": "សហគមន៍",
     "New discussion": "ការពិភាក្សាថ្មី",
     "Start a discussion": "ចាប់ផ្តើមការពិភាក្សា",
@@ -114,7 +114,7 @@
     "Full name": "ឈ្មោះពេញ",
     "Contact name": "ឈ្មោះទំនាក់ទំនង",
     "I'm a candidate": "ខ្ញុំជាបេក្ខជន",
-    "I'm a member": "ខ្ញុំជាសមាជិក",
+    "I'm an employer": "ខ្ញុំជានិយោជក",
     "Send reset link": "ផ្ញើតំណកំណត់ឡើងវិញ",
     "Reset password": "កំណត់ពាក្យសម្ងាត់ឡើងវិញ",
     "Back to sign in": "ត្រឡប់ទៅចូលគណនី",

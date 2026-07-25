@@ -3073,7 +3073,7 @@
           </div>
         ) : null}
 
-        <Tabs value={hpTab} onChange={setHpTab} tabs={[{ value: "home", label: "Home page" }, { value: "findjobs", label: "Find Jobs" }, { value: "jobdetail", label: "Job Detail" }, { value: "companies", label: "Companies" }, { value: "members", label: "Members" }, { value: "community", label: "Community" }, { value: "explore", label: "Explore" }, { value: "pages", label: "Pages" }]} style={{ marginBottom: 20 }} />
+        <Tabs value={hpTab} onChange={setHpTab} tabs={[{ value: "home", label: "Home page" }, { value: "findjobs", label: "Find Jobs" }, { value: "jobdetail", label: "Job Detail" }, { value: "companies", label: "Companies" }, { value: "members", label: "Employers" }, { value: "community", label: "Community" }, { value: "explore", label: "Explore" }, { value: "pages", label: "Pages" }]} style={{ marginBottom: 20 }} />
 
         {hpTab === "pages" && <React.Fragment>
           <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", margin: "0 0 4px" }}>Hero banners for the static info pages. Each is a large 1600 × 360 banner, the same as the other page heroes. Leave a heading blank to use the page default.</p>
@@ -3414,8 +3414,8 @@
         </React.Fragment>}
 
         {hpTab === "members" && <React.Fragment>
-        {BannerCard("employersTopBanner", "Members -- Top announcement bar", "The full-width coloured bar at the very top of the Members page. Toggle off to hide it.", "briefcase", ["var(--saffron-50)", "var(--saffron-600)"], { size: "1600 × 160px" })}
-        {/* Members Hero banner */}
+        {BannerCard("employersTopBanner", "Employers -- Top announcement bar", "The full-width coloured bar at the very top of the Employers page. Toggle off to hide it.", "briefcase", ["var(--saffron-50)", "var(--saffron-600)"], { size: "1600 × 160px" })}
+        {/* Employers Hero banner */}
         {(function() {
           const eh = s.employersHero || {};
           const ehImg = eh.image || "";
@@ -3424,8 +3424,8 @@
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
               <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 36, height: 36, borderRadius: "var(--radius-md)", background: "var(--teal-50)", color: "var(--teal-700)" }}>{I("layout-panel-top", 18)}</span>
               <div>
-                <h3 style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: "var(--text-strong)" }}>Members -- Hero banner</h3>
-                <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>The large teal banner with the page title and subtitle on the Members page.</p>
+                <h3 style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: "var(--text-strong)" }}>Employers -- Hero banner</h3>
+                <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>The large teal banner with the page title and subtitle on the Employers page.</p>
               </div>
             </div>
             <div style={{ display: "inline-flex", alignItems: "center", gap: 5, marginBottom: 16, fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-brand)", background: "var(--brand-subtle)", borderRadius: "var(--radius-pill)", padding: "3px 10px" }}>{I("image", 13)} Recommended image: 1600 × 360px</div>
@@ -3472,7 +3472,7 @@
               <div style={{ position: "relative", background: "var(--teal-800)", color: "#fff", padding: "20px 24px", overflow: "hidden" }}>
                 {ehImg && <React.Fragment><div style={{ position: "absolute", inset: 0, backgroundImage: "url('" + ehImg + "')", backgroundSize: (eh.fit || "cover"), backgroundPosition: "center" }} /><div style={{ position: "absolute", inset: 0, background: "var(--teal-800)", opacity: (eh.imgOverlay != null ? eh.imgOverlay : 45) / 100 }} /></React.Fragment>}
                 <div style={{ position: "relative" }}>
-                  <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--teal-200)", marginBottom: 6 }}>Members</div>
+                  <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--teal-200)", marginBottom: 6 }}>Employers</div>
                   <div style={{ fontSize: 22, fontWeight: 800 }}>{eh.heading || "Hire the right people, faster."}</div>
                   <div style={{ fontSize: 14, color: "var(--stone-300)", marginTop: 6 }}>{eh.sub || ""}</div>
                 </div>
@@ -5661,7 +5661,7 @@
 
     return (
       <div className="krm-page-pad" style={{ padding: 28, maxWidth: 1100 }}>
-        <ScreenHead title="Social posting" sub="Auto-share every newly-published job to your social channels. Members can opt a job out on the job form." action={<Button variant="primary" iconLeft={I("check", 16)} onClick={save}>Save changes</Button>} />
+        <ScreenHead title="Social posting" sub="Auto-share every newly-published job to your social channels. Employers can opt a job out on the job form." action={<Button variant="primary" iconLeft={I("check", 16)} onClick={save}>Save changes</Button>} />
         {saved && (
           <div style={{ display: "flex", alignItems: "center", gap: 8, background: "var(--success-bg)", color: "var(--success)", border: "1px solid var(--success-border)", borderRadius: 8, padding: "10px 16px", marginBottom: 18, fontSize: 13 }}>
             {I("circle-check-big", 16)} Settings saved.
