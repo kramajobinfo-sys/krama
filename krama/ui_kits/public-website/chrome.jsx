@@ -28,11 +28,9 @@
       : isAdmin ? "Admin Dashboard"
       : "Candidate Dashboard";
 
-    const goToProfile = () => { setOpen(false); onNav("candidateProfile"); };
-
+    // Profile editing lives inside each dashboard, so the account menu only offers Dashboard.
     const menuItems = [
       [dashboardLabel, goToDashboard],
-      ...(!isAdmin ? [["My profile", goToProfile]] : []),
     ];
 
     return (
@@ -217,14 +215,6 @@
                     fontFamily: "var(--font-sans)", fontWeight: 700, color: "#fff",
                     fontSize: "var(--text-base)",
                   }}>{t(dashboardLabel)}</button>
-                  {!isAdmin && (
-                    <button onClick={() => { setMenuOpen(false); onNav("candidateProfile"); }} style={{
-                      width: "100%", padding: "11px", border: "1px solid var(--border)",
-                      borderRadius: "var(--radius-md)", background: "transparent", cursor: "pointer",
-                      fontFamily: "var(--font-sans)", fontWeight: 600, color: "var(--text-strong)",
-                      fontSize: "var(--text-base)",
-                    }}>{t("My profile")}</button>
-                  )}
                   <button onClick={() => { setMenuOpen(false); onLogout(); }} style={{
                     width: "100%", padding: "10px", border: "1px solid var(--border)",
                     borderRadius: "var(--radius-md)", background: "transparent", cursor: "pointer",

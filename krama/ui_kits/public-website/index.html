@@ -21,7 +21,7 @@
 <div id="root"></div>
 <script>
 var JSX_FILES = ['chrome.jsx','home.jsx','jobs.jsx','job-detail.jsx','company-detail.jsx','auth.jsx','apply.jsx','pages.jsx','forum.jsx','chat.jsx','app.jsx'];
-var JSX_V = 215;
+var JSX_V = 218;
 function showLoadError(msg) {
   var el = document.getElementById('root');
   el.innerHTML = '<div style="padding:40px;font-family:sans-serif"><h2 style="color:#c00">Failed to load</h2><pre style="font-size:13px;color:#555;white-space:pre-wrap">' + msg + '</pre></div>';
@@ -60,15 +60,19 @@ Promise.all(JSX_FILES.map(function(file) {
 </script>
 <script>
 class ErrBoundary extends React.Component {
-  constructor(p){ super(p); this.state={err:null}; }
-  static getDerivedStateFromError(err){ return {err}; }
-  componentDidCatch(err){ console.error("Public site error:", err && err.stack || err); }
+  constructor(p){ super(p); this.state={err:null,info:null}; }
+  static getDerivedStateFromError(err){ return {err:err}; }
+  componentDidCatch(err,info){ this.setState({info:info}); console.error("Public site error:", err && err.stack || err, info && info.componentStack); }
   render(){
     if(this.state.err){
-      return React.createElement("div",{style:{padding:"40px",fontFamily:"var(--font-sans)",color:"var(--danger)"}},
+      var e=this.state.err;
+      var cs=(this.state.info&&this.state.info.componentStack)||"(no component stack)";
+      return React.createElement("div",{style:{padding:"24px",fontFamily:"var(--font-sans)"}},
         React.createElement("h2",{style:{color:"var(--text-strong)"}},"Something went wrong"),
-        React.createElement("pre",{style:{whiteSpace:"pre-wrap",fontSize:"12px",color:"var(--text-muted)"}},
-          String(this.state.err && (this.state.err.stack||this.state.err.message) || this.state.err)));
+        React.createElement("div",{style:{fontSize:"14px",fontWeight:"700",color:"#c00",margin:"8px 0",whiteSpace:"pre-wrap"}}, "ERROR: "+String((e&&e.message)||e)),
+        React.createElement("div",{style:{fontSize:"12px",fontWeight:"700",color:"var(--text-strong)",marginTop:"14px"}},"WHERE (component stack):"),
+        React.createElement("pre",{style:{whiteSpace:"pre-wrap",fontSize:"12px",color:"var(--text-body)",background:"#f4f4f4",padding:"10px",borderRadius:"6px"}}, String(cs)),
+        React.createElement("pre",{style:{whiteSpace:"pre-wrap",fontSize:"10px",color:"var(--text-faint)",marginTop:"10px"}}, String(e&&e.stack||"")));
     }
     return this.props.children;
   }
