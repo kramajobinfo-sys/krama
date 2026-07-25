@@ -3002,7 +3002,7 @@
             <div>
               <h3 style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: "var(--text-strong)" }}>{label}</h3>
               <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>{desc}</p>
-              <div style={{ display: "inline-flex", alignItems: "center", gap: 5, marginTop: 8, fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-brand)", background: "var(--brand-subtle)", borderRadius: "var(--radius-pill)", padding: "3px 10px" }}>{I("image", 13)} Recommended image: 1600 × 480px</div>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 5, marginTop: 8, fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-brand)", background: "var(--brand-subtle)", borderRadius: "var(--radius-pill)", padding: "3px 10px" }}>{I("image", 13)} Recommended image: 1600 × 360px</div>
             </div>
           </div>
           <div style={{ display: "grid", gap: 14 }}>
@@ -3076,7 +3076,7 @@
         <Tabs value={hpTab} onChange={setHpTab} tabs={[{ value: "home", label: "Home page" }, { value: "findjobs", label: "Find Jobs" }, { value: "jobdetail", label: "Job Detail" }, { value: "companies", label: "Companies" }, { value: "members", label: "Members" }, { value: "community", label: "Community" }, { value: "explore", label: "Explore" }, { value: "pages", label: "Pages" }]} style={{ marginBottom: 20 }} />
 
         {hpTab === "pages" && <React.Fragment>
-          <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", margin: "0 0 4px" }}>Hero banners for the static info pages. Each is a large 1600 × 480 banner, the same as the other page heroes. Leave a heading blank to use the page default.</p>
+          <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", margin: "0 0 4px" }}>Hero banners for the static info pages. Each is a large 1600 × 360 banner, the same as the other page heroes. Leave a heading blank to use the page default.</p>
           {HeroCard("pricingHero", "Pricing -- Hero banner", "The hero at the top of the Pricing page.", "Plans that grow with your hiring.")}
           {HeroCard("aboutHero", "About us -- Hero banner", "The hero at the top of the About us page.", "Work that fits your life.")}
           {HeroCard("contactHero", "Contact -- Hero banner", "The hero at the top of the Contact page.", "We'd love to hear from you.")}
@@ -3248,11 +3248,11 @@
                       {/* Image */}
                       <div>
                         <div style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-strong)", marginBottom: 8 }}>{slideForm.imageOnly ? "Banner image" : "Background image (optional)"}</div>
-                        <div style={{ display: "inline-flex", alignItems: "center", gap: 5, marginBottom: 10, fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-brand)", background: "var(--brand-subtle)", borderRadius: "var(--radius-pill)", padding: "3px 10px" }}>{I("image", 13)} Recommended image: 1600 × 480px</div>
+                        <div style={{ display: "inline-flex", alignItems: "center", gap: 5, marginBottom: 10, fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-brand)", background: "var(--brand-subtle)", borderRadius: "var(--radius-pill)", padding: "3px 10px" }}>{I("image", 13)} Recommended image: 1600 × 360px</div>
                         <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", marginBottom: 10, padding: "8px 10px", borderRadius: "var(--radius-md)", background: slideForm.imageOnly ? "var(--brand-subtle)" : "var(--surface-sunken)", border: "1px solid " + (slideForm.imageOnly ? "var(--brand)" : "var(--border-subtle)") }}>
                           <input type="checkbox" checked={!!slideForm.imageOnly} onChange={(e) => setSlideForm((f) => ({ ...f, imageOnly: e.target.checked }))} style={{ width: 16, height: 16, accentColor: "var(--brand)", cursor: "pointer", flexShrink: 0 }} />
                           <span style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-strong)" }}>Hide title &amp; search bar (show banner image only)</span>
-                          <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>On: only your banner image shows, filling the hero on desktop &amp; mobile (use a 1600 × 480px image). Off: the title, subtitle &amp; search bar are shown over the image.</span>
+                          <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>On: only your banner image shows, filling the hero on desktop &amp; mobile (use a 1600 × 360px image). Off: the title, subtitle &amp; search bar are shown over the image.</span>
                         </label>
                         {!slideForm.imageOnly && (
                         <div style={{ marginBottom: 12, display: "grid", gap: 6 }}>
@@ -3355,7 +3355,7 @@
               <div>
                 <h3 style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: "var(--text-strong)" }}>Community -- Hero banner</h3>
                 <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>The large teal banner with the page title and subtitle at the top of the Community page.</p>
-                <div style={{ display: "inline-flex", alignItems: "center", gap: 5, marginTop: 8, fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-brand)", background: "var(--brand-subtle)", borderRadius: "var(--radius-pill)", padding: "3px 10px" }}>{I("image", 13)} Recommended image: 1600 × 480px</div>
+                <div style={{ display: "inline-flex", alignItems: "center", gap: 5, marginTop: 8, fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-brand)", background: "var(--brand-subtle)", borderRadius: "var(--radius-pill)", padding: "3px 10px" }}>{I("image", 13)} Recommended image: 1600 × 360px</div>
               </div>
             </div>
             <div style={{ display: "grid", gap: 14 }}>
@@ -3428,7 +3428,7 @@
                 <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>The large teal banner with the page title and subtitle on the Members page.</p>
               </div>
             </div>
-            <div style={{ display: "inline-flex", alignItems: "center", gap: 5, marginBottom: 16, fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-brand)", background: "var(--brand-subtle)", borderRadius: "var(--radius-pill)", padding: "3px 10px" }}>{I("image", 13)} Recommended image: 1600 × 480px</div>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 5, marginBottom: 16, fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-brand)", background: "var(--brand-subtle)", borderRadius: "var(--radius-pill)", padding: "3px 10px" }}>{I("image", 13)} Recommended image: 1600 × 360px</div>
             <div style={{ display: "grid", gap: 14 }}>
               <Input label="Heading" value={eh.heading || "Hire the right people, faster."} onChange={(e) => setBanner("employersHero", "heading", e.target.value)} />
               <Textarea label="Subtitle" rows={2} value={eh.sub || ""} onChange={(e) => setBanner("employersHero", "sub", e.target.value)} />
@@ -3589,7 +3589,7 @@
               <div>
                 <h3 style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: "var(--text-strong)" }}>Find Jobs -- Hero banner</h3>
                 <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>The large teal banner with the page title and subtitle. Use <code style={{fontSize:"0.85em",background:"var(--surface-sunken)",padding:"1px 4px",borderRadius:3}}>{"{count}"}</code> in subtitle to insert the live job count.</p>
-                <div style={{ display: "inline-flex", alignItems: "center", gap: 5, marginTop: 8, fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-brand)", background: "var(--brand-subtle)", borderRadius: "var(--radius-pill)", padding: "3px 10px" }}>{I("image", 13)} Recommended image: 1600 × 480px</div>
+                <div style={{ display: "inline-flex", alignItems: "center", gap: 5, marginTop: 8, fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-brand)", background: "var(--brand-subtle)", borderRadius: "var(--radius-pill)", padding: "3px 10px" }}>{I("image", 13)} Recommended image: 1600 × 360px</div>
               </div>
             </div>
             <div style={{ display: "grid", gap: 14 }}>
@@ -3791,7 +3791,7 @@
               <div>
                 <h3 style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: "var(--text-strong)" }}>Companies -- Hero banner</h3>
                 <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>The large teal banner with the page title and subtitle. Use <code style={{fontSize:"0.85em",background:"var(--surface-sunken)",padding:"1px 4px",borderRadius:3}}>{"{count}"}</code> in subtitle to insert the live company count.</p>
-                <div style={{ display: "inline-flex", alignItems: "center", gap: 5, marginTop: 8, fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-brand)", background: "var(--brand-subtle)", borderRadius: "var(--radius-pill)", padding: "3px 10px" }}>{I("image", 13)} Recommended image: 1600 × 480px</div>
+                <div style={{ display: "inline-flex", alignItems: "center", gap: 5, marginTop: 8, fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-brand)", background: "var(--brand-subtle)", borderRadius: "var(--radius-pill)", padding: "3px 10px" }}>{I("image", 13)} Recommended image: 1600 × 360px</div>
               </div>
             </div>
             <div style={{ display: "grid", gap: 14 }}>
@@ -3982,7 +3982,7 @@
                 <div>
                   <h3 style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: "var(--text-strong)" }}>Job Detail -- Hero banner</h3>
                   <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>The large teal banner at the top of every Job Detail page. Toggle off to hide it.</p>
-                  <div style={{ display: "inline-flex", alignItems: "center", gap: 5, marginTop: 8, fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-brand)", background: "var(--brand-subtle)", borderRadius: "var(--radius-pill)", padding: "3px 10px" }}>{I("image", 13)} Recommended image: 1600 × 480px</div>
+                  <div style={{ display: "inline-flex", alignItems: "center", gap: 5, marginTop: 8, fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-brand)", background: "var(--brand-subtle)", borderRadius: "var(--radius-pill)", padding: "3px 10px" }}>{I("image", 13)} Recommended image: 1600 × 360px</div>
                 </div>
               </div>
               <Switch checked={jh.visible !== false} onChange={(v) => setBanner("jobDetailHero", "visible", v)} />

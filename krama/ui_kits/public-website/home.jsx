@@ -238,7 +238,7 @@
 
     return (
       <section
-        className={"krm-hero" + (hasHeroImg ? " krm-hero--has-img" : "") + (imageOnly ? " krm-hero--image-only" : "")} style={{ position: "relative", overflow: "hidden", background: t.bg, minHeight: hasHeroImg ? 0 : (isMobile ? 340 : 480), display: "flex", flexDirection: "column", justifyContent: "center", padding: 0, transition: "background 0.5s ease" }}
+        className={"krm-hero" + (hasHeroImg ? " krm-hero--has-img" : "") + (imageOnly ? " krm-hero--image-only" : "")} style={{ position: "relative", overflow: "hidden", background: t.bg, minHeight: hasHeroImg ? 0 : (isMobile ? 260 : 360), display: "flex", flexDirection: "column", justifyContent: "center", padding: 0, transition: "background 0.5s ease" }}
         onMouseEnter={() => setPaused(true)}
         onMouseLeave={() => setPaused(false)}
       >
@@ -247,7 +247,7 @@
               src={heroImg}
               alt={TR(slide.title) || "Banner"}
               onClick={() => { if (imageOnly && slide.ctaUrl) window.open(slide.ctaUrl, "_blank"); }}
-              style={{ position: "relative", zIndex: 1, display: "block", width: "100%", height: "auto", cursor: (imageOnly && slide.ctaUrl) ? "pointer" : "default" }}
+              style={{ position: "relative", zIndex: 1, display: "block", width: "100%", height: (imageOnly || isMobile) ? "auto" : 360, objectFit: "cover", cursor: (imageOnly && slide.ctaUrl) ? "pointer" : "default" }}
             />
           : <div style={{ position: "absolute", inset: 0, background: "url('../../assets/krama-pattern.svg')", backgroundSize: 80, opacity: 0.08 }} />}
 

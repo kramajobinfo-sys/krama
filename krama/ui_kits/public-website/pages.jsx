@@ -759,10 +759,10 @@
     return (
       <div style={{ background: "var(--surface-page)", minHeight: "70vh" }}>
         {slug === "employers" && <AnnouncementBar b={loadBanner("employersTopBanner", EMPLOYERS_TOP_DEFAULT)} onNav={onNav} />}
-        {/* page hero — For Employers uses the large 1600 × 480 hero (matches Find Jobs / Companies / Community); Job Detail keeps the smaller hero */}
+        {/* page hero — large 1600 × 360 banner (full image on mobile, cover band on desktop), matching every other page hero */}
         {slug === "employers"
           ? (() => { const h = loadBanner("employersHero", { heading: c.title, sub: c.lead, image: "../../assets/banners/bg-employersHero.svg", fit: "cover", imgOverlay: 45 }); return (
-            <div className={"krm-page-hero" + (h.hideText ? " krm-page-hero--img" : "")} style={{ position: "relative", background: "var(--teal-800)", overflow: "hidden", padding: h.hideText ? 0 : "64px 32px", aspectRatio: h.hideText ? "1600 / 480" : undefined, maxHeight: h.hideText ? 480 : undefined }}>
+            <div className={"krm-page-hero" + (h.hideText ? " krm-page-hero--img" : "")} style={{ position: "relative", background: "var(--teal-800)", overflow: "hidden", padding: h.hideText ? 0 : "44px 32px", aspectRatio: h.hideText ? "1600 / 360" : undefined, maxHeight: h.hideText ? 360 : undefined }}>
               {h.image
                 ? <React.Fragment>
                     <img className="krm-page-hero-bg" src={h.image} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: h.fit === "contain" ? "contain" : "cover", display: "block" }} />
@@ -779,7 +779,7 @@
             </div>
           ); })()
           : (() => { const h = loadBanner(slug + "Hero", { heading: c.title, sub: c.lead, image: "", fit: "cover", imgOverlay: 45 }); return (
-            <div className={"krm-page-hero" + (h.hideText ? " krm-page-hero--img" : "")} style={{ position: "relative", background: "var(--teal-800)", overflow: "hidden", padding: h.hideText ? 0 : "64px 32px", aspectRatio: h.hideText ? "1600 / 480" : undefined, maxHeight: h.hideText ? 480 : undefined }}>
+            <div className={"krm-page-hero" + (h.hideText ? " krm-page-hero--img" : "")} style={{ position: "relative", background: "var(--teal-800)", overflow: "hidden", padding: h.hideText ? 0 : "44px 32px", aspectRatio: h.hideText ? "1600 / 360" : undefined, maxHeight: h.hideText ? 360 : undefined }}>
               {h.image
                 ? <React.Fragment>
                     <img className="krm-page-hero-bg" src={h.image} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: h.fit === "contain" ? "contain" : "cover", display: "block" }} />
