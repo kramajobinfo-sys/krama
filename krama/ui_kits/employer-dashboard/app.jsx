@@ -158,7 +158,7 @@
         </button>
         {open && <>
           <div onClick={function () { setOpen(false); }} style={{ position: "fixed", inset: 0, zIndex: 99 }} />
-          <div onClick={function (e) { e.stopPropagation(); }} style={{ position: "absolute", top: 48, right: 0, width: 340, maxHeight: 440, overflowY: "auto", background: "var(--surface-card)", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", boxShadow: "var(--shadow-lg)", zIndex: 100 }}>
+          <div className="krm-notif-panel" onClick={function (e) { e.stopPropagation(); }} style={{ position: "absolute", top: 48, right: 0, width: 340, maxHeight: 440, overflowY: "auto", background: "var(--surface-card)", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", boxShadow: "var(--shadow-lg)", zIndex: 100 }}>
             <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, background: "var(--surface-card)" }}>
               <span style={{ fontWeight: 700, fontSize: "var(--text-sm)", color: "var(--text-strong)" }}>Notifications</span>
               {unread > 0 && <button onClick={markAll} style={{ fontSize: "var(--text-xs)", color: "var(--text-brand)", cursor: "pointer", background: "none", border: "none", fontFamily: "var(--font-sans)", fontWeight: 600 }}>Mark all read</button>}
@@ -190,7 +190,7 @@
         <h1 style={{ fontSize: "var(--text-xl)", fontWeight: 700, color: "var(--text-strong)" }}>{title}</h1>
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 14 }}>
           <NotificationBell onNav={onNav} />
-          <Button variant="primary" iconLeft={I("plus", 16)} onClick={onPost}>Post a job</Button>
+          <Button variant="primary" iconLeft={I("plus", 16)} onClick={onPost} style={{ whiteSpace: "nowrap" }}>Post</Button>
           <div style={{ position: "relative" }}>
             <button onClick={() => setOpen(o => !o)} style={{ width: 38, height: 38, borderRadius: "50%", background: "var(--brand)", color: "#fff", border: "2px solid var(--border)", cursor: "pointer", fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: 14, display: "inline-flex", alignItems: "center", justifyContent: "center", overflow: "hidden", padding: 0 }}>
               {user && user.avatar_url
@@ -376,7 +376,7 @@
 
   function ScreenHead({ title, sub, action }) {
     return (
-      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 18 }}>
+      <div className="krm-screenhead" style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 18, gap: 12 }}>
         <div>
           <h2 style={{ fontSize: "var(--text-xl)", fontWeight: 700, color: "var(--text-strong)" }}>{title}</h2>
           {sub && <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginTop: 4 }}>{sub}</div>}
@@ -713,6 +713,24 @@
     const pageSafe = Math.min(Math.max(1, page), Math.max(1, Math.ceil(filtered.length / JOBS_PER)));
     const shown = filtered.slice((pageSafe - 1) * JOBS_PER, pageSafe * JOBS_PER);
 
+    // Mobile: infinite scroll — reveal cards in batches as the user scrolls to the bottom,
+    // instead of numbered pages. Desktop keeps its paginated table (uses `shown` above).
+    const MOBILE_BATCH = 8;
+    const [visible, setVisible] = React.useState(MOBILE_BATCH);
+    React.useEffect(function () { setVisible(MOBILE_BATCH); }, [tab]);
+    const mobileShown = filtered.slice(0, visible);
+    const hasMore = visible < filtered.length;
+    const sentinelRef = React.useRef(null);
+    React.useEffect(function () {
+      var el = sentinelRef.current;
+      if (!el || typeof IntersectionObserver === "undefined") return;
+      var io = new IntersectionObserver(function (entries) {
+        if (entries[0].isIntersecting) setVisible(function (v) { return v + MOBILE_BATCH; });
+      }, { rootMargin: "240px" });
+      io.observe(el);
+      return function () { io.disconnect(); };
+    }, [visible, filtered.length]);
+
     const act = (fn, m) => fn().then(function () { flash(m); reload(); }).catch(function (e) { flash("Error: " + (e && e.message)); });
     const del = (j) => { if (window.confirm('Delete "' + j.title + '"? This cannot be undone.')) act(() => emp.deleteJob(j.id), "Job deleted."); };
     const doCompanyReject = () => {
@@ -720,6 +738,43 @@
       act(() => emp.companyRejectJob(rejectModal.id, rejectReason), "Job rejected.");
       setRejectModal(null); setRejectReason("");
     };
+
+    // Per-job action buttons — shared by the desktop table row and the mobile card so they never drift.
+    const jobActions = (j) => (
+      <React.Fragment>
+        <button onClick={() => onView && onView(j)} title="View" style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--text-muted)", padding: "4px 6px", borderRadius: "var(--radius-sm)", display: "inline-flex", alignItems: "center" }}>{I("eye", 15)}</button>
+        <button onClick={() => onEdit && onEdit(j)} title="Edit" style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--text-muted)", padding: "4px 6px", borderRadius: "var(--radius-sm)", display: "inline-flex", alignItems: "center" }}>{I("pencil", 15)}</button>
+        <button onClick={() => onClone && onClone(j)} title="Clone" style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--text-muted)", padding: "4px 6px", borderRadius: "var(--radius-sm)", display: "inline-flex", alignItems: "center" }}>{I("copy", 15)}</button>
+        <span style={{ display: "inline-block", width: 1, height: 16, background: "var(--border)", margin: "0 3px" }} />
+        {(j.status === "draft" || j.status === "rejected") && (
+          <Button variant="primary" size="sm" onClick={() => isRecruiter ? act(() => emp.submitJob(j.id), "Submitted for company review.") : onPublish(j.id, "Job published!")}>
+            {isRecruiter ? "Submit" : "Publish"}
+          </Button>
+        )}
+        {j.status === "company_pending" && isAdmin && (
+          <React.Fragment>
+            <Button variant="primary" size="sm" onClick={() => act(() => emp.companyApproveJob(j.id), "Job approved and published.")}>Approve</Button>
+            <Button variant="ghost" size="sm" onClick={() => { setRejectModal(j); setRejectReason(""); }}>Reject</Button>
+          </React.Fragment>
+        )}
+        {j.status === "company_pending" && isRecruiter && (
+          <span style={{ fontSize: "var(--text-xs)", color: "var(--warning, #b45309)", padding: "0 4px" }}>Awaiting review</span>
+        )}
+        {j.status === "published" && !j.is_featured && <Button variant="ghost" size="sm" iconLeft={I("star", 13)} onClick={() => setBoostTarget(j)}>Feature</Button>}
+        {j.status === "published" && <Button variant="secondary" size="sm" onClick={() => act(() => emp.closeJob(j.id), "Job closed.")}>Close</Button>}
+        {(j.status === "draft" || j.status === "rejected" || j.status === "closed" || j.status === "company_pending") && <Button variant="ghost" size="sm" onClick={() => del(j)}>Delete</Button>}
+      </React.Fragment>
+    );
+
+    // Status filters — shared by the desktop Tabs and the mobile scrollable pill bar.
+    const TAB_DEFS = [
+      { value: "all", label: "All", count: counts.all },
+      { value: "published", label: "Published", count: counts.published },
+      { value: "company_pending", label: isAdmin ? "Needs approval" : "Awaiting review", count: counts.company_pending },
+      { value: "draft", label: "Draft", count: counts.draft },
+      { value: "rejected", label: "Rejected", count: counts.rejected },
+      { value: "closed", label: "Closed", count: counts.closed },
+    ];
 
     return (
       <div className="krm-page-pad" style={{ padding: 28 }}>
@@ -756,16 +811,21 @@
             </span>
           </div>
         )}
-        <Tabs value={tab} onChange={setTab} tabs={[
-          { value: "all", label: "All", count: counts.all },
-          { value: "published", label: "Published", count: counts.published },
-          { value: "company_pending", label: isAdmin ? "Needs approval" : "Awaiting review", count: counts.company_pending },
-          { value: "draft", label: "Draft", count: counts.draft },
-          { value: "rejected", label: "Rejected", count: counts.rejected },
-          { value: "closed", label: "Closed", count: counts.closed },
-        ]} style={{ marginBottom: 18 }} />
+        {/* Desktop: standard tabs */}
+        <div className="krm-jobs-tabs-desktop">
+          <Tabs value={tab} onChange={setTab} tabs={TAB_DEFS} style={{ marginBottom: 18 }} />
+        </div>
+        {/* Mobile: single-line scrollable pill bar (6 statuses don't fit as tabs on a phone) */}
+        <div className="krm-jobs-chipbar">
+          {TAB_DEFS.map((t) => (
+            <button key={t.value} type="button" onClick={() => setTab(t.value)} className={"krm-jobs-chip" + (tab === t.value ? " is-active" : "")}>
+              {t.label}<span className="krm-jobs-chip-count">{t.count}</span>
+            </button>
+          ))}
+        </div>
         {msg && <div style={{ padding: "10px 14px", background: "var(--success-subtle)", color: "var(--success)", borderRadius: "var(--radius-md)", marginBottom: 14, fontWeight: 600, fontSize: "var(--text-sm)" }}>{msg}</div>}
-        <div className="krm-table-wrap"><Card padding={0}>
+        {/* Desktop: dense table (unchanged) */}
+        <div className="krm-jobs-desktop"><div className="krm-table-wrap"><Card padding={0}>
           <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1.6fr) 130px 96px 80px 96px 264px", padding: "10px 22px", fontSize: "var(--text-xs)", fontWeight: 700, letterSpacing: ".04em", textTransform: "uppercase", color: "var(--text-faint)", borderBottom: "1px solid var(--border-subtle)" }}>
             <span>Job title</span><span>Status</span><span>Applicants</span><span>Views</span><span>Posted</span><span style={{ textAlign: "right" }}>Actions</span>
           </div>
@@ -789,32 +849,67 @@
               <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-sm)", color: "var(--text-body)" }}>{j.views || 0}</span>
               <span style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>{fmtDate(j.created_at)}</span>
               <div style={{ display: "flex", gap: 2, justifyContent: "flex-end", alignItems: "center" }}>
-                <button onClick={() => onView && onView(j)} title="View" style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--text-muted)", padding: "4px 6px", borderRadius: "var(--radius-sm)", display: "inline-flex", alignItems: "center" }}>{I("eye", 15)}</button>
-                <button onClick={() => onEdit && onEdit(j)} title="Edit" style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--text-muted)", padding: "4px 6px", borderRadius: "var(--radius-sm)", display: "inline-flex", alignItems: "center" }}>{I("pencil", 15)}</button>
-                <button onClick={() => onClone && onClone(j)} title="Clone" style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--text-muted)", padding: "4px 6px", borderRadius: "var(--radius-sm)", display: "inline-flex", alignItems: "center" }}>{I("copy", 15)}</button>
-                <span style={{ display: "inline-block", width: 1, height: 16, background: "var(--border)", margin: "0 3px" }} />
-                {(j.status === "draft" || j.status === "rejected") && (
-                  <Button variant="primary" size="sm" onClick={() => isRecruiter ? act(() => emp.submitJob(j.id), "Submitted for company review.") : onPublish(j.id, "Job published!")}>
-                    {isRecruiter ? "Submit" : "Publish"}
-                  </Button>
-                )}
-                {j.status === "company_pending" && isAdmin && (
-                  <React.Fragment>
-                    <Button variant="primary" size="sm" onClick={() => act(() => emp.companyApproveJob(j.id), "Job approved and published.")}>Approve</Button>
-                    <Button variant="ghost" size="sm" onClick={() => { setRejectModal(j); setRejectReason(""); }}>Reject</Button>
-                  </React.Fragment>
-                )}
-                {j.status === "company_pending" && isRecruiter && (
-                  <span style={{ fontSize: "var(--text-xs)", color: "var(--warning, #b45309)", padding: "0 4px" }}>Awaiting review</span>
-                )}
-                {j.status === "published" && !j.is_featured && <Button variant="ghost" size="sm" iconLeft={I("star", 13)} onClick={() => setBoostTarget(j)}>Feature</Button>}
-                {j.status === "published" && <Button variant="secondary" size="sm" onClick={() => act(() => emp.closeJob(j.id), "Job closed.")}>Close</Button>}
-                {(j.status === "draft" || j.status === "rejected" || j.status === "closed" || j.status === "company_pending") && <Button variant="ghost" size="sm" onClick={() => del(j)}>Delete</Button>}
+                {jobActions(j)}
               </div>
             </div>
           ))}
           {!loading && <Pager page={pageSafe} perPage={JOBS_PER} total={filtered.length} onPage={setPage} label="jobs" />}
-        </Card></div>
+        </Card></div></div>
+
+        {/* Mobile: vertical card list with infinite scroll (loads more as you reach the bottom) */}
+        <div className="krm-jobs-mobile">
+          {loading && <Card padding={0}><div style={{ padding: "26px 22px", color: "var(--text-muted)", fontSize: "var(--text-sm)", textAlign: "center" }}>Loading…</div></Card>}
+          {!loading && filtered.length === 0 && <Card padding={0}><div style={{ padding: "26px 22px", color: "var(--text-muted)", fontSize: "var(--text-sm)", textAlign: "center" }}>No jobs in this tab.</div></Card>}
+          {!loading && filtered.length > 0 && (
+            <React.Fragment>
+              <div className="krm-jobs-list">
+                {mobileShown.map((j) => (
+                  <div className="krm-jobs-card" key={j.id}>
+                    <Card padding={0}>
+                      <div style={{ padding: 16 }}>
+                        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10, marginBottom: 10 }}>
+                          <div style={{ fontWeight: 700, color: "var(--text-strong)", fontSize: "var(--text-md)", lineHeight: 1.3, minWidth: 0 }}>{j.title}</div>
+                          <span style={{ flexShrink: 0 }}><StatusBadge status={j.status} /></span>
+                        </div>
+                        {j.is_featured ? <div style={{ marginBottom: 10 }}><Badge tone="accent">{I("star", 11)} Featured{featuredDaysLeft(j) != null ? " · " + featuredDaysLeft(j) + "d left" : ""}</Badge></div> : null}
+                        {isAdmin && j.poster && j.poster.company_role === "recruitment" && (
+                          <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginBottom: 10, display: "flex", alignItems: "center", gap: 4 }}>{I("user", 11)} {j.poster.name}</div>
+                        )}
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, padding: "12px 0", borderTop: "1px solid var(--border-subtle)", borderBottom: "1px solid var(--border-subtle)", marginBottom: 14 }}>
+                          <div>
+                            <div style={{ fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: "var(--text-md)", color: "var(--text-strong)" }}>{j.applications_count || 0}</div>
+                            <div style={{ fontSize: "var(--text-xs)", color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".04em", marginTop: 2 }}>Applicants</div>
+                          </div>
+                          <div>
+                            <div style={{ fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: "var(--text-md)", color: "var(--text-strong)" }}>{j.views || 0}</div>
+                            <div style={{ fontSize: "var(--text-xs)", color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".04em", marginTop: 2 }}>Views</div>
+                          </div>
+                          <div>
+                            <div style={{ fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: "var(--text-md)", color: "var(--text-strong)" }}>{fmtDate(j.created_at)}</div>
+                            <div style={{ fontSize: "var(--text-xs)", color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".04em", marginTop: 2 }}>Posted</div>
+                          </div>
+                        </div>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
+                          {jobActions(j)}
+                        </div>
+                      </div>
+                    </Card>
+                  </div>
+                ))}
+              </div>
+              {hasMore && (
+                <div ref={sentinelRef} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "18px 0 4px", color: "var(--text-faint)", fontSize: "var(--text-sm)" }}>
+                  {I("loader", 15)} Loading more…
+                </div>
+              )}
+              {!hasMore && filtered.length > MOBILE_BATCH && (
+                <div style={{ textAlign: "center", padding: "16px 0 4px", color: "var(--text-faint)", fontSize: "var(--text-xs)" }}>
+                  Showing all {filtered.length} jobs
+                </div>
+              )}
+            </React.Fragment>
+          )}
+        </div>
         {/* Company admin reject modal */}
         {rejectModal && (
           <div onClick={() => setRejectModal(null)} style={{ position: "fixed", inset: 0, zIndex: 300, background: "var(--surface-overlay)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
@@ -1162,8 +1257,10 @@
         {err && <div style={{ padding: "10px 14px", background: "var(--danger-subtle)", color: "var(--danger)", borderRadius: "var(--radius-md)", fontSize: "var(--text-sm)", marginBottom: 14 }}>{err}</div>}
         {msg && <div style={{ padding: "10px 14px", background: "var(--success-subtle)", color: "var(--success)", borderRadius: "var(--radius-md)", fontSize: "var(--text-sm)", fontWeight: 600, marginBottom: 14 }}>{msg}</div>}
 
-        {/* Tabs */}
-        <Tabs value={tab} onChange={setTab} tabs={TABS} style={{ marginBottom: 20 }} />
+        {/* Tabs — wrapper lets them scroll horizontally on mobile instead of clipping the last tab */}
+        <div className="krm-tabs-scroll">
+          <Tabs value={tab} onChange={setTab} tabs={TABS} style={{ marginBottom: 20 }} />
+        </div>
 
         {/* ── About tab ── */}
         {tab === "about" && (
@@ -2055,6 +2152,20 @@
     const fmtDate = (iso) => { if (!iso) return "—"; var d = new Date(iso); return d.getDate() + " " + ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][d.getMonth()] + " " + d.getFullYear(); };
     const planFeatures = (p) => Array.isArray(p.features_json) ? p.features_json : (Array.isArray(p.features) ? p.features : []);
 
+    // Mobile plan carousel — keep the pagination dots in sync with the horizontal swipe.
+    const [activeCard, setActiveCard] = React.useState(0);
+    const carRef = React.useRef(null);
+    const onCarScroll = function () {
+      var el = carRef.current; if (!el || !plans.length) return;
+      var step = el.scrollWidth / plans.length;
+      var idx = Math.max(0, Math.min(plans.length - 1, Math.round(el.scrollLeft / step)));
+      setActiveCard(function (prev) { return prev === idx ? prev : idx; });
+    };
+    const scrollToCard = function (i) {
+      var el = carRef.current; if (!el || !plans.length) return;
+      el.scrollTo({ left: i * (el.scrollWidth / plans.length), behavior: "smooth" });
+    };
+
     return (
       <div className="krm-page-pad" style={{ padding: 28 }}>
         <ScreenHead title="Plan & billing" sub="Manage your subscription and billing history." />
@@ -2062,7 +2173,7 @@
         <React.Fragment>
         {sub && sub.plan && (
           <div className="krm-stats-grid" style={{ marginBottom: 24, borderRadius: "var(--radius-lg)", border: "1px solid " + (sub.status === "expired" ? "var(--danger, #ef4444)" : sub.status === "pending" ? "var(--warning-border, #fcd34d)" : "var(--border)"), overflow: "hidden" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)" }}>
+            <div className="krm-plan-summary" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)" }}>
               <div style={{ padding: "16px 20px", borderRight: "1px solid var(--border)", background: "var(--surface-card)" }}>
                 <div style={{ fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 6 }}>Current plan</div>
                 <div style={{ fontWeight: 700, color: "var(--text-strong)", fontSize: "var(--text-sm)" }}>{sub.status === "trial" ? "Trial — " + sub.plan.name : sub.plan.name}</div>
@@ -2136,7 +2247,8 @@
             {I("alert-circle", 16)} Your subscription has expired. Choose a plan below to continue posting jobs.
           </div>
         )}
-        <div className="krm-card-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16, marginBottom: 28 }}>
+        <div className="krm-plans-wrap" style={{ marginBottom: 28 }}>
+        <div className="krm-plans-carousel" ref={carRef} onScroll={onCarScroll} style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16 }}>
           {plans.map((p) => {
             const current = p.id === currentPlanId;
             const popular = /professional/i.test(p.name);
@@ -2206,6 +2318,14 @@
               </Card>
             );
           })}
+        </div>
+        {plans.length > 1 && (
+          <div className="krm-plans-dots">
+            {plans.map(function (_, i) {
+              return <span key={i} className={"krm-plan-dot" + (i === activeCard ? " is-active" : "")} onClick={function () { scrollToCard(i); }} />;
+            })}
+          </div>
+        )}
         </div>
         <div className="krm-table-wrap"><Card padding={0}>
           <div style={{ padding: "16px 22px", borderBottom: "1px solid var(--border)", fontWeight: 700, color: "var(--text-strong)" }}>Billing history</div>
@@ -2318,15 +2438,17 @@
           )}
 
           {recruiters.map((r, i) => (
-            <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 22px", borderBottom: i < recruiters.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>
+            <div key={r.id} className="krm-team-row" style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 22px", borderBottom: i < recruiters.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>
               <Avatar name={r.name} src={r.avatar_url} size={38} />
-              <div style={{ flex: 1, minWidth: 0 }}>
+              <div className="krm-team-name" style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontWeight: 600, fontSize: "var(--text-sm)", color: "var(--text-strong)" }}>{r.name}</div>
                 <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>{r.email}</div>
               </div>
-              <Badge tone="neutral">Recruiter</Badge>
-              <Button variant="secondary" size="sm" iconLeft={I("key", 13)} onClick={() => { setPwdModal(r); setNewPwd(""); }}>Set password</Button>
-              <Button variant="ghost" size="sm" onClick={() => remove(r)}>Remove</Button>
+              <div className="krm-team-actions" style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+                <Badge tone="neutral">Recruiter</Badge>
+                <Button variant="secondary" size="sm" iconLeft={I("key", 13)} onClick={() => { setPwdModal(r); setNewPwd(""); }}>Set password</Button>
+                <Button variant="ghost" size="sm" onClick={() => remove(r)}>Remove</Button>
+              </div>
             </div>
           ))}
 
@@ -2477,8 +2599,8 @@
     }
 
     return (
-      <div style={{ display: "flex", height: "calc(100vh - 64px)", overflow: "hidden" }}>
-        <div style={{ width: 290, flexShrink: 0, borderRight: "1px solid var(--border)", overflowY: "auto", background: "var(--surface-card)" }}>
+      <div className={"krm-msg-wrap" + (activeConv ? " krm-msg-wrap--active" : "")} style={{ display: "flex", height: "calc(100vh - 64px)", overflow: "hidden" }}>
+        <div className="krm-msg-list" style={{ width: 290, flexShrink: 0, borderRight: "1px solid var(--border)", overflowY: "auto", background: "var(--surface-card)" }}>
           <div style={{ padding: "16px 16px 12px", borderBottom: "1px solid var(--border)", fontWeight: 700, fontSize: "var(--text-base)", color: "var(--text-strong)" }}>Conversations</div>
           {loading && <div style={{ padding: 24, color: "var(--text-muted)", fontSize: "var(--text-sm)" }}>Loading…</div>}
           {!loading && convs.length === 0 && (
@@ -2514,7 +2636,7 @@
             );
           })}
         </div>
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, background: "var(--surface-page)" }}>
+        <div className="krm-msg-thread" style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, background: "var(--surface-page)" }}>
           {!activeConv ? (
             <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 12, color: "var(--text-faint)" }}>
               {I("message-square", 40)}
@@ -2522,6 +2644,7 @@
             </div>
           ) : (<>
             <div style={{ padding: "12px 20px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: 12, background: "var(--surface-card)", flexShrink: 0 }}>
+              <button className="krm-msg-back" onClick={function() { setActiveConv(null); }} aria-label="Back to conversations" style={{ alignItems: "center", justifyContent: "center", width: 34, height: 34, border: "none", background: "transparent", cursor: "pointer", color: "var(--text-muted)", flexShrink: 0, marginLeft: -6, padding: 0 }}>{I("arrow-left", 20)}</button>
               <Avatar name={otherParty(activeConv).name || "?"} src={otherParty(activeConv).avatar_url} size={36} />
               <div>
                 <div style={{ fontWeight: 700, color: "var(--text-strong)", fontSize: "var(--text-base)" }}>{otherParty(activeConv).name || "?"}</div>

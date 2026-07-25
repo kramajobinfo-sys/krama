@@ -3,6 +3,10 @@
 /* Always-on base styles */
 .krm-sidebar-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 199; }
 .krm-hamburger-dash   { display: none; }
+.krm-msg-back         { display: none; }
+.krm-jobs-mobile { display: none; }   /* desktop uses the table; the card list is mobile-only */
+.krm-jobs-chipbar { display: none; }  /* desktop uses <Tabs>; the pill bar is mobile-only */
+.krm-plans-dots { display: none; }    /* plan carousel dots are mobile-only */
 
 @media (max-width: 767px) {
   * { box-sizing: border-box; }
@@ -49,6 +53,23 @@
     padding: 16px !important;
   }
 
+  /* Screen header — let the action button (e.g. "Add recruiter") wrap below the title */
+  .krm-screenhead {
+    flex-wrap: wrap !important;
+    align-items: flex-start !important;
+  }
+  .krm-screenhead > div:first-child { flex: 1 1 100% !important; }
+
+  /* Team member rows — drop the Recruiter badge + Set password / Remove buttons
+     onto their own full-width line so they don't overflow on narrow screens */
+  .krm-team-row { flex-wrap: wrap !important; }
+  .krm-team-actions {
+    flex-basis: 100% !important;
+    margin-top: 10px !important;
+    justify-content: flex-start !important;
+    flex-wrap: wrap !important;
+  }
+
   /* Stack stat cards 2-up */
   .krm-stats-grid {
     grid-template-columns: 1fr 1fr !important;
@@ -73,4 +94,140 @@
     overflow-x: visible !important;
   }
   .krm-pipeline > div { min-height: 0 !important; }
+
+  /* Messages: one pane at a time — the conversation list, or the open thread with a back button —
+     instead of a cramped 290px + thread split that doesn't fit a phone. */
+  .krm-msg-wrap { height: calc(100dvh - 64px) !important; }
+  .krm-msg-list { width: 100% !important; border-right: none !important; }
+  .krm-msg-wrap--active .krm-msg-list { display: none !important; }
+  .krm-msg-wrap:not(.krm-msg-wrap--active) .krm-msg-thread { display: none !important; }
+  .krm-msg-back { display: inline-flex !important; }
+
+  /* Notification dropdown: keep it on-screen (near full-width, centred under the topbar)
+     instead of anchoring right:0 and overflowing off the left edge. */
+  .krm-notif-panel {
+    position: fixed !important;
+    top: 64px !important;
+    left: 12px !important;
+    right: 12px !important;
+    width: auto !important;
+    max-width: none !important;
+    max-height: 75vh !important;
+  }
+
+  /* Job postings: swap the dense 6-column table for a vertical card list.
+     Cards stack full-width and reveal in batches via infinite scroll (see app.jsx). */
+  .krm-jobs-desktop { display: none !important; }
+  .krm-jobs-mobile { display: block !important; }
+  .krm-jobs-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .krm-jobs-card { width: 100%; }
+
+  /* Status filter: the 6 tabs wrap to two cramped lines on a phone, so on mobile
+     render them as a single-line, horizontally-scrollable pill bar with counts. */
+  .krm-jobs-tabs-desktop { display: none !important; }
+  .krm-jobs-chipbar {
+    display: flex !important;
+    gap: 7px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 2px 0 16px;
+    margin: 0 -2px 2px;
+    scrollbar-width: none;
+  }
+  .krm-jobs-chipbar::-webkit-scrollbar { display: none; }
+  .krm-jobs-chip {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    font-family: var(--font-sans);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    line-height: 1;
+    padding: 8px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--surface-card);
+    color: var(--text-muted);
+    cursor: pointer;
+  }
+  .krm-jobs-chip.is-active {
+    background: var(--brand);
+    border-color: var(--brand);
+    color: var(--on-brand, #fff);
+  }
+  .krm-jobs-chip-count {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    font-weight: 700;
+    opacity: 0.85;
+  }
+
+  /* Underline tab bars (e.g. Company profile: About/Jobs/Gallery/Awards) overflow a phone and
+     clip the last tab. Wrapping the <Tabs> in .krm-tabs-scroll makes the row swipe horizontally. */
+  .krm-tabs-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    margin: 0 -2px;
+  }
+  .krm-tabs-scroll::-webkit-scrollbar { display: none; }
+  .krm-tabs-scroll > div {
+    flex-wrap: nowrap !important;
+    min-width: max-content !important;
+  }
+  .krm-tabs-scroll > div > button { flex: 0 0 auto !important; }
+
+  /* Plan & billing — the current-plan summary is a hard 4-column grid (Current plan / Status /
+     Started / Renews) that overflows a phone and clips the "Renews" column. Stack it 2×2. */
+  .krm-plan-summary {
+    grid-template-columns: 1fr 1fr !important;
+  }
+  .krm-plan-summary > div:nth-child(2) { border-right: none !important; }        /* right column — no divider */
+  .krm-plan-summary > div:nth-child(n+3) { border-top: 1px solid var(--border) !important; } /* divider above the 2nd row */
+
+  /* Subscription plans: swipe carousel instead of a tall vertical stack. One plan per card,
+     horizontal scroll-snap, with pagination dots below. */
+  .krm-plans-carousel {
+    display: flex !important;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    gap: 12px !important;
+    padding: 2px 2px 4px;
+    margin: 0 -2px;
+    scrollbar-width: none;
+    align-items: stretch;
+  }
+  .krm-plans-carousel::-webkit-scrollbar { display: none; }
+  .krm-plans-carousel > * {
+    flex: 0 0 85% !important;
+    scroll-snap-align: center;
+  }
+  .krm-plans-dots {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 7px;
+    padding: 14px 0 2px;
+    flex-wrap: wrap;
+  }
+  .krm-plan-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--border);
+    transition: width 0.2s ease, background 0.2s ease;
+    cursor: pointer;
+  }
+  .krm-plan-dot.is-active {
+    width: 20px;
+    border-radius: 4px;
+    background: var(--brand);
+  }
 }
