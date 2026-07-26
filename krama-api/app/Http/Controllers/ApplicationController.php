@@ -149,6 +149,26 @@ class ApplicationController extends Controller
         return response()->json($q->paginate($perPage));
     }
 
+    // GET /api/candidate/applications/stage-counts — this candidate's application count per pipeline stage
+    public function myApplicationStageCounts(Request $request)
+    {
+        $user = $request->user();
+        $this->requirePermission('apply_jobs');
+
+        $rows = Application::where('candidate_id', $user->id)
+            ->selectRaw('stage, COUNT(*) as c')
+            ->groupBy('stage')
+            ->pluck('c', 'stage');
+
+        $out = [];
+        foreach (['applied', 'reviewed', 'shortlisted', 'interview', 'offered', 'rejected'] as $s) {
+            $out[$s] = (int) ($rows[$s] ?? 0);
+        }
+        $out['total'] = array_sum($out);
+
+        return response()->json($out);
+    }
+
     // GET /api/employer/jobs/{id}/applications — employer sees applicants for a job
     public function jobApplications(Request $request, $jobId)
     {

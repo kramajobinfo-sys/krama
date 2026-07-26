@@ -476,6 +476,31 @@ class PaymentController extends Controller
         return response()->json($payments);
     }
 
+    // GET /api/employer/payments/{id}/invoice — download the invoice PDF (own company, paid only)
+    public function invoice(Request $request, $id)
+    {
+        $this->requirePermission('post_jobs');
+
+        $company = $this->employerCompany($request->user());
+
+        $payment = Payment::with('subscription.plan', 'company.owner', 'job')
+            ->where('id', $id)
+            ->where('company_id', $company->id)
+            ->firstOrFail();
+
+        if ($payment->status !== 'paid') {
+            abort(404, 'Invoice is available once the payment is confirmed.');
+        }
+
+        $pdf      = \App\Services\InvoiceService::pdf($payment);
+        $filename = \App\Services\InvoiceService::filename($payment);
+
+        return response($pdf, 200, [
+            'Content-Type'        => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ]);
+    }
+
     // GET /api/admin/payments — admin: all payments with filters
     public function adminIndex(Request $request)
     {

@@ -22,8 +22,12 @@
 
   // 2. Async-fetch from API to keep localStorage in sync with DB
   //    This runs in the background — no blocking, no visible delay.
-  // On localhost (XAMPP) the Laravel API lives under /krama/krama-api/public; on hosting the web root IS the API, so /api.
-  var apiBase = window.location.protocol + '//' + window.location.host + (/^(localhost|127\.0\.0\.1|::1|192\.168\.|10\.)/.test(window.location.hostname) ? '/krama/krama-api/public/api' : '/api');
+  // Use the SAME base the dashboards' api.js use: on localhost the Laravel API is the
+  // dev server on 127.0.0.1:8000 (the Apache-served /krama/krama-api/public path may run
+  // an older PHP and 500); on hosting the web root IS the API, so /api.
+  var apiBase = /^(localhost|127\.0\.0\.1|::1|192\.168\.|10\.)/.test(window.location.hostname)
+    ? 'http://127.0.0.1:8000/api'
+    : (window.location.protocol + '//' + window.location.host + '/api');
   fetch(apiBase + '/settings/brand', { cache: 'no-cache' })
     .then(function(r) { return r.ok ? r.json() : null; })
     .then(function(data) {

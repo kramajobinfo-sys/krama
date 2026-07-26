@@ -320,8 +320,105 @@
     { title: "HR Coordinator", company: "Manulife", cat: "HR", date: "12 Jun 2026", verified: true },
   ];
 
+  // Admin posts a job on behalf of an employer — publishes immediately for the chosen company.
+  function PostJobModal({ open, onClose, onPosted }) {
+    const BLANK = { company_id: "", title: "", category_id: "", location_id: "", job_type: "full_time", experience_level: "", salary_min: "", salary_max: "", salary_currency: "USD", salary_period: "month", is_remote: false, working_days: "", working_time: "", map_location: "", description: "", requirements: "", benefits: "" };
+    const [form, setForm] = React.useState(BLANK);
+    const [newCat, setNewCat] = React.useState("");
+    const [companies, setCompanies] = React.useState([]);
+    const [cats, setCats] = React.useState([]);
+    const [locs, setLocs] = React.useState([]);
+    const [busy, setBusy] = React.useState(false);
+    const [err, setErr] = React.useState("");
+    const set = (k, v) => setForm(function (f) { return Object.assign({}, f, { [k]: v }); });
+
+    React.useEffect(function () {
+      if (!open) return;
+      setForm(BLANK); setNewCat(""); setErr(""); setBusy(false);
+      adm.fetchCompanies("approved", 1, 500).then(function (d) { setCompanies((d && d.data) || d || []); }).catch(function () {});
+      adm.fetchCategories().then(function (d) { setCats((d && d.data) || d || []); }).catch(function () {});
+      adm.fetchLocations().then(function (d) { setLocs((d && d.data) || d || []); }).catch(function () {});
+    }, [open]);
+
+    if (!open) return null;
+
+    const submit = function () {
+      if (!form.company_id) { setErr("Please select a company."); return; }
+      if (!form.title.trim()) { setErr("Please enter a job title."); return; }
+      setBusy(true); setErr("");
+      const payload = Object.assign({}, form, {
+        company_id: Number(form.company_id),
+        salary_min: form.salary_min === "" ? null : Number(form.salary_min),
+        salary_max: form.salary_max === "" ? null : Number(form.salary_max),
+        category_id: (form.category_id && form.category_id !== "__new__") ? Number(form.category_id) : null,
+        category_name: form.category_id === "__new__" ? newCat.trim() : "",
+        location_id: form.location_id ? Number(form.location_id) : null,
+        experience_level: form.experience_level || null,
+      });
+      adm.adminCreateJob(payload)
+        .then(function () { setBusy(false); onPosted && onPosted(); })
+        .catch(function (e) { setBusy(false); setErr((e && e.message) || "Failed to post the job."); });
+    };
+
+    const JOB_TYPES = [{ value: "full_time", label: "Full time" }, { value: "part_time", label: "Part time" }, { value: "contract", label: "Contract" }, { value: "internship", label: "Internship" }, { value: "temporary", label: "Temporary" }];
+    const EXP = [{ value: "", label: "—" }, { value: "entry", label: "Entry" }, { value: "junior", label: "Junior" }, { value: "mid", label: "Mid" }, { value: "senior", label: "Senior" }, { value: "lead", label: "Lead" }, { value: "manager", label: "Manager" }, { value: "executive", label: "Executive" }];
+    const PERIODS = [{ value: "month", label: "/ month" }, { value: "year", label: "/ year" }, { value: "day", label: "/ day" }, { value: "hour", label: "/ hour" }];
+
+    return (
+      <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 400, background: "var(--surface-overlay, rgba(0,0,0,0.5))", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "40px 16px", overflowY: "auto" }}>
+        <div onClick={function (e) { e.stopPropagation(); }} style={{ width: "100%", maxWidth: 640, background: "var(--surface-card)", borderRadius: "var(--radius-xl)", boxShadow: "var(--shadow-xl)", overflow: "hidden" }}>
+          <div style={{ padding: "18px 22px", borderBottom: "1px solid var(--border)", fontWeight: 700, fontSize: "var(--text-md)", color: "var(--text-strong)" }}>Post a job on behalf of an employer</div>
+          <div style={{ padding: "20px 22px", display: "flex", flexDirection: "column", gap: 14, maxHeight: "68vh", overflowY: "auto" }}>
+            <Select label="Company *" value={form.company_id} onChange={function (e) { set("company_id", e.target.value); }}
+              options={[{ value: "", label: "— Select a company —" }].concat(companies.map(function (c) { return { value: String(c.id), label: c.name }; }))} />
+            <Input label="Job title *" value={form.title} onChange={function (e) { set("title", e.target.value); }} placeholder="e.g. Senior Software Engineer" />
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+              <Select label="Job type *" value={form.job_type} onChange={function (e) { set("job_type", e.target.value); }} options={JOB_TYPES} />
+              <Select label="Experience level" value={form.experience_level} onChange={function (e) { set("experience_level", e.target.value); }} options={EXP} />
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+              <Select label="Category" value={form.category_id} onChange={function (e) { set("category_id", e.target.value); }}
+                options={[{ value: "", label: "—" }].concat(cats.map(function (c) { return { value: String(c.id), label: c.name }; })).concat([{ value: "__new__", label: "+ Add a new category…" }])} />
+              <Select label="Location" value={form.location_id} onChange={function (e) { set("location_id", e.target.value); }}
+                options={[{ value: "", label: "—" }].concat(locs.map(function (l) { return { value: String(l.id), label: l.name }; }))} />
+            </div>
+            {form.category_id === "__new__" && (
+              <div>
+                <Input label="New category name" value={newCat} onChange={function (e) { setNewCat(e.target.value); }} placeholder="e.g. Renewable Energy" />
+                <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: 6, display: "flex", alignItems: "center", gap: 5 }}>{I("info", 12)} Created as pending — it shows in public category filters once approved.</div>
+              </div>
+            )}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14 }}>
+              <Input label="Salary min" type="number" value={form.salary_min} onChange={function (e) { set("salary_min", e.target.value); }} />
+              <Input label="Salary max" type="number" value={form.salary_max} onChange={function (e) { set("salary_max", e.target.value); }} />
+              <Select label="Per" value={form.salary_period} onChange={function (e) { set("salary_period", e.target.value); }} options={PERIODS} />
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+              <Input label="Working days" value={form.working_days} onChange={function (e) { set("working_days", e.target.value); }} placeholder="e.g. Monday to Friday" />
+              <Input label="Working time" value={form.working_time} onChange={function (e) { set("working_time", e.target.value); }} placeholder="e.g. 8:00 AM – 5:00 PM" />
+            </div>
+            <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
+              <Switch checked={form.is_remote} onChange={function (v) { set("is_remote", typeof v === "boolean" ? v : !form.is_remote); }} />
+              <span style={{ fontSize: "var(--text-sm)", color: "var(--text-body)" }}>Remote position</span>
+            </label>
+            <Textarea label="Description" value={form.description} onChange={function (e) { set("description", e.target.value); }} rows={4} placeholder="Role overview…" />
+            <Textarea label="Requirements" value={form.requirements} onChange={function (e) { set("requirements", e.target.value); }} rows={3} />
+            <Textarea label="Benefits" value={form.benefits} onChange={function (e) { set("benefits", e.target.value); }} rows={2} />
+            {err && <div style={{ padding: "8px 12px", background: "var(--danger-subtle)", color: "var(--danger)", borderRadius: "var(--radius-md)", fontSize: "var(--text-sm)" }}>{err}</div>}
+            <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 6 }}>{I("info", 13)} Publishes immediately for the selected company (admin override — no plan/quota check).</div>
+          </div>
+          <div style={{ display: "flex", gap: 10, padding: "14px 22px", borderTop: "1px solid var(--border)", justifyContent: "flex-end" }}>
+            <Button variant="secondary" onClick={onClose} disabled={busy}>Cancel</Button>
+            <Button variant="primary" onClick={submit} disabled={busy}>{busy ? "Publishing…" : "Publish job"}</Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   function Approvals() {
     const [jobs, setJobs] = React.useState([]);
+    const [postOpen, setPostOpen] = React.useState(false);
     const [counts, setCounts] = React.useState({ published: 0, rejected: 0, all: 0 });
     const [loading, setLoading] = React.useState(true);
     const [tab, setTab] = React.useState("published");
@@ -376,12 +473,16 @@
 
     return (
       <div className="krm-page-pad" style={{ padding: 28 }}>
-        <div style={{ marginBottom: 16 }}>
-          <h2 style={{ fontSize: "var(--text-xl)", fontWeight: 700, color: "var(--text-strong)", margin: 0 }}>Job management</h2>
-          <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginTop: 4 }}>
-            Jobs are now published directly by employers. Use this panel to monitor and take down inappropriate listings.
-          </p>
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 16 }}>
+          <div>
+            <h2 style={{ fontSize: "var(--text-xl)", fontWeight: 700, color: "var(--text-strong)", margin: 0 }}>Job management</h2>
+            <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginTop: 4 }}>
+              Jobs are published directly by employers. You can also post a job on behalf of an employer, or take down inappropriate listings.
+            </p>
+          </div>
+          <Button variant="primary" iconLeft={I("plus", 16)} onClick={function () { setPostOpen(true); }} style={{ flexShrink: 0, whiteSpace: "nowrap" }}>Post a job</Button>
         </div>
+        <PostJobModal open={postOpen} onClose={function () { setPostOpen(false); }} onPosted={function () { setPostOpen(false); flashMsg("Job published on behalf of the employer."); setTab("published"); setPage(1); loadJobs("published", 1); }} />
         <Tabs value={tab} onChange={(v) => { setPage(1); setTab(v); }} tabs={[
           { value: "published", label: "Live jobs", count: counts.published },
           { value: "rejected", label: "Taken down", count: counts.rejected },
@@ -2687,7 +2788,7 @@
     const [companies, setCompanies] = React.useState(HOME_COMPANIES);
     const [allCats, setAllCats] = React.useState([]);
     const [editSlide, setEditSlide] = React.useState(null);
-    const SLIDE_BLANK = { id: "", title: "", subtitle: "", badge: "", theme: "teal", image: "", imageMobile: "", focalX: 50, focalY: 50, fit: "cover", imageOnly: true, ctaLabel: "", ctaUrl: "" };
+    const SLIDE_BLANK = { id: "", title: "", titleSize: "", subtitle: "", theme: "teal", image: "", imageMobile: "", focalX: 50, focalY: 50, fit: "cover", imageOnly: true, ctaLabel: "", ctaUrl: "" };
     const [slideForm, setSlideForm] = React.useState(SLIDE_BLANK);
     const [uploading, setUploading] = React.useState(false);
     const slideFileRef = React.useRef();
@@ -3195,7 +3296,6 @@
                       <div style={{ position: "relative", overflow: "hidden", borderRadius: "var(--radius-md)", background: resolveSlidePreviewBg(slideForm), minHeight: 80, padding: "14px 16px", color: resolveSlidePreviewFg(slideForm), border: slideForm.theme === "transparent" ? "1px solid var(--border)" : "none" }}>
                         {(slideForm._src || slideForm.image) && <div style={{ position: "absolute", inset: 0, backgroundImage: "url('" + (slideForm._src || slideForm.image) + "')", backgroundSize: slideForm.fit === "contain" ? "contain" : "cover", backgroundRepeat: "no-repeat", backgroundPosition: (slideForm.focalX != null ? slideForm.focalX : 50) + "% " + (slideForm.focalY != null ? slideForm.focalY : 50) + "%", opacity: 0.2 }} />}
                         <div style={{ position: "relative" }}>
-                          {slideForm.badge && <div style={{ display: "inline-block", background: "rgba(255,255,255,0.2)", fontSize: "var(--text-xs)", fontWeight: 600, padding: "3px 10px", borderRadius: "var(--radius-pill)", marginBottom: 6 }}>{slideForm.badge}</div>}
                           <div style={{ fontWeight: 800, fontSize: "var(--text-lg)", lineHeight: 1.2 }}>{slideForm.title || "Slide title"}</div>
                           {slideForm.subtitle && <div style={{ fontSize: "var(--text-xs)", opacity: 0.8, marginTop: 4 }}>{slideForm.subtitle}</div>}
                           {slideForm.ctaLabel && <div style={{ marginTop: 8, display: "inline-block", background: "rgba(255,255,255,0.25)", fontSize: "var(--text-xs)", fontWeight: 700, padding: "4px 12px", borderRadius: "var(--radius-sm)" }}>{slideForm.ctaLabel}</div>}
@@ -3203,8 +3303,8 @@
                       </div>
 
                       <Input label="Title" value={slideForm.title} onChange={(e) => setSlideForm((f) => ({ ...f, title: e.target.value }))} placeholder="Find work that fits your life" />
+                      <Select label="Title font size (desktop)" value={slideForm.titleSize || ""} onChange={(e) => setSlideForm((f) => ({ ...f, titleSize: e.target.value }))} options={[{ value: "", label: "Default" }, { value: "32px", label: "Small" }, { value: "42px", label: "Medium" }, { value: "56px", label: "Large" }, { value: "68px", label: "Extra large" }]} />
                       <Textarea label="Subtitle" rows={2} value={slideForm.subtitle} onChange={(e) => setSlideForm((f) => ({ ...f, subtitle: e.target.value }))} placeholder="Short description under the title" />
-                      <Input label="Badge text (optional)" value={slideForm.badge} onChange={(e) => setSlideForm((f) => ({ ...f, badge: e.target.value }))} placeholder="e.g. 12,480 open jobs" />
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                         <Input label="CTA button label" value={slideForm.ctaLabel} onChange={(e) => setSlideForm((f) => ({ ...f, ctaLabel: e.target.value }))} placeholder="Browse jobs" />
                         <Input label="CTA URL (blank = Browse jobs)" value={slideForm.ctaUrl} onChange={(e) => setSlideForm((f) => ({ ...f, ctaUrl: e.target.value }))} placeholder="https://…" iconLeft={I("link", 14)} />

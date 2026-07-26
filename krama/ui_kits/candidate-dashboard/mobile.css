@@ -50,11 +50,15 @@
     padding: 16px !important;
   }
 
-  /* Stack stat cards 2-up */
+  /* Keep stat cards 3-up on mobile; compact the DS StatCards so all three fit:
+     tighten padding and drop the icon badge (which otherwise overflows the row). */
   .krm-stats-grid {
-    grid-template-columns: 1fr 1fr !important;
-    gap: 10px !important;
+    grid-template-columns: 1fr 1fr 1fr !important;
+    gap: 8px !important;
   }
+  .krm-stats-grid > div > div { padding: 12px 10px !important; }
+  .krm-stats-grid > div > div > div > span { display: none !important; }
+  .krm-stats-grid > div > div > div > div > div:nth-child(2) { font-size: var(--text-2xl) !important; }
   /* Single column card grid */
   .krm-card-grid {
     grid-template-columns: 1fr !important;
@@ -86,4 +90,30 @@
     max-width: none !important;
     max-height: 75vh !important;
   }
+
+  /* Application progress tracker: compact so all 5 stages (Applied → Offered)
+     fit within the card on a phone instead of clipping the last one.
+     Targets the DS ProgressTracker's inline-styled internals via the wrapper. */
+  .krm-tracker > div > div > span { font-size: 10px !important; padding-right: 2px !important; margin-top: 5px !important; line-height: 1.2 !important; }
+  .krm-tracker > div > div > div > span:first-child { width: 20px !important; height: 20px !important; font-size: 10px !important; }
+  .krm-tracker > div > div > div > span:nth-child(2) { margin: 0 3px !important; }
+
+  /* Dashboard "Application pipeline": keep all 5 stage tiles on one row on a phone. */
+  .krm-pipeline { gap: 6px !important; }
+  .krm-pipeline > div { padding: 12px 3px !important; }
+  .krm-pipeline-label { font-size: 10px !important; }
+
+  /* My-applications stage tabs: swipe horizontally instead of overflowing/clipping. */
+  .krm-tabs-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .krm-tabs-scroll::-webkit-scrollbar { display: none; }
+  .krm-tabs-scroll > div { min-width: max-content !important; flex-wrap: nowrap !important; }
+  .krm-tabs-scroll > div > * { flex: 0 0 auto !important; }
+
+  /* Screen header: on a phone, stack the title/description above its action
+     buttons (full-width) so the description isn't squeezed into a narrow column. */
+  .krm-screenhead { flex-wrap: wrap !important; align-items: flex-start !important; }
+  .krm-screenhead > div:first-child { flex: 1 1 100% !important; }
+  .krm-screenhead-action { flex: 1 1 100% !important; margin-top: 14px !important; }
+  .krm-screenhead-action > div { width: 100% !important; }
+  .krm-screenhead-action button { flex: 1 1 0 !important; white-space: nowrap; }
 }

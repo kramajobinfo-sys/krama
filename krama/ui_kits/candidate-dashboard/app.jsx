@@ -232,19 +232,55 @@
 
   function ScreenHead({ title, sub, action }) {
     return (
-      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 18 }}>
+      <div className="krm-screenhead" style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 12, marginBottom: 18 }}>
         <div>
           <h2 style={{ fontSize: "var(--text-xl)", fontWeight: 700, color: "var(--text-strong)" }}>{title}</h2>
           {sub && <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginTop: 4 }}>{sub}</div>}
         </div>
-        {action}
+        {action && <div className="krm-screenhead-action">{action}</div>}
       </div>
     );
   }
 
+  // Clickable wrapper that turns a StatCard into a link to its section (with hover lift).
+  function StatLink({ onClick, title, children }) {
+    var [h, setH] = React.useState(false);
+    return (
+      <div onClick={onClick} onMouseEnter={function(){ setH(true); }} onMouseLeave={function(){ setH(false); }}
+        role="button" tabIndex={0} title={title} aria-label={title}
+        onKeyDown={function(e){ if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } }}
+        style={{ cursor: "pointer", borderRadius: "var(--radius-lg)", transition: "transform var(--dur-base) var(--ease-standard), box-shadow var(--dur-base) var(--ease-standard)", transform: h ? "translateY(-2px)" : "none", boxShadow: h ? "var(--shadow-md)" : "none" }}>
+        {children}
+      </div>
+    );
+  }
+
+  // One stage tile in the dashboard "Application pipeline" row (count + label, links to that stage).
+  function PipelineTile({ count, label, onClick }) {
+    var [h, setH] = React.useState(false);
+    return (
+      <div onClick={onClick} onMouseEnter={function(){ setH(true); }} onMouseLeave={function(){ setH(false); }}
+        role="button" tabIndex={0} title={"View " + label + " applications"} aria-label={"View " + label + " applications"}
+        onKeyDown={function(e){ if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } }}
+        style={{ cursor: "pointer", textAlign: "center", padding: "14px 6px", borderRadius: "var(--radius-md)", border: "1px solid " + (h ? "var(--brand)" : "var(--border)"), background: h ? "var(--brand-subtle)" : "var(--surface-card)", transition: "border-color var(--dur-base), background var(--dur-base)" }}>
+        <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "var(--text-2xl)", color: count > 0 ? "var(--brand)" : "var(--text-faint)", lineHeight: 1 }}>{count}</div>
+        <div className="krm-pipeline-label" style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: 6 }}>{label}</div>
+      </div>
+    );
+  }
+
+  var PIPELINE = [
+    { key: "applied", label: "Applied" },
+    { key: "reviewed", label: "Reviewed" },
+    { key: "shortlisted", label: "Shortlisted" },
+    { key: "interview", label: "Interview" },
+    { key: "offered", label: "Offered" },
+  ];
+
   // ── Overview ───────────────────────────────────────────────────────────────
-  function Overview({ user, onNav }) {
+  function Overview({ user, onNav, onOpenApplications }) {
     var [stats, setStats] = React.useState({ applied: 0, saved: 0, interviews: 0 });
+    var [stageCounts, setStageCounts] = React.useState({ applied: 0, reviewed: 0, shortlisted: 0, interview: 0, offered: 0 });
     var [recentApps, setRecentApps] = React.useState([]);
     var [recs, setRecs] = React.useState([]);
     var [savedIds, setSavedIds] = React.useState([]);
@@ -255,11 +291,13 @@
         cand.fetchApplications("all", 1),
         cand.fetchSavedJobs(1),
         cand.fetchJobs({ per_page: 4 }),
+        cand.fetchApplicationStageCounts(),
       ]).then(function (results) {
-        var apps = results[0]; var saved = results[1]; var jobs = results[2];
+        var apps = results[0]; var saved = results[1]; var jobs = results[2]; var sc = results[3] || {};
         var allApps = apps.data || [];
-        var interviewCount = allApps.filter(function(a){ return a.stage === "interview" || a.stage === "offered"; }).length;
-        setStats({ applied: apps.total || 0, saved: saved.total || 0, interviews: interviewCount });
+        // Use the paginator/grouped totals (not just page 1) so each count reflects everything.
+        setStats({ applied: apps.total || 0, saved: saved.total || 0, interviews: sc.interview || 0 });
+        setStageCounts(sc);
         setRecentApps(allApps.slice(0, 3));
         setRecs(jobs.data || []);
         setSavedIds((saved.data || []).map(function(j){ return j.id; }));
@@ -279,10 +317,25 @@
     return (
       <div className="krm-page-pad" style={{ padding: 28, display: "flex", flexDirection: "column", gap: 24 }}>
         <div className="krm-stats-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16 }}>
-          <StatCard label="Applied jobs" value={String(stats.applied)} tone="brand" icon={I("send", 22)} />
-          <StatCard label="Saved jobs" value={String(stats.saved)} tone="accent" icon={I("bookmark", 22)} />
-          <StatCard label="Interviews" value={String(stats.interviews)} tone="success" icon={I("calendar-check", 22)} />
+          <StatLink onClick={function(){ onOpenApplications(); }} title="View my applications">
+            <StatCard label="Applied jobs" value={String(stats.applied)} tone="brand" icon={I("send", 22)} />
+          </StatLink>
+          <StatLink onClick={function(){ onNav("saved"); }} title="View saved jobs">
+            <StatCard label="Saved jobs" value={String(stats.saved)} tone="accent" icon={I("bookmark", 22)} />
+          </StatLink>
+          <StatLink onClick={function(){ onOpenApplications("interview"); }} title="View interviews">
+            <StatCard label="Interviews" value={String(stats.interviews)} tone="success" icon={I("calendar-check", 22)} />
+          </StatLink>
         </div>
+
+        <Card>
+          <div style={{ fontWeight: 700, fontSize: "var(--text-base)", color: "var(--text-strong)", marginBottom: 16 }}>Application pipeline</div>
+          <div className="krm-pipeline" style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 10 }}>
+            {PIPELINE.map(function (s) {
+              return <PipelineTile key={s.key} count={stageCounts[s.key] || 0} label={s.label} onClick={function(){ onOpenApplications(s.key); }} />;
+            })}
+          </div>
+        </Card>
 
         <Card padding={0}>
           <div style={{ padding: "18px 22px", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -301,7 +354,7 @@
                     <div style={{ fontWeight: 700, color: "var(--text-strong)" }}>{job.title}</div>
                     <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>{company.name}</div>
                   </div>
-                  <div style={{ flex: 1, maxWidth: 380 }}>
+                  <div className="krm-tracker" style={{ flex: 1, maxWidth: 380 }}>
                     <ProgressTracker current={stageIndex(a.stage)} steps={PIPELINE_STEPS} />
                   </div>
                   <span style={{ marginLeft: "auto", fontSize: "var(--text-sm)", color: "var(--text-faint)" }}>{fmtDate(a.created_at)}</span>
@@ -329,12 +382,12 @@
   }
 
   // ── Applications ───────────────────────────────────────────────────────────
-  function Applications({ onBadgeChange, onGoToMessages }) {
-    var [tab, setTab] = React.useState("all");
+  function Applications({ onBadgeChange, onGoToMessages, initialTab }) {
+    var [tab, setTab] = React.useState(initialTab || "all");
     var [apps, setApps] = React.useState([]);
     var [meta, setMeta] = React.useState({ total: 0, last_page: 1, current_page: 1 });
     var [loading, setLoading] = React.useState(true);
-    var [counts, setCounts] = React.useState({ all: 0, active: 0, interview: 0, closed: 0 });
+    var [counts, setCounts] = React.useState({ all: 0, applied: 0, reviewed: 0, shortlisted: 0, interview: 0, offered: 0, rejected: 0 });
     var [msgModal, setMsgModal] = React.useState(null);
     var [msgBody, setMsgBody] = React.useState("");
     var [msgSending, setMsgSending] = React.useState(false);
@@ -359,17 +412,12 @@
     }
 
     React.useEffect(function() {
-      // Fetch counts for all tabs
-      Promise.all([
-        cand.fetchApplications("", 1),
-        cand.fetchApplications("interview", 1),
-      ]).then(function(results) {
-        var all = results[0].total || 0;
-        var interviews = results[1].total || 0;
-        setCounts({ all: all, active: all, interview: interviews, closed: 0 });
-        if (onBadgeChange) onBadgeChange(all);
+      // One grouped query gives the count for every stage tab.
+      cand.fetchApplicationStageCounts().then(function(sc) {
+        setCounts({ all: sc.total || 0, applied: sc.applied || 0, reviewed: sc.reviewed || 0, shortlisted: sc.shortlisted || 0, interview: sc.interview || 0, offered: sc.offered || 0, rejected: sc.rejected || 0 });
+        if (onBadgeChange) onBadgeChange(sc.total || 0);
       }).catch(function(){});
-      load("all", 1);
+      load(initialTab || "all", 1);
     }, []);
 
     function changeTab(t) {
@@ -384,15 +432,16 @@
       }).catch(function(err){ alert(err.message || "Failed to withdraw."); });
     }
 
-    var tabList = [
-      { value: "all",       label: "All",       count: counts.all },
-      { value: "interview", label: "Interview",  count: counts.interview },
-    ];
+    var tabList = [{ value: "all", label: "All", count: counts.all }];
+    PIPELINE.forEach(function (s) { tabList.push({ value: s.key, label: s.label, count: counts[s.key] || 0 }); });
+    if (counts.rejected > 0) tabList.push({ value: "rejected", label: "Rejected", count: counts.rejected });
 
     return (
       <div className="krm-page-pad" style={{ padding: 28 }}>
         <ScreenHead title="My applications" sub={counts.all + " total applications"} />
-        <Tabs value={tab} onChange={changeTab} tabs={tabList} style={{ marginBottom: 20 }} />
+        <div className="krm-tabs-scroll" style={{ marginBottom: 20 }}>
+          <Tabs value={tab} onChange={changeTab} tabs={tabList} />
+        </div>
         {loading
           ? <div style={{ color: "var(--text-muted)", fontSize: "var(--text-sm)" }}>Loading…</div>
           : apps.length === 0
@@ -414,7 +463,7 @@
                         {rejected && <Badge tone="danger" style={{ marginTop: 4 }}>Rejected</Badge>}
                       </div>
                       {!rejected
-                        ? <div style={{ flex: 1, maxWidth: 420 }}><ProgressTracker current={stageIndex(a.stage)} steps={PIPELINE_STEPS} /></div>
+                        ? <div className="krm-tracker" style={{ flex: 1, maxWidth: 420 }}><ProgressTracker current={stageIndex(a.stage)} steps={PIPELINE_STEPS} /></div>
                         : <div style={{ flex: 1 }} />
                       }
                       <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
@@ -1427,6 +1476,11 @@
     var [authLoading, setAuthLoading] = React.useState(true);
     var [badges, setBadges] = React.useState({ applications: 0, saved: 0, messages: 0 });
     var [sidebarOpen, setSidebarOpen] = React.useState(false);
+    // Which tab the Applications page opens on (set by the dashboard "Interviews" stat).
+    var [appsInitialTab, setAppsInitialTab] = React.useState("all");
+    // Normal navigation resets the applications tab to "all"; the Interviews stat deep-links.
+    function navTo(p) { setAppsInitialTab("all"); setPage(p); }
+    function goApplications(t) { setAppsInitialTab(t || "all"); setPage("applications"); }
 
     React.useEffect(function() {
       if (!cand.token()) { setAuthLoading(false); return; }
@@ -1478,12 +1532,12 @@
     return (
       <div style={{ display: "flex", minHeight: "100vh", background: "var(--surface-page)" }}>
         {sidebarOpen && <div className="krm-sidebar-backdrop open" onClick={function(){ setSidebarOpen(false); }} />}
-        <Sidebar page={page} onNav={setPage} user={authUser} badges={badges} open={sidebarOpen} onClose={function(){ setSidebarOpen(false); }} onLogout={handleLogout} />
+        <Sidebar page={page} onNav={navTo} user={authUser} badges={badges} open={sidebarOpen} onClose={function(){ setSidebarOpen(false); }} onLogout={handleLogout} />
         <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
-          <Topbar title={titles[page]} user={authUser} onLogout={handleLogout} onMenu={function(){ setSidebarOpen(function(o){ return !o; }); }} onNav={setPage} />
+          <Topbar title={titles[page]} user={authUser} onLogout={handleLogout} onMenu={function(){ setSidebarOpen(function(o){ return !o; }); }} onNav={navTo} />
           <div style={{ flex: 1, overflowY: "auto" }}>
-            {page === "dashboard"    && <Overview user={authUser} onNav={setPage} />}
-            {page === "applications" && <Applications onBadgeChange={function(n){ setBadges(function(b){ return Object.assign({}, b, { applications: n }); }); }} onGoToMessages={function(){ setPage("messages"); }} />}
+            {page === "dashboard"    && <Overview user={authUser} onNav={navTo} onOpenApplications={goApplications} />}
+            {page === "applications" && <Applications initialTab={appsInitialTab} onBadgeChange={function(n){ setBadges(function(b){ return Object.assign({}, b, { applications: n }); }); }} onGoToMessages={function(){ setPage("messages"); }} />}
             {page === "saved"        && <SavedJobs onBadgeChange={function(n){ setBadges(function(b){ return Object.assign({}, b, { saved: n }); }); }} />}
             {page === "recommended"  && <Recommended />}
             {page === "following"    && <Following />}

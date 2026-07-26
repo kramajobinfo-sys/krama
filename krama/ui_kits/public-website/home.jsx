@@ -275,12 +275,7 @@
         <div style={{ position: "absolute", inset: 0, zIndex: 3, display: "flex", flexDirection: "column", justifyContent: "center", padding: "24px 16px" }}>
         <div style={{ maxWidth: 1200, width: "100%", margin: "0 auto", textAlign: "center" }}>
           {showTitle && <React.Fragment>
-          {slide.badge && (
-            <span style={{ display: "inline-block", background: t.fg === "#fff" ? "rgba(255,255,255,0.14)" : "rgba(0,0,0,0.08)", color: t.fg, fontSize: "var(--text-sm)", fontWeight: 600, padding: "6px 14px", borderRadius: "var(--radius-pill)", marginBottom: 22 }}>
-              {TR(slide.badge)}
-            </span>
-          )}
-          <h1 style={{ color: t.fg, fontSize: "var(--text-6xl)", fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1.05, textShadow: "0 2px 14px rgba(0,0,0,0.28)" }}>
+          <h1 style={{ color: t.fg, fontSize: slide.titleSize || "var(--text-6xl)", fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1.05, textShadow: "0 2px 14px rgba(0,0,0,0.28)" }}>
             {TR(slide.title)}
           </h1>
           {slide.subtitle && (

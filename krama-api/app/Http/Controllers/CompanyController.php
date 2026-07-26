@@ -128,6 +128,7 @@ class CompanyController extends Controller
             'social_links'      => 'nullable|array',
             'cover_banner_url'  => 'nullable|string|max:255',
             'company_size'      => 'nullable|in:1-10,11-50,51-200,201-500,500+',
+            'telegram_chat_id'  => 'nullable|string|max:64',
             'culture_values'    => 'nullable|string|max:5000',
             'benefits_tags'     => 'nullable|array',
             'benefits_tags.*'   => 'string|max:50',

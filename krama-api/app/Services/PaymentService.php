@@ -53,6 +53,17 @@ class PaymentService
             }
         });
 
+        // Generate + deliver the invoice (email PDF + Telegram) after the response is
+        // sent, so payment confirmation is never blocked or failed by mail/telegram.
+        $paid = $payment->fresh();
+        app()->terminating(function () use ($paid) {
+            try {
+                InvoiceService::deliver($paid);
+            } catch (\Throwable $e) {
+                Log::warning('Invoice delivery failed for payment ' . $paid->id . ': ' . $e->getMessage());
+            }
+        });
+
         return true;
     }
 

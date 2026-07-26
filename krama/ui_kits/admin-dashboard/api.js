@@ -196,6 +196,8 @@
     approveJob: function (id) { return req("PATCH", "/jobs/" + id + "/approve"); },
     rejectJob: function (id, reason) { return req("PATCH", "/jobs/" + id + "/reject", { reason: reason }); },
     toggleJobFeatured: function (id) { return req("PATCH", "/admin/jobs/" + id + "/feature"); },
+    // Post a job on behalf of an employer (publishes immediately for the chosen company).
+    adminCreateJob: function (data) { return req("POST", "/admin/jobs", data); },
 
     // Experience levels
     fetchExperienceLevels: function () { return req("GET", "/admin/experience-levels"); },

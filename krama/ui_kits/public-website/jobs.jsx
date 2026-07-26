@@ -416,21 +416,24 @@
         {alertModalOpen && <JobAlertModal onClose={() => setAlertModalOpen(false)} initialKeyword={keyword} initialLocation={location} />}
         <AnnouncementBar b={fjTopBanner} onNav={onNav} onCtaClick={openAlertModal} />
         {/* top banner */}
-        {(() => { const h = loadBanner("findJobsHero", FJ_HERO_DEFAULT); return (
-        <div className={"krm-page-hero" + (h.hideText ? " krm-page-hero--img" : "")} style={{ position: "relative", background: "var(--teal-800)", overflow: "hidden", padding: h.hideText ? 0 : "44px 32px", aspectRatio: h.hideText ? "1600 / 360" : undefined, maxHeight: h.hideText ? 360 : undefined }}>
-          {h.image
-            ? <React.Fragment>
-                <img className="krm-page-hero-bg" src={h.image} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: h.fit === "contain" ? "contain" : "cover", display: "block" }} />
-                <div className="krm-page-hero-tint" style={{ position: "absolute", inset: 0, background: "var(--teal-800)", opacity: (h.imgOverlay != null ? h.imgOverlay : 60) / 100 }} />
-              </React.Fragment>
+        {(() => { const h = loadBanner("findJobsHero", FJ_HERO_DEFAULT); const hasImg = !!h.image; const showTxt = !h.hideText;
+          const txt = (
+            <div style={{ maxWidth: 1200, margin: "0 auto", width: "100%", padding: hasImg ? "0 32px" : 0 }}>
+              <div style={{ fontSize: "var(--text-xs)", fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--teal-200)" }}>{TR("Find jobs")}</div>
+              <h1 style={{ color: "#fff", fontSize: "var(--text-4xl)", fontWeight: 800, letterSpacing: "-0.02em", marginTop: 6 }}>{TR(h.heading)}</h1>
+              <p style={{ color: "var(--stone-300)", fontSize: "var(--text-lg)", marginTop: 8 }}>{TR(h.sub)}</p>
+            </div>
+          );
+          return (
+        /* Background image renders identically whether or not text is shown — unticking just overlays the heading/subtitle */
+        <div className={"krm-page-hero" + (hasImg ? " krm-page-hero--img" : "")} style={{ position: "relative", background: "var(--teal-800)", overflow: "hidden", padding: hasImg ? 0 : "44px 32px", aspectRatio: hasImg ? "1600 / 360" : undefined, maxHeight: hasImg ? 360 : undefined }}>
+          {hasImg
+            ? <img className="krm-page-hero-bg" src={h.image} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: h.fit === "contain" ? "contain" : "cover", display: "block" }} />
             : <div style={{ position: "absolute", inset: 0, background: "url('../../assets/krama-pattern.svg')", backgroundSize: 72, opacity: 0.08 }} />}
-          {!h.hideText && (
-          <div style={{ position: "relative", maxWidth: 1200, margin: "0 auto" }}>
-            <div style={{ fontSize: "var(--text-xs)", fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--teal-200)" }}>{TR("Find jobs")}</div>
-            <h1 style={{ color: "#fff", fontSize: "var(--text-4xl)", fontWeight: 800, letterSpacing: "-0.02em", marginTop: 6 }}>{TR(h.heading)}</h1>
-            <p style={{ color: "var(--stone-300)", fontSize: "var(--text-lg)", marginTop: 8 }}>{TR(h.sub)}</p>
-          </div>
-          )}
+          {showTxt && hasImg && <div style={{ position: "absolute", inset: 0, background: "var(--teal-800)", opacity: (h.imgOverlay != null ? h.imgOverlay : 45) / 100 }} />}
+          {showTxt && (hasImg
+            ? <div className="krm-page-hero-txt" style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center" }}>{txt}</div>
+            : <div style={{ position: "relative" }}>{txt}</div>)}
         </div>
         ); })()}
         {/* search bar strip */}
@@ -626,21 +629,23 @@
       <div style={{ background: "var(--surface-page)", minHeight: "70vh" }}>
         <AnnouncementBar b={loadBanner("companiesTopBanner", CO_TOP_DEFAULT)} onNav={onNav} />
         {/* header strip */}
-        {(() => { const h = loadBanner("companiesHero", CO_HERO_DEFAULT); return (
-        <div className={"krm-page-hero" + (h.hideText ? " krm-page-hero--img" : "")} style={{ position: "relative", background: "var(--teal-800)", overflow: "hidden", padding: h.hideText ? 0 : "44px 32px", aspectRatio: h.hideText ? "1600 / 360" : undefined, maxHeight: h.hideText ? 360 : undefined }}>
-          {h.image
-            ? <React.Fragment>
-                <img className="krm-page-hero-bg" src={h.image} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: h.fit === "contain" ? "contain" : "cover", display: "block" }} />
-                <div className="krm-page-hero-tint" style={{ position: "absolute", inset: 0, background: "var(--teal-800)", opacity: (h.imgOverlay != null ? h.imgOverlay : 60) / 100 }} />
-              </React.Fragment>
+        {(() => { const h = loadBanner("companiesHero", CO_HERO_DEFAULT); const hasImg = !!h.image; const showTxt = !h.hideText;
+          const txt = (
+            <div style={{ maxWidth: 1200, margin: "0 auto", width: "100%", padding: hasImg ? "0 32px" : 0 }}>
+              <div style={{ fontSize: "var(--text-xs)", fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--teal-200)" }}>{TR("Companies")}</div>
+              <h1 style={{ color: "#fff", fontSize: "var(--text-4xl)", fontWeight: 800, letterSpacing: "-0.02em", marginTop: 6 }}>{TR(h.heading)}</h1>
+              <p style={{ color: "var(--stone-300)", fontSize: "var(--text-lg)", marginTop: 8 }}>{TR(h.sub).replace("{count}", D.companies.length)}</p>
+            </div>
+          );
+          return (
+        <div className={"krm-page-hero" + (hasImg ? " krm-page-hero--img" : "")} style={{ position: "relative", background: "var(--teal-800)", overflow: "hidden", padding: hasImg ? 0 : "44px 32px", aspectRatio: hasImg ? "1600 / 360" : undefined, maxHeight: hasImg ? 360 : undefined }}>
+          {hasImg
+            ? <img className="krm-page-hero-bg" src={h.image} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: h.fit === "contain" ? "contain" : "cover", display: "block" }} />
             : <div style={{ position: "absolute", inset: 0, background: "url('../../assets/krama-pattern.svg')", backgroundSize: 72, opacity: 0.08 }} />}
-          {!h.hideText && (
-          <div style={{ position: "relative", maxWidth: 1200, margin: "0 auto" }}>
-            <div style={{ fontSize: "var(--text-xs)", fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--teal-200)" }}>{TR("Companies")}</div>
-            <h1 style={{ color: "#fff", fontSize: "var(--text-4xl)", fontWeight: 800, letterSpacing: "-0.02em", marginTop: 6 }}>{TR(h.heading)}</h1>
-            <p style={{ color: "var(--stone-300)", fontSize: "var(--text-lg)", marginTop: 8 }}>{TR(h.sub).replace("{count}", D.companies.length)}</p>
-          </div>
-          )}
+          {showTxt && hasImg && <div style={{ position: "absolute", inset: 0, background: "var(--teal-800)", opacity: (h.imgOverlay != null ? h.imgOverlay : 45) / 100 }} />}
+          {showTxt && (hasImg
+            ? <div className="krm-page-hero-txt" style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center" }}>{txt}</div>
+            : <div style={{ position: "relative" }}>{txt}</div>)}
         </div>
         ); })()}
 

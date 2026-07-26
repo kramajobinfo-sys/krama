@@ -472,6 +472,7 @@
     const [cats, setCats] = React.useState([]);
     const [locs, setLocs] = React.useState([]);
     const [expLevels, setExpLevels] = React.useState([]);
+    const [newCat, setNewCat] = React.useState("");
     const [error, setError] = React.useState("");
     const [saving, setSaving] = React.useState(false);
     const [resetKey, setResetKey] = React.useState(0);
@@ -509,7 +510,8 @@
         title: form.title.trim(),
         job_type: form.job_type,
         experience_level: form.experience_level || null,
-        category_id: form.category_id || null,
+        category_id: (form.category_id && form.category_id !== "__new__") ? form.category_id : null,
+        category_name: form.category_id === "__new__" ? newCat.trim() : "",
         location_id: form.location_id || null,
         salary_min: form.salary_min ? Number(form.salary_min) : null,
         salary_max: form.salary_max ? Number(form.salary_max) : null,
@@ -566,10 +568,16 @@
             </div>
             <div className="krm-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
               <Select label="Category" value={form.category_id} onChange={(e) => set("category_id", e.target.value)}
-                options={[{ value: "", label: "— Select —" }].concat(cats.map((c) => ({ value: String(c.id), label: c.name })))} />
+                options={[{ value: "", label: "— Select —" }].concat(cats.map((c) => ({ value: String(c.id), label: c.name }))).concat([{ value: "__new__", label: "+ Add a new category…" }])} />
               <Select label="Location" value={form.location_id} onChange={(e) => set("location_id", e.target.value)}
                 options={[{ value: "", label: "— Select —" }].concat(locs.map((l) => ({ value: String(l.id), label: l.name })))} />
             </div>
+            {form.category_id === "__new__" && (
+              <div>
+                <Input label="New category name" value={newCat} onChange={(e) => setNewCat(e.target.value)} placeholder="e.g. Renewable Energy" />
+                <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: 6, display: "flex", alignItems: "center", gap: 5 }}>{I("info", 12)} Added to your job now; it appears in public category filters once an admin approves it.</div>
+              </div>
+            )}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 12 }}>
               <Input label="Salary min" type="number" value={form.salary_min} onChange={(e) => set("salary_min", e.target.value)} placeholder="800" />
               <Input label="Salary max" type="number" value={form.salary_max} onChange={(e) => set("salary_max", e.target.value)} placeholder="1500" />
@@ -2329,8 +2337,8 @@
         </div>
         <div className="krm-table-wrap"><Card padding={0}>
           <div style={{ padding: "16px 22px", borderBottom: "1px solid var(--border)", fontWeight: 700, color: "var(--text-strong)" }}>Billing history</div>
-          <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 0.8fr 1fr 0.8fr", padding: "10px 22px", fontSize: "var(--text-xs)", fontWeight: 700, letterSpacing: ".04em", textTransform: "uppercase", color: "var(--text-faint)", borderBottom: "1px solid var(--border-subtle)" }}>
-            <span>Invoice</span><span>Date</span><span>Amount</span><span>Method</span><span>Status</span>
+          <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 0.8fr 1fr 0.8fr 44px", padding: "10px 22px", fontSize: "var(--text-xs)", fontWeight: 700, letterSpacing: ".04em", textTransform: "uppercase", color: "var(--text-faint)", borderBottom: "1px solid var(--border-subtle)" }}>
+            <span>Invoice</span><span>Date</span><span>Amount</span><span>Method</span><span>Status</span><span></span>
           </div>
           {invSlice.length === 0 && <div style={{ padding: "24px 22px", color: "var(--text-muted)", fontSize: "var(--text-sm)", textAlign: "center" }}>No payments yet.</div>}
           {invSlice.map((inv, i) => (

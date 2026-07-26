@@ -33,15 +33,57 @@
     });
   }
 
+  // Exchange the stored refresh token for a fresh access token (rotating). Rejects and
+  // clears the session if there's no refresh token or the refresh is rejected.
+  var _refreshing = null;
+  function refreshAccess() {
+    if (_refreshing) return _refreshing;
+    var rt = localStorage.getItem(LS_REFRESH);
+    if (!rt) return Promise.reject(new Error("Session expired"));
+    _refreshing = fetch(BASE + "/auth/refresh", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refresh_token: rt }),
+    }).then(function (r) {
+      return r.json().then(function (d) {
+        _refreshing = null;
+        if (!r.ok) { clearTokens(); return Promise.reject(new Error("Session expired")); }
+        setTokens(d.access_token, d.refresh_token);
+        return d.access_token;
+      });
+    }).catch(function (e) { _refreshing = null; return Promise.reject(e); });
+    return _refreshing;
+  }
+
+  // Authenticated fetch: attaches the current token and, on a 401 when a refresh token is
+  // available, refreshes once and replays the request so sessions don't drop at the TTL.
+  function authedFetch(method, path, body, _retried) {
+    var headers = { "Content-Type": "application/json" };
+    var tok = getToken();
+    if (tok) headers["Authorization"] = "Bearer " + tok;
+    return fetch(BASE + path, {
+      method: method,
+      headers: headers,
+      body: body ? JSON.stringify(body) : undefined,
+      cache: "no-cache",
+    }).then(function (r) {
+      if (r.status === 401 && !_retried && localStorage.getItem(LS_REFRESH)) {
+        return refreshAccess().then(function () { return authedFetch(method, path, body, true); });
+      }
+      if (!r.ok) return r.json().then(function (e) { throw e; });
+      return r.json();
+    });
+  }
+
   function get(path)         { return apiFetch("GET",    path); }
-  function authedGet(path)   { return apiFetch("GET",    path, null, getToken()); }
+  function authedGet(path)   { return authedFetch("GET",    path); }
   function post(path, body)  { return apiFetch("POST",   path, body); }
-  function authedPost(path, body) { return apiFetch("POST", path, body, getToken()); }
-  function authedPut(path, body)  { return apiFetch("PUT", path, body, getToken()); }
-  function authedDelete(path)     { return apiFetch("DELETE", path, null, getToken()); }
+  function authedPost(path, body) { return authedFetch("POST", path, body); }
+  function authedPut(path, body)  { return authedFetch("PUT", path, body); }
+  function authedDelete(path)     { return authedFetch("DELETE", path, null); }
   // GET that attaches the token when present (guests still allowed) — lets public
   // reads reflect the current user's vote/subscribe state.
-  function maybeAuthedGet(path)   { return apiFetch("GET", path, null, getToken()); }
+  function maybeAuthedGet(path)   { return authedFetch("GET", path); }
 
   function qs(params) {
     var parts = [];

@@ -194,6 +194,25 @@
       });
     },
 
+    downloadInvoice: function (paymentId) {
+      var token = getToken();
+      return fetch(BASE + "/employer/payments/" + paymentId + "/invoice", {
+        headers: { Authorization: "Bearer " + token },
+      }).then(function (r) {
+        if (!r.ok) return Promise.reject(new Error("Invoice download failed (" + r.status + ")"));
+        var cd = r.headers.get("Content-Disposition");
+        var fname = "Krama-Invoice.pdf";
+        if (cd) { var m = cd.match(/filename="?([^"]+)"?/); if (m) fname = m[1]; }
+        return r.blob().then(function (blob) {
+          var url = URL.createObjectURL(blob);
+          var a = document.createElement("a");
+          a.href = url; a.download = fname;
+          document.body.appendChild(a); a.click(); document.body.removeChild(a);
+          setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+        });
+      });
+    },
+
     // Plans + billing
     fetchPlans: function () { return req("GET", "/plans"); },
     fetchSubscription: function () { return req("GET", "/employer/subscription"); },

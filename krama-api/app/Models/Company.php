@@ -12,6 +12,7 @@ class Company extends Model
         'user_id', 'name', 'registration_no', 'industry', 'website',
         'address', 'location_id', 'logo_url', 'description', 'about_image_url', 'social_links',
         'cover_banner_url', 'company_size', 'culture_values', 'benefits_tags',
+        'telegram_chat_id',
     ];
 
     protected $casts = [

@@ -116,6 +116,7 @@ Route::middleware('auth:api')->group(function () {
     Route::post('employer/payments/{id}/khqr',           [PaymentController::class, 'generateKhqr'])->middleware('throttle:20,1');
     Route::post('employer/payments/{id}/stripe-checkout',[PaymentController::class, 'stripeCheckout'])->middleware('throttle:20,1');
     Route::get('employer/payments/{id}/verify',          [PaymentController::class, 'verifyPayment'])->middleware('throttle:60,1');
+    Route::get('employer/payments/{id}/invoice',         [PaymentController::class, 'invoice'])->middleware('throttle:60,1');
 
     // Employer: Telegram alerts (deep-link connect flow for new-application alerts)
     Route::post('employer/telegram/link',   [\App\Http\Controllers\TelegramController::class, 'link'])->middleware('throttle:20,1');
@@ -127,6 +128,7 @@ Route::middleware('auth:api')->group(function () {
     Route::post('jobs/{id}/apply',              [ApplicationController::class, 'apply'])->middleware('throttle:20,1');
     Route::get('jobs/{id}/applied',             [ApplicationController::class, 'checkApplied']);
     Route::delete('applications/{id}',          [ApplicationController::class, 'withdraw']);
+    Route::get('candidate/applications/stage-counts', [ApplicationController::class, 'myApplicationStageCounts']);
     Route::get('candidate/applications',        [ApplicationController::class, 'myApplications']);
     Route::post('jobs/{id}/save',               [ApplicationController::class, 'save']);
     Route::delete('jobs/{id}/save',             [ApplicationController::class, 'unsave']);
@@ -330,6 +332,7 @@ Route::middleware(['auth:api', 'permission:site_settings'])->group(function () {
 
     // Admin: job moderation
     Route::get('admin/jobs',                 [JobController::class, 'adminIndex']);
+    Route::post('admin/jobs',                [JobController::class, 'adminStore']);
     Route::patch('jobs/{id}/approve',        [JobController::class, 'approve']);
     Route::patch('jobs/{id}/reject',         [JobController::class, 'reject']);
     Route::patch('admin/jobs/{id}/feature',  [JobController::class, 'toggleFeatured']);

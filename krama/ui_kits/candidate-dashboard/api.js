@@ -2,16 +2,44 @@ var cand = (function () {
   // On localhost (XAMPP) the Laravel API lives under /krama/krama-api/public; on hosting the web root IS the API, so /api.
   var BASE = /^(localhost|127\.0\.0\.1|::1|192\.168\.|10\.)/.test(window.location.hostname) ? "http://127.0.0.1:8000/api" : (window.location.protocol + "//" + window.location.host + "/api");
   var TOKEN_KEY = "krama_access_token";
+  var REFRESH_KEY = "krama_refresh_token";   // shared with the public site so a session carries across both
+  var _refreshing = null;
 
   function token() { return localStorage.getItem(TOKEN_KEY) || ""; }
 
-  function req(method, path, body) {
+  // Exchange the refresh token for a fresh access token (rotating). Rejects (and clears the
+  // session) when there's no refresh token or the refresh is rejected.
+  function refreshToken() {
+    if (_refreshing) return _refreshing;
+    var rt = localStorage.getItem(REFRESH_KEY);
+    if (!rt) return Promise.reject(new Error("Session expired"));
+    _refreshing = fetch(BASE + "/auth/refresh", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refresh_token: rt }),
+    }).then(function (r) {
+      return r.json().then(function (d) {
+        _refreshing = null;
+        if (!r.ok) { localStorage.removeItem(TOKEN_KEY); localStorage.removeItem(REFRESH_KEY); return Promise.reject(new Error("Session expired")); }
+        localStorage.setItem(TOKEN_KEY, d.access_token);
+        if (d.refresh_token) localStorage.setItem(REFRESH_KEY, d.refresh_token);
+        return d.access_token;
+      });
+    }).catch(function (e) { _refreshing = null; return Promise.reject(e); });
+    return _refreshing;
+  }
+
+  function req(method, path, body, _retried) {
     var opts = {
       method: method,
       headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token() },
     };
     if (body !== undefined) opts.body = JSON.stringify(body);
     return fetch(BASE + path, opts).then(function (r) {
+      // Access token expired → refresh once and replay the request.
+      if (r.status === 401 && !_retried) {
+        return refreshToken().then(function () { return req(method, path, body, true); });
+      }
       if (r.status === 204) return null;
       return r.json().then(function (d) {
         if (!r.ok) throw new Error(d.message || ("HTTP " + r.status));
@@ -28,13 +56,17 @@ var cand = (function () {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email, password: password }),
       }).then(function (r) { return r.json(); }).then(function (d) {
-        if (d.access_token) { localStorage.setItem(TOKEN_KEY, d.access_token); }
+        if (d.access_token) {
+          localStorage.setItem(TOKEN_KEY, d.access_token);
+          if (d.refresh_token) localStorage.setItem(REFRESH_KEY, d.refresh_token);
+        }
         return d;
       });
     },
     logout: function () {
       return req("POST", "/auth/logout").finally(function () {
         localStorage.removeItem(TOKEN_KEY);
+        localStorage.removeItem(REFRESH_KEY);
       });
     },
 
@@ -78,6 +110,9 @@ var cand = (function () {
       var qs = "?per_page=10&page=" + (page || 1);
       if (stage && stage !== "all") qs += "&stage=" + stage;
       return req("GET", "/candidate/applications" + qs);
+    },
+    fetchApplicationStageCounts: function () {
+      return req("GET", "/candidate/applications/stage-counts");
     },
     withdrawApplication: function (id) { return req("DELETE", "/applications/" + id); },
 

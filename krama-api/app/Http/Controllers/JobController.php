@@ -141,7 +141,84 @@ class JobController extends Controller
         $data['status']     = 'draft';
         $data['user_id']    = $user->id;
 
+        // Optional brand-new category typed by the poster → find-or-create (pending admin approval).
+        $newCat = trim((string) $request->input('category_name', ''));
+        if ($newCat !== '' && empty($data['category_id'])) {
+            $data['category_id'] = $this->resolveOrCreateCategory(mb_substr($newCat, 0, 120));
+        }
+
         $job = Job::create($data);
+
+        return response()->json($job->load(['company:id,name', 'category:id,name', 'location:id,name']), 201);
+    }
+
+    // POST /api/admin/jobs — admin posts a job on behalf of an employer's company.
+    // Publishes immediately (admin override): bypasses the plan/quota gate, but still
+    // attaches the company's current active/trial plan when one exists.
+    public function adminStore(Request $request)
+    {
+        $this->requirePermission('approve_jobs');
+
+        $data = $request->validate([
+            'company_id'       => 'required|exists:companies,id',
+            'title'            => 'required|string|max:190',
+            'category_id'      => 'nullable|exists:categories,id',
+            'location_id'      => 'nullable|exists:locations,id',
+            'job_type'         => 'required|in:full_time,part_time,contract,internship,temporary',
+            'experience_level' => 'nullable|in:entry,junior,mid,senior,lead,executive,manager',
+            'salary_min'       => 'nullable|numeric|min:0',
+            'salary_max'       => 'nullable|numeric|min:0',
+            'salary_currency'  => 'nullable|string|max:8',
+            'salary_period'    => 'nullable|in:hour,day,month,year',
+            'is_remote'        => 'boolean',
+            'working_days'     => 'nullable|string|max:80',
+            'working_time'     => 'nullable|string|max:80',
+            'map_location'     => 'nullable|string|max:500',
+            'share_social'     => 'boolean',
+            'social_image'     => 'nullable|string|max:500',
+            'description'      => 'nullable|string|max:20000',
+            'requirements'     => 'nullable|string|max:10000',
+            'benefits'         => 'nullable|string|max:5000',
+            'expires_at'       => 'nullable|date|after:today',
+        ]);
+
+        $company = Company::findOrFail($data['company_id']);
+
+        // Sanitize rich-text fields (rendered raw on the public job page).
+        foreach (['description', 'requirements', 'benefits'] as $field) {
+            if (array_key_exists($field, $data)) {
+                $data[$field] = HtmlSanitizer::clean($data[$field]);
+            }
+        }
+
+        // Admin override: publish now regardless of subscription/quota, but attach the
+        // company's current active/trial plan if there is one (keeps reporting consistent).
+        $sub = Subscription::where('company_id', $company->id)
+            ->whereIn('status', ['active', 'trial'])
+            ->where(function ($q) { $q->whereNull('renews_at')->orWhere('renews_at', '>', now()); })
+            ->orderByDesc('renews_at')
+            ->first();
+
+        $data['company_id']      = $company->id;
+        $data['user_id']         = $company->user_id ?: $request->user()->id; // attribute to the company owner
+        $data['slug']            = Job::generateSlug($data['title']);
+        $data['status']          = 'published';
+        $data['published_at']    = now();
+        $data['subscription_id'] = $sub ? $sub->id : null;
+
+        // Optional brand-new category typed by the admin → find-or-create (pending admin approval).
+        $newCat = trim((string) $request->input('category_name', ''));
+        if ($newCat !== '' && empty($data['category_id'])) {
+            $data['category_id'] = $this->resolveOrCreateCategory(mb_substr($newCat, 0, 120));
+        }
+
+        $job = Job::create($data);
+
+        $this->auditLog('job.admin_posted', [
+            'job_id'     => $job->id,
+            'company_id' => $company->id,
+            'by_admin'   => $request->user()->id,
+        ]);
 
         return response()->json($job->load(['company:id,name', 'category:id,name', 'location:id,name']), 201);
     }
@@ -194,6 +271,12 @@ class JobController extends Controller
         if ($job->status === 'rejected') {
             $data['status'] = 'draft';
             $data['rejection_reason'] = null;
+        }
+
+        // Optional brand-new category typed by the poster → find-or-create (pending admin approval).
+        $newCat = trim((string) $request->input('category_name', ''));
+        if ($newCat !== '' && empty($data['category_id'])) {
+            $data['category_id'] = $this->resolveOrCreateCategory(mb_substr($newCat, 0, 120));
         }
 
         $job->update($data);
@@ -688,6 +771,27 @@ class JobController extends Controller
         }
 
         abort(422, 'No company profile found. Create a company first.');
+    }
+
+    // Find an existing category by (case-insensitive) name, or create a new one as
+    // 'inactive' — pending admin approval: it is assigned to the job right away but stays
+    // hidden from the public category list/filters until an admin activates it. Returns
+    // the category id (existing or new), or null for a blank name.
+    private function resolveOrCreateCategory(?string $name): ?int
+    {
+        $name = trim((string) $name);
+        if ($name === '') return null;
+
+        $existing = \App\Models\Category::whereRaw('LOWER(name) = ?', [mb_strtolower($name)])->first();
+        if ($existing) return $existing->id;
+
+        $base = \Illuminate\Support\Str::slug($name) ?: 'category';
+        $slug = $base;
+        $n = 1;
+        while (\App\Models\Category::where('slug', $slug)->exists()) { $slug = $base . '-' . (++$n); }
+
+        $cat = \App\Models\Category::create(['name' => $name, 'slug' => $slug, 'status' => 'inactive']);
+        return $cat->id;
     }
 
     // Legacy alias kept for callers that haven't been updated

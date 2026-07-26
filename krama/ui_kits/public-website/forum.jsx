@@ -504,21 +504,23 @@
       <React.Fragment>
         <AnnouncementBar b={loadBanner("communityTopBanner", COMMUNITY_TOP_DEFAULT)} onNav={onNav} onCtaClick={startNew} />
         {/* page hero — large 1600 × 480 banner, like the home Main Banner Slideshow (renders identically on both devices) */}
-        {(() => { const h = loadBanner("communityHero", COMMUNITY_HERO_DEFAULT); return (
-        <div className={"krm-page-hero" + (h.hideText ? " krm-page-hero--img" : "")} style={{ position: "relative", background: "var(--teal-800)", overflow: "hidden", padding: h.hideText ? 0 : "44px 32px", aspectRatio: h.hideText ? "1600 / 360" : undefined, maxHeight: h.hideText ? 360 : undefined }}>
-          {h.image
-            ? <React.Fragment>
-                <img className="krm-page-hero-bg" src={h.image} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: h.fit === "contain" ? "contain" : "cover", display: "block" }} />
-                <div className="krm-page-hero-tint" style={{ position: "absolute", inset: 0, background: "var(--teal-800)", opacity: (h.imgOverlay != null ? h.imgOverlay : 60) / 100 }} />
-              </React.Fragment>
+        {(() => { const h = loadBanner("communityHero", COMMUNITY_HERO_DEFAULT); const hasImg = !!h.image; const showTxt = !h.hideText;
+          const txt = (
+            <div style={{ maxWidth: 1200, margin: "0 auto", width: "100%", padding: hasImg ? "0 32px" : 0 }}>
+              <div style={{ fontSize: "var(--text-xs)", fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--teal-200)" }}>{TR("Community")}</div>
+              <h1 style={{ color: "#fff", fontSize: "var(--text-4xl)", fontWeight: 800, letterSpacing: "-0.02em", marginTop: 6 }}>{TR(h.heading)}</h1>
+              <p style={{ color: "var(--stone-300)", fontSize: "var(--text-lg)", marginTop: 8 }}>{TR(h.sub)}</p>
+            </div>
+          );
+          return (
+        <div className={"krm-page-hero" + (hasImg ? " krm-page-hero--img" : "")} style={{ position: "relative", background: "var(--teal-800)", overflow: "hidden", padding: hasImg ? 0 : "44px 32px", aspectRatio: hasImg ? "1600 / 360" : undefined, maxHeight: hasImg ? 360 : undefined }}>
+          {hasImg
+            ? <img className="krm-page-hero-bg" src={h.image} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: h.fit === "contain" ? "contain" : "cover", display: "block" }} />
             : <div style={{ position: "absolute", inset: 0, background: "url('../../assets/krama-pattern.svg')", backgroundSize: 72, opacity: 0.08 }} />}
-          {!h.hideText && (
-          <div style={{ position: "relative", maxWidth: 1200, margin: "0 auto" }}>
-            <div style={{ fontSize: "var(--text-xs)", fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--teal-200)" }}>{TR("Community")}</div>
-            <h1 style={{ color: "#fff", fontSize: "var(--text-4xl)", fontWeight: 800, letterSpacing: "-0.02em", marginTop: 6 }}>{TR(h.heading)}</h1>
-            <p style={{ color: "var(--stone-300)", fontSize: "var(--text-lg)", marginTop: 8 }}>{TR(h.sub)}</p>
-          </div>
-          )}
+          {showTxt && hasImg && <div style={{ position: "absolute", inset: 0, background: "var(--teal-800)", opacity: (h.imgOverlay != null ? h.imgOverlay : 45) / 100 }} />}
+          {showTxt && (hasImg
+            ? <div className="krm-page-hero-txt" style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center" }}>{txt}</div>
+            : <div style={{ position: "relative" }}>{txt}</div>)}
         </div>
         ); })()}
         <div style={{ maxWidth: 1000, margin: "0 auto", padding: "28px 16px 64px" }}>

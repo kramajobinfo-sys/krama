@@ -24,6 +24,11 @@ class TelegramService
         return (string) (self::config()['bot_token'] ?? '');
     }
 
+    public static function adminChatId(): string
+    {
+        return (string) (self::config()['chat_id'] ?? '');
+    }
+
     public static function isEnabled(): bool
     {
         $c = self::config();
@@ -81,6 +86,48 @@ class TelegramService
             return ['ok' => false, 'error' => $resp->json('description') ?: ('HTTP ' . $resp->status())];
         } catch (\Throwable $e) {
             return ['ok' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    // Send a document (file bytes) with an optional HTML caption to a chat.
+    // $contents = raw file bytes; $filename = e.g. "Krama-Invoice-INV-2026-0001.pdf".
+    public static function sendDocument(string $token, string $chatId, string $contents, string $filename, string $caption = ''): array
+    {
+        try {
+            $resp = Http::timeout(30)
+                ->attach('document', $contents, $filename)
+                ->post('https://api.telegram.org/bot' . $token . '/sendDocument', [
+                    'chat_id'    => $chatId,
+                    'caption'    => $caption,
+                    'parse_mode' => 'HTML',
+                ]);
+
+            if ($resp->successful() && $resp->json('ok') === true) {
+                return ['ok' => true, 'error' => null];
+            }
+            return ['ok' => false, 'error' => $resp->json('description') ?: ('HTTP ' . $resp->status())];
+        } catch (\Throwable $e) {
+            return ['ok' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    // Send a document to a specific chat via the shared (admin-configured) bot token.
+    // No-op (returns false) unless enabled + token set + chat id given; never throws.
+    public static function sendDocumentTo($chatId, string $contents, string $filename, string $caption = ''): bool
+    {
+        try {
+            $chatId = (string) $chatId;
+            if (! self::isEnabled() || self::botToken() === '' || $chatId === '') {
+                return false;
+            }
+            $res = self::sendDocument(self::botToken(), $chatId, $contents, $filename, $caption);
+            if (! $res['ok']) {
+                Log::warning('Telegram sendDocument failed: ' . $res['error']);
+            }
+            return $res['ok'];
+        } catch (\Throwable $e) {
+            Log::warning('Telegram sendDocument exception: ' . $e->getMessage());
+            return false;
         }
     }
 

@@ -178,6 +178,31 @@ class EmailTemplates
         return [$subject, self::wrapper('Community digest', $body)];
     }
 
+    // Invoice / payment receipt. The PDF is attached to the email separately.
+    public static function invoice(string $companyName, string $invoiceNo, string $description, string $amount, string $dateStr, string $method): array
+    {
+        $subject = 'Your Krama invoice ' . $invoiceNo;
+        $company = htmlspecialchars($companyName, ENT_QUOTES, 'UTF-8');
+        $desc    = htmlspecialchars($description, ENT_QUOTES, 'UTF-8');
+        $meth    = htmlspecialchars($method, ENT_QUOTES, 'UTF-8');
+        $row = function ($label, $value, $strong = false) {
+            $vw = $strong ? 'font-weight:700;color:#111827' : 'color:#111827';
+            return "<tr>
+                <td style='padding:8px 0;color:#6b7280;font-size:14px'>{$label}</td>
+                <td style='padding:8px 0;text-align:right;font-size:14px;{$vw}'>{$value}</td>
+              </tr>";
+        };
+        $body = "
+          <p style='margin:0 0 16px;color:#374151;font-size:14px;line-height:1.6'>Hi {$company}, thank you for your payment. Your invoice is confirmed and attached to this email as a PDF.</p>
+          <div style='display:inline-block;background:#ecfdf5;color:#047857;font-size:12px;font-weight:700;padding:4px 12px;border-radius:999px;margin-bottom:16px'>PAID</div>
+          <table style='width:100%;border-collapse:collapse;border-top:1px solid #e5e7eb'>
+            " . $row('Invoice', $invoiceNo) . $row('Description', $desc) . $row('Payment method', $meth) . $row('Date', $dateStr) . $row('Amount', $amount, true) . "
+          </table>
+          <p style='margin:20px 0 0;color:#6b7280;font-size:13px;line-height:1.6'>You can also download this invoice anytime from your Employer Dashboard under <strong>Plan &amp; billing</strong>.</p>
+        ";
+        return [$subject, self::wrapper('Invoice ' . $invoiceNo, $body)];
+    }
+
     private static function wrapper(string $heading, string $body): string
     {
         $fromName = config('mail.from.name', 'Krama');
