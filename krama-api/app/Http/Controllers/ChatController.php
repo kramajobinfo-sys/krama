@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Setting;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -30,6 +31,24 @@ class ChatController extends Controller
             return response()->json([
                 'reply' => "Thanks for your message! Our live assistant isn't available right now — please browse Find jobs, or contact us and a Krama specialist will follow up.",
                 'configured' => false,
+            ]);
+        }
+
+        // M-S1: global daily budget so this public, unauthenticated proxy can't be driven
+        // into unbounded paid completions by distributed clients (the per-IP throttle alone
+        // doesn't cap aggregate spend). Fails CLOSED — over budget → canned reply, no API call.
+        // Admin-tunable via chat settings; sensible defaults for an SME support widget.
+        $today       = now()->format('Y-m-d');
+        $reqKey      = "chat.daily.requests.$today";
+        $tokKey      = "chat.daily.tokens.$today";
+        $maxRequests = (int) ($cfg['daily_request_limit'] ?? 2000);
+        $maxTokens   = (int) ($cfg['daily_token_limit'] ?? 500000);
+
+        if ((int) Cache::get($reqKey, 0) >= $maxRequests || (int) Cache::get($tokKey, 0) >= $maxTokens) {
+            return response()->json([
+                'reply'        => "Our assistant is taking a short break due to high demand — please try again later, or browse Find jobs in the meantime.",
+                'configured'   => true,
+                'rate_limited' => true,
             ]);
         }
 
@@ -79,6 +98,16 @@ class ChatController extends Controller
             }
 
             $body = $resp->json();
+
+            // Charge this call against the global daily budget (M-S1). Counters expire
+            // at midnight so the budget resets each day. Cache::add seeds the key with a
+            // TTL only if absent; increment is atomic on shared stores (redis/database).
+            $usage = ($body['usage']['input_tokens'] ?? 0) + ($body['usage']['output_tokens'] ?? 0);
+            $eod   = now()->endOfDay();
+            Cache::add($reqKey, 0, $eod);
+            Cache::increment($reqKey);
+            Cache::add($tokKey, 0, $eod);
+            Cache::increment($tokKey, max(1, $usage));
 
             // Extract the first text block from the Messages API response content array.
             $reply = '';

@@ -116,6 +116,7 @@
 
     // Dashboard routing for the mobile account sheet (mirrors the desktop UserMenu).
     const roleSlug = user && user.role && user.role.slug;
+    const initials = user && user.name ? user.name.split(" ").map(function (w) { return w[0]; }).join("").slice(0, 2).toUpperCase() : "?";
     const isAdmin = roleSlug === "admin" || roleSlug === "super_admin";
     const dashboardLabel = roleSlug === "employer" ? "Employer Dashboard"
       : isAdmin ? "Admin Dashboard"
@@ -178,9 +179,16 @@
               display: "inline-flex", alignItems: "center", justifyContent: "center",
               border: "1px solid var(--border)", borderRadius: "var(--radius-pill)",
               background: menuOpen ? "var(--brand-subtle)" : "transparent", cursor: "pointer",
-              padding: 6, flexShrink: 0, color: menuOpen ? "var(--text-brand)" : "var(--text-muted)",
+              padding: user ? 3 : 6, flexShrink: 0, color: menuOpen ? "var(--text-brand)" : "var(--text-muted)",
+              overflow: "hidden",
             }}>
-              <i data-lucide={user ? "circle-user" : "user"} style={{ width: 20, height: 20 }}></i>
+              {user
+                ? <span style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--brand)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, overflow: "hidden", flexShrink: 0 }}>
+                    {user.avatar_url
+                      ? <img src={user.avatar_url} alt={initials} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                      : initials}
+                  </span>
+                : <i data-lucide="user" style={{ width: 20, height: 20 }}></i>}
             </button>
           </div>
 
@@ -204,10 +212,17 @@
               <div style={{ width: 40, height: 4, borderRadius: 2, background: "var(--border)", margin: "0 auto 12px" }} />
               {user ? (
                 <div style={{ padding: "0 20px", display: "flex", flexDirection: "column", gap: 10 }}>
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: "var(--text-sm)", color: "var(--text-strong)", marginBottom: 2 }}>{user.name}</div>
-                    <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>{user.email}</div>
-                    {roleSlug && <div style={{ marginTop: 4, fontSize: "var(--text-xs)", color: "var(--text-brand)", fontWeight: 600, textTransform: "capitalize" }}>{roleSlug}</div>}
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <span style={{ width: 46, height: 46, borderRadius: "50%", background: "var(--brand)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, fontWeight: 700, overflow: "hidden", flexShrink: 0 }}>
+                      {user.avatar_url
+                        ? <img src={user.avatar_url} alt={initials} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                        : initials}
+                    </span>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontWeight: 700, fontSize: "var(--text-sm)", color: "var(--text-strong)", marginBottom: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user.name}</div>
+                      <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user.email}</div>
+                      {roleSlug && <div style={{ marginTop: 4, fontSize: "var(--text-xs)", color: "var(--text-brand)", fontWeight: 600, textTransform: "capitalize" }}>{roleSlug}</div>}
+                    </div>
                   </div>
                   <button onClick={goToDashboard} style={{
                     width: "100%", padding: "11px", border: "none",

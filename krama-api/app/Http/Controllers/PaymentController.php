@@ -420,9 +420,14 @@ class PaymentController extends Controller
             return response()->json(['message' => 'ok']);
         }
 
-        if (\App\Services\PaymentService::stripeSessionPaid($sessionId, $key)) {
+        // H-S2: never fulfil on "some paid session id" alone — bind the fetched session's
+        // identity (invoice_no / currency / amount) to THIS payment. A paid session id from
+        // a cheap real payment can otherwise be replayed against an expensive pending one.
+        if (\App\Services\PaymentService::stripeSessionMatchesPayment($payment, $sessionId, $key)) {
             \App\Services\PaymentService::fulfill($payment);
             $this->auditLog('payment.stripe_verified', ['payment_id' => $payment->id, 'amount' => $payment->amount, 'via' => 'webhook']);
+        } else {
+            $this->auditLog('payment.stripe_webhook_rejected', ['payment_id' => $payment->id, 'session' => $sessionId, 'ref' => $ref]);
         }
 
         return response()->json(['message' => 'ok']);

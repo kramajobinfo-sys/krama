@@ -11,6 +11,7 @@ use App\Models\Notification;
 use App\Models\Payment;
 use App\Models\Setting;
 use App\Models\Subscription;
+use App\Support\HtmlSanitizer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -27,10 +28,14 @@ class JobController extends Controller
         $q = Job::with(['company:id,name,logo_url,is_verified', 'category:id,name,slug', 'location:id,name'])
             ->where('status', 'published')
             ->where(function ($outer) {
-                // Show jobs from companies with no subscription (free tier)
-                // or with at least one active/trial subscription
+                // Show jobs from companies with no subscription (free tier) or with at
+                // least one active/trial subscription. 'pending' is included (H-6): a
+                // pending subscription means an upgrade/renewal is mid-payment and must
+                // NOT hide jobs that are already published. Genuinely lapsed jobs were
+                // already closed by expireOverdue() above, so a 'pending' row here only
+                // ever represents in-progress payment, never a lapse.
                 $outer->whereDoesntHave('company.subscriptions')
-                      ->orWhereHas('company.subscriptions', fn ($s) => $s->whereIn('status', ['active', 'trial']));
+                      ->orWhereHas('company.subscriptions', fn ($s) => $s->whereIn('status', ['active', 'trial', 'pending']));
             });
 
         if ($request->filled('search')) {
@@ -68,7 +73,7 @@ class JobController extends Controller
         $sortBy = in_array($request->sort, ['created_at', 'salary_max', 'views']) ? $request->sort : 'created_at';
         $q->orderBy('is_featured', 'desc')->orderBy($sortBy, 'desc');
 
-        $perPage = min(50, max(1, (int) $request->input('per_page', 20)));
+        $perPage = min(100, max(1, (int) $request->input('per_page', 20)));
 
         return response()->json($q->paginate($perPage))
             ->header('Cache-Control', 'no-cache, must-revalidate');
@@ -122,6 +127,14 @@ class JobController extends Controller
             'expires_at'       => 'nullable|date|after:today',
         ]);
 
+        // C-S1: strip unsafe HTML from rich-text fields before storing — these are
+        // rendered raw (dangerouslySetInnerHTML) on the public job page.
+        foreach (['description', 'requirements', 'benefits'] as $field) {
+            if (array_key_exists($field, $data)) {
+                $data[$field] = HtmlSanitizer::clean($data[$field]);
+            }
+        }
+
         // Quota is enforced at submit/publish time, not draft creation.
         $data['company_id'] = $company->id;
         $data['slug']       = Job::generateSlug($data['title']);
@@ -168,6 +181,13 @@ class JobController extends Controller
 
         if (isset($data['title'])) {
             $data['slug'] = Job::generateSlug($data['title']);
+        }
+
+        // C-S1: strip unsafe HTML from rich-text fields on edit too.
+        foreach (['description', 'requirements', 'benefits'] as $field) {
+            if (array_key_exists($field, $data)) {
+                $data[$field] = HtmlSanitizer::clean($data[$field]);
+            }
         }
 
         // Reset to draft if re-editing a rejected job
@@ -544,18 +564,25 @@ class JobController extends Controller
             'method' => 'nullable|in:stripe,aba,acleda,wing,khqr,cod,card,other',
         ]);
 
-        $payment = Payment::create([
-            'company_id'      => $company->id,
-            'subscription_id' => $sub ? $sub->id : null,
-            'purpose'         => 'featured_boost',
-            'job_id'          => $job->id,
-            'invoice_no'      => $this->nextBoostInvoiceNo(),
-            'amount'          => $price,
-            'currency'        => $currency,
-            'method'          => $data['method'] ?? 'khqr',
-            'status'          => 'pending',
-            'created_at'      => now(),
-        ]);
+        // M-5: generate the invoice number and insert the payment in one transaction
+        // so nextBoostInvoiceNo()'s lockForUpdate is actually effective (a lock held
+        // outside a transaction is released immediately, letting concurrent boosts mint
+        // duplicate invoice numbers). Mirrors the subscribe flow in PaymentController.
+        $payment = null;
+        DB::transaction(function () use ($company, $sub, $job, $price, $currency, $data, &$payment) {
+            $payment = Payment::create([
+                'company_id'      => $company->id,
+                'subscription_id' => $sub ? $sub->id : null,
+                'purpose'         => 'featured_boost',
+                'job_id'          => $job->id,
+                'invoice_no'      => $this->nextBoostInvoiceNo(),
+                'amount'          => $price,
+                'currency'        => $currency,
+                'method'          => $data['method'] ?? 'khqr',
+                'status'          => 'pending',
+                'created_at'      => now(),
+            ]);
+        });
 
         Notification::recordAdmins('payment_pending', 'New payment pending', 'Featured-boost payment ' . $currency . number_format((float) $price, 2) . ' from “' . ($company->name ?? 'a company') . '” is awaiting confirmation.');
 

@@ -19,7 +19,8 @@
     if (!refreshTok) return Promise.reject(new Error("No refresh token"));
     _refreshing = fetch(BASE + "/auth/refresh", {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: "Bearer " + refreshTok },
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refresh_token: refreshTok }),
     }).then(function (r) {
       return r.json().then(function (d) {
         _refreshing = null;

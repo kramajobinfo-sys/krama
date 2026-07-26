@@ -5,7 +5,37 @@ This project ships two things:
 1. **A front-end design system** — static HTML + React (in-browser Babel), CSS tokens, fonts, assets, and four high-fidelity UI kits (public website, candidate, employer, admin).
 2. **A MySQL database** — `krama_schema.sql` (tables) + `seed.sql` (sample data matching the mockups).
 
-There is **no backend API code yet** — the UI kits run on in-memory demo data. This guide gets the UI served, the database loaded, and tells you how to wire a real backend. **Recommended DB: MySQL 8 / MariaDB 10.4+ (what XAMPP includes).**
+The backend is a **Laravel API** under `krama-api/` (uploaded as a sibling of the public
+document root). The UI kits talk to it over `/api`. **Recommended DB: MySQL 8 / MariaDB 10.4+.**
+
+---
+
+## 0. Go-live must-dos (do these on the server — the app fails silently without them)
+
+These cannot be done for you in the repo; they must run on the production host.
+
+**Secrets (H-4) — generate UNIQUE values; never reuse the dev keys:**
+```bash
+php artisan key:generate      # sets APP_KEY
+php artisan jwt:secret        # sets JWT_SECRET
+```
+Copy `.env.hosting.template` to `.env` first and fill DB/mail/`APP_PUBLIC_PATH`. The
+template ships APP_KEY/JWT_SECRET **blank** on purpose.
+
+**Scheduler (H-1) — REQUIRED for payment reconciliation + subscription/boost expiry.**
+Add ONE cron entry in cPanel → Cron Jobs (every minute):
+```
+* * * * * cd /home/YOUR_USER/krama-api && php artisan schedule:run >> /dev/null 2>&1
+```
+Verify: create a pending KHQR/ABA payment and confirm it flips to paid within ~3 min
+with no webhook. Without this, a customer can pay and never be fulfilled.
+
+**Queue (M-1) — verification/notification emails.** The template sets
+`QUEUE_CONNECTION=sync` so queued work runs inline during the request — no worker
+needed. If you switch to `database`, you MUST run a persistent worker
+(`php artisan queue:work`) via Supervisor or a cron, or verification emails never send.
+
+**After deploy:** `php artisan config:cache && php artisan route:cache`.
 
 ---
 

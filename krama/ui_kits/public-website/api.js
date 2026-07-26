@@ -158,20 +158,42 @@
     };
   }
 
+  // Fetch EVERY page of a paginated public endpoint and return the concatenated
+  // `data` array. Removes the old ≤50-per-page cap (C-4): Find Jobs / Companies
+  // filter over the full published set instead of a silently-truncated first page.
+  function getAllPages(basePath, perPage) {
+    perPage = perPage || 100;
+    var sep = basePath.indexOf("?") >= 0 ? "&" : "?";
+    var pageUrl = function (p) { return basePath + sep + "per_page=" + perPage + "&page=" + p; };
+    return get(pageUrl(1)).then(function (r) {
+      var all = (r.data || []).slice();
+      var last = r.last_page || 1;
+      if (last <= 1) return all;
+      var rest = [];
+      for (var p = 2; p <= last; p++) {
+        rest.push(get(pageUrl(p)).then(function (rr) { return rr.data || []; }));
+      }
+      return Promise.all(rest).then(function (chunks) {
+        chunks.forEach(function (c) { all = all.concat(c); });
+        return all;
+      });
+    });
+  }
+
   // ── Bootstrap — fetch all public data, populate KRAMA_DATA in place ──────
   function init() {
     var D = window.KRAMA_DATA;
 
-    var jobs = get("/jobs?per_page=100").then(function (r) {
-      var normalised = (r.data || []).map(normaliseJob);
+    var jobs = getAllPages("/jobs", 100).then(function (list) {
+      var normalised = list.map(normaliseJob);
       D.jobs = normalised;
       // Attach logos
       var L = window.KRAMA_LOGOS || {};
       normalised.forEach(function (j) { if (!j.logo && L[j.company]) j.logo = L[j.company]; });
     }).catch(function () { /* keep static fallback */ });
 
-    var companies = get("/companies?per_page=100").then(function (r) {
-      var normalised = (r.data || []).map(normaliseCompany);
+    var companies = getAllPages("/companies", 100).then(function (list) {
+      var normalised = list.map(normaliseCompany);
       D.companies = normalised;
       var L = window.KRAMA_LOGOS || {};
       normalised.forEach(function (c) { if (!c.logo && L[c.name]) c.logo = L[c.name]; });

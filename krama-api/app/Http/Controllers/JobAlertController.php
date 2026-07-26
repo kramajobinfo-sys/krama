@@ -58,6 +58,9 @@ class JobAlertController extends Controller
         }
 
         $alert = JobAlert::create(array_merge($data, ['candidate_id' => $user->id]));
+        // Model has $timestamps=false and the table fills created_at via ->useCurrent(),
+        // so the in-memory instance has no created_at until re-read from the DB.
+        $alert->refresh();
         $alert->load(['category:id,name', 'location:id,name']);
 
         return response()->json([

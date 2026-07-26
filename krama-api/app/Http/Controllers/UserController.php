@@ -97,6 +97,16 @@ class UserController extends Controller
 
         $role = Role::where('slug', $data['role'])->firstOrFail();
 
+        // Privilege-escalation guard (H-2): minting a privileged account requires
+        // manage_roles — the same boundary adminUpdateUser enforces for role changes.
+        // A plain admin holds manage_users but NOT manage_roles, so it cannot create
+        // a super_admin/admin and self-escalate. (role.permissions was loaded by the
+        // requirePermission('manage_users') call above.)
+        $privilegedRoles = ['super_admin', 'admin'];
+        if (in_array($data['role'], $privilegedRoles, true) && ! auth()->user()->hasPermission('manage_roles')) {
+            abort(403, 'You do not have permission to create a user with this role.');
+        }
+
         $user = User::create([
             'role_id'            => $role->id,
             'name'               => $data['name'],

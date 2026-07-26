@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Company;
+use App\Support\HtmlSanitizer;
 use App\Models\CompanyAward;
 use App\Models\CompanyPhoto;
 use Illuminate\Http\Request;
@@ -41,7 +42,7 @@ class CompanyController extends Controller
 
         $q->orderBy('is_verified', 'desc')->orderBy('name');
 
-        $perPage = min(50, max(1, (int) $request->input('per_page', 20)));
+        $perPage = min(100, max(1, (int) $request->input('per_page', 20)));
 
         return response()->json($q->paginate($perPage))
             ->header('Cache-Control', 'public, max-age=120, stale-while-revalidate=600');
@@ -90,6 +91,11 @@ class CompanyController extends Controller
             'description'     => 'nullable|string|max:10000',
         ]);
 
+        // C-S1: the company "about" description is rendered raw on the public profile.
+        if (array_key_exists('description', $data)) {
+            $data['description'] = HtmlSanitizer::clean($data['description']);
+        }
+
         // Single INSERT: set status directly on the instance (bypasses fillable; no second UPDATE)
         $company = new Company($data);
         $company->user_id = $user->id;
@@ -128,6 +134,11 @@ class CompanyController extends Controller
         ]);
 
         $needsResubmit = in_array($company->status, ['rejected', 'suspended']);
+
+        // C-S1: sanitize the rich "about" description on edit too.
+        if (array_key_exists('description', $data)) {
+            $data['description'] = HtmlSanitizer::clean($data['description']);
+        }
 
         // Single UPDATE: fill validated data, set status directly if needed, then one save()
         $company->fill($data);

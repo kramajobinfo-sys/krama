@@ -175,6 +175,26 @@
     );
   }
 
+  // Compact row for the MOBILE List view — visually distinct from the Grid cards,
+  // which otherwise look identical once both collapse to a single column on phones.
+  function CompactJobRow({ job, saved, onSave, onOpen }) {
+    return (
+      <div onClick={onOpen} style={{ position: "relative", display: "flex", alignItems: "center", gap: 12, background: "var(--surface-card)", border: "1px solid " + (job.featured ? "var(--accent-border)" : "var(--border)"), borderRadius: "var(--radius-md)", boxShadow: "var(--shadow-sm)", padding: "11px 14px", cursor: "pointer", overflow: "hidden" }}>
+        {job.featured ? <span style={{ position: "absolute", top: 0, left: 0, bottom: 0, width: 3, background: "var(--accent)" }} /> : null}
+        <Avatar src={job.logo || (window.KRAMA_LOGOS || {})[job.company]} name={job.company} square size={44} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "var(--text-base)", color: "var(--text-strong)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{job.title}</div>
+          <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginTop: 1 }}>{job.company}{job.location ? " · " + job.location : ""}</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 4 }}>
+            {job.salary ? <span style={{ fontSize: "var(--text-xs)", fontWeight: 600, color: "var(--text-brand)", whiteSpace: "nowrap" }}>{job.salary}</span> : null}
+            {job.type ? <span style={{ fontSize: "var(--text-xs)", color: "var(--text-faint)", whiteSpace: "nowrap" }}>{job.type}</span> : null}
+          </div>
+        </div>
+        <button onClick={(e) => { e.stopPropagation(); onSave(); }} aria-label={saved ? TR("Saved") : TR("Save job")} style={{ flexShrink: 0, background: "none", border: "none", cursor: "pointer", color: saved ? "var(--accent)" : "var(--text-faint)", padding: 4, display: "inline-flex" }}>{I(saved ? "bookmark-check" : "bookmark", 18)}</button>
+      </div>
+    );
+  }
+
   // Modal for creating a job alert from the public jobs page
   function JobAlertModal({ onClose, initialKeyword, initialLocation }) {
     const apiBase = /^(localhost|127\.0\.0\.1|::1|192\.168\.|10\.)/.test(window.location.hostname) ? "http://127.0.0.1:8000/api" : (window.location.protocol + "//" + window.location.host + "/api");
@@ -297,9 +317,19 @@
     const [workModes, setWorkModes] = React.useState({ "On-site": false, Remote: false, Hybrid: false });
     const [salaryMin, setSalaryMin] = React.useState(0);
     const [sort, setSort] = React.useState("Newest");
-    const [view, setView] = React.useState("grid");
+    // Default view is device-aware: List on mobile (compact rows), Grid on desktop.
+    const [view, setView] = React.useState(function () { try { return window.matchMedia("(max-width: 767px)").matches ? "list" : "grid"; } catch (e) { return "grid"; } });
     const [page, setPage] = React.useState(0);
     const PER_PAGE = 14;
+    // Phone-width detection so the List view can render distinct compact rows on mobile.
+    const [isMobile, setIsMobile] = React.useState(function () { return typeof window !== "undefined" && window.matchMedia ? window.matchMedia("(max-width: 767px)").matches : false; });
+    React.useEffect(function () {
+      if (!window.matchMedia) return;
+      var mq = window.matchMedia("(max-width: 767px)");
+      var onChange = function () { setIsMobile(mq.matches); };
+      if (mq.addEventListener) mq.addEventListener("change", onChange); else mq.addListener(onChange);
+      return function () { if (mq.removeEventListener) mq.removeEventListener("change", onChange); else mq.removeListener(onChange); };
+    }, []);
     const fjTopBanner = loadBanner("findJobsTopBanner", FJ_TOP_DEFAULT);
     const fjBanner1 = loadBanner("sidebarBanner", SB_DEFAULT);
     const fjBanner2 = loadBanner("categoryBanner", CB_DEFAULT);
@@ -498,9 +528,11 @@
                 ? <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>{pageResults.map((j) => <DetailRow key={j.id} job={j} saved={saved.includes(j.id)} onSave={() => toggleSave(j.id)} onOpen={() => onOpenJob(j)} />)}</div>
                 : <div className={view === "grid" ? "krm-jobs-grid-view" : "krm-jobs-list-view"} style={view === "grid"
                     ? { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }
-                    : { display: "flex", flexDirection: "column", gap: 14 }}>
+                    : { display: "flex", flexDirection: "column", gap: (view === "list" && isMobile) ? 10 : 14 }}>
                     {pageResults.map((j) => (
-                      <JobCard key={j.id} {...j} saved={saved.includes(j.id)} onSave={() => toggleSave(j.id)} onClick={() => onOpenJob(j)} />
+                      (view === "list" && isMobile)
+                        ? <CompactJobRow key={j.id} job={j} saved={saved.includes(j.id)} onSave={() => toggleSave(j.id)} onOpen={() => onOpenJob(j)} />
+                        : <JobCard key={j.id} {...j} saved={saved.includes(j.id)} onSave={() => toggleSave(j.id)} onClick={() => onOpenJob(j)} />
                     ))}
                   </div>}
               {pages > 1 ? (

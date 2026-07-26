@@ -163,6 +163,10 @@ class PaymentService
     /**
      * Ask Stripe whether a Checkout Session has been paid.
      * Returns false on any error / not-yet-paid so callers leave the payment pending.
+     *
+     * SAFE ONLY when $sessionId is the payment's own gateway_ref (the session we
+     * created for THIS payment). Do NOT call this with an attacker-supplied session
+     * id against an unrelated payment — use stripeSessionMatchesPayment() there.
      */
     public static function stripeSessionPaid(string $sessionId, string $secretKey): bool
     {
@@ -177,6 +181,40 @@ class PaymentService
             return (string) $resp->json('payment_status') === 'paid';
         } catch (\Exception $e) {
             Log::warning('Stripe verify failed: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * H-S2: Authoritatively verify a Checkout Session and bind it to a specific
+     * payment before it may be fulfilled. Guards against a paid session id being
+     * replayed against a different (more expensive) pending payment: we re-fetch
+     * the session from Stripe and require paid status AND that its identity fields
+     * exactly match the values we set when the session was created for this payment
+     * (client_reference_id = invoice_no, currency, and amount_total in minor units).
+     * Returns false on any mismatch or error so the payment stays pending.
+     */
+    public static function stripeSessionMatchesPayment(Payment $payment, string $sessionId, string $secretKey): bool
+    {
+        try {
+            $resp = Http::withToken($secretKey)->timeout(15)
+                ->get(self::STRIPE_BASE . '/v1/checkout/sessions/' . $sessionId);
+
+            if (! $resp->successful()) {
+                return false;
+            }
+
+            $session = $resp->json();
+
+            $expectedCurrency = strtolower($payment->currency ?: 'usd');
+            $expectedAmount   = (int) round(((float) $payment->amount) * 100); // mirror stripeCreateSession()
+
+            return (string) ($session['payment_status'] ?? '') === 'paid'
+                && (string) ($session['client_reference_id'] ?? '') === (string) $payment->invoice_no
+                && strtolower((string) ($session['currency'] ?? '')) === $expectedCurrency
+                && (int) ($session['amount_total'] ?? -1) === $expectedAmount;
+        } catch (\Exception $e) {
+            Log::warning('Stripe session/payment binding check failed: ' . $e->getMessage());
             return false;
         }
     }

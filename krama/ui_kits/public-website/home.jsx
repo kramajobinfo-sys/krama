@@ -6,6 +6,25 @@
   const TR = window.KRAMA_T || function (s) { return s; };
   const I = (n, s = 20) => <i data-lucide={n} style={{ width: s, height: s }}></i>;
 
+  // Compact row for the Featured-jobs List view — matches the Find Jobs list style.
+  function CompactJobRow({ job, saved, onSave, onOpen }) {
+    return (
+      <div onClick={onOpen} style={{ position: "relative", display: "flex", alignItems: "center", gap: 12, background: "var(--surface-card)", border: "1px solid " + (job.featured ? "var(--accent-border)" : "var(--border)"), borderRadius: "var(--radius-md)", boxShadow: "var(--shadow-sm)", padding: "11px 14px", cursor: "pointer", overflow: "hidden" }}>
+        {job.featured ? <span style={{ position: "absolute", top: 0, left: 0, bottom: 0, width: 3, background: "var(--accent)" }} /> : null}
+        <Avatar src={job.logo || (window.KRAMA_LOGOS || {})[job.company]} name={job.company} square size={44} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "var(--text-base)", color: "var(--text-strong)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{job.title}</div>
+          <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginTop: 1 }}>{job.company}{job.location ? " · " + job.location : ""}</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 4 }}>
+            {job.salary ? <span style={{ fontSize: "var(--text-xs)", fontWeight: 600, color: "var(--text-brand)", whiteSpace: "nowrap" }}>{job.salary}</span> : null}
+            {job.type ? <span style={{ fontSize: "var(--text-xs)", color: "var(--text-faint)", whiteSpace: "nowrap" }}>{job.type}</span> : null}
+          </div>
+        </div>
+        <button onClick={(e) => { e.stopPropagation(); onSave(); }} aria-label={saved ? TR("Saved") : TR("Save job")} style={{ flexShrink: 0, background: "none", border: "none", cursor: "pointer", color: saved ? "var(--accent)" : "var(--text-faint)", padding: 4, display: "inline-flex" }}>{I(saved ? "bookmark-check" : "bookmark", 18)}</button>
+      </div>
+    );
+  }
+
   const BANNER_THEMES = {
     saffron: { bg: "var(--saffron-500)", fg: "#fff", ctaBg: "#fff", ctaFg: "var(--saffron-700)" },
     teal: { bg: "var(--teal-700)", fg: "#fff", ctaBg: "#fff", ctaFg: "var(--teal-700)" },
@@ -336,15 +355,52 @@
     }, []);
     const [fjPage, setFjPage] = React.useState(0);
     const [fcPage, setFcPage] = React.useState(0);
-    const [fjView, setFjView] = React.useState("grid"); // mobile: "list" (1 col) | "grid" (2 col)
+    // Default view is device-aware: List on mobile (compact rows), Grid on desktop.
+    const [fjView, setFjView] = React.useState(function () { try { return window.matchMedia("(max-width: 767px)").matches ? "list" : "grid"; } catch (e) { return "grid"; } });
+    // Featured jobs: desktop = grid + paginator (in place); mobile = infinite scroll (10 at a time), moved to page bottom.
+    const [isMobile, setIsMobile] = React.useState(function () { try { return window.matchMedia("(max-width: 767px)").matches; } catch (e) { return false; } });
+    React.useEffect(function () {
+      var mq; try { mq = window.matchMedia("(max-width: 767px)"); } catch (e) { return; }
+      var on = function () { setIsMobile(mq.matches); };
+      mq.addEventListener ? mq.addEventListener("change", on) : mq.addListener(on);
+      return function () { mq.removeEventListener ? mq.removeEventListener("change", on) : mq.removeListener(on); };
+    }, []);
+    const [fjShown, setFjShown] = React.useState(10);
+    const fjSentinelRef = React.useRef(null);
     const showFeaturedJobs = hs.featuredJobsVisible !== false;
     const FJ_PER_PAGE = hs.featuredJobsCount || 8;
     const FC_PER_PAGE = 8;
     // featured-first ordering across all jobs, then paginate
-    const fjAll = (D && D.jobs) ? D.jobs.filter((j) => j.featured).concat(D.jobs.filter((j) => !j.featured)) : [];
+    // Age in minutes parsed from the relative "postedAt" string (works for static + API data)
+    const fjAge = (s) => {
+      if (!s) return Infinity;
+      s = String(s).toLowerCase();
+      if (s.indexOf("yesterday") >= 0) return 1440;
+      if (s.indexOf("now") >= 0 || s.indexOf("just") >= 0) return 0;
+      const m = s.match(/(\d+)\s*([mhdw])/);
+      if (!m) return Infinity;
+      return parseInt(m[1], 10) * ({ m: 1, h: 60, d: 1440, w: 10080 }[m[2]] || 1e9);
+    };
+    // Featured first, then newest first (descending date)
+    const fjAll = (D && D.jobs) ? D.jobs.slice().sort((a, b) => {
+      const fa = a.featured ? 0 : 1, fb = b.featured ? 0 : 1;
+      return fa !== fb ? fa - fb : fjAge(a.postedAt) - fjAge(b.postedAt);
+    }) : [];
     const fjPages = Math.max(1, Math.ceil(fjAll.length / FJ_PER_PAGE));
     const fjPageSafe = Math.min(fjPage, fjPages - 1);
     const fjSlice = fjAll.slice(fjPageSafe * FJ_PER_PAGE, fjPageSafe * FJ_PER_PAGE + FJ_PER_PAGE);
+    // Mobile infinite scroll — load 10 more when the end-sentinel nears the viewport bottom
+    React.useEffect(function () {
+      if (!isMobile) return;
+      var onScroll = function () {
+        var el = fjSentinelRef.current; if (!el) return;
+        var r = el.getBoundingClientRect();
+        if (r.top - window.innerHeight < 300) setFjShown(function (n) { return Math.min(n + 10, fjAll.length); });
+      };
+      window.addEventListener("scroll", onScroll, { passive: true });
+      onScroll();
+      return function () { window.removeEventListener("scroll", onScroll); };
+    }, [isMobile, fjShown, fjAll.length]);
     // map home category labels to Find-jobs filter values
     const CAT_FILTER = { "Information Technology": "IT", "Human Resources": "HR" };
     const toFilter = (name) => CAT_FILTER[name] || name;
@@ -361,6 +417,85 @@
     const fcPages = Math.max(1, Math.ceil(featuredList.length / FC_PER_PAGE));
     const fcPageSafe = Math.min(fcPage, fcPages - 1);
     const fcSlice = featuredList.slice(fcPageSafe * FC_PER_PAGE, fcPageSafe * FC_PER_PAGE + FC_PER_PAGE);
+
+    // Featured jobs section — rendered in place on desktop, at the page bottom on mobile.
+    const fjSection = showFeaturedJobs ? (
+      <div style={{ background: "var(--surface-card)", borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)" }}>
+        <Section eyebrow={TR("Hand-picked")} title={TR("Featured jobs")}
+          action={<Button variant="ghost" onClick={() => onNav("jobs")} iconRight={I("arrow-right", 16)}>{TR("View all jobs")}</Button>}>
+          {/* List / Grid view switcher (List is default) */}
+          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 16 }}>
+            <div style={{ display: "flex", gap: 2, padding: 3, background: "var(--surface-sunken)", borderRadius: "var(--radius-md)" }}>
+              {[["list", "list", "List"], ["grid", "layout-grid", "Grid"]].map(([val, ic, label]) => {
+                const on = fjView === val;
+                return (
+                  <button key={val} onClick={() => setFjView(val)} title={label} aria-label={label} style={{
+                    display: "inline-flex", alignItems: "center", justifyContent: "center", width: 36, height: 34, cursor: "pointer",
+                    border: "none", borderRadius: "var(--radius-sm)",
+                    background: on ? "var(--surface-card)" : "transparent", color: on ? "var(--text-brand)" : "var(--text-muted)",
+                    boxShadow: on ? "var(--shadow-xs)" : "none",
+                  }}>{I(ic, 17)}</button>
+                );
+              })}
+            </div>
+          </div>
+          {isMobile ? (
+            /* MOBILE — infinite scroll, 10 at a time */
+            <React.Fragment>
+              <div className={fjView === "grid" ? "krm-job-grid" : ""} style={fjView === "grid" ? { display: "grid", gridTemplateColumns: "1fr", gap: 12 } : { display: "flex", flexDirection: "column", gap: 10 }}>
+                {fjAll.slice(0, fjShown).map((j) => (
+                  fjView === "list"
+                    ? <CompactJobRow key={j.id} job={j} saved={saved.includes(j.id)} onSave={() => toggleSave(j.id)} onOpen={() => onOpenJob(j)} />
+                    : <JobCard key={j.id} {...j} saved={saved.includes(j.id)} onSave={() => toggleSave(j.id)} onClick={() => onOpenJob(j)} />
+                ))}
+              </div>
+              {fjShown < fjAll.length ? (
+                <React.Fragment>
+                  <div ref={fjSentinelRef} style={{ height: 1 }} />
+                  <div style={{ textAlign: "center", padding: "18px 0 4px", color: "var(--text-muted)", fontSize: "var(--text-sm)" }}>{TR("Loading more jobs…")}</div>
+                </React.Fragment>
+              ) : (
+                <div style={{ textAlign: "center", padding: "18px 0 4px", color: "var(--text-faint)", fontSize: "var(--text-sm)" }}>{TR("You've reached the end")}</div>
+              )}
+            </React.Fragment>
+          ) : (
+            /* DESKTOP — grid or compact list + page-number paginator */
+            <React.Fragment>
+              <div className={fjView === "grid" ? "krm-job-grid krm-job-grid--2col" : ""} style={fjView === "grid" ? { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 } : { display: "flex", flexDirection: "column", gap: 12 }}>
+                {fjSlice.map((j) => (
+                  fjView === "list"
+                    ? <CompactJobRow key={j.id} job={j} saved={saved.includes(j.id)} onSave={() => toggleSave(j.id)} onOpen={() => onOpenJob(j)} />
+                    : <JobCard key={j.id} {...j} saved={saved.includes(j.id)} onSave={() => toggleSave(j.id)} onClick={() => onOpenJob(j)} />
+                ))}
+              </div>
+              {fjPages > 1 ? (
+                <div className="krm-pagination" style={{ display: "flex", alignItems: "center", justifyContent: "center", flexWrap: "wrap", gap: 8, marginTop: 28 }}>
+                  <button onClick={() => setFjPage(Math.max(0, fjPageSafe - 1))} disabled={fjPageSafe === 0} aria-label="Previous" style={{
+                    display: "inline-flex", alignItems: "center", justifyContent: "center", width: 40, height: 40, borderRadius: "var(--radius-md)",
+                    border: "1px solid var(--border-strong)", background: "var(--surface-card)", cursor: fjPageSafe === 0 ? "not-allowed" : "pointer",
+                    color: fjPageSafe === 0 ? "var(--text-faint)" : "var(--text-body)",
+                  }}>{I("chevron-left", 18)}</button>
+                  {Array.from({ length: fjPages }).map((_, i) => (
+                    <button key={i} onClick={() => setFjPage(i)} style={{
+                      minWidth: 40, height: 40, padding: "0 12px", borderRadius: "var(--radius-md)", cursor: "pointer",
+                      border: "1px solid " + (i === fjPageSafe ? "var(--brand)" : "var(--border-strong)"),
+                      background: i === fjPageSafe ? "var(--brand)" : "var(--surface-card)",
+                      color: i === fjPageSafe ? "var(--on-brand)" : "var(--text-body)",
+                      fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)", fontWeight: 700,
+                    }}>{i + 1}</button>
+                  ))}
+                  <button onClick={() => setFjPage(Math.min(fjPages - 1, fjPageSafe + 1))} disabled={fjPageSafe === fjPages - 1} aria-label="Next" style={{
+                    display: "inline-flex", alignItems: "center", justifyContent: "center", width: 40, height: 40, borderRadius: "var(--radius-md)",
+                    border: "1px solid var(--border-strong)", background: "var(--surface-card)", cursor: fjPageSafe === fjPages - 1 ? "not-allowed" : "pointer",
+                    color: fjPageSafe === fjPages - 1 ? "var(--text-faint)" : "var(--text-body)",
+                  }}>{I("chevron-right", 18)}</button>
+                </div>
+              ) : null}
+            </React.Fragment>
+          )}
+        </Section>
+      </div>
+    ) : null;
     return (
       <div>
         <PromoBannerStack onNav={onNav} />
@@ -383,50 +518,8 @@
           </div>
         </Section>
 
-        {showFeaturedJobs && <div style={{ background: "var(--surface-card)", borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)" }}>
-          <Section eyebrow={TR("Hand-picked")} title={TR("Featured jobs")}
-            action={<Button variant="ghost" onClick={() => onNav("jobs")} iconRight={I("arrow-right", 16)}>{TR("View all jobs")}</Button>}>
-            {/* View toggle — mobile only */}
-            <div className="krm-view-toggle" style={{ display: "none", alignItems: "center", justifyContent: "flex-end", gap: 6, marginBottom: 12 }}>
-              {[["list", "list"], ["grid", "layout-grid"]].map(([v, icon]) => (
-                <button key={v} onClick={() => setFjView(v)} aria-label={v === "list" ? TR("List view") : TR("Grid view")} style={{
-                  display: "inline-flex", alignItems: "center", justifyContent: "center", width: 38, height: 38, borderRadius: "var(--radius-md)", cursor: "pointer",
-                  border: "1px solid " + (fjView === v ? "var(--brand)" : "var(--border-strong)"),
-                  background: fjView === v ? "var(--brand)" : "var(--surface-card)",
-                  color: fjView === v ? "var(--on-brand)" : "var(--text-body)",
-                }}>{I(icon, 18)}</button>
-              ))}
-            </div>
-            <div className={"krm-job-grid" + (fjView === "grid" ? " krm-job-grid--2col" : "")} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-              {fjSlice.map((j) => (
-                <JobCard key={j.id} {...j} saved={saved.includes(j.id)} onSave={() => toggleSave(j.id)} onClick={() => onOpenJob(j)} />
-              ))}
-            </div>
-            {fjPages > 1 ? (
-              <div className="krm-pagination" style={{ display: "flex", alignItems: "center", justifyContent: "center", flexWrap: "wrap", gap: 8, marginTop: 28 }}>
-                <button onClick={() => setFjPage(Math.max(0, fjPageSafe - 1))} disabled={fjPageSafe === 0} aria-label="Previous" style={{
-                  display: "inline-flex", alignItems: "center", justifyContent: "center", width: 40, height: 40, borderRadius: "var(--radius-md)",
-                  border: "1px solid var(--border-strong)", background: "var(--surface-card)", cursor: fjPageSafe === 0 ? "not-allowed" : "pointer",
-                  color: fjPageSafe === 0 ? "var(--text-faint)" : "var(--text-body)",
-                }}>{I("chevron-left", 18)}</button>
-                {Array.from({ length: fjPages }).map((_, i) => (
-                  <button key={i} onClick={() => setFjPage(i)} style={{
-                    minWidth: 40, height: 40, padding: "0 12px", borderRadius: "var(--radius-md)", cursor: "pointer",
-                    border: "1px solid " + (i === fjPageSafe ? "var(--brand)" : "var(--border-strong)"),
-                    background: i === fjPageSafe ? "var(--brand)" : "var(--surface-card)",
-                    color: i === fjPageSafe ? "var(--on-brand)" : "var(--text-body)",
-                    fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)", fontWeight: 700,
-                  }}>{i + 1}</button>
-                ))}
-                <button onClick={() => setFjPage(Math.min(fjPages - 1, fjPageSafe + 1))} disabled={fjPageSafe === fjPages - 1} aria-label="Next" style={{
-                  display: "inline-flex", alignItems: "center", justifyContent: "center", width: 40, height: 40, borderRadius: "var(--radius-md)",
-                  border: "1px solid var(--border-strong)", background: "var(--surface-card)", cursor: fjPageSafe === fjPages - 1 ? "not-allowed" : "pointer",
-                  color: fjPageSafe === fjPages - 1 ? "var(--text-faint)" : "var(--text-body)",
-                }}>{I("chevron-right", 18)}</button>
-              </div>
-            ) : null}
-          </Section>
-        </div>}
+        {/* Featured jobs — in place on desktop; moved to the bottom on mobile (see below) */}
+        {!isMobile && fjSection}
 
         {showFeatured ? (
         <Section eyebrow={TR("Trusted by")} title={TR("Featured companies")}
@@ -459,6 +552,9 @@
           ) : null}
         </Section>
         ) : null}
+
+        {/* Featured jobs on mobile — infinite scroll, at the bottom of the page */}
+        {isMobile && fjSection}
 
         <FooterBanner onNav={onNav} />
       </div>

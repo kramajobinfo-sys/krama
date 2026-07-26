@@ -3,6 +3,7 @@
 /* Always-on base styles */
 .krm-sidebar-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 199; }
 .krm-hamburger-dash   { display: none; }
+.krm-msg-back         { display: none; }
 
 @media (max-width: 767px) {
   * { box-sizing: border-box; }
@@ -64,5 +65,25 @@
   .krm-table-wrap {
     overflow-x: auto !important;
     -webkit-overflow-scrolling: touch !important;
+  }
+
+  /* Messages: one pane at a time — the conversation list, or the open thread with a back button —
+     instead of a cramped 290px + thread split that doesn't fit a phone. */
+  .krm-msg-wrap { height: calc(100dvh - 64px) !important; }
+  .krm-msg-list { width: 100% !important; border-right: none !important; }
+  .krm-msg-wrap--active .krm-msg-list { display: none !important; }
+  .krm-msg-wrap:not(.krm-msg-wrap--active) .krm-msg-thread { display: none !important; }
+  .krm-msg-back { display: inline-flex !important; }
+
+  /* Notification dropdown: keep it on-screen (near full-width, centred under the topbar)
+     instead of anchoring right:0 and overflowing off the left edge. */
+  .krm-notif-panel {
+    position: fixed !important;
+    top: 64px !important;
+    left: 12px !important;
+    right: 12px !important;
+    width: auto !important;
+    max-width: none !important;
+    max-height: 75vh !important;
   }
 }

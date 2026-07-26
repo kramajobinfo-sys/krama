@@ -1,145 +1,149 @@
-# Krama — PASS 3: Functional Verification (QA + Product Owner)
+# PASS 3 — Functional Verification (Krama)
 
-**Scope:** Static code review (app not executed). Every finding cites a file opened this run with the line range read. Confidence tags: **VERIFIED** (read exact code, issue present) / **LIKELY** (strong inference) / **HYPOTHESIS** (risk to check). Runtime-only claims are tagged **REQUIRES RUNTIME TEST** with steps.
+Senior QA + Product Owner, static code review (app NOT run). Every finding cites a file opened this run with the line range read. Confidence tags: **VERIFIED** (read exact code, issue present) · **LIKELY** (strong inference) · **HYPOTHESIS** (risk to check — no fabricated line numbers). Severity: Critical / High / Medium / Low.
 
-**Stack confirmed this run:** Laravel 8 REST API (`krama-api/composer.json`: `laravel/framework ^8.75`, `php ^7.3|^8.0`, platform pinned `8.2.0`, `php-open-source-saver/jwt-auth ^1.4`; **no** scout/meilisearch/filament/inertia). JWT auth (`config/auth.php` guard=api driver=jwt — inferred from recon, not re-opened). Search = plain Eloquent `LIKE` (`JobController::index`). Frontends = runtime-Babel React kits. **No PWA** (grep of all `ui_kits/*/index.html` for manifest/serviceWorker/sw.js = none). PWA / offline / cache-invalidation checks **SKIPPED — component does not exist.** Meilisearch checks **SKIPPED — not installed.** Filament checks **SKIPPED — admin is custom React.**
-
----
-
-## 1. Coverage Ledger
-
-| Artifact | Path | Status | Notes |
-|---|---|---|---|
-| Routes | `krama-api/routes/api.php` (1–336) | **Read fully** | All route groups traced |
-| AuthController | `app/Http/Controllers/AuthController.php` (1–608) | **Read fully** | register/login/OTP/refresh/reset/social/verify/avatar |
-| ApplicationController | `app/Http/Controllers/ApplicationController.php` (1–363) | **Read fully** | apply/withdraw/pipeline/CV download |
-| JobController | `app/Http/Controllers/JobController.php` (1–866) | **Read fully** | CRUD/publish/quota/boost/alerts |
-| PaymentController | `app/Http/Controllers/PaymentController.php` (1–730) | **Read fully** | subscribe/KHQR/ABA/Stripe/refund/admin |
-| PaymentService | `app/Services/PaymentService.php` (1–183) | **Read fully** | fulfill()/gateway verify |
-| CompanyController | `app/Http/Controllers/CompanyController.php` (1–555) | **Read fully** | CRUD/uploads/admin moderation |
-| ResumeController | `app/Http/Controllers/ResumeController.php` (1–194) | **Read fully** | CV upload/download/visibility |
-| UserController | `app/Http/Controllers/UserController.php` (1–148) | **Read fully** | admin candidate/user mgmt |
-| MessageController | `app/Http/Controllers/MessageController.php` (1–208) | **Read fully** | conversations/polling/unread |
-| ReportController | `app/Http/Controllers/ReportController.php` (1–64) | **Read fully** | admin summary metrics |
-| Controller (base) | `app/Http/Controllers/Controller.php` (1–46) | **Read fully** | requirePermission()/auditLog() |
-| CheckPermission | `app/Http/Middleware/CheckPermission.php` (1–33) | **Read fully** | route-level gate |
-| SocialPostService | `app/Services/SocialPostService.php` (1–145) | **Read fully** | FB/LinkedIn/Telegram autopost |
-| TelegramService | `app/Services/TelegramService.php` (1–172) | **Read fully** | bot send/webhook |
-| User model | `app/Models/User.php` (1–77) | **Read fully** | hasPermission()/JWT |
-| Subscription model | `app/Models/Subscription.php` (1–66) | **Read fully** | expireOverdue() |
-| Notification model | `app/Models/Notification.php` (1–64) | **Read fully** | record()/recordAdmins() |
-| i18n | `krama/ui_kits/public-website/i18n.js` (300–339 + structure grep) | **Partial** | KRAMA_T + KM dict tail read; middle KM entries not line-read |
-| admin app.jsx | `krama/ui_kits/admin-dashboard/app.jsx` (270–309) + api.js (165–188) | **Partial** | Overview/fetchStats read; 481KB bulk unread |
-| employer app.jsx | `krama/ui_kits/employer-dashboard/app.jsx` (grep of salary/currency/invoice) | **Partial** | 215KB bulk unread; currency lines read |
-| candidate app.jsx | not opened | **Skipped/grep-only** | confirmed no KRAMA_T via grep -rl |
-| **NOT reviewed** | ForumThread/Reply/Report/Category, EmployerCvMatch, CvMatch, CvMatchService, TeamController, JobAlertController, CompanyFollowerController, BannerController, SettingController, CategoryController, LocationController, ExperienceLevelController, RecommendationController, TelegramController, ChatController, AuditController, NotificationController, UploadController | — | **Gap** — out of time budget; forum/CV-match/settings flows only inferred from route signatures |
+Stack re-confirmed against source this run:
+- Laravel 8.75, PHP platform pinned 8.2 — `krama-api/composer.json:7-16`.
+- JWT auth (`php-open-source-saver/jwt-auth`), `role=in:employer,candidate` self-service register — `AuthController.php:22,80-81`.
+- Frontend = runtime-Babel React UI kits; public jobs page filters client-side (see F1).
+- **No Meilisearch / Filament / Inertia / PWA.** No `manifest.json`, no service worker anywhere under `krama/ui_kits` (find returned nothing). Search = Eloquent `LIKE` — `JobController.php:36-42`. → **all PWA and Meilisearch checks are SKIPPED (components do not exist).**
 
 ---
 
-## 2. Feature Verification Matrix
+## Coverage Ledger
 
-| Feature | Traced (file:lines) | Predicted result | Requires runtime test |
-|---|---|---|---|
-| **Register (email)** | AuthController 73–145 | Yes. Requires strong pw (mixedCase+numbers+symbols). Issues JWT + refresh token immediately; email verification dispatched but **not required** to use API. | POST /auth/register {name,email,password}; expect 201 + token; confirm login works pre-verification |
-| **Register (phone + OTP)** | 27–71, 91–110 | Yes. request-otp → SMS (or logged in dev). register validates OTP (5-attempt cap, 5-min expiry). Fails closed on missing SMS gateway (logs code). | Request OTP, register with code; test expired code & 6th attempt → 422 |
-| **Login (email/phone)** | 147–188 | Yes. Accepts identifier/email/phone; `status!=='active'` blocked; failed logins audit-logged. | Login suspended user → 401; login unverified email → succeeds (verification not gated) |
-| **Password reset** | 379–463 | Yes. Generic response (no user enumeration), 60-min token, revokes all sessions on reset. | Reset with expired/invalid token → 422 |
-| **Social login** | 467–569 | Yes. Server-side token verify; Google audience check; requires provider email. New users → candidate. | Google token minted for other app → 401 (audience mismatch) |
-| **Post a job (draft)** | JobController 96–130 | Yes. `post_jobs` perm; resolveCompany (any status). No quota at draft. | — |
-| **Submit/publish job** | 195–225 | Company owner → **auto-published** (quota enforced). Recruiter → company_pending. | See Finding F-02 (no company-approval gate) & F-08 (quota race) |
-| **Edit / close job** | 133–174, 391–400 | Edit only draft/pending/rejected. Close sets `closed` (frees quota slot). | Edit published job → 422 |
-| **Search & filter** | 24–75 | Yes. Eloquent `LIKE '%term%'` on title + company name; category/location/type/level/remote/salary_min filters; featured-first sort. | Khmer term search — F-11; `%like%` cannot use index at scale (perf) |
-| **Apply to job** | ApplicationController 20–109 | Yes. `apply_jobs` perm; auto-attaches primary resume; `insertOrIgnore` prevents duplicate race; notifies employer (in-app+Telegram+email **synchronously**). | Concurrent double-apply → one 201 one 422 (OK). See F-06 (sync mail blocks request) |
-| **Withdraw application** | 112–126 | Yes, only while stage=`applied`. | Withdraw reviewed app → 422 |
-| **Upload CV** | ResumeController 90–118 | Yes. pdf/doc/docx ≤5MB, private disk, replaces old file. | Upload .exe → 422; verify old file deleted |
-| **CV download (employer)** | 322–361 | Yes. Ownership-scoped; honors `cv_visibility=private` → 403; streams private file. | Employer downloads CV of applicant to another company's job → 404 |
-| **Application pipeline** | 199–249 | Yes. Stages reviewed/shortlisted/interview/offered/rejected; notifies candidate (in-app + sync email). | — |
-| **Employer dashboard (billing/quota)** | PaymentController 22–108 | Yes. Auto-expires overdue subs, per-subscription quota rows, one-time free-plan tracking. | — |
-| **Candidate dashboard** | routes 128–169 | Yes (applications/saved/alerts/resume). **English-only** — F-05. | — |
-| **Notifications — in-app** | Notification 24–63 | Yes. record()/recordAdmins() (bulk insert to admin/super_admin). | — |
-| **Notifications — Telegram** | ApplicationController 81–87; TelegramService 89–108 | Yes. No-op unless enabled+linked. New-application DM sent **synchronously in apply** (F-06). | — |
-| **Notifications — Facebook/LinkedIn (job autopost)** | SocialPostService 32–70 | Yes. Deferred to `app()->terminating()`; gated by enabled+share_social+not-already-posted. | Verify social_posted_at prevents re-post on re-publish |
-| **Notifications — email** | JobController 332–358 (deferred) vs ApplicationController 90–103 (sync) | Publish emails deferred; **apply/stage emails sent in-request** (F-06). | Slow SMTP → measure apply latency |
-| **Payment success** | PaymentController 279–335; PaymentService 30–57 | Yes. verify/webhook re-verify server-side; `fulfill()` idempotent (pending-only guard). | KHQR/ABA/Stripe happy path each |
-| **Payment failure/pending** | 234–335 | Correct. Unconfigured gateway → `pending, configured:false`; never falsely marks paid. | Verify with no bakong_token → stays pending |
-| **Expired/unpaid job posting** | JobController 706–767; Subscription 27–45 | Correct. No active sub → 422; overdue subs expired + jobs auto-closed on listing/quota check. | Post with only pending (unpaid) sub → 422 |
-| **Concurrent applications** | ApplicationController 51–63 | Safe via `insertOrIgnore` (needs DB unique index on job_id+candidate_id). | Confirm unique constraint exists in migration |
-| **Admin: approve/reject job** | JobController 285–389 | Yes. Assigns primary sub; admin can exceed quota; reject nulls published_at. | — |
-| **Admin: company approve/reject/suspend/verify** | CompanyController 439–490 | Works, **but suspend/reject does NOT cascade to jobs** — F-01. | Suspend company → its published jobs still in /jobs |
-| **Admin: users/candidates** | UserController 15–147 | Yes. Suspend candidate; create/update user; role change needs `manage_roles`. | — |
-| **Admin: plans/subscriptions** | PaymentController 504–702 | Yes. Reactivation resets featured credits; manual expire closes jobs. | — |
-| **Admin: payments mark-paid/refund** | 219–232, 431–456 | Yes. Refund un-features boosted job / refunds subscription. | — |
-| **Admin: revenue KPI** | admin api.js 167–188; app.jsx 284/294 | **Broken** — F-03 (mixed-currency sum) + F-04 (first-page only, mislabeled MTD). | — |
-| **Admin: monthly chart / candidates card** | admin app.jsx 273–294 | **Mock data** — F-09 (hardcoded BARS + "--" candidates + "2026" badge). | — |
-| **Messaging** | MessageController 55–106 | Yes. Candidate→employer gated by `allow_candidate_messages`; employer→candidate open; self/same-role → 422. | — |
-| **Khmer/English i18n** | i18n.js 319–339; grep of kits | Partial — F-05 (admin+candidate kits English-only; KM dict falls back to English on missing keys). | Switch lang=km on candidate dashboard → all English |
-| **Currency consistency** | employer app.jsx 602/2181; admin 284/4200; SocialPostService 87–97 | Inconsistent — F-03/F-07 ("$" hardcoded for KHR in invoices & revenue; KHR shown with .toFixed(2)). | Create KHR plan/invoice → shows "$" |
-| **PWA offline/install** | — | **N/A — no manifest/service worker exists.** | — |
+| Artifact | Status | Evidence / notes |
+|---|---|---|
+| routes/api.php | full read | 1-336 |
+| AuthController | full | 1-608 (register/login/OTP/refresh/reset/social/updateMe/avatar) |
+| ApplicationController | full | 1-363 (apply/withdraw/pipeline/CV download/save) |
+| JobController | full | 1-874 (CRUD/submit/approve/close/boost/quota/alerts) |
+| PaymentController | full | 1-730 (subscribe/khqr/verify/webhooks/refund/admin) |
+| PaymentService | full | 1-183 (fulfill/bakong/aba/stripe) |
+| Subscription model | full | 1-66 (expireOverdue) |
+| CompanyController | full | 1-555 (CRUD/uploads/admin approve/verify/suspend) |
+| MessageController | full | 1-208 |
+| UserController | full | 1-148 (admin users/candidates/roles) |
+| TelegramController | full | 1-102 |
+| EmployerCvMatchController | full | 1-278 (credits/run) |
+| ResumeController | full | 1-194 (upload/download/CV visibility) |
+| SettingController | partial | 1-205 read (schema, publicGroup, adminGroup, update head). testSmtp/Sms/Social/Telegram + activateTelegram (206-end) NOT read |
+| Controller (base) | full | requirePermission / auditLog 1-46 |
+| CheckPermission mw | full | 1-33 |
+| User model | full | 1-77 |
+| Notification model | full | 1-64 |
+| Helpers/Khqr | full | 1-120 (TLV/CRC/amount) |
+| i18n.js (public) | full | 1-340 |
+| api.js (public) | partial | 1-173 (normaliseJob/fmtSalary/init 100-cap) |
+| jobs.jsx | partial | 320-394 filter/pagination + grep of full file |
+| apply.jsx | grep | login gate, no resume_id sent |
+| Frontend PWA/i18n coverage | verified | find + grep: no SW/manifest; i18n only public-website |
+| ForumThread/Reply/Report/Category controllers | NOT read | forum out of core-workflow scope this pass |
+| Recommendation, JobAlert, CompanyReview/Follower, Banner, Category, Location, ExperienceLevel, Report, Audit, Chat, Health, Upload, Team controllers | NOT read | referenced only |
+| CvMatchService, SocialPostService, TelegramService, SmsService, MailConfig, EmailTemplates | NOT read | behavior inferred from callers |
+| Migrations / DB schema | NOT read | column + unique-index existence assumed from models |
+| Role→Permission seeding | NOT read | **needed to grade F3 (escalation)** |
+| payment_config JSON contents | NOT read | **needed to grade F13 (public exposure)** |
 
 ---
 
-## 3. Findings (severity-ordered)
+## Feature Verification Matrix
 
-### F-01 — Suspending/rejecting a company does not remove its jobs from the public site — HIGH — VERIFIED
-`CompanyController::suspend/reject` (465–476, 452–463) only set `company.status`. `JobController::index` (27–34) filters by `job.status='published'` and *subscription* status, **never** `company.status='approved'`. `JobController::show` (82–87) and `ApplicationController::apply` (25) likewise only check the job is published. **Result:** jobs from a suspended or rejected company remain publicly listed, directly viewable, and applyable. Moderation action on a company has no effect on its live jobs. Failure scenario: admin suspends a fraudulent company → its jobs keep collecting applications.
-
-### F-02 — Company-owner jobs publish live without company approval or platform review — HIGH — VERIFIED (may be intentional; confirm with product)
-`JobController::store` (96–130) and `submit` (195–225) call `resolveCompany()` (643–656) which returns a company of **any** status (including `pending`). For a company owner, `submit` sets `status='published'` immediately once any active/trial subscription exists — no `company.status==='approved'` check and no platform admin review. **Result:** a newly-registered employer can create a pending (never-approved) company, activate a free plan, and publish jobs that go live instantly — bypassing both the "every company verified" and "every job reviewed before it goes live" guarantees stated in the public copy (`i18n.js` line 303). Failure scenario: spam employer floods live listings before any admin sees the company.
-
-### F-03 — Admin "Revenue (MTD)" sums mixed KHR + USD into one $-labelled number — HIGH — VERIFIED
-`admin-dashboard/api.js` 178–179 reduces `parseFloat(p.amount)` across paid payments **regardless of `p.currency`**; `app.jsx` 284/294 renders it as `"$" + n.toLocaleString()`. Plans/payments may be KHR or USD (`PaymentController::subscribe` uses `plan->currency`; plan editor offers USD/KHR/EUR at app.jsx 4290). **Result:** a KHR 20,000 payment and a USD 50 payment display as "$20,050" — a meaningless, wildly wrong revenue figure. Currency miscalculation.
-
-### F-04 — Revenue KPI counts only the first page of payments and is mislabeled "MTD" — MEDIUM — VERIFIED
-Same code path: `req("GET","/admin/payments")` (api.js 173) returns Laravel pagination (default `per_page=20`, `PaymentController::adminIndex` 499). `payments.data` is only the newest 20 rows, and there is no month filter. **Result:** "Revenue (MTD)" is actually "sum of the paid rows among the 20 most recent payments" — understated once >20 payments exist and not month-to-date at all.
-
-### F-05 — Khmer localization absent from admin and candidate dashboards — MEDIUM — VERIFIED
-`grep -rl KRAMA_T/KRAMA_LANG` across kits matches only `public-website` and `employer-dashboard`. `admin-dashboard` and `candidate-dashboard` neither load `i18n.js` nor call `KRAMA_T` (their index.html has no i18n script). **Result:** for a "Cambodia-first, Khmer and English as first-class peers" product (i18n.js 304), the **candidate** dashboard — used by the primary end users — is English-only. Even in localized kits, `KRAMA_T` (i18n.js 331–337) silently returns the English source string for any key missing from the KM dict, so coverage is best-effort with no completeness guarantee.
-
-### F-06 — Apply and stage-change block on synchronous email + Telegram sends — MEDIUM — VERIFIED
-`ApplicationController::apply` (81–103) calls `TelegramService::notifyChat` (10s HTTP timeout) and `Mail::html(...)` **inline in the request**; `updateStage` (227–243) sends stage email inline. This is inconsistent with `JobController::notifyNewlyPublished` (332–358) which correctly defers to `app()->terminating()`. **Result:** with a slow/unreachable SMTP or Telegram endpoint, the candidate's "Apply" request hangs up to ~10s+ (Telegram) plus SMTP connect time before returning 201; errors are caught but latency is borne by the user. Perf/UX under load.
-
-### F-07 — Employer invoice amounts hardcode "$" regardless of currency — MEDIUM — VERIFIED
-`employer-dashboard/app.jsx` line 2181 renders `${Number(inv.amount).toLocaleString()}` with a literal `$`. Payment `currency` may be KHR (plan currency flows into Payment, `PaymentController::subscribe` 172–182). **Result:** a KHR 20,000 invoice displays as "$20,000". Same-amount-different-page inconsistency vs `fmtSalary` (app.jsx 602) which correctly prefixes the actual currency code.
-
-### F-08 — Concurrent publishes can exceed a subscription's job-post quota — MEDIUM — LIKELY
-`JobController::enforceJobPostLimit` (706–767) and `pickSubscription` (673–704) count published jobs then update — no row lock / no unique guard. Two simultaneous `submit`/`companyApprove` calls can both read `publishedCount < limit` before either commits. **Result:** quota overrun by the number of concurrent requests. Low likelihood on shared hosting (QUEUE=sync, low concurrency) but real. Failure scenario: employer with limit=1 rapidly publishes two drafts in parallel → both go live.
-
-### F-09 — Admin Overview shows mock/static data (monthly chart, candidates count, year badge) — MEDIUM — VERIFIED
-`admin-dashboard/app.jsx` 273–276 hardcodes `BARS` (fake monthly job counts), 300 hardcodes `<Badge>2026</Badge>`, 293 hardcodes Candidates value `"--"`. `ReportController::summary` (54–61) does return real `applicationsPerMonth`, but the Overview chart ignores it. **Result:** admins see fabricated trend data presented as real KPIs — misleading for decisions.
-
-### F-10 — Inconsistent password policy + email change bypasses re-verification — MEDIUM — VERIFIED
-Registration/reset require `Password::min(8)->mixedCase()->numbers()->symbols()` (AuthController 80, 433), but `changePassword` (266) and admin/team setters (`UserController` 93/124, `TeamController`) require only `min(8)`. A user can set a weak password post-registration. Separately, `updateMe` (246–255) updates `email` without clearing `email_verified_at` — a previously-verified account's new (unverified) email is treated as verified. Failure scenario: account takeover hardening bypass / unverified email trusted.
-
-### F-11 — Job search relies on `LIKE '%term%'`; Khmer works but is unindexed — LOW/MEDIUM — VERIFIED
-`JobController::index` 36–42 uses `where('title','like','%term%')`. Khmer substring search functions under utf8mb4 collation (Khmer is caseless, `LIKE` is substring), so **Khmer input returns matches** — but the leading `%` prevents index use, so search degrades linearly with table size. No full-text/segmentation. **Result:** correct results, poor performance at scale; no relevance ranking. REQUIRES RUNTIME TEST: search a Khmer job title substring, confirm hit and inspect query plan.
-
-### F-12 — Saved-jobs list silently drops closed jobs; `checkApplied` ungated — LOW — VERIFIED
-`ApplicationController::savedJobs` (311–317) filters `status='published'`, so a saved job that gets closed vanishes from the candidate's saved list with no indication (UX). `checkApplied` (252–264) has no `requirePermission`, so any authenticated user (incl. employer) can probe it — reads only their own applications, so low impact.
-
-### F-13 — KHR amounts formatted with 2 decimals — LOW — VERIFIED
-`admin-dashboard/app.jsx` 4200/4402/4467 and plan editor use `parseFloat(price).toFixed(2)` for all currencies. KHR is conventionally a zero-decimal currency; "KHR 5000.00" is cosmetically wrong. Low.
+| # | Feature | Traced in code | Predicted result | Requires-runtime-test |
+|---|---|---|---|---|
+| 1 | Register (email) | AuthController.php:73-145 | Works. Token issued immediately; `email_verified=false`; verification email dispatched. App usable unverified. | POST /auth/register {name,email,password} → 201 + access_token. |
+| 2 | Register (phone+OTP) | 27-71, 91-110 | request-otp texts/logs 6-digit; register needs valid unexpired OTP (5 attempts, 5-min TTL). | request-otp then register with otp; wrong/expired → 422. |
+| 3 | Login (email or phone) | 147-188 | Accepts identifier/email/phone; rejects non-active; logs failures. | Login as suspended user → 401. |
+| 4 | Post a job (draft→publish) | JobController.php:96-233 | Draft created; company-admin publish enforces per-sub quota; recruiter → company_pending. | Submit draft with no active plan → 422. |
+| 5 | Edit / close job | 137-198, 399-408 | Edit only draft/pending/rejected; rejected→draft; close sets closed. | PUT a published job → 422. |
+| 6 | Search & filter (public) | server 22-75 exists but **frontend bypasses it** | **BROKEN at scale** — jobs.jsx loads first N jobs, filters in JS. See F1. | Seed 120 published jobs; confirm #51+ unreachable. |
+| 7 | Apply to a job | ApplicationController.php:20-109 | Works; auto-attaches primary resume; duplicate → 422. | Apply twice → 2nd 422. |
+| 8 | Concurrent apply (same job) | 51-63 | Safe — insertOrIgnore + unique index; loser 422. | Fire 2 parallel applies; expect 1 row (verify DB unique index exists). |
+| 9 | Upload CV | ResumeController.php:90-118 | pdf/doc/docx ≤5 MB → private disk; download via route. | Upload .exe → 422; 6 MB → 422. |
+| 10 | Application pipeline | ApplicationController.php:199-249 | Employer moves stage; notifies candidate (in-app+email); ownership enforced. | PATCH stage on another employer's app → 404. |
+| 11 | Employer dashboard | JobController.php:410-432; PaymentController.php:23-108 | myJobs (recruiter scoped), quota rows. English-only UI (F8). | — |
+| 12 | Candidate dashboard | ApplicationController.php:128-150; ResumeController | applications/saved/resume. **English-only** (no i18n). | — |
+| 13 | Notifications — email | throughout, SMTP-gated | Sent only if configured; failures swallowed; run in terminating() after response. | Publish job with SMTP off → no error/mail. |
+| 14 | Notifications — Telegram | ApplicationController.php:80-87; TelegramController | DM employer on new application if linked; admin chat on new sub. | Link deep-link, apply → DM. |
+| 15 | Social auto-post (FB/LinkedIn/Telegram channel) | SocialPostService (not read) called JobController.php:349 | Auto-post on publish; best-effort. | Publish with social_post on → verify post. |
+| 16 | Payment success | PaymentController.php:279-335; PaymentService.php:30-57 | KHQR/ABA/Stripe re-verified server-side; fulfill() idempotent → activate sub / feature job / top CV credits. | Bakong sandbox pay; verify → paid, sub active. |
+| 17 | Payment failure / pending | PaymentService.php:64-182 | Any error/negative → false → stays pending (never falsely fulfilled). | Verify unpaid invoice → {status:pending}. |
+| 18 | Expired / unpaid job posting | JobController.php:714-775; Subscription.php:27-45 | Unpaid (pending) sub not usable → publish blocked; expired sub auto-closes jobs. See F9. | Subscribe paid (unpaid) → prior free jobs vanish. |
+| 19 | Admin: job moderate | JobController.php:292-397,435-478 | approve/reject/feature; audit-logged; notifies employer. | — |
+| 20 | Admin: company moderate | CompanyController.php:439-490 | approve/reject/suspend/verify; **approve sends NO employer notification** (F11). | — |
+| 21 | Admin: payments/plans/subs | PaymentController.php:219-702 | mark-paid, refund (un-features/cancels), plan CRUD, manual sub. | Refund a boost → job un-featured. |
+| 22 | Admin: users/roles | UserController.php:63-147 | create/update; **role change gated only by permission, not super_admin** (F3). | — |
+| 23 | Khmer vs English | i18n.js public only | Public EN/KH; **3 dashboards effectively English-only; API messages English-only** (F8). | lang=km on candidate dashboard → still English. |
+| 24 | Currency KHR/USD display | api.js:56-69; Khqr.php:26,60-66 | Display consistent ($ USD / "KHR " prefix); KHQR encodes correct minor units. **Salary filter mixes currencies** (F2). | — |
 
 ---
 
-## 4. Broken / Missing Workflows (summary)
-- **Company moderation is non-cascading** (F-01) and **bypassable before publish** (F-02) — the core "reviewed before live" workflow is not enforced end-to-end.
-- **Admin revenue reporting is unreliable** (F-03 mixed currency, F-04 first-page/mislabeled) and **Overview KPIs are partly mocked** (F-09).
-- **Candidate dashboard has no Khmer** (F-05) despite being the primary end-user surface.
+## Findings
 
-## 5. Missing Validation
-- `updateMe` email change without re-verification (F-10).
-- Weak-vs-strong password inconsistency (F-10).
-- No cap that a job's `salary_min <= salary_max` (JobController 109–110 validate each `min:0` independently) — LIKELY; a job can be posted with min > max (display "USD 9000 – 100 / month"). Confirm in runtime.
+### F1 — Public job browse/search silently caps (client-side only) · High · VERIFIED
+`api.js:165` fetches `GET /jobs?per_page=100` once into `D.jobs`; `jobs.jsx:333-362` does **all** filtering, search, sort and pagination in JavaScript over that array. The server's real search/filter/pagination (`JobController::index`, `api.php:87`) is never used by the public site.
+- With more jobs than the cap, extra jobs are **invisible everywhere** on the public site — not in listings, search, or category/location filters. A paid employer's job may never appear.
+- The server clamps `per_page` to **50** (`JobController.php:71`) while the client requests 100 → the client receives at most 50 jobs, so the effective live cap is ~50, not 100.
+Failure scenario: 60 published jobs; ~10 are unreachable from the public UI depending on sort order.
 
-## 6. UX Issues
-- Apply latency under slow SMTP/Telegram (F-06).
-- Saved jobs disappearing silently (F-12).
-- Mixed-currency / hardcoded-`$` displays (F-03, F-07, F-13).
-- Mock admin charts erode trust (F-09).
+### F2 — Salary "minimum" filter treats KHR amounts as USD · Medium · VERIFIED
+`jobs.jsx:328-343` parses the *formatted* salary string (`salaryHigh`) to a bare integer and compares to USD thresholds ($500/$800/…, `jobs.jsx:438`). A KHR job renders `"KHR 1,000,000/mo"` (`api.js:64`) → `salaryHigh`=1000000, passing every USD threshold. The chip hard-codes `"$"` (`jobs.jsx:373`).
+Failure scenario: filter "≥ $1,500/mo" returns a KHR 500,000/mo (~$125) job and excludes a real USD $800 job. Cross-currency comparison is meaningless. (Server `salary_min`, `JobController.php:64-66`, is equally currency-blind but unused by the public UI.)
 
-## 7. Explicitly Skipped / Not-Found (honest gaps)
-- **PWA** — no manifest/service worker anywhere; all PWA checks skipped.
-- **Meilisearch / Scout** — not installed; search is Eloquent LIKE.
-- **Filament** — admin is custom React; no Filament.
-- **Forum (Thread/Reply/Report/Category), CV-match (Employer + admin + CvMatchService), Settings/SMTP/SMS test, Team, JobAlert, CompanyFollower, Banner, Recommendation, Chat/LLM proxy, TelegramController webhook, AuditController, NotificationController** — not opened this run; behavior only inferred from route signatures. These need a dedicated pass.
-- i18n KM dictionary middle section (lines ~1–299) not line-by-line read; only structure + tail confirmed.
+### F3 — Admin role-change / user-create not restricted to super_admin (escalation risk) · High · HYPOTHESIS
+`UserController::adminUpdateUser` (`117-147`) accepts `role => exists:roles,slug` and applies it, gated only by `permission:manage_roles`. `adminCreateUser` (`85-114`) lets `role` be any slug incl. `super_admin`, gated by `manage_users`. Route comment (`api.php:294`) claims "super_admin only for role changes", but **no super_admin check exists in code**.
+- If the seeded `admin` role holds `manage_roles`/`manage_users`, any admin can promote an account to `super_admin`.
+- To grade: read `database/seeders/*` for the `admin` role's permissions. If it has them → **Critical auth-bypass**; if only `super_admin` does → intended, Low.
+
+### F4 — Email change does not reset verified state · Medium · VERIFIED
+`AuthController::updateMe` (`242-258`) updates `email` with a uniqueness rule but never clears `email_verified_at` or re-dispatches verification. A user verified under address A switches to unverified address B and stays `hasVerifiedEmail()===true`. Any "verified email" trust signal is bypassable.
+
+### F5 — CV-match credits: check-then-charge race allows overspend / negative balance · Medium · VERIFIED
+`EmployerCvMatchController::run` reads balance (`:116`), 402s if `< cost` (`:118`), runs the engine (AI call can take seconds, `:141-145`), then `decrement('cv_match_credits', cost)` (`:163`) with no re-check or lock.
+Failure scenario: company with 3 credits fires two parallel AI runs (cost 3 each) → both pass the check, both decrement → balance = -3. Fix: conditional `UPDATE … WHERE cv_match_credits >= cost` inside a transaction.
+
+### F6 — cv_match AI keys wiped when settings saved blank · Medium · VERIFIED
+`SECRET_KEYS` (`SettingController.php:126-133`) preserves-on-blank for telegram/sms/smtp/chat/payment/social_post secrets, **but omits `claude_api_key` and `gemini_api_key`** (cv_match schema `:86-89`). Saving the CV-Match settings form with those fields blank (normal UX — secrets not re-rendered) overwrites the stored key with empty, breaking AI matching until re-entered.
+
+### F7 — Company-admin jobs skip platform moderation, contradicting "every job is reviewed" · Medium · VERIFIED
+`JobController::submit` (`218-232`): a company **owner/admin** publishes **directly** (`status=published`) with no platform-admin approval; only recruiter jobs enter review (`company_pending` → company-admin approval, still no platform admin). Site copy repeatedly promises platform review (i18n.js:277 "Our team reviews every job before it goes live", :283). Combined with self-service `role=employer` registration, a self-registered employer can publish arbitrary listings with zero human review.
+
+### F8 — Khmer localization is public-site-only; dashboards + all API text are English-only · Medium · VERIFIED
+`i18n.js` exists only under `public-website` (find). `candidate-dashboard/app.jsx` and `admin-dashboard/app.jsx` have **0** `KRAMA_T` calls; `employer-dashboard` loads the dict (`index.html:13`) but uses it **twice** (`app.jsx:1384,1479`). All server messages (validation errors, "You have already applied to this job.", stage labels, emails) are hard-coded English. About page markets "Khmer and English as first-class peers" (i18n.js:304) — unmet once logged in.
+
+### F9 — Subscribing to a paid plan (pre-payment) hides the company's existing published jobs · Medium · VERIFIED
+Listing gate (`JobController.php:29-34`): show jobs where the company has **no** subscriptions OR an **active/trial** one. `subscribe` cancels active/trial subs and creates a **pending** one (`PaymentController.php:150-170`). A free-tier company (no sub → visible via `whereDoesntHave`) that starts a paid subscription now *has* a sub that is only `pending` → neither branch matches → **all its published jobs disappear from listings** until payment confirms. `show()` by direct URL still works (`:78-93`), masking it.
+Failure scenario: employer with live free jobs clicks Upgrade, generates KHQR, hasn't paid → jobs vanish from search/browse.
+
+### F10 — `checkApplied` has no role/permission guard · Low · VERIFIED
+`ApplicationController::checkApplied` (`251-264`) omits `requirePermission('apply_jobs')` (unlike apply/withdraw/save). Any authenticated user (incl. employer) can query `/jobs/{id}/applied`. Low impact, inconsistent.
+
+### F11 — Company approval sends no notification to the employer · Low · VERIFIED
+`CompanyController::approve` (`439-450`) sets status + audit only. Job approve/reject (`JobController.php:315,380`) and company *resubmit* (`CompanyController.php:149`) notify, so the omission is inconsistent — the employer isn't told their company was approved.
+
+### F12 — Candidates can apply with no CV, silently · Low · VERIFIED
+`apply.jsx` posts only `coverNote`; `apply` auto-attaches a primary resume if present (`ApplicationController.php:41-47`) else stores `resume_id=null`. A candidate with no resume applies successfully; employer sees `has_cv=false` (`:181`). No prompt to upload a CV first.
+
+### F13 — `payment_config` settings group is publicly readable · Low · HYPOTHESIS
+`publicGroup` allows group `payment_config` (`SettingController.php:138`) with no key filtering (unlike `chat`, which strips secrets `:150`). `generateKhqr` reads KHQR merchant account/name/enabled from it (`PaymentController.php:249-251`); code treats the account id as public. Risk: if the admin UI ever stores a token/secret inside the `payment_config.data` JSON, it is served unauthenticated at `GET /api/settings/payment_config`. To grade: dump `settings` row group=payment_config,key=data. The real gateway secrets live in the separate `payment` group, which is **not** public — good.
+
+### F14 — KHQR TLV length field overflows for values >99 chars · Low · HYPOTHESIS
+`Khqr::tlv` (`Khqr.php:53-56`) does `str_pad(strlen($value),2,'0')`; EMVCo length is 2 digits (max 99). A Bakong `account_id` long enough that the nested tag-29 payload exceeds 99 bytes yields a malformed length → unscannable QR. Bakong account ids are short in practice; verify max length before dismissing.
+
+---
+
+## Positives confirmed (no action)
+- Duplicate-apply and concurrent-apply handled by `insertOrIgnore` (ApplicationController.php:51-63); saved-jobs likewise (:276).
+- `PaymentService::fulfill` idempotent (guards `status!=='pending'`, PaymentService.php:32) — safe across manual mark-paid, verify, and webhook.
+- All three payment webhooks re-verify authoritatively server-side rather than trusting the callback payload (PaymentController.php:339-361,398-429).
+- Refresh-token rotation, reset-token single-use + session revocation (AuthController.php:206,452-455).
+- Telegram webhook secret compared with `hash_equals` (TelegramController.php:80).
+- CV visibility respected on employer download (ApplicationController.php:333-338); CV files on a private disk (ResumeController.php:109).
+- Per-subscription job quota + `expireOverdue` auto-closes lapsed jobs (JobController.php:714-775, Subscription.php:27-45).
+
+## Highest-value runtime tests
+1. Seed 60+ published jobs; confirm the public Find-Jobs page reaches none past the ~50 server clamp (F1).
+2. Read the role→permission seeder; attempt `PATCH /api/admin/users/{id}` `{role:"super_admin"}` as a plain `admin` (F3).
+3. Free-tier employer with live jobs → `POST /employer/subscribe` (paid, unpaid) → reload public listings; confirm jobs disappear (F9).
+4. Two parallel `POST /employer/cv-match/run` with balance == cost; confirm negative balance (F5).
+5. `GET /api/settings/payment_config` unauthenticated; inspect JSON for anything beyond display config (F13).

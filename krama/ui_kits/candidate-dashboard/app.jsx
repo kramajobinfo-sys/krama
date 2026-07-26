@@ -191,7 +191,7 @@
         </button>
         {open && <>
           <div onClick={function () { setOpen(false); }} style={{ position: "fixed", inset: 0, zIndex: 99 }} />
-          <div onClick={function (e) { e.stopPropagation(); }} style={{ position: "absolute", top: 44, right: 0, width: 340, maxHeight: 440, overflowY: "auto", background: "var(--surface-card)", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", boxShadow: "var(--shadow-lg)", zIndex: 100 }}>
+          <div className="krm-notif-panel" onClick={function (e) { e.stopPropagation(); }} style={{ position: "absolute", top: 44, right: 0, width: 340, maxHeight: 440, overflowY: "auto", background: "var(--surface-card)", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", boxShadow: "var(--shadow-lg)", zIndex: 100 }}>
             <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, background: "var(--surface-card)" }}>
               <span style={{ fontWeight: 700, fontSize: "var(--text-sm)", color: "var(--text-strong)" }}>Notifications</span>
               {unread > 0 && <button onClick={markAll} style={{ fontSize: "var(--text-xs)", color: "var(--text-brand)", cursor: "pointer", background: "none", border: "none", fontFamily: "var(--font-sans)", fontWeight: 600 }}>Mark all read</button>}
@@ -1171,7 +1171,7 @@
           <Card style={{ marginBottom: 24 }}>
             <form onSubmit={handleCreate}>
               <div style={{ fontWeight: 700, fontSize: "var(--text-base)", color: "var(--text-strong)", marginBottom: 16 }}>Create a new alert</div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
+              <div className="krm-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
                 <Input label="Keyword" placeholder="e.g. Software Engineer" value={form.keyword} onChange={function(e){ setForm(function(f){ return Object.assign({}, f, { keyword: e.target.value }); }); }} />
                 <div>
                   <label style={{ display: "block", fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-label)", marginBottom: 6 }}>Category</label>
@@ -1329,8 +1329,8 @@
     }
 
     return (
-      <div style={{ display: "flex", height: "calc(100vh - 64px)", overflow: "hidden" }}>
-        <div style={{ width: 290, flexShrink: 0, borderRight: "1px solid var(--border)", overflowY: "auto", background: "var(--surface-card)" }}>
+      <div className={"krm-msg-wrap" + (activeConv ? " krm-msg-wrap--active" : "")} style={{ display: "flex", height: "calc(100vh - 64px)", overflow: "hidden" }}>
+        <div className="krm-msg-list" style={{ width: 290, flexShrink: 0, borderRight: "1px solid var(--border)", overflowY: "auto", background: "var(--surface-card)" }}>
           <div style={{ padding: "16px 16px 12px", borderBottom: "1px solid var(--border)", fontWeight: 700, fontSize: "var(--text-base)", color: "var(--text-strong)" }}>Conversations</div>
           {loading && <div style={{ padding: 24, color: "var(--text-muted)", fontSize: "var(--text-sm)" }}>Loading…</div>}
           {!loading && convs.length === 0 && (
@@ -1366,7 +1366,7 @@
             );
           })}
         </div>
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, background: "var(--surface-page)" }}>
+        <div className="krm-msg-thread" style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, background: "var(--surface-page)" }}>
           {!activeConv ? (
             <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 12, color: "var(--text-faint)" }}>
               {I("message-square", 40)}
@@ -1374,6 +1374,7 @@
             </div>
           ) : (<>
             <div style={{ padding: "12px 20px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: 12, background: "var(--surface-card)", flexShrink: 0 }}>
+              <button className="krm-msg-back" onClick={function() { setActiveConv(null); }} aria-label="Back to conversations" style={{ alignItems: "center", justifyContent: "center", width: 34, height: 34, border: "none", background: "transparent", cursor: "pointer", color: "var(--text-muted)", flexShrink: 0, marginLeft: -6, padding: 0 }}>{I("arrow-left", 20)}</button>
               <Avatar name={otherParty(activeConv).name || "?"} src={otherParty(activeConv).avatar_url} size={36} />
               <div>
                 <div style={{ fontWeight: 700, color: "var(--text-strong)", fontSize: "var(--text-base)" }}>{otherParty(activeConv).name || "?"}</div>

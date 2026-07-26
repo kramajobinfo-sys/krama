@@ -4,3 +4,15 @@
     Header unset ETag
     FileETag None
 </FilesMatch>
+
+# Security headers for the static UI pages (the API's headers only cover /api JSON).
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    # Defense-in-depth CSP: block plugin objects, <base>-tag hijacking, and framing.
+    # script-src is intentionally NOT restricted yet — the pages compile JSX in-browser
+    # (Babel) and load libs from unpkg, needing 'unsafe-inline'; a strict script-src must
+    # wait for the frontend build step. Primary XSS defense is server-side sanitization.
+    Header always set Content-Security-Policy "object-src 'none'; base-uri 'self'; frame-ancestors 'self'"
+</IfModule>

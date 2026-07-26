@@ -127,10 +127,26 @@ class SettingController extends Controller
         'bot_token', 'webhook_secret',            // telegram
         'twilio_token',                            // sms
         'apiKey',                                  // chat (Anthropic key)
+        'claude_api_key', 'gemini_api_key',        // cv-match engines
         'password',                                // smtp
         'bakong_token', 'aba_api_key', 'stripe_secret_key', // payment gateways
         'facebook_page_token', 'linkedin_token',   // social_post
     ];
+
+    /**
+     * L-1: a key is unsafe to expose on the public settings endpoint if it is an
+     * internal chat config field or its name looks like a credential (token/secret/
+     * password/api key). Applied to EVERY public group, not just `chat`, so a secret
+     * accidentally stored in payment_config/social is never served to the world.
+     */
+    private static function isPublicSensitiveKey(string $key): bool
+    {
+        if (in_array($key, ['endpoint', 'system_prompt'], true)) {
+            return true;
+        }
+
+        return (bool) preg_match('/(token|secret|password|api[_-]?key)/i', $key);
+    }
 
     // GET /api/settings/{group} — public: safe groups only (homepage, partial chat)
     public function publicGroup($group)
@@ -141,13 +157,13 @@ class SettingController extends Controller
             abort(403, 'Forbidden.');
         }
 
-        $sensitive = ['apiKey', 'endpoint', 'system_prompt'];
-
-        $settings = Cache::remember("public.settings.{$group}", 3600, function () use ($group, $sensitive) {
+        $settings = Cache::remember("public.settings.{$group}", 3600, function () use ($group) {
             $rows = Setting::where('group', $group)->get();
             $out  = [];
             foreach ($rows as $row) {
-                if ($group === 'chat' && in_array($row->key, $sensitive)) {
+                // L-1: never expose credentials or internal config on the PUBLIC endpoint,
+                // regardless of which whitelisted group they were stored in.
+                if (self::isPublicSensitiveKey($row->key)) {
                     continue;
                 }
                 $out[$row->key] = $this->castValue($row->value);

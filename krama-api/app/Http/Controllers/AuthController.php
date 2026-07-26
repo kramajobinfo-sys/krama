@@ -252,7 +252,17 @@ class AuthController extends Controller
             'allow_candidate_messages' => 'sometimes|boolean',
         ]);
 
+        // M-7: changing the email invalidates the verified state — a user must not
+        // carry address A's verification onto a new, unproven address B. Reset and
+        // re-dispatch verification so any "verified email" trust signal stays honest.
+        $emailChanged = array_key_exists('email', $data) && $data['email'] !== $user->email;
+
         $user->update($data);
+
+        if ($emailChanged) {
+            $user->forceFill(['email_verified_at' => null])->save();
+            SendEmailVerificationJob::dispatch($user);
+        }
 
         return response()->json($this->userPayload($user->fresh()->load('role.permissions')));
     }
