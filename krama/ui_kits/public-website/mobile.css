@@ -4,6 +4,16 @@
 .krm-mobile-drawer { display: none; }
 .krm-bottom-nav    { display: none; }
 
+/* ── Page-hero heading/subtitle size presets (admin-configurable per hero) ──
+   clamp() = one setting that scales down automatically on smaller screens. */
+.krm-page-hero.krm-hh-sm h1, .krm-page-hero.krm-hh-sm h2 { font-size: clamp(20px, 3.4vw, 26px) !important; }
+.krm-page-hero.krm-hh-md h1, .krm-page-hero.krm-hh-md h2 { font-size: clamp(22px, 4vw, 32px) !important; }
+.krm-page-hero.krm-hh-lg h1, .krm-page-hero.krm-hh-lg h2 { font-size: clamp(26px, 5vw, 40px) !important; }
+.krm-page-hero.krm-hh-xl h1, .krm-page-hero.krm-hh-xl h2 { font-size: clamp(30px, 6vw, 52px) !important; }
+.krm-page-hero.krm-hs-sm p { font-size: clamp(12px, 2vw, 14px) !important; }
+.krm-page-hero.krm-hs-md p { font-size: clamp(13px, 2.4vw, 17px) !important; }
+.krm-page-hero.krm-hs-lg p { font-size: clamp(15px, 2.8vw, 20px) !important; }
+
 /* ── Auth pages: on desktop the split-screen Shell provides its own chrome,
       so hide the site header/footer there (mobile re-shows them below). ────── */
 .krm-auth-page > .krm-header,
@@ -16,6 +26,9 @@
    MOBILE  ≤ 767px
 ═══════════════════════════════════════════════════════════════════════════ */
 @media (max-width: 767px) {
+  /* Hero heading/subtitle hidden on mobile (admin "Hide on mobile" toggle) — image stays. */
+  .krm-page-hero .krm-hero-hide-mobile { display: none !important; }
+
 
   * { box-sizing: border-box; }
   body { overflow-x: hidden; }

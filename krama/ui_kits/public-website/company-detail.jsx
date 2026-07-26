@@ -97,6 +97,7 @@
     const [loading, setLoading] = React.useState(true);
     const [tab, setTab] = React.useState(initialTab || (isMobile ? "jobs" : "about"));
     const [jobsPage, setJobsPage] = React.useState(0);
+    const [jobSearch, setJobSearch] = React.useState("");
     const [galleryPage, setGalleryPage] = React.useState(0);
     // Jobs tab defaults to List view on mobile (grid on larger screens).
     const [jobsView, setJobsView] = React.useState(isMobile ? "list" : "grid");
@@ -183,8 +184,8 @@
     return (
       <div style={{ background: "var(--surface-page)", minHeight: "70vh" }}>
         <AnnouncementBar b={loadBanner("companyProfileTopBanner", CO_PROFILE_TOP_DEFAULT)} onNav={onNav} />
-        {/* Hero band — same 191px height/teal style as the page heroes; shows the company's own cover photo when set, else a branded fallback */}
-        <div className={"krm-co-hero" + (coverBanner ? " krm-co-hero--img" : "")} style={{ position: "relative", background: coverBanner ? "var(--surface-sunken)" : "var(--teal-800)", overflow: "hidden", height: 191 }}>
+        {/* Hero band — default 1600×360 (matches the other page heroes); shows the company's own cover photo when set, else a branded fallback */}
+        <div className={"krm-co-hero" + (coverBanner ? " krm-co-hero--img" : "")} style={{ position: "relative", background: coverBanner ? "var(--surface-sunken)" : "var(--teal-800)", overflow: "hidden", aspectRatio: "1600 / 360", maxHeight: 360 }}>
           {coverBanner
             ? <img className="krm-co-hero-pic" src={coverBanner} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
             : <React.Fragment>
@@ -307,14 +308,30 @@
             {tab === "jobs" && (
               jobs.length > 0
                 ? (() => {
-                    const pages = Math.max(1, Math.ceil(jobs.length / JOBS_PER));
+                    const q = jobSearch.trim().toLowerCase();
+                    const filtered = q
+                      ? jobs.filter((j) => [j.title, j.location, j.category, j.type, j.experienceLevel]
+                          .filter(Boolean).some((v) => String(v).toLowerCase().indexOf(q) !== -1))
+                      : jobs;
+                    const pages = Math.max(1, Math.ceil(filtered.length / JOBS_PER));
                     const safe = Math.min(jobsPage, pages - 1);
-                    const slice = jobs.slice(safe * JOBS_PER, safe * JOBS_PER + JOBS_PER);
+                    const slice = filtered.slice(safe * JOBS_PER, safe * JOBS_PER + JOBS_PER);
                     return (
                       <React.Fragment>
-                        <Toolbar count={jobs.length} noun="job" view={jobsView} onView={setJobsView} />
-                        <JobsView view={jobsView} items={slice} saved={saved} toggleSave={toggleSave} onOpenJob={onOpenJob} />
-                        <Pager page={safe} pages={pages} onPage={setJobsPage} />
+                        <div style={{ position: "relative", marginBottom: 14 }}>
+                          <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--text-faint)", display: "inline-flex", pointerEvents: "none" }}>{I("search", 16)}</span>
+                          <input value={jobSearch} onChange={(e) => { setJobSearch(e.target.value); setJobsPage(0); }}
+                            placeholder={"Search jobs at " + name + "…"}
+                            style={{ width: "100%", boxSizing: "border-box", padding: "10px 34px", borderRadius: "var(--radius-md)", border: "1px solid var(--border)", background: "var(--surface-card)", fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)", color: "var(--text-body)", outline: "none" }} />
+                          {jobSearch && <button onClick={() => { setJobSearch(""); setJobsPage(0); }} aria-label="Clear search" style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", border: "none", background: "transparent", cursor: "pointer", color: "var(--text-muted)", display: "inline-flex" }}>{I("x", 15)}</button>}
+                        </div>
+                        {filtered.length > 0
+                          ? <React.Fragment>
+                              <Toolbar count={filtered.length} noun="job" view={jobsView} onView={setJobsView} />
+                              <JobsView view={jobsView} items={slice} saved={saved} toggleSave={toggleSave} onOpenJob={onOpenJob} />
+                              <Pager page={safe} pages={pages} onPage={setJobsPage} />
+                            </React.Fragment>
+                          : <Card padding={0}><EmptyState icon={I("search", 22)} title="No matching jobs" description={"No roles match “" + jobSearch.trim() + "”. Try a different keyword."} /></Card>}
                       </React.Fragment>
                     );
                   })()

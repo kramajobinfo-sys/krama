@@ -1288,7 +1288,7 @@
               {/* Cover banner image */}
               <div>
                 <div style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-strong)", marginBottom: 4 }}>Cover banner</div>
-                <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginBottom: 8 }}>Wide banner shown at the top of your company profile page. Recommended: 1600×400px.</div>
+                <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginBottom: 8 }}>Wide banner shown at the top of your company profile page. Recommended: 1600×360px.</div>
                 <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
                   <div style={{ flex: 1, height: 100, borderRadius: "var(--radius-md)", border: "1px dashed var(--border-strong)", background: "var(--surface-sunken)", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
                     {coverBannerUrl ? <img src={coverBannerUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span style={{ color: "var(--text-faint)" }}>{I("panorama", 28)}</span>}

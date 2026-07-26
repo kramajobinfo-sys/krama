@@ -3109,6 +3109,18 @@
           <div style={{ display: "grid", gap: 14 }}>
             <Input label="Heading" value={h.heading != null ? h.heading : defaultHeading} onChange={(e) => setBanner(key, "heading", e.target.value)} />
             <Textarea label="Subtitle" rows={2} value={h.sub || ""} onChange={(e) => setBanner(key, "sub", e.target.value)} />
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <Select label="Heading size" value={h.headingSize || ""} onChange={(e) => setBanner(key, "headingSize", e.target.value)}
+                options={[{ value: "", label: "Default" }, { value: "sm", label: "Small" }, { value: "md", label: "Medium" }, { value: "lg", label: "Large" }, { value: "xl", label: "Extra large" }]} />
+              <Select label="Subtitle size" value={h.subSize || ""} onChange={(e) => setBanner(key, "subSize", e.target.value)}
+                options={[{ value: "", label: "Default" }, { value: "sm", label: "Small" }, { value: "md", label: "Medium" }, { value: "lg", label: "Large" }]} />
+            </div>
+            <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: -6 }}>Font sizes scale down automatically on mobile.</div>
+            <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: "8px 10px", borderRadius: "var(--radius-md)", background: h.hideOnMobile ? "var(--brand-subtle)" : "var(--surface-sunken)", border: "1px solid " + (h.hideOnMobile ? "var(--brand)" : "var(--border-subtle)") }}>
+              <input type="checkbox" checked={!!h.hideOnMobile} onChange={(e) => setBanner(key, "hideOnMobile", e.target.checked)} style={{ width: 16, height: 16, accentColor: "var(--brand)", cursor: "pointer", flexShrink: 0 }} />
+              <span style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-strong)" }}>Hide heading &amp; subtitle on mobile</span>
+              <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>Banner image still shows.</span>
+            </label>
             <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: "8px 10px", borderRadius: "var(--radius-md)", background: h.hideText ? "var(--brand-subtle)" : "var(--surface-sunken)", border: "1px solid " + (h.hideText ? "var(--brand)" : "var(--border-subtle)") }}>
               <input type="checkbox" checked={!!h.hideText} onChange={(e) => setBanner(key, "hideText", e.target.checked)} style={{ width: 16, height: 16, accentColor: "var(--brand)", cursor: "pointer", flexShrink: 0 }} />
               <span style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-strong)" }}>Show background image only</span>
@@ -3461,6 +3473,15 @@
             <div style={{ display: "grid", gap: 14 }}>
               <Input label="Heading" value={cmh.heading || "Connect with the Krama community"} onChange={(e) => setBanner("communityHero", "heading", e.target.value)} />
               <Textarea label="Subtitle" rows={2} value={cmh.sub || ""} onChange={(e) => setBanner("communityHero", "sub", e.target.value)} />
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <Select label="Heading size" value={cmh.headingSize || ""} onChange={(e) => setBanner("communityHero", "headingSize", e.target.value)} options={[{ value: "", label: "Default" }, { value: "sm", label: "Small" }, { value: "md", label: "Medium" }, { value: "lg", label: "Large" }, { value: "xl", label: "Extra large" }]} />
+                <Select label="Subtitle size" value={cmh.subSize || ""} onChange={(e) => setBanner("communityHero", "subSize", e.target.value)} options={[{ value: "", label: "Default" }, { value: "sm", label: "Small" }, { value: "md", label: "Medium" }, { value: "lg", label: "Large" }]} />
+              </div>
+              <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: -6 }}>Font sizes scale down automatically on mobile.</div>
+              <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: "8px 10px", borderRadius: "var(--radius-md)", background: cmh.hideOnMobile ? "var(--brand-subtle)" : "var(--surface-sunken)", border: "1px solid " + (cmh.hideOnMobile ? "var(--brand)" : "var(--border-subtle)") }}>
+                <input type="checkbox" checked={!!cmh.hideOnMobile} onChange={(e) => setBanner("communityHero", "hideOnMobile", e.target.checked)} style={{ width: 16, height: 16, accentColor: "var(--brand)", cursor: "pointer", flexShrink: 0 }} />
+                <span style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-strong)" }}>Hide heading &amp; subtitle on mobile</span>
+              </label>
               <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: "8px 10px", borderRadius: "var(--radius-md)", background: cmh.hideText ? "var(--brand-subtle)" : "var(--surface-sunken)", border: "1px solid " + (cmh.hideText ? "var(--brand)" : "var(--border-subtle)") }}>
                 <input type="checkbox" checked={!!cmh.hideText} onChange={(e) => setBanner("communityHero", "hideText", e.target.checked)} style={{ width: 16, height: 16, accentColor: "var(--brand)", cursor: "pointer", flexShrink: 0 }} />
                 <span style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-strong)" }}>Show background image only</span>
@@ -3532,6 +3553,15 @@
             <div style={{ display: "grid", gap: 14 }}>
               <Input label="Heading" value={eh.heading || "Hire the right people, faster."} onChange={(e) => setBanner("employersHero", "heading", e.target.value)} />
               <Textarea label="Subtitle" rows={2} value={eh.sub || ""} onChange={(e) => setBanner("employersHero", "sub", e.target.value)} />
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <Select label="Heading size" value={eh.headingSize || ""} onChange={(e) => setBanner("employersHero", "headingSize", e.target.value)} options={[{ value: "", label: "Default" }, { value: "sm", label: "Small" }, { value: "md", label: "Medium" }, { value: "lg", label: "Large" }, { value: "xl", label: "Extra large" }]} />
+                <Select label="Subtitle size" value={eh.subSize || ""} onChange={(e) => setBanner("employersHero", "subSize", e.target.value)} options={[{ value: "", label: "Default" }, { value: "sm", label: "Small" }, { value: "md", label: "Medium" }, { value: "lg", label: "Large" }]} />
+              </div>
+              <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: -6 }}>Font sizes scale down automatically on mobile.</div>
+              <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: "8px 10px", borderRadius: "var(--radius-md)", background: eh.hideOnMobile ? "var(--brand-subtle)" : "var(--surface-sunken)", border: "1px solid " + (eh.hideOnMobile ? "var(--brand)" : "var(--border-subtle)") }}>
+                <input type="checkbox" checked={!!eh.hideOnMobile} onChange={(e) => setBanner("employersHero", "hideOnMobile", e.target.checked)} style={{ width: 16, height: 16, accentColor: "var(--brand)", cursor: "pointer", flexShrink: 0 }} />
+                <span style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-strong)" }}>Hide heading &amp; subtitle on mobile</span>
+              </label>
               <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: "8px 10px", borderRadius: "var(--radius-md)", background: eh.hideText ? "var(--brand-subtle)" : "var(--surface-sunken)", border: "1px solid " + (eh.hideText ? "var(--brand)" : "var(--border-subtle)") }}>
                 <input type="checkbox" checked={!!eh.hideText} onChange={(e) => setBanner("employersHero", "hideText", e.target.checked)} style={{ width: 16, height: 16, accentColor: "var(--brand)", cursor: "pointer", flexShrink: 0 }} />
                 <span style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-strong)" }}>Show background image only</span>
@@ -3695,6 +3725,15 @@
             <div style={{ display: "grid", gap: 14 }}>
               <Input label="Heading" value={fh.heading || "Find your next opportunity"} onChange={(e) => setBanner("findJobsHero", "heading", e.target.value)} />
               <Textarea label="Subtitle" rows={2} value={fh.sub || ""} onChange={(e) => setBanner("findJobsHero", "sub", e.target.value)} />
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <Select label="Heading size" value={fh.headingSize || ""} onChange={(e) => setBanner("findJobsHero", "headingSize", e.target.value)} options={[{ value: "", label: "Default" }, { value: "sm", label: "Small" }, { value: "md", label: "Medium" }, { value: "lg", label: "Large" }, { value: "xl", label: "Extra large" }]} />
+                <Select label="Subtitle size" value={fh.subSize || ""} onChange={(e) => setBanner("findJobsHero", "subSize", e.target.value)} options={[{ value: "", label: "Default" }, { value: "sm", label: "Small" }, { value: "md", label: "Medium" }, { value: "lg", label: "Large" }]} />
+              </div>
+              <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: -6 }}>Font sizes scale down automatically on mobile.</div>
+              <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: "8px 10px", borderRadius: "var(--radius-md)", background: fh.hideOnMobile ? "var(--brand-subtle)" : "var(--surface-sunken)", border: "1px solid " + (fh.hideOnMobile ? "var(--brand)" : "var(--border-subtle)") }}>
+                <input type="checkbox" checked={!!fh.hideOnMobile} onChange={(e) => setBanner("findJobsHero", "hideOnMobile", e.target.checked)} style={{ width: 16, height: 16, accentColor: "var(--brand)", cursor: "pointer", flexShrink: 0 }} />
+                <span style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-strong)" }}>Hide heading &amp; subtitle on mobile</span>
+              </label>
               <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: "8px 10px", borderRadius: "var(--radius-md)", background: fh.hideText ? "var(--brand-subtle)" : "var(--surface-sunken)", border: "1px solid " + (fh.hideText ? "var(--brand)" : "var(--border-subtle)") }}>
                 <input type="checkbox" checked={!!fh.hideText} onChange={(e) => setBanner("findJobsHero", "hideText", e.target.checked)} style={{ width: 16, height: 16, accentColor: "var(--brand)", cursor: "pointer", flexShrink: 0 }} />
                 <span style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-strong)" }}>Show background image only</span>
@@ -3897,6 +3936,15 @@
             <div style={{ display: "grid", gap: 14 }}>
               <Input label="Heading" value={ch.heading || "Verified companies hiring now"} onChange={(e) => setBanner("companiesHero", "heading", e.target.value)} />
               <Textarea label="Subtitle" rows={2} value={ch.sub || ""} onChange={(e) => setBanner("companiesHero", "sub", e.target.value)} />
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <Select label="Heading size" value={ch.headingSize || ""} onChange={(e) => setBanner("companiesHero", "headingSize", e.target.value)} options={[{ value: "", label: "Default" }, { value: "sm", label: "Small" }, { value: "md", label: "Medium" }, { value: "lg", label: "Large" }, { value: "xl", label: "Extra large" }]} />
+                <Select label="Subtitle size" value={ch.subSize || ""} onChange={(e) => setBanner("companiesHero", "subSize", e.target.value)} options={[{ value: "", label: "Default" }, { value: "sm", label: "Small" }, { value: "md", label: "Medium" }, { value: "lg", label: "Large" }]} />
+              </div>
+              <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: -6 }}>Font sizes scale down automatically on mobile.</div>
+              <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: "8px 10px", borderRadius: "var(--radius-md)", background: ch.hideOnMobile ? "var(--brand-subtle)" : "var(--surface-sunken)", border: "1px solid " + (ch.hideOnMobile ? "var(--brand)" : "var(--border-subtle)") }}>
+                <input type="checkbox" checked={!!ch.hideOnMobile} onChange={(e) => setBanner("companiesHero", "hideOnMobile", e.target.checked)} style={{ width: 16, height: 16, accentColor: "var(--brand)", cursor: "pointer", flexShrink: 0 }} />
+                <span style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-strong)" }}>Hide heading &amp; subtitle on mobile</span>
+              </label>
               <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: "8px 10px", borderRadius: "var(--radius-md)", background: ch.hideText ? "var(--brand-subtle)" : "var(--surface-sunken)", border: "1px solid " + (ch.hideText ? "var(--brand)" : "var(--border-subtle)") }}>
                 <input type="checkbox" checked={!!ch.hideText} onChange={(e) => setBanner("companiesHero", "hideText", e.target.checked)} style={{ width: 16, height: 16, accentColor: "var(--brand)", cursor: "pointer", flexShrink: 0 }} />
                 <span style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-strong)" }}>Show background image only</span>
@@ -4091,6 +4139,15 @@
             <div style={{ display: "grid", gap: 14 }}>
               <Input label="Heading" value={jh.heading || "Find the role that fits you"} onChange={(e) => setBanner("jobDetailHero", "heading", e.target.value)} />
               <Textarea label="Subtitle" rows={2} value={jh.sub || ""} onChange={(e) => setBanner("jobDetailHero", "sub", e.target.value)} />
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <Select label="Heading size" value={jh.headingSize || ""} onChange={(e) => setBanner("jobDetailHero", "headingSize", e.target.value)} options={[{ value: "", label: "Default" }, { value: "sm", label: "Small" }, { value: "md", label: "Medium" }, { value: "lg", label: "Large" }, { value: "xl", label: "Extra large" }]} />
+                <Select label="Subtitle size" value={jh.subSize || ""} onChange={(e) => setBanner("jobDetailHero", "subSize", e.target.value)} options={[{ value: "", label: "Default" }, { value: "sm", label: "Small" }, { value: "md", label: "Medium" }, { value: "lg", label: "Large" }]} />
+              </div>
+              <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: -6 }}>Font sizes scale down automatically on mobile.</div>
+              <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: "8px 10px", borderRadius: "var(--radius-md)", background: jh.hideOnMobile ? "var(--brand-subtle)" : "var(--surface-sunken)", border: "1px solid " + (jh.hideOnMobile ? "var(--brand)" : "var(--border-subtle)") }}>
+                <input type="checkbox" checked={!!jh.hideOnMobile} onChange={(e) => setBanner("jobDetailHero", "hideOnMobile", e.target.checked)} style={{ width: 16, height: 16, accentColor: "var(--brand)", cursor: "pointer", flexShrink: 0 }} />
+                <span style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-strong)" }}>Hide heading &amp; subtitle on mobile</span>
+              </label>
               <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: "8px 10px", borderRadius: "var(--radius-md)", background: jh.hideText ? "var(--brand-subtle)" : "var(--surface-sunken)", border: "1px solid " + (jh.hideText ? "var(--brand)" : "var(--border-subtle)") }}>
                 <input type="checkbox" checked={!!jh.hideText} onChange={(e) => setBanner("jobDetailHero", "hideText", e.target.checked)} style={{ width: 16, height: 16, accentColor: "var(--brand)", cursor: "pointer", flexShrink: 0 }} />
                 <span style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-strong)" }}>Show background image only</span>

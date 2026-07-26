@@ -3,6 +3,16 @@
   if (!window.KramaDesignSystem_1a6f65) { return setTimeout(init, 40); }
   const { Button, Badge } = window.KramaDesignSystem_1a6f65;
 
+  // Page-hero heading/subtitle size presets (admin-configurable per hero). Returns CSS
+  // classes; the actual sizes live in mobile.css and use clamp() so they scale down on
+  // mobile automatically. Empty => the hero keeps its default size.
+  window.kHeroCls = function (h) {
+    h = h || {};
+    var hh = ({ sm: "krm-hh-sm", md: "krm-hh-md", lg: "krm-hh-lg", xl: "krm-hh-xl" })[h.headingSize] || "";
+    var hs = ({ sm: "krm-hs-sm", md: "krm-hs-md", lg: "krm-hs-lg" })[h.subSize] || "";
+    return (hh ? " " + hh : "") + (hs ? " " + hs : "");
+  };
+
   function UserMenu({ user, onLogout, onNav }) {
     const [open, setOpen] = React.useState(false);
     const initials = user.name ? user.name.split(" ").map(w => w[0]).join("").slice(0,2).toUpperCase() : "?";

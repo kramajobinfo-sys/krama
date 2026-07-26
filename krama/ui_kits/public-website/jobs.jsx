@@ -418,7 +418,7 @@
         {/* top banner */}
         {(() => { const h = loadBanner("findJobsHero", FJ_HERO_DEFAULT); const hasImg = !!h.image; const showTxt = !h.hideText;
           const txt = (
-            <div style={{ maxWidth: 1200, margin: "0 auto", width: "100%", padding: hasImg ? "0 32px" : 0 }}>
+            <div className={h.hideOnMobile ? "krm-hero-hide-mobile" : undefined} style={{ maxWidth: 1200, margin: "0 auto", width: "100%", padding: hasImg ? "0 32px" : 0 }}>
               <div style={{ fontSize: "var(--text-xs)", fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--teal-200)" }}>{TR("Find jobs")}</div>
               <h1 style={{ color: "#fff", fontSize: "var(--text-4xl)", fontWeight: 800, letterSpacing: "-0.02em", marginTop: 6 }}>{TR(h.heading)}</h1>
               <p style={{ color: "var(--stone-300)", fontSize: "var(--text-lg)", marginTop: 8 }}>{TR(h.sub)}</p>
@@ -426,7 +426,7 @@
           );
           return (
         /* Background image renders identically whether or not text is shown — unticking just overlays the heading/subtitle */
-        <div className={"krm-page-hero" + (hasImg ? " krm-page-hero--img" : "")} style={{ position: "relative", background: "var(--teal-800)", overflow: "hidden", padding: hasImg ? 0 : "44px 32px", aspectRatio: hasImg ? "1600 / 360" : undefined, maxHeight: hasImg ? 360 : undefined }}>
+        <div className={"krm-page-hero" + (hasImg ? " krm-page-hero--img" : "") + (window.kHeroCls ? window.kHeroCls(h) : "")} style={{ position: "relative", background: "var(--teal-800)", overflow: "hidden", padding: hasImg ? 0 : "44px 32px", aspectRatio: hasImg ? "1600 / 360" : undefined, maxHeight: hasImg ? 360 : undefined }}>
           {hasImg
             ? <img className="krm-page-hero-bg" src={h.image} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: h.fit === "contain" ? "contain" : "cover", display: "block" }} />
             : <div style={{ position: "absolute", inset: 0, background: "url('../../assets/krama-pattern.svg')", backgroundSize: 72, opacity: 0.08 }} />}
@@ -631,14 +631,14 @@
         {/* header strip */}
         {(() => { const h = loadBanner("companiesHero", CO_HERO_DEFAULT); const hasImg = !!h.image; const showTxt = !h.hideText;
           const txt = (
-            <div style={{ maxWidth: 1200, margin: "0 auto", width: "100%", padding: hasImg ? "0 32px" : 0 }}>
+            <div className={h.hideOnMobile ? "krm-hero-hide-mobile" : undefined} style={{ maxWidth: 1200, margin: "0 auto", width: "100%", padding: hasImg ? "0 32px" : 0 }}>
               <div style={{ fontSize: "var(--text-xs)", fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--teal-200)" }}>{TR("Companies")}</div>
               <h1 style={{ color: "#fff", fontSize: "var(--text-4xl)", fontWeight: 800, letterSpacing: "-0.02em", marginTop: 6 }}>{TR(h.heading)}</h1>
               <p style={{ color: "var(--stone-300)", fontSize: "var(--text-lg)", marginTop: 8 }}>{TR(h.sub).replace("{count}", D.companies.length)}</p>
             </div>
           );
           return (
-        <div className={"krm-page-hero" + (hasImg ? " krm-page-hero--img" : "")} style={{ position: "relative", background: "var(--teal-800)", overflow: "hidden", padding: hasImg ? 0 : "44px 32px", aspectRatio: hasImg ? "1600 / 360" : undefined, maxHeight: hasImg ? 360 : undefined }}>
+        <div className={"krm-page-hero" + (hasImg ? " krm-page-hero--img" : "") + (window.kHeroCls ? window.kHeroCls(h) : "")} style={{ position: "relative", background: "var(--teal-800)", overflow: "hidden", padding: hasImg ? 0 : "44px 32px", aspectRatio: hasImg ? "1600 / 360" : undefined, maxHeight: hasImg ? 360 : undefined }}>
           {hasImg
             ? <img className="krm-page-hero-bg" src={h.image} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: h.fit === "contain" ? "contain" : "cover", display: "block" }} />
             : <div style={{ position: "absolute", inset: 0, background: "url('../../assets/krama-pattern.svg')", backgroundSize: 72, opacity: 0.08 }} />}
