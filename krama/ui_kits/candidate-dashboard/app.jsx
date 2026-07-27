@@ -16,6 +16,36 @@
   });
   const I = (n, s) => <LucideIcon name={n} size={s || 18} />;
 
+  // Lightweight rich-text editor (same toolbar as the employer job/company forms) so
+  // candidates can format their summary/experience without writing HTML by hand.
+  function RichEditor({ label, value, onChange, placeholder, rows }) {
+    const ref = React.useRef(null);
+    React.useEffect(function () { if (ref.current) ref.current.innerHTML = value || ""; }, []);
+    const exec = function (cmd) { if (ref.current) ref.current.focus(); document.execCommand(cmd, false, null); };
+    const tb = { border: "1px solid var(--border)", background: "var(--surface-page)", borderRadius: "var(--radius-sm)", cursor: "pointer", padding: "3px 9px", fontSize: "var(--text-xs)", fontFamily: "var(--font-sans)", color: "var(--text-body)", lineHeight: 1.5, display: "inline-flex", alignItems: "center" };
+    const sep = <span style={{ display: "inline-block", width: 1, alignSelf: "stretch", background: "var(--border)", margin: "2px 2px" }} />;
+    return (
+      <div>
+        {label && <div style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-strong)", marginBottom: 6 }}>{label}</div>}
+        <div style={{ border: "1px solid var(--border)", borderRadius: "var(--radius-md)", overflow: "hidden" }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 4, padding: "6px 10px", background: "var(--surface-page)", borderBottom: "1px solid var(--border)" }}>
+            <button type="button" onMouseDown={function (e) { e.preventDefault(); exec("bold"); }} style={tb} title="Bold"><strong>B</strong></button>
+            <button type="button" onMouseDown={function (e) { e.preventDefault(); exec("italic"); }} style={tb} title="Italic"><em>I</em></button>
+            <button type="button" onMouseDown={function (e) { e.preventDefault(); exec("underline"); }} style={tb} title="Underline"><span style={{ textDecoration: "underline" }}>U</span></button>
+            {sep}
+            <button type="button" onMouseDown={function (e) { e.preventDefault(); exec("insertUnorderedList"); }} style={tb} title="Bullet list">• Bullet list</button>
+            <button type="button" onMouseDown={function (e) { e.preventDefault(); exec("insertOrderedList"); }} style={tb} title="Numbered list">1. Numbered</button>
+            {sep}
+            <button type="button" onMouseDown={function (e) { e.preventDefault(); exec("removeFormat"); }} style={tb} title="Clear formatting">Clear format</button>
+          </div>
+          <div ref={ref} contentEditable className="krama-rich-body" data-placeholder={placeholder || "Type here…"} suppressContentEditableWarning
+            onInput={function () { onChange && onChange(ref.current ? ref.current.innerHTML : ""); }}
+            style={{ padding: "10px 12px", minHeight: (rows || 3) * 26, outline: "none", fontSize: "var(--text-sm)", color: "var(--text-body)", lineHeight: 1.65, background: "var(--surface-card)" }} />
+        </div>
+      </div>
+    );
+  }
+
   // Resize + convert any image to JPEG ≤ maxPx on longest side, quality 0–1
   function compressImage(file, maxPx, quality) {
     maxPx = maxPx || 400; quality = quality || 0.82;
@@ -816,11 +846,17 @@
     var [saved, setSaved] = React.useState(false);
     var [uploading, setUploading] = React.useState(false);
     var cvRef = React.useRef(null);
+    // Stable per-item key for experience rows so the (mount-once) rich editors don't
+    // show stale content when a row is removed. Kept in memory only; stripped on save.
+    var expKeyRef = React.useRef(1);
+    function withExpKeys(list) { return (list || []).map(function (it) { return Object.assign({}, it, { _k: expKeyRef.current++ }); }); }
 
     React.useEffect(function() {
       cand.fetchResume().then(function(r) {
         if (r) {
-          setResume({ headline: r.headline || "", summary: r.summary || "", has_cv: !!(r.download_url), data: Object.assign({ education: [], experience: [], skills: [], certifications: [] }, r.data || {}) });
+          var d = Object.assign({ education: [], experience: [], skills: [], certifications: [] }, r.data || {});
+          d.experience = withExpKeys(d.experience);
+          setResume({ headline: r.headline || "", summary: r.summary || "", has_cv: !!(r.download_url), data: d });
         }
         setLoading(false);
       }).catch(function(){ setLoading(false); });
@@ -831,7 +867,8 @@
 
     function saveAll() {
       setBusy(true); setSaved(false);
-      cand.saveResume({ headline: resume.headline, summary: resume.summary, data: resume.data }).then(function(r) {
+      var cleanData = Object.assign({}, resume.data, { experience: (resume.data.experience || []).map(function (it) { var c = Object.assign({}, it); delete c._k; return c; }) });
+      cand.saveResume({ headline: resume.headline, summary: resume.summary, data: cleanData }).then(function(r) {
         setSaved(true); setBusy(false);
       }).catch(function(err){ alert(err.message || "Save failed."); setBusy(false); });
     }
@@ -861,7 +898,7 @@
     function removeEdu(i) { setData("education", resume.data.education.filter(function(_,idx){ return idx !== i; })); }
 
     // Experience helpers
-    function addExp() { setData("experience", resume.data.experience.concat({ role: "", org: "", years: "", note: "" })); }
+    function addExp() { setData("experience", resume.data.experience.concat({ role: "", org: "", years: "", note: "", _k: expKeyRef.current++ })); }
     function updateExp(i, key, val) { var arr = resume.data.experience.slice(); arr[i] = Object.assign({}, arr[i], { [key]: val }); setData("experience", arr); }
     function removeExp(i) { setData("experience", resume.data.experience.filter(function(_,idx){ return idx !== i; })); }
 
@@ -921,11 +958,7 @@
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <Input label="Headline / Job title" value={resume.headline} onChange={function(e){ setField("headline", e.target.value); }} placeholder="e.g. Senior Accountant" />
-            <div>
-              <label style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-strong)", display: "block", marginBottom: 6 }}>Summary</label>
-              <textarea value={resume.summary} onChange={function(e){ setField("summary", e.target.value); }} placeholder="Brief professional summary…" rows={4}
-                style={{ width: "100%", padding: "10px 12px", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)", resize: "vertical", boxSizing: "border-box", color: "var(--text-body)" }} />
-            </div>
+            <RichEditor label="Summary" rows={4} value={resume.summary} onChange={function(v){ setField("summary", v); }} placeholder="Brief professional summary…" />
           </div>
         </Card>
 
@@ -959,18 +992,14 @@
           {resume.data.experience.length === 0 && <div style={{ color: "var(--text-faint)", fontSize: "var(--text-sm)" }}>No experience entries yet.</div>}
           {resume.data.experience.map(function(e, i) {
             return (
-              <div key={i} style={{ border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-md)", padding: "14px", marginBottom: 12 }}>
+              <div key={e._k != null ? e._k : i} style={{ border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-md)", padding: "14px", marginBottom: 12 }}>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10, marginBottom: 10, alignItems: "end" }}>
                   <Input label="Job title" value={e.role} onChange={function(ev){ updateExp(i,"role",ev.target.value); }} placeholder="e.g. Senior Accountant" />
                   <Input label="Company" value={e.org} onChange={function(ev){ updateExp(i,"org",ev.target.value); }} placeholder="Company name" />
                   <Input label="Years" value={e.years} onChange={function(ev){ updateExp(i,"years",ev.target.value); }} placeholder="2021–present" />
                   <button onClick={function(){ removeExp(i); }} style={{ height: 40, width: 36, border: "1px solid var(--border)", borderRadius: "var(--radius-md)", background: "transparent", cursor: "pointer", color: "var(--danger)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 20 }}>{I("trash-2", 15)}</button>
                 </div>
-                <div>
-                  <label style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-strong)", display: "block", marginBottom: 6 }}>Description</label>
-                  <textarea value={e.note} onChange={function(ev){ updateExp(i,"note",ev.target.value); }} placeholder="Key responsibilities and achievements…" rows={2}
-                    style={{ width: "100%", padding: "10px 12px", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)", resize: "vertical", boxSizing: "border-box", color: "var(--text-body)" }} />
-                </div>
+                <RichEditor key={"expnote-" + (e._k != null ? e._k : i)} label="Description" rows={2} value={e.note} onChange={function(v){ updateExp(i,"note",v); }} placeholder="Key responsibilities and achievements…" />
               </div>
             );
           })}

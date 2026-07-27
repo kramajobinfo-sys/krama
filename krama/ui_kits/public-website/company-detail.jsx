@@ -269,12 +269,10 @@
                   {description
                     ? <div className="krama-rich-body" style={{ fontSize: "var(--text-base)", color: "var(--text-body)", lineHeight: 1.7 }} dangerouslySetInnerHTML={{ __html: description }} />
                     : <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>{loading ? "Loading…" : "This company hasn't added a description yet."}</div>}
-                  {cultureValues.length > 0 && (
+                  {c.culture_values && (
                     <div style={{ marginTop: 20, paddingTop: 16, borderTop: "1px solid var(--border-subtle)" }}>
                       <div style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-strong)", marginBottom: 10 }}>Culture &amp; values</div>
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                        {cultureValues.map(function(v, i) { return <span key={i} style={{ padding: "4px 12px", borderRadius: 99, background: "var(--brand-subtle)", color: "var(--text-brand)", fontSize: "var(--text-xs)", fontWeight: 600 }}>{v}</span>; })}
-                      </div>
+                      <div className="krama-rich-body" style={{ fontSize: "var(--text-base)", color: "var(--text-body)", lineHeight: 1.7 }} dangerouslySetInnerHTML={{ __html: c.culture_values }} />
                     </div>
                   )}
                   {benefitsTags.length > 0 && (

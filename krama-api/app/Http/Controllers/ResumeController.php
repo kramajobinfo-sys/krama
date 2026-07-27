@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Resume;
+use App\Support\HtmlSanitizer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -77,6 +78,19 @@ class ResumeController extends Controller
             'data.certifications'   => 'nullable|array|max:30',
             'data.languages'        => 'nullable|array|max:20',
         ]);
+
+        // Summary + each experience note are rich text rendered as HTML — strip unsafe markup.
+        if (array_key_exists('summary', $data)) {
+            $data['summary'] = HtmlSanitizer::clean($data['summary']);
+        }
+        if (isset($data['data']['experience']) && is_array($data['data']['experience'])) {
+            $data['data']['experience'] = array_map(function ($exp) {
+                if (is_array($exp) && array_key_exists('note', $exp)) {
+                    $exp['note'] = HtmlSanitizer::clean($exp['note']);
+                }
+                return $exp;
+            }, $data['data']['experience']);
+        }
 
         $resume = Resume::updateOrCreate(
             ['candidate_id' => $user->id],

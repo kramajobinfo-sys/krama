@@ -987,7 +987,7 @@
                         <div>
                           <div style={{ fontWeight: 700, fontSize: "var(--text-sm)", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 6 }}>Headline</div>
                           <div style={{ fontWeight: 700, fontSize: "var(--text-lg)", color: "var(--text-strong)" }}>{headline}</div>
-                          {resume.summary && <p style={{ fontSize: "var(--text-base)", color: "var(--text-body)", marginTop: 6, lineHeight: 1.6 }}>{resume.summary}</p>}
+                          {resume.summary && <div className="krama-rich-body" style={{ fontSize: "var(--text-base)", color: "var(--text-body)", marginTop: 6, lineHeight: 1.6 }} dangerouslySetInnerHTML={{ __html: resume.summary }} />}
                         </div>
                       )}
                       {skills.length > 0 && (

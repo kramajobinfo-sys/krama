@@ -1283,7 +1283,7 @@
                 <Input label="Website" value={form.website} onChange={(e) => set("website", e.target.value)} iconLeft={I("globe", 16)} />
               </div>
               <Input label="Address" value={form.address} onChange={(e) => set("address", e.target.value)} iconLeft={I("map-pin", 16)} />
-              <Textarea label="About the company" rows={5} value={form.description} onChange={(e) => set("description", e.target.value)} placeholder="Tell candidates about your company, culture, and mission…" />
+              <RichEditor label="About the company" rows={5} value={form.description} onChange={(v) => set("description", v)} placeholder="Tell candidates about your company, culture, and mission…" />
 
               {/* Cover banner image */}
               <div>
@@ -1340,7 +1340,7 @@
               </div>
 
               {/* Culture & values */}
-              <Textarea label="Culture & values" rows={3} value={form.culture_values} onChange={(e) => set("culture_values", e.target.value)} placeholder="Describe your company culture, mission, and what makes your workplace special…" />
+              <RichEditor label="Culture & values" rows={3} value={form.culture_values} onChange={(v) => set("culture_values", v)} placeholder="Describe your company culture, mission, and what makes your workplace special…" />
 
               {/* Benefits tags */}
               <div>

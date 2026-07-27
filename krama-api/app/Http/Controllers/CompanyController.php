@@ -91,9 +91,12 @@ class CompanyController extends Controller
             'description'     => 'nullable|string|max:10000',
         ]);
 
-        // C-S1: the company "about" description is rendered raw on the public profile.
-        if (array_key_exists('description', $data)) {
-            $data['description'] = HtmlSanitizer::clean($data['description']);
+        // C-S1: the company "about" description + culture & values are rendered raw
+        // (rich text) on the public profile, so strip unsafe HTML before storing.
+        foreach (['description', 'culture_values'] as $richField) {
+            if (array_key_exists($richField, $data)) {
+                $data[$richField] = HtmlSanitizer::clean($data[$richField]);
+            }
         }
 
         // Single INSERT: set status directly on the instance (bypasses fillable; no second UPDATE)
@@ -136,9 +139,11 @@ class CompanyController extends Controller
 
         $needsResubmit = in_array($company->status, ['rejected', 'suspended']);
 
-        // C-S1: sanitize the rich "about" description on edit too.
-        if (array_key_exists('description', $data)) {
-            $data['description'] = HtmlSanitizer::clean($data['description']);
+        // C-S1: sanitize the rich "about" description + culture & values on edit too.
+        foreach (['description', 'culture_values'] as $richField) {
+            if (array_key_exists($richField, $data)) {
+                $data[$richField] = HtmlSanitizer::clean($data[$richField]);
+            }
         }
 
         // Single UPDATE: fill validated data, set status directly if needed, then one save()
