@@ -1496,7 +1496,7 @@
   // A $0 plan is a timed trial only if trial_days is explicitly set (>0); otherwise it's genuinely free forever.
   const planIsTrial = (p) => !!p && Number(p.price) === 0 && Number(p.trial_days) > 0;
   const planIsFree = (p) => !!p && Number(p.price) === 0 && !planIsTrial(p);
-  const planIsCustom = (p) => !!p && /enterprise/i.test(p.name || "");
+  const planIsCustom = (p) => !!p && !!p.custom_pricing;
 
   // Renders a KHQR string to a QR image using the qrcodejs UMD lib (loaded on demand from the CDN).
   function KhqrCanvas({ value, size }) {

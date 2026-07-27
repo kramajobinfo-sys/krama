@@ -5004,6 +5004,7 @@
     const [bakongSaved, setBakongSaved] = React.useState(false);
     const [abaMerchant, setAbaMerchant] = React.useState("");
     const [abaKey, setAbaKey] = React.useState("");
+    const [abaSandbox, setAbaSandbox] = React.useState(false);
     const [abaSaved, setAbaSaved] = React.useState(false);
     const [stripeKey, setStripeKey] = React.useState("");
     const [stripeSaved, setStripeSaved] = React.useState(false);
@@ -5017,7 +5018,7 @@
         })
         .catch(function() {});
       window.KRAMA_ADMIN_API.fetchSettings('payment')
-        .then(function(d) { if (d) { setBakongToken(d.bakong_token || ""); setBakongCity(d.merchant_city || ""); setAbaMerchant(d.aba_merchant_id || ""); setAbaKey(d.aba_api_key || ""); setStripeKey(d.stripe_secret_key || ""); } })
+        .then(function(d) { if (d) { setBakongToken(d.bakong_token || ""); setBakongCity(d.merchant_city || ""); setAbaMerchant(d.aba_merchant_id || ""); setAbaKey(d.aba_api_key || ""); setAbaSandbox(!!d.aba_sandbox); setStripeKey(d.stripe_secret_key || ""); } })
         .catch(function() {});
       window.KRAMA_ADMIN_API.fetchSettings('cv_match')
         .then(function(d) { if (d && Object.keys(d).length) { setCvm(Object.assign({}, CVM_DEFAULTS, d)); } })
@@ -5035,7 +5036,7 @@
         .catch(function(e) { alert('Save failed: ' + (e && e.message ? e.message : 'Unknown error')); });
     };
     const saveAba = () => {
-      window.KRAMA_ADMIN_API.updateSettings('payment', { aba_merchant_id: abaMerchant, aba_api_key: abaKey })
+      window.KRAMA_ADMIN_API.updateSettings('payment', { aba_merchant_id: abaMerchant, aba_api_key: abaKey, aba_sandbox: abaSandbox })
         .then(function() { setAbaSaved(true); setTimeout(function() { setAbaSaved(false); }, 3000); })
         .catch(function(e) { alert('Save failed: ' + (e && e.message ? e.message : 'Unknown error')); });
     };
@@ -5128,6 +5129,13 @@
                     <Input label="PayWay API key" type="password" placeholder="••••••••••••" value={abaKey} onChange={(e) => setAbaKey(e.target.value)} />
                   </div>
                   <div style={{ fontSize: "var(--text-xs)", color: "var(--text-faint)", marginTop: 8 }}>Set your PayWay pushback URL to <code style={{ fontFamily: "var(--font-mono)" }}>/api/payments/aba/callback</code>. Stored server-side. Leave blank to confirm manually.</div>
+                  <label style={{ display: "flex", alignItems: "flex-start", gap: 10, marginTop: 14, padding: "10px 12px", borderRadius: "var(--radius-md)", background: abaSandbox ? "var(--warning-subtle, #fef3c7)" : "var(--surface-sunken)", border: "1px solid " + (abaSandbox ? "var(--warning-border, #fcd34d)" : "var(--border-subtle)"), cursor: "pointer" }}>
+                    <input type="checkbox" checked={abaSandbox} onChange={(e) => { setAbaSandbox(e.target.checked); }} style={{ width: 16, height: 16, accentColor: "var(--brand)", cursor: "pointer", flexShrink: 0, marginTop: 2 }} />
+                    <span>
+                      <span style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-strong)" }}>Sandbox (test) mode</span>
+                      <span style={{ display: "block", fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: 2 }}>Route ABA PayWay to <code style={{ fontFamily: "var(--font-mono)" }}>checkout-sandbox.payway.com.kh</code> with your sandbox Merchant ID + API key. Turn OFF to go live. Cards (Visa/Mastercard) appear automatically once card acceptance is enabled on your PayWay account.</span>
+                    </span>
+                  </label>
                   <div style={{ marginTop: 12 }}><Button variant="secondary" size="sm" iconLeft={I("check", 14)} onClick={saveAba}>Save verification</Button></div>
                 </div>
               )}

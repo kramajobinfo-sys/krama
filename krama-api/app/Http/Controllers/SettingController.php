@@ -34,6 +34,7 @@ class SettingController extends Controller
             'merchant_city'     => 'nullable|string|max:80',
             'aba_merchant_id'   => 'nullable|string|max:120',
             'aba_api_key'       => 'nullable|string|max:255',
+            'aba_sandbox'       => 'boolean',
             'stripe_secret_key' => 'nullable|string|max:255',
         ],
         'homepage' => [
