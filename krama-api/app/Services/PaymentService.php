@@ -15,11 +15,20 @@ class PaymentService
     // NBC Bakong Open API base (production). The check endpoint keys transactions by KHQR md5.
     private const BAKONG_BASE = 'https://api-bakong.nbc.gov.kh';
 
-    // ABA PayWay checkout API base (production).
-    private const ABA_BASE = 'https://checkout.payway.com.kh';
+    // ABA PayWay checkout API bases. The active one is chosen by the `aba_sandbox`
+    // setting so we can test against sandbox and flip to production without a code change.
+    private const ABA_BASE_PROD    = 'https://checkout.payway.com.kh';
+    private const ABA_BASE_SANDBOX = 'https://checkout-sandbox.payway.com.kh';
 
     // Stripe API base.
     private const STRIPE_BASE = 'https://api.stripe.com';
+
+    // Resolve the ABA base URL from settings (sandbox vs production).
+    public static function abaBase(): string
+    {
+        $sandbox = trim((string) (Setting::where('group', 'payment')->where('key', 'aba_sandbox')->value('value') ?? ''));
+        return in_array($sandbox, ['1', 'true', 'yes', 'on'], true) ? self::ABA_BASE_SANDBOX : self::ABA_BASE_PROD;
+    }
 
     /**
      * Mark a pending payment as paid and apply its effect (activate the subscription
@@ -103,7 +112,7 @@ class PaymentService
             $reqTime = gmdate('YmdHis');
             $hash    = base64_encode(hash_hmac('sha512', $reqTime . $merchantId . $tranId, $apiKey, true));
 
-            $resp = Http::asForm()->timeout(15)->post(self::ABA_BASE . '/api/payment-gateway/v1/payments/check-transaction-2', [
+            $resp = Http::asForm()->timeout(15)->post(self::abaBase() . '/api/payment-gateway/v1/payments/check-transaction-2', [
                 'req_time'    => $reqTime,
                 'merchant_id' => $merchantId,
                 'tran_id'     => $tranId,
@@ -126,6 +135,98 @@ class PaymentService
         } catch (\Exception $e) {
             Log::warning('ABA verify failed: ' . $e->getMessage());
             return false;
+        }
+    }
+
+    /**
+     * Build the signed ABA PayWay "purchase" (hosted checkout) form fields. The browser
+     * POSTs these to {abaBase}/api/payment-gateway/v1/payments/purchase, which renders
+     * ABA's checkout page. Hash = base64(HMAC-SHA512(concat-in-order, public_key)) over the
+     * PayWay v1 field sequence (empties included). Returns ['action' => url, 'fields' => [...]].
+     */
+    public static function abaPurchaseFields(Payment $payment, string $merchantId, string $apiKey, array $buyer, string $returnUrl, string $continueSuccessUrl): array
+    {
+        $reqTime   = gmdate('YmdHis');
+        $tranId    = (string) $payment->invoice_no;
+        $amount    = number_format((float) $payment->amount, 2, '.', '');
+        $currency  = strtoupper($payment->currency ?: 'USD');
+        $firstname = (string) ($buyer['firstname'] ?? '');
+        $lastname  = (string) ($buyer['lastname'] ?? '');
+        $email     = (string) ($buyer['email'] ?? '');
+        $phone     = (string) ($buyer['phone'] ?? '');
+
+        $items = base64_encode(json_encode([[
+            'name'     => 'Krama ' . ($payment->purpose ?: 'payment'),
+            'quantity' => 1,
+            'price'    => (float) $amount,
+        ]]));
+
+        $type           = 'purchase';
+        $paymentOption  = '';                          // empty = let the buyer pick any method on ABA's page
+        $returnUrlB64   = base64_encode($returnUrl);   // server-to-server pushback (POST)
+        $cancelUrl      = '';
+        $returnDeeplink = '';
+        $customFields   = '';
+        $returnParams   = '';
+        $shipping       = '0.00';   // digital service, no shipping — ABA rejects an empty value
+
+        // PayWay v1 hash — values concatenated in this fixed order (empties included).
+        $hashStr = $reqTime . $merchantId . $tranId . $amount . $items . $shipping
+                 . $firstname . $lastname . $email . $phone . $type . $paymentOption
+                 . $returnUrlB64 . $cancelUrl . $continueSuccessUrl . $returnDeeplink
+                 . $currency . $customFields . $returnParams;
+        $hash = base64_encode(hash_hmac('sha512', $hashStr, $apiKey, true));
+
+        return [
+            'action' => self::abaBase() . '/api/payment-gateway/v1/payments/purchase',
+            'fields' => [
+                'req_time'             => $reqTime,
+                'merchant_id'          => $merchantId,
+                'tran_id'              => $tranId,
+                'amount'               => $amount,
+                'items'                => $items,
+                'shipping'             => $shipping,
+                'firstname'            => $firstname,
+                'lastname'             => $lastname,
+                'email'                => $email,
+                'phone'                => $phone,
+                'type'                 => $type,
+                'payment_option'       => $paymentOption,
+                'return_url'           => $returnUrlB64,
+                'cancel_url'           => $cancelUrl,
+                'continue_success_url' => $continueSuccessUrl,
+                'return_deeplink'      => $returnDeeplink,
+                'currency'             => $currency,
+                'custom_fields'        => $customFields,
+                'return_params'        => $returnParams,
+                'hash'                 => $hash,
+            ],
+        ];
+    }
+
+    /**
+     * Call ABA PayWay's "purchase" API server-side and return the decoded response
+     * (contains qrString/qrImage for ABA PAY — a scannable KHQR the buyer pays with
+     * their banking app). Returns null on a network error; ABA validation errors come
+     * back as the decoded body (with status.code/message) for the caller to surface.
+     */
+    public static function abaPurchase(Payment $payment, string $merchantId, string $apiKey, array $buyer, string $returnUrl, string $continueSuccessUrl): ?array
+    {
+        try {
+            $req  = self::abaPurchaseFields($payment, $merchantId, $apiKey, $buyer, $returnUrl, $continueSuccessUrl);
+            $resp = Http::asForm()->timeout(20)->post($req['action'], $req['fields']);
+            $body = $resp->json();
+            if (! is_array($body)) {
+                Log::warning('ABA purchase non-JSON response: ' . $resp->status());
+                return null;
+            }
+            if (empty($body['qrString']) && empty($body['qrImage'])) {
+                Log::warning('ABA purchase rejected: ' . substr($resp->body(), 0, 300));
+            }
+            return $body;
+        } catch (\Exception $e) {
+            Log::warning('ABA purchase failed: ' . $e->getMessage());
+            return null;
         }
     }
 

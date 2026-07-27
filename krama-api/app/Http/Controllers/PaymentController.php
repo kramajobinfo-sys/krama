@@ -395,6 +395,60 @@ class PaymentController extends Controller
         return response()->json(['url' => $session['url']]);
     }
 
+    // POST /api/employer/payments/{id}/aba-checkout — build the signed ABA PayWay "purchase"
+    // form fields; the browser POSTs them to ABA's hosted checkout page. Confirmation comes
+    // back via the pushback callback and/or the verify endpoint (both re-verify server-side).
+    public function abaCheckout(Request $request, $id)
+    {
+        $this->requirePermission('post_jobs');
+
+        $user    = $request->user();
+        $company = $this->employerCompany($user);
+        $payment = Payment::where('company_id', $company->id)->where('id', $id)->firstOrFail();
+
+        if ($payment->status !== 'pending') {
+            return response()->json(['message' => 'This payment is already ' . $payment->status . '.'], 422);
+        }
+
+        $pay = Setting::where('group', 'payment')->pluck('value', 'key')->toArray();
+        $mid = trim($pay['aba_merchant_id'] ?? '');
+        $key = trim($pay['aba_api_key'] ?? '');
+        if ($mid === '' || $key === '') {
+            return response()->json(['message' => 'ABA payment is not configured. Please contact support.'], 422);
+        }
+
+        $nameParts = preg_split('/\s+/', trim((string) ($user->name ?: $company->name ?: 'Krama Customer')), 2);
+        $buyer = [
+            'firstname' => $nameParts[0] ?? 'Krama',
+            'lastname'  => $nameParts[1] ?? 'Customer',
+            'email'     => (string) ($user->email ?: 'noreply@kramajob.com'),
+            'phone'     => (string) ($user->phone ?: ''),
+        ];
+
+        $apiBase    = rtrim(config('app.url', 'http://localhost'), '/');
+        $frontend   = rtrim(config('app.frontend_url', 'http://localhost/krama'), '/');
+        $returnUrl  = $apiBase . '/api/payments/aba/callback';                                  // server pushback (POST)
+        $successUrl = $frontend . '/ui_kits/employer-dashboard/index.html?aba=success';         // browser redirect after pay
+
+        $payment->update(['method' => 'aba']);
+
+        $result = \App\Services\PaymentService::abaPurchase($payment, $mid, $key, $buyer, $returnUrl, $successUrl);
+        if (! $result) {
+            return response()->json(['message' => 'Could not reach ABA PayWay. Please try again.'], 502);
+        }
+        if (empty($result['qrString']) && empty($result['qrImage'])) {
+            return response()->json(['message' => (string) data_get($result, 'status.message', 'ABA could not start the payment.')], 422);
+        }
+
+        return response()->json([
+            'qr_string' => $result['qrString'] ?? '',
+            'qr_image'  => $result['qrImage'] ?? '',
+            'deeplink'  => $result['abapay_deeplink'] ?? ($result['checkout_qr_url'] ?? ''),
+            'amount'    => $payment->amount,
+            'currency'  => $payment->currency,
+        ]);
+    }
+
     // POST /api/payments/stripe/webhook — Stripe webhook. We don't trust the event payload;
     // we take the session id and re-verify authoritatively via the Stripe API.
     public function stripeWebhook(Request $request)

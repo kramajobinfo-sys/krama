@@ -6,7 +6,8 @@ use App\Helpers\EmailTemplates;
 use App\Helpers\MailConfig;
 use App\Models\Payment;
 use App\Models\Setting;
-use Barryvdh\DomPDF\Facade\Pdf;
+use Dompdf\Dompdf;
+use Dompdf\Options;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
@@ -171,10 +172,21 @@ class InvoiceService
 </body></html>";
     }
 
-    // Render the invoice to PDF bytes.
+    // Render the invoice to PDF bytes (dompdf 3.x, used directly — the Laravel wrapper
+    // requires Laravel 9+). Remote/file fetching is disabled: the invoice HTML is
+    // self-contained (no images/URLs), which also sidesteps dompdf's SVG/data-URI issues.
     public static function pdf(Payment $payment): string
     {
-        return Pdf::loadHTML(self::html($payment))->setPaper('a4')->output();
+        $options = new Options();
+        $options->set('isRemoteEnabled', false);
+        $options->set('isPhpEnabled', false);
+
+        $dompdf = new Dompdf($options);
+        $dompdf->loadHtml(self::html($payment));
+        $dompdf->setPaper('a4');
+        $dompdf->render();
+
+        return (string) $dompdf->output();
     }
 
     // Deliver a paid invoice: email (PDF attached) + Telegram (admin channel + employer chat).

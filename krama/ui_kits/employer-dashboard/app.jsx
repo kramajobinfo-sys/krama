@@ -1557,7 +1557,7 @@
         setPaymentId(id);
         if (method === "khqr") { setWaiting(true); emp.generateKhqr(id).then(function (d) { setKhqr(d.qr); }).catch(function (e) { setError((e && e.message) || "Could not generate KHQR."); }); }
         else if (method === "card") { emp.stripeCheckout(id).then(function (d) { if (d && d.url) { setStripeUrl(d.url); setWaiting(true); window.open(d.url, "_blank"); } else { setDone(true); } }).catch(function () { setDone(true); }); }
-        else if (method === "aba") { setWaiting(true); }
+        else if (method === "aba") { setWaiting(true); emp.abaCheckout(id).then(function (d) { setKhqr(d.qr_string || d.qr_image || ""); }).catch(function (e) { setError((e && e.message) || "Could not start ABA payment."); }); }
         else { setDone(true); } // cod → admin confirms; credits added on confirmation
       }).catch(function (e) { setBusy(false); setError((e && e.message) || "Purchase failed."); });
     };
@@ -1892,6 +1892,7 @@
                 .catch(function () { setDone(true); });
             } else {
               setPaymentId(res.payment.id); setWaiting(true); // aba
+              emp.abaCheckout(res.payment.id).then(function (d) { setKhqr(d.qr_string || d.qr_image || ""); }).catch(function () {});
             }
           } else {
             setDone(true); onPaid && onPaid();
