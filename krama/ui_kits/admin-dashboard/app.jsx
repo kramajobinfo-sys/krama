@@ -4429,7 +4429,7 @@
   ];
   const TX_TONE = { Paid: "success", Pending: "warning", Failed: "danger", Refunded: "neutral" };
 
-  const PLAN_BLANK = { name: "", price: "", currency: "USD", interval: "month", job_post_limit: "", trial_days: "", featured_credits: 0, features_json: [], is_active: true, custom_pricing: false };
+  const PLAN_BLANK = { name: "", price: "", currency: "USD", interval: "month", job_post_limit: "", trial_days: "", featured_credits: 0, features_json: [], is_active: true, custom_pricing: false, sort_order: "0" };
   const SUB_BLANK  = { company_id: "", plan_id: "", status: "active", started_at: new Date().toISOString().slice(0,10), renews_at: "", job_post_limit: "" };
 
   function PlansTab() {
@@ -4473,7 +4473,8 @@
       trial_days: pl.trial_days != null ? String(pl.trial_days) : "",
       featured_credits: pl.featured_credits || 0,
       features_json: Array.isArray(pl.features_json) ? pl.features_json : [],
-      is_active: !!pl.is_active, custom_pricing: !!pl.custom_pricing, _id: pl.id,
+      is_active: !!pl.is_active, custom_pricing: !!pl.custom_pricing,
+      sort_order: pl.sort_order != null ? String(pl.sort_order) : "0", _id: pl.id,
     }});
     const setF = (k, v) => setModal((m) => ({ ...m, data: { ...m.data, [k]: v } }));
     const addFeature = () => { setF("features_json", [...(modal.data.features_json || []), ""]); };
@@ -4488,7 +4489,8 @@
         trial_days: d.trial_days ? parseInt(d.trial_days) : null,
         featured_credits: parseInt(d.featured_credits) || 0,
         features_json: (d.features_json||[]).filter(Boolean),
-        is_active: d.is_active, custom_pricing: !!d.custom_pricing };
+        is_active: d.is_active, custom_pricing: !!d.custom_pricing,
+        sort_order: parseInt(d.sort_order) || 0 };
       setSaving(true);
       var call = modal.mode === "edit" ? adm.updatePlan(d._id, payload) : adm.createPlan(payload);
       call.then(() => { setSaving(false); setModal(null); flash(modal.mode === "edit" ? "Plan updated." : "Plan created."); load(); })
@@ -4498,6 +4500,29 @@
     const confirmDelete = () => {
       adm.deletePlan(delId).then(() => { setDelId(null); flash("Plan deleted."); load(); })
         .catch((e) => { setDelId(null); flash("Error: " + (e && e.message)); });
+    };
+
+    // Move a plan up/down: swap with its neighbour, renumber sort_order 1..N (heals ties),
+    // persist only the plans whose position changed, then reload. Applies everywhere plans
+    // are listed (admin, employer billing, public pricing) since all read the ordered API.
+    const [reordering, setReordering] = React.useState(false);
+    const reBtn = (dis) => ({ width: 22, height: 18, display: "inline-flex", alignItems: "center", justifyContent: "center", border: "1px solid var(--border-strong)", background: "var(--surface-card)", color: dis ? "var(--text-faint)" : "var(--text-body)", borderRadius: 4, cursor: dis ? "not-allowed" : "pointer", padding: 0 });
+    const move = (i, dir) => {
+      const j = i + dir;
+      if (!plans || j < 0 || j >= plans.length || reordering) return;
+      const arr = plans.slice();
+      const t = arr[i]; arr[i] = arr[j]; arr[j] = t;
+      const next = arr.map((pl, idx) => Object.assign({}, pl, { sort_order: idx + 1 }));
+      setPlans(next); // optimistic
+      setReordering(true);
+      const calls = [];
+      next.forEach((pl, idx) => {
+        const orig = plans.find((p) => p.id === pl.id);
+        if (!orig || orig.sort_order !== idx + 1) calls.push(adm.updatePlan(pl.id, { sort_order: idx + 1 }));
+      });
+      Promise.all(calls)
+        .then(() => { setReordering(false); flash("Plan order updated."); load(); })
+        .catch((e) => { setReordering(false); flash("Reorder failed: " + (e && e.message)); load(); });
     };
 
     const INTERVAL_LABEL = { month: "Monthly", year: "Yearly", once: "One-time" };
@@ -4560,14 +4585,23 @@
             </div>
             {plans.map((pl, i) => (
               <div key={pl.id} style={{ display: "grid", gridTemplateColumns: "2fr 1.2fr 1fr 0.8fr 0.8fr 1fr", alignItems: "center", padding: "14px 20px", borderBottom: i < plans.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>
-                <div>
-                  <div style={{ fontWeight: 700, color: "var(--text-strong)", fontSize: "var(--text-sm)" }}>{pl.name}</div>
-                  {parseFloat(pl.price || 0) === 0 && (
-                    <div style={{ fontSize: "var(--text-xs)", color: "var(--brand)", marginTop: 2, fontWeight: 600 }}>{Number(pl.trial_days) > 0 ? (pl.trial_days + " days trial") : "Free plan"}</div>
-                  )}
-                  {Array.isArray(pl.features_json) && pl.features_json.length > 0 && (
-                    <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: 2 }}>{pl.features_json.slice(0,2).join(" · ")}{pl.features_json.length > 2 ? " · …" : ""}</div>
-                  )}
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 2, flexShrink: 0 }}>
+                    <button title="Move up" disabled={i === 0 || reordering} onClick={() => move(i, -1)} style={reBtn(i === 0 || reordering)}>{I("chevron-up", 13)}</button>
+                    <button title="Move down" disabled={i === plans.length - 1 || reordering} onClick={() => move(i, 1)} style={reBtn(i === plans.length - 1 || reordering)}>{I("chevron-down", 13)}</button>
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 700, color: "var(--text-strong)", fontSize: "var(--text-sm)", display: "flex", alignItems: "center", gap: 6 }}>
+                      <span style={{ fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-faint)", background: "var(--surface-muted, rgba(0,0,0,0.05))", borderRadius: 5, padding: "1px 6px", minWidth: 18, textAlign: "center" }}>{pl.sort_order != null ? pl.sort_order : 0}</span>
+                      {pl.name}
+                    </div>
+                    {parseFloat(pl.price || 0) === 0 && (
+                      <div style={{ fontSize: "var(--text-xs)", color: "var(--brand)", marginTop: 2, fontWeight: 600 }}>{Number(pl.trial_days) > 0 ? (pl.trial_days + " days trial") : "Free plan"}</div>
+                    )}
+                    {Array.isArray(pl.features_json) && pl.features_json.length > 0 && (
+                      <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: 2 }}>{pl.features_json.slice(0,2).join(" · ")}{pl.features_json.length > 2 ? " · …" : ""}</div>
+                    )}
+                  </div>
                 </div>
                 <span style={{ fontWeight: 600, color: "var(--text-body)", fontSize: "var(--text-sm)" }}>{fmtPrice(pl)}</span>
                 <span style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>{pl.job_post_limit != null ? pl.job_post_limit + " jobs" : "Unlimited"}</span>
@@ -4596,6 +4630,7 @@
                 <Input label="Job post limit (blank = unlimited)" value={modal.data.job_post_limit} onChange={(e) => setF("job_post_limit", e.target.value)} placeholder="e.g. 5" />
                 <Input label="Trial duration days (blank = 7, for $0 plans)" value={modal.data.trial_days} onChange={(e) => setF("trial_days", e.target.value)} placeholder="e.g. 14" />
                 <Input label="Featured credits" hint="Free featured listings included in this plan. Beyond these, employers pay the pay-per-boost price." value={String(modal.data.featured_credits)} onChange={(e) => setF("featured_credits", e.target.value)} placeholder="0" />
+                <Input label="Sort order" hint="Display position everywhere plans are listed (employer, admin, public pricing). Lower = shown first. e.g. 1, 2, 3…" value={String(modal.data.sort_order)} onChange={(e) => setF("sort_order", e.target.value)} placeholder="0" />
                 <div style={{ gridColumn: "1 / -1" }}>
                   <div style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-strong)", marginBottom: 8 }}>Features</div>
                   {(modal.data.features_json||[]).map((f, i) => (

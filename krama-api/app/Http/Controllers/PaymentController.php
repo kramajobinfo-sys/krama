@@ -16,7 +16,7 @@ class PaymentController extends Controller
     // GET /api/plans — public list of active plans
     public function plans()
     {
-        return response()->json(Plan::where('is_active', true)->orderBy('price')->get());
+        return response()->json(Plan::where('is_active', true)->orderBy('sort_order')->orderBy('price')->get());
     }
 
     // GET /api/employer/subscription — employer's current subscription + plan
@@ -590,7 +590,7 @@ class PaymentController extends Controller
     {
         $this->requirePermission('manage_plans');
 
-        return response()->json(Plan::orderBy('price')->get());
+        return response()->json(Plan::orderBy('sort_order')->orderBy('price')->get());
     }
 
     // PUT /api/admin/plans/{id} — admin updates a plan
@@ -611,6 +611,7 @@ class PaymentController extends Controller
             'features_json'    => 'nullable|array',
             'is_active'        => 'sometimes|boolean',
             'custom_pricing'   => 'sometimes|boolean',
+            'sort_order'       => 'sometimes|integer|min:0|max:9999',
         ]);
 
         $plan->update($data);
@@ -636,6 +637,7 @@ class PaymentController extends Controller
             'features_json'    => 'nullable|array',
             'is_active'        => 'sometimes|boolean',
             'custom_pricing'   => 'sometimes|boolean',
+            'sort_order'       => 'sometimes|integer|min:0|max:9999',
         ]);
 
         $plan = Plan::create($data);
