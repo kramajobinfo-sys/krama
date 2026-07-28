@@ -4429,7 +4429,7 @@
   ];
   const TX_TONE = { Paid: "success", Pending: "warning", Failed: "danger", Refunded: "neutral" };
 
-  const PLAN_BLANK = { name: "", price: "", currency: "USD", interval: "month", job_post_limit: "", trial_days: "", featured_credits: 0, features_json: [], is_active: true, custom_pricing: false, sort_order: "0" };
+  const PLAN_BLANK = { name: "", price: "", discount_percent: "0", currency: "USD", interval: "month", job_post_limit: "", trial_days: "", featured_credits: 0, features_json: [], is_active: true, custom_pricing: false, sort_order: "0" };
   const SUB_BLANK  = { company_id: "", plan_id: "", status: "active", started_at: new Date().toISOString().slice(0,10), renews_at: "", job_post_limit: "" };
 
   function PlansTab() {
@@ -4468,7 +4468,7 @@
 
     const openCreate = () => setModal({ mode: "create", data: Object.assign({}, PLAN_BLANK) });
     const openEdit   = (pl) => setModal({ mode: "edit", data: {
-      name: pl.name, price: String(pl.price), currency: pl.currency || "USD",
+      name: pl.name, price: String(pl.price), discount_percent: pl.discount_percent != null ? String(pl.discount_percent) : "0", currency: pl.currency || "USD",
       interval: pl.interval || "month", job_post_limit: pl.job_post_limit != null ? String(pl.job_post_limit) : "",
       trial_days: pl.trial_days != null ? String(pl.trial_days) : "",
       featured_credits: pl.featured_credits || 0,
@@ -4484,7 +4484,7 @@
     const save = () => {
       var d = modal.data;
       if (!d.name || d.price === "") { flash("Name and price are required."); return; }
-      var payload = { name: d.name, price: parseFloat(d.price) || 0, currency: d.currency, interval: d.interval,
+      var payload = { name: d.name, price: parseFloat(d.price) || 0, discount_percent: parseInt(d.discount_percent, 10) || 0, currency: d.currency, interval: d.interval,
         job_post_limit: d.job_post_limit ? parseInt(d.job_post_limit) : null,
         trial_days: d.trial_days ? parseInt(d.trial_days) : null,
         featured_credits: parseInt(d.featured_credits) || 0,
@@ -4526,7 +4526,15 @@
     };
 
     const INTERVAL_LABEL = { month: "Monthly", year: "Yearly", once: "One-time" };
-    const fmtPrice = (pl) => (pl.currency || "USD") + " " + parseFloat(pl.price || 0).toFixed(2) + " / " + (INTERVAL_LABEL[pl.interval] || pl.interval);
+    const fmtPrice = (pl) => {
+      const cur = pl.currency || "USD";
+      const base = parseFloat(pl.price || 0);
+      const per = " / " + (INTERVAL_LABEL[pl.interval] || pl.interval);
+      const d = parseInt(pl.discount_percent, 10) || 0;
+      if (d <= 0) return cur + " " + base.toFixed(2) + per;
+      const eff = pl.effective_price != null ? parseFloat(pl.effective_price) : base * (100 - d) / 100;
+      return cur + " " + eff.toFixed(2) + per + " (" + d + "% off " + cur + " " + base.toFixed(2) + ")";
+    };
 
     return (
       <div>
@@ -4625,6 +4633,7 @@
                   <Input label="Plan name" value={modal.data.name} onChange={(e) => setF("name", e.target.value)} placeholder="e.g. Standard, Pro, Enterprise" />
                 </div>
                 <Input label="Price" value={modal.data.price} onChange={(e) => setF("price", e.target.value)} placeholder="0.00" />
+                <Input label="Discount %" hint="Discount off the list price, applied at checkout (e.g. 20 for a Yearly plan). 0 = full price." value={String(modal.data.discount_percent)} onChange={(e) => setF("discount_percent", e.target.value)} placeholder="0" />
                 <Select label="Currency" value={modal.data.currency} onChange={(e) => setF("currency", e.target.value)} options={[{value:"USD",label:"USD"},{value:"KHR",label:"KHR"},{value:"EUR",label:"EUR"}]} />
                 <Select label="Billing cycle" value={modal.data.interval} onChange={(e) => setF("interval", e.target.value)} options={[{value:"month",label:"Monthly"},{value:"year",label:"Yearly"},{value:"once",label:"One-time"}]} />
                 <Input label="Job post limit (blank = unlimited)" value={modal.data.job_post_limit} onChange={(e) => setF("job_post_limit", e.target.value)} placeholder="e.g. 5" />

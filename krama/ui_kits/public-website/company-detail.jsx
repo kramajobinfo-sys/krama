@@ -113,7 +113,7 @@
     const [reviewBusy, setReviewBusy] = React.useState(false);
     const [reviewMsg, setReviewMsg] = React.useState("");
     const isLoggedIn = !!window.KRAMA_API.getToken();
-    const JOBS_PER = 10;
+    const JOBS_PER = 8;
     const GALLERY_PER = 8;
 
     React.useEffect(() => {

@@ -104,9 +104,9 @@
             <button key={p.id} className={"krm-pricing-tab" + (i === act ? " is-active" : "")} onClick={() => setActive(i)}>{p.name}</button>
           ))}
         </div>
-        <div className="krm-info-grid krm-pricing-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16, alignItems: "start" }}>
+        <div className="krm-info-grid krm-pricing-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: 16, alignItems: "start" }}>
           {plans.map((p, i) => {
-            const popular = /professional/i.test(p.name || "");
+            const popular = /professional/i.test(p.name || "") && !/year|annual/i.test(p.name || "");
             const custom = isCustom(p);
             const free = isFree(p);
             const trial = isTrial(p);
@@ -120,9 +120,10 @@
                 border: popular ? "1.5px solid var(--brand)" : (dark ? "none" : undefined),
                 background: dark ? "var(--stone-900, #1a1a1a)" : undefined,
               }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                   <h3 style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: textStrong }}>{p.name}</h3>
                   {popular ? <Badge tone="accent">{TR("Most popular")}</Badge> : null}
+                  {!custom && p.has_discount ? <span style={{ fontSize: "var(--text-xs)", fontWeight: 700, color: "#fff", background: "#16a34a", padding: "2px 9px", borderRadius: 999 }}>{TR("Save")} {p.discount_percent}%</span> : null}
                 </div>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginTop: 14 }}>
                   {custom ? (
@@ -136,8 +137,9 @@
                     <span style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-4xl)", fontWeight: 800, color: textStrong }}>{TR("Free")}</span>
                   ) : (
                     <React.Fragment>
-                      <span style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-4xl)", fontWeight: 800, color: textStrong }}>${p.price}</span>
+                      <span style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-4xl)", fontWeight: 800, color: textStrong }}>${p.has_discount ? p.effective_price : p.price}</span>
                       <span style={{ color: textMuted, fontSize: "var(--text-base)" }}>/ {p.interval}</span>
+                      {p.has_discount ? <span style={{ color: textMuted, fontSize: "var(--text-base)", textDecoration: "line-through", marginLeft: 4 }}>${p.price}</span> : null}
                     </React.Fragment>
                   )}
                 </div>

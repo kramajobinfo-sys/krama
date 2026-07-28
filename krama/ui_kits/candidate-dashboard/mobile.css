@@ -59,9 +59,12 @@
   .krm-stats-grid > div > div { padding: 12px 10px !important; }
   .krm-stats-grid > div > div > div > span { display: none !important; }
   .krm-stats-grid > div > div > div > div > div:nth-child(2) { font-size: var(--text-2xl) !important; }
-  /* Single column card grid */
+  /* Single column card grid.
+     minmax(0,1fr) — NOT plain 1fr — so the JobCard's min-content (~468px) can't
+     force the track wider than the viewport (body has overflow-x:hidden, which
+     would otherwise silently clip the right side of each card off-screen). */
   .krm-card-grid {
-    grid-template-columns: 1fr !important;
+    grid-template-columns: minmax(0, 1fr) !important;
   }
   /* 2-column form grids collapse to 1 column */
   .krm-form-grid { grid-template-columns: 1fr !important; }

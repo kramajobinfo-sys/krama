@@ -29,6 +29,20 @@
   /* Hero heading/subtitle hidden on mobile (admin "Hide on mobile" toggle) — image stays. */
   .krm-page-hero .krm-hero-hide-mobile { display: none !important; }
 
+  /* Community list keeps the site's 16px mobile side padding (desktop uses 32px). */
+  .krm-forum-list { padding-left: 16px !important; padding-right: 16px !important; }
+
+  /* Community threads: single column on mobile; vote badge pinned to the card's top-right corner. */
+  .krm-forum-threads { grid-template-columns: minmax(0, 1fr) !important; }
+  .krm-thread-vote {
+    position: absolute !important;
+    top: 12px;
+    right: 12px;
+    min-width: 0 !important;
+    z-index: 1;
+  }
+  .krm-thread-body { padding-right: 50px; }
+
 
   * { box-sizing: border-box; }
   body { overflow-x: hidden; }
@@ -562,6 +576,9 @@
   /* Jobs layout — narrower sidebar */
   .krm-jobs-layout      { grid-template-columns: 220px 1fr !important; padding: 24px !important; }
   .krm-companies-layout { grid-template-columns: 1fr !important; padding: 24px !important; }
+
+  /* Community threads — 2 columns on tablet (3 is too tight) */
+  .krm-forum-threads    { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important; }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -573,3 +590,30 @@
 /* Any hero with a full-natural banner image sizes to the image (no forced band / no teal gap),
    on both desktop and mobile. Title/search (if any) overlay the image absolutely. */
 .krm-hero.krm-hero--has-img { min-height: 0 !important; padding: 0 !important; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Find Jobs — DESKTOP (>=1024px): results span the full content width like the
+   Home page. The filter sidebar (+ its promo banners) collapses behind a
+   "Show filters" button, reusing the same toggle already used on mobile.
+   Opening filters brings the 260px sidebar back and results narrow while open.
+   Tablet (768-1023px) and mobile (<=767px) are intentionally left unchanged.
+═══════════════════════════════════════════════════════════════════════════ */
+@media (min-width: 1024px) {
+  /* full-width results by default (single column) */
+  .krm-jobs-layout { grid-template-columns: 1fr !important; }
+  /* while filters are open, restore the sidebar column */
+  .krm-jobs-layout.filters-open { grid-template-columns: 260px 1fr !important; }
+  /* sidebar hidden until toggled */
+  .krm-jobs-sidebar { display: none !important; }
+  .krm-jobs-sidebar.open { display: block !important; }
+  /* show the filter toggle on desktop, aligned to the 1200px content, as a plain button (no full-bleed strip) */
+  .krm-filter-toggle-bar {
+    display: block !important;
+    background: transparent !important;
+    border-bottom: none !important;
+    max-width: 1200px;
+    margin: 8px auto 0;
+    padding: 0 32px !important;
+  }
+  .krm-filter-toggle-bar > button { width: auto !important; }
+}

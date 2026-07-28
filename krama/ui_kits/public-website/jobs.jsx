@@ -320,7 +320,7 @@
     // Default view is device-aware: List on mobile (compact rows), Grid on desktop.
     const [view, setView] = React.useState(function () { try { return window.matchMedia("(max-width: 767px)").matches ? "list" : "grid"; } catch (e) { return "grid"; } });
     const [page, setPage] = React.useState(0);
-    const PER_PAGE = 14;
+    const PER_PAGE = 8;
     // Phone-width detection so the List view can render distinct compact rows on mobile.
     const [isMobile, setIsMobile] = React.useState(function () { return typeof window !== "undefined" && window.matchMedia ? window.matchMedia("(max-width: 767px)").matches : false; });
     React.useEffect(function () {
@@ -460,7 +460,7 @@
           </button>
         </div>
 
-        <div className="krm-jobs-layout" style={{ maxWidth: 1200, margin: "0 auto", padding: "28px 32px", display: "grid", gridTemplateColumns: "260px 1fr", gap: 28, alignItems: "start" }}>
+        <div className={"krm-jobs-layout" + (filtersOpen ? " filters-open" : "")} style={{ maxWidth: 1200, margin: "0 auto", padding: "28px 32px", display: "grid", gridTemplateColumns: "260px 1fr", gap: 28, alignItems: "start" }}>
           {/* filters */}
           <aside className={"krm-jobs-sidebar" + (filtersOpen ? " open" : "")} style={{ background: "var(--surface-card)", border: "1px solid var(--border)", borderRadius: "var(--radius-lg)", padding: "4px 18px 18px" }}>
             <FilterGroup title="Category">

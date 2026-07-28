@@ -197,12 +197,12 @@
   function ThreadRow({ t, onOpen }) {
     const ct = catTheme(t.category);
     return (
-      <button onClick={() => onOpen(t)} style={{ display: "flex", gap: 14, width: "100%", textAlign: "left", padding: "16px 4px", background: "none", border: "none", borderBottom: "1px solid var(--border-subtle)", cursor: "pointer" }}>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, minWidth: 44, color: "var(--text-muted)" }}>
+      <button onClick={() => onOpen(t)} className="krm-thread-card" style={{ position: "relative", display: "flex", gap: 14, width: "100%", height: "100%", textAlign: "left", padding: 16, background: "var(--surface-card)", border: "1px solid var(--border)", borderRadius: "var(--radius-lg)", cursor: "pointer", alignItems: "flex-start" }}>
+        <div className="krm-thread-vote" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, minWidth: 44, color: "var(--text-muted)" }}>
           <span style={{ fontWeight: 800, fontSize: "var(--text-base)", color: t.vote_score > 0 ? "var(--text-brand)" : "var(--text-muted)" }}>{t.vote_score || 0}</span>
           <span style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: ".04em" }}>{TR("votes")}</span>
         </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
+        <div className="krm-thread-body" style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
             {t.is_pinned ? <Badge tone="accent">{I("pin", 11)} {TR("Pinned")}</Badge> : null}
             {t.is_locked ? <Badge tone="neutral">{I("lock", 11)} {TR("Locked")}</Badge> : null}
@@ -473,7 +473,7 @@
 
     const loadThreads = React.useCallback(function (p) {
       setLoading(true);
-      const params = { page: p || 1, sort: sort };
+      const params = { page: p || 1, per_page: 8, sort: sort };
       if (category) params.category = category.id;
       if (q) params.q = q;
       API().forumThreads(params).then(function (r) {
@@ -523,7 +523,7 @@
             : <div style={{ position: "relative" }}>{txt}</div>)}
         </div>
         ); })()}
-        <div style={{ maxWidth: 1000, margin: "0 auto", padding: "28px 16px 64px" }}>
+        <div className="krm-forum-list" style={{ maxWidth: 1200, margin: "0 auto", padding: "28px 32px 64px" }}>
         <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 16 }}>
           <Button variant="primary" iconLeft={I("plus", 15)} onClick={startNew}>{TR("New discussion")}</Button>
         </div>
@@ -579,9 +579,9 @@
           ? <div style={{ padding: 50, textAlign: "center", color: "var(--text-muted)" }}>{TR("Loading…")}</div>
           : threads.length === 0
             ? <EmptyState icon="messages-square" title={TR("No discussions yet")} message={TR("Be the first to start a conversation.")} />
-            : <Card padding={8}>
-                <div>{threads.map(function (t) { return <ThreadRow key={t.id} t={t} onOpen={openThread} />; })}</div>
-              </Card>}
+            : <div className="krm-forum-threads" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 12, alignItems: "stretch" }}>
+                {threads.map(function (t) { return <ThreadRow key={t.id} t={t} onOpen={openThread} />; })}
+              </div>}
 
         <Pager page={page} lastPage={lastPage} onPage={loadThreads} />
       </div>

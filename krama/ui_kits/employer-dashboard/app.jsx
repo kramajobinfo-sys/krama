@@ -1514,6 +1514,10 @@
   const planIsTrial = (p) => !!p && Number(p.price) === 0 && Number(p.trial_days) > 0;
   const planIsFree = (p) => !!p && Number(p.price) === 0 && !planIsTrial(p);
   const planIsCustom = (p) => !!p && !!p.custom_pricing;
+  // The amount actually billed = the plan's discounted (effective) price. The API sends
+  // effective_price/has_discount on every plan; fall back to price for older payloads.
+  const planCharge = (p) => (p && p.effective_price != null) ? Number(p.effective_price) : (p ? Number(p.price) : 0);
+  const planHasDiscount = (p) => !!p && !!p.has_discount;
 
   // Renders a KHQR string to a QR image using the qrcodejs UMD lib (loaded on demand from the CDN).
   function KhqrCanvas({ value, size }) {
@@ -1573,7 +1577,7 @@
         if (!id) { setError("Could not start purchase."); return; }
         setPaymentId(id);
         if (method === "khqr") { setWaiting(true); emp.generateKhqr(id).then(function (d) { setKhqr(d.qr); }).catch(function (e) { setError((e && e.message) || "Could not generate KHQR."); }); }
-        else if (method === "card") { emp.stripeCheckout(id).then(function (d) { if (d && d.url) { setStripeUrl(d.url); setWaiting(true); window.open(d.url, "_blank"); } else { setDone(true); } }).catch(function () { setDone(true); }); }
+        else if (method === "card") { setWaiting(true); emp.abaForm(id, "cards").then(abaSubmitForm).catch(function (e) { setWaiting(false); setError((e && e.message) || "Could not start card payment."); }); }
         else if (method === "aba") { setWaiting(true); emp.abaForm(id).then(abaSubmitForm).catch(function (e) { setWaiting(false); setError((e && e.message) || "Could not start ABA payment."); }); }
         else { setDone(true); } // cod → admin confirms; credits added on confirmation
       }).catch(function (e) { setBusy(false); setError((e && e.message) || "Purchase failed."); });
@@ -1900,13 +1904,9 @@
                 .then(function (d) { setKhqr(d.qr); })
                 .catch(function (e) { setError((e && e.message) || "Could not generate KHQR. You can still pay and an admin will confirm."); });
             } else if (method === "card") {
-              // Create a Stripe Checkout session, open it, then poll. If not configured → manual pending.
-              emp.stripeCheckout(res.payment.id)
-                .then(function (d) {
-                  if (d && d.url) { setPaymentId(res.payment.id); setStripeUrl(d.url); setWaiting(true); window.open(d.url, "_blank"); }
-                  else { setDone(true); }
-                })
-                .catch(function () { setDone(true); });
+              // Card via ABA PayWay hosted checkout — jump straight to the Visa/Mastercard form.
+              setPaymentId(res.payment.id); setWaiting(true);
+              emp.abaForm(res.payment.id, "cards").then(abaSubmitForm).catch(function () {});
             } else {
               setPaymentId(res.payment.id); setWaiting(true); // aba
               emp.abaForm(res.payment.id).then(abaSubmitForm).catch(function () {});
@@ -1925,7 +1925,7 @@
             khqr ? (
               <React.Fragment>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 22px", borderBottom: "1px solid var(--border)" }}>
-                  <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "var(--text-lg)", color: "var(--text-strong)" }}>Scan to pay ${plan.price}</div>
+                  <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "var(--text-lg)", color: "var(--text-strong)" }}>Scan to pay ${planCharge(plan)}</div>
                   <button onClick={onClose} aria-label="Close" style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--text-muted)", display: "inline-flex" }}>{I("x", 18)}</button>
                 </div>
                 <div style={{ padding: "26px 22px", display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
@@ -1949,7 +1949,7 @@
             waiting ? (
               <React.Fragment>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 22px", borderBottom: "1px solid var(--border)" }}>
-                  <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "var(--text-lg)", color: "var(--text-strong)" }}>Complete your ${plan.price} payment</div>
+                  <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "var(--text-lg)", color: "var(--text-strong)" }}>Complete your ${planCharge(plan)} payment</div>
                   <button onClick={onClose} aria-label="Close" style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--text-muted)", display: "inline-flex" }}>{I("x", 18)}</button>
                 </div>
                 <div style={{ padding: "22px", display: "flex", flexDirection: "column", gap: 16 }}>
@@ -2023,7 +2023,7 @@
               <div style={{ padding: 22, display: "flex", flexDirection: "column", gap: 16, maxHeight: "66vh", overflowY: "auto" }}>
                 <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", padding: "14px 16px", background: "var(--surface-sunken)", borderRadius: "var(--radius-md)" }}>
                   <span style={{ fontWeight: 600, color: "var(--text-body)" }}>{plan.name} plan</span>
-                  <span><strong style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-2xl)", color: "var(--text-strong)" }}>${plan.price}</strong><span style={{ color: "var(--text-muted)", fontSize: "var(--text-sm)" }}> / {plan.interval}</span></span>
+                  <span><strong style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-2xl)", color: "var(--text-strong)" }}>${planCharge(plan)}</strong>{planHasDiscount(plan) ? <span style={{ color: "var(--text-muted)", fontSize: "var(--text-sm)", textDecoration: "line-through", marginLeft: 6 }}>${plan.price}</span> : null}<span style={{ color: "var(--text-muted)", fontSize: "var(--text-sm)" }}> / {plan.interval}</span></span>
                 </div>
                 <div>
                   <div style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-strong)", marginBottom: 10 }}>Payment method</div>
@@ -2277,7 +2277,7 @@
         <div className="krm-plans-carousel" ref={carRef} onScroll={onCarScroll} style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16 }}>
           {plans.map((p) => {
             const current = p.id === currentPlanId;
-            const popular = /professional/i.test(p.name);
+            const popular = /professional/i.test(p.name) && !/year|annual/i.test(p.name);
             const isCustom = planIsCustom(p);
             const isFree = planIsFree(p);
             const isTrialPlan = planIsTrial(p);
@@ -2311,8 +2311,9 @@
                     <span style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-4xl)", fontWeight: 800, color: textStrong }}>Free</span>
                   ) : (
                     <React.Fragment>
-                      <span style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-4xl)", fontWeight: 800, color: textStrong }}>${p.price}</span>
+                      <span style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-4xl)", fontWeight: 800, color: textStrong }}>${planHasDiscount(p) ? planCharge(p) : p.price}</span>
                       <span style={{ color: textMuted, fontSize: "var(--text-sm)" }}>/ {p.interval}</span>
+                      {planHasDiscount(p) ? <span style={{ color: textMuted, fontSize: "var(--text-sm)", textDecoration: "line-through", marginLeft: 4 }}>${p.price}</span> : null}
                     </React.Fragment>
                   )}
                 </div>
