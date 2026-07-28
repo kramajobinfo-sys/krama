@@ -62,14 +62,40 @@ class PaymentService
             }
         });
 
-        // Generate + deliver the invoice (email PDF + Telegram) after the response is
-        // sent, so payment confirmation is never blocked or failed by mail/telegram.
-        $paid = $payment->fresh();
+        // Generate + deliver the invoice, and announce a confirmed subscription, AFTER the
+        // response is sent — so payment confirmation is never blocked/failed by mail/telegram,
+        // and admins are alerted only once the employer has actually paid (payment-first).
+        $paid = $payment->fresh()->load('subscription.plan', 'company');
         app()->terminating(function () use ($paid) {
             try {
                 InvoiceService::deliver($paid);
             } catch (\Throwable $e) {
                 Log::warning('Invoice delivery failed for payment ' . $paid->id . ': ' . $e->getMessage());
+            }
+
+            // Paid subscription → announce it now (moved here from subscribe() so the alert
+            // never fires before payment). Trial/free plans announce at creation instead.
+            if ($paid->subscription_id && $paid->subscription) {
+                try {
+                    $companyName = $paid->company->name ?? 'A company';
+                    $planName    = optional($paid->subscription->plan)->name ?: 'plan';
+                    $priceLabel  = ($paid->currency ?: '') . number_format((float) $paid->amount, 2);
+
+                    \App\Models\Notification::recordAdmins(
+                        'subscription_active',
+                        'Subscription activated',
+                        $companyName . ' — ' . $planName . ' (' . $priceLabel . ') is now active.'
+                    );
+                    \App\Services\TelegramService::notifyAdmin(
+                        "✅ <b>Subscription payment confirmed</b>\n"
+                        . 'Company: ' . e($companyName) . "\n"
+                        . 'Plan: ' . e($planName) . ' (' . e($priceLabel) . ")\n"
+                        . 'Invoice: ' . e((string) $paid->invoice_no) . "\n"
+                        . now()->format('Y-m-d H:i')
+                    );
+                } catch (\Throwable $e) {
+                    Log::warning('Subscription announce failed for payment ' . $paid->id . ': ' . $e->getMessage());
+                }
             }
         });
 
@@ -125,13 +151,14 @@ class PaymentService
 
             $body = $resp->json();
 
-            // PayWay: status.code "00" = transaction found & successful. Some responses also
-            // carry data.payment_status (APPROVED). Treat either positive signal as paid.
-            $statusCode    = (string) data_get($body, 'status.code', '');
+            // CRITICAL: PayWay's status.code "00" only means the API REQUEST succeeded — it does
+            // NOT mean the money was paid (a PENDING/unpaid transaction still returns status.code
+            // "00" with data.payment_status "PENDING"). The ACTUAL result is data.payment_status;
+            // only "APPROVED" (payment_status_code 0) means the buyer actually paid.
             $paymentStatus = strtoupper((string) data_get($body, 'data.payment_status', ''));
+            $statusCodeNum = data_get($body, 'data.payment_status_code', null);
 
-            return $statusCode === '00'
-                || in_array($paymentStatus, ['APPROVED', 'SUCCESS', 'COMPLETED'], true);
+            return $paymentStatus === 'APPROVED' || $statusCodeNum === 0 || $statusCodeNum === '0';
         } catch (\Exception $e) {
             Log::warning('ABA verify failed: ' . $e->getMessage());
             return false;

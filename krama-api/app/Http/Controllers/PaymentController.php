@@ -125,9 +125,13 @@ class PaymentController extends Controller
 
         $plan = Plan::where('is_active', true)->findOrFail($data['plan_id']);
 
-        // A $0 plan is only a timed trial if trial_days is explicitly set (> 0).
-        // A $0 plan with no trial_days is a genuinely free plan — activates immediately, never expires.
-        $isFreePlan = $plan->price == 0;
+        // The amount actually billed = the plan's discounted (effective) price. Every downstream
+        // charge derives from this single value (payment.amount → KHQR/ABA/Stripe + invoices).
+        $charge = $plan->effective_price;
+
+        // A $0 charge is only a timed trial if trial_days is explicitly set (> 0).
+        // A $0 charge with no trial_days is a genuinely free plan — activates immediately, never expires.
+        $isFreePlan = $charge == 0;
         $isTrial = $isFreePlan && (int) $plan->trial_days > 0;
         $trialDays = $isTrial ? (int) $plan->trial_days : 0;
 
@@ -158,7 +162,7 @@ class PaymentController extends Controller
             ->where('plan_id', $plan->id)
             ->exists();
 
-        DB::transaction(function () use ($company, $plan, $data, $isTrial, $isFreePlan, $trialDays, &$payment, &$subscription) {
+        DB::transaction(function () use ($company, $plan, $data, $isTrial, $isFreePlan, $trialDays, $charge, &$payment, &$subscription) {
             $subscription = Subscription::create([
                 'company_id' => $company->id,
                 'plan_id'    => $plan->id,
@@ -166,14 +170,16 @@ class PaymentController extends Controller
                 'started_at' => now(),
                 'renews_at'  => $isTrial
                     ? now()->addDays((int) $trialDays)
-                    : ($isFreePlan ? null : ($plan->interval === 'once' ? null : now()->addMonth())),
+                    : ($isFreePlan ? null : ($plan->interval === 'once'
+                        ? null
+                        : ($plan->interval === 'year' ? now()->addYear() : now()->addMonth()))),
             ]);
 
             $payment = Payment::create([
                 'company_id'      => $company->id,
                 'subscription_id' => $subscription->id,
                 'invoice_no'      => $this->nextInvoiceNo(),
-                'amount'          => $plan->price,
+                'amount'          => $charge,
                 'currency'        => $plan->currency,
                 'method'          => ($isTrial || $isFreePlan) ? 'other' : $data['method'],
                 'status'          => ($isTrial || $isFreePlan) ? 'paid' : 'pending',
@@ -186,24 +192,28 @@ class PaymentController extends Controller
             \App\Models\Notification::recordAdmins('payment_pending', 'New payment pending', 'Payment ' . $payment->currency . number_format((float) $payment->amount, 2) . ' from “' . $company->name . '” is awaiting confirmation.');
         }
 
-        // Telegram: notify the admin chat about a new subscription or a renewal (any status).
-        // No-op unless the admin has enabled + configured the bot; never affects this response.
-        $statusLabel = [
-            'trial'   => 'Trial',
-            'active'  => 'Active',
-            'pending' => 'Pending payment',
-        ][$subscription->status] ?? ucfirst((string) $subscription->status);
-        $priceLabel = $plan->price > 0
-            ? ($plan->currency . number_format((float) $plan->price, 2) . '/' . $plan->interval)
-            : 'Free';
-        $eventLabel = $isRenewal ? '🔄 <b>Subscription renewed</b>' : '🆕 <b>New subscription</b>';
-        \App\Services\TelegramService::notifyAdmin(
-            $eventLabel . "\n"
-            . 'Company: ' . e($company->name) . "\n"
-            . 'Plan: ' . e($plan->name) . ' (' . e($priceLabel) . ")\n"
-            . 'Status: ' . $statusLabel . "\n"
-            . now()->format('Y-m-d H:i')
-        );
+        // Telegram: announce the subscription to the admin chat — but ONLY when it is
+        // active immediately (trial or free plan). A PAID plan is created as 'pending' and
+        // must not be announced until the employer actually pays; that announcement is sent
+        // from PaymentService::fulfill() on payment confirmation. No-op unless the bot is
+        // configured; never affects this response.
+        if ($subscription->status !== 'pending') {
+            $statusLabel = [
+                'trial'   => 'Trial',
+                'active'  => 'Active',
+            ][$subscription->status] ?? ucfirst((string) $subscription->status);
+            $priceLabel = $charge > 0
+                ? ($plan->currency . number_format((float) $charge, 2) . '/' . $plan->interval)
+                : 'Free';
+            $eventLabel = $isRenewal ? '🔄 <b>Subscription renewed</b>' : '🆕 <b>New subscription</b>';
+            \App\Services\TelegramService::notifyAdmin(
+                $eventLabel . "\n"
+                . 'Company: ' . e($company->name) . "\n"
+                . 'Plan: ' . e($plan->name) . ' (' . e($priceLabel) . ")\n"
+                . 'Status: ' . $statusLabel . "\n"
+                . now()->format('Y-m-d H:i')
+            );
+        }
 
         return response()->json([
             'subscription' => $subscription->load('plan'),
@@ -487,7 +497,14 @@ class PaymentController extends Controller
 
         $payment->update(['method' => 'aba']);
 
-        $req = \App\Services\PaymentService::abaPurchaseFields($payment, $mid, $key, $buyer, $returnUrl, $successUrl);
+        // Optional payment_option: '' shows all method tabs; 'cards' jumps straight to the
+        // Visa/Mastercard form. Whitelisted so only known PayWay options reach the gateway.
+        $option = (string) $request->input('option', '');
+        if (! in_array($option, ['', 'cards', 'abapay', 'khqr'], true)) {
+            $option = '';
+        }
+
+        $req = \App\Services\PaymentService::abaPurchaseFields($payment, $mid, $key, $buyer, $returnUrl, $successUrl, $option);
 
         return response()->json(['action' => $req['action'], 'fields' => $req['fields']]);
     }
@@ -646,6 +663,7 @@ class PaymentController extends Controller
         $data = $request->validate([
             'name'             => 'sometimes|string|max:80',
             'price'            => 'sometimes|numeric|min:0',
+            'discount_percent' => 'sometimes|integer|min:0|max:100',
             'currency'         => 'sometimes|string|max:8',
             'interval'         => 'sometimes|in:month,year,once',
             'job_post_limit'   => 'nullable|integer|min:1',
@@ -672,6 +690,7 @@ class PaymentController extends Controller
         $data = $request->validate([
             'name'             => 'required|string|max:80',
             'price'            => 'required|numeric|min:0',
+            'discount_percent' => 'sometimes|integer|min:0|max:100',
             'currency'         => 'sometimes|string|max:8',
             'interval'         => 'sometimes|in:month,year,once',
             'job_post_limit'   => 'nullable|integer|min:1',

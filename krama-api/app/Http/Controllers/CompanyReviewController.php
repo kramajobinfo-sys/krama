@@ -18,7 +18,7 @@ class CompanyReviewController extends Controller
             ->where('company_id', $id)
             ->where('status', 'approved')
             ->latest()
-            ->paginate(10);
+            ->paginate(8);
 
         $stats = CompanyReview::where('company_id', $id)
             ->where('status', 'approved')
