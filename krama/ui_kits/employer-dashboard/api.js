@@ -224,6 +224,7 @@
     generateKhqr: function (paymentId) { return req("POST", "/employer/payments/" + paymentId + "/khqr"); },
     stripeCheckout: function (paymentId) { return req("POST", "/employer/payments/" + paymentId + "/stripe-checkout"); },
     abaCheckout: function (paymentId) { return req("POST", "/employer/payments/" + paymentId + "/aba-checkout"); },
+    abaForm: function (paymentId) { return req("POST", "/employer/payments/" + paymentId + "/aba-form"); },
     verifyPayment: function (paymentId) { return req("GET", "/employer/payments/" + paymentId + "/verify"); },
 
     // CV Match (credits-based)

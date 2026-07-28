@@ -144,7 +144,7 @@ class PaymentService
      * ABA's checkout page. Hash = base64(HMAC-SHA512(concat-in-order, public_key)) over the
      * PayWay v1 field sequence (empties included). Returns ['action' => url, 'fields' => [...]].
      */
-    public static function abaPurchaseFields(Payment $payment, string $merchantId, string $apiKey, array $buyer, string $returnUrl, string $continueSuccessUrl): array
+    public static function abaPurchaseFields(Payment $payment, string $merchantId, string $apiKey, array $buyer, string $returnUrl, string $continueSuccessUrl, string $paymentOption = ''): array
     {
         $reqTime   = gmdate('YmdHis');
         $tranId    = (string) $payment->invoice_no;
@@ -162,7 +162,7 @@ class PaymentService
         ]]));
 
         $type           = 'purchase';
-        $paymentOption  = '';                          // empty = let the buyer pick any method on ABA's page
+        // empty = let the buyer pick any method on ABA's page; 'cards' = go straight to the card form
         $returnUrlB64   = base64_encode($returnUrl);   // server-to-server pushback (POST)
         $cancelUrl      = '';
         $returnDeeplink = '';

@@ -21,6 +21,23 @@
   });
   const I = (n, s = 18) => <LucideIcon name={n} size={s} />;
 
+  // Redirect the browser to ABA PayWay's hosted checkout page (shows ABA Pay + KHQR + Card tabs)
+  // by POSTing the signed "purchase" form the server returned.
+  function abaSubmitForm(d) {
+    if (!d || !d.action) return;
+    var f = document.createElement("form");
+    f.method = "POST"; f.action = d.action; f.style.display = "none";
+    var fields = d.fields || {};
+    Object.keys(fields).forEach(function (k) {
+      var inp = document.createElement("input");
+      inp.type = "hidden"; inp.name = k;
+      inp.value = fields[k] == null ? "" : String(fields[k]);
+      f.appendChild(inp);
+    });
+    document.body.appendChild(f);
+    f.submit();
+  }
+
   function RichEditor({ label, value, onChange, placeholder, rows }) {
     const ref = React.useRef(null);
     React.useEffect(function() {
@@ -1557,7 +1574,7 @@
         setPaymentId(id);
         if (method === "khqr") { setWaiting(true); emp.generateKhqr(id).then(function (d) { setKhqr(d.qr); }).catch(function (e) { setError((e && e.message) || "Could not generate KHQR."); }); }
         else if (method === "card") { emp.stripeCheckout(id).then(function (d) { if (d && d.url) { setStripeUrl(d.url); setWaiting(true); window.open(d.url, "_blank"); } else { setDone(true); } }).catch(function () { setDone(true); }); }
-        else if (method === "aba") { setWaiting(true); emp.abaCheckout(id).then(function (d) { setKhqr(d.qr_string || d.qr_image || ""); }).catch(function (e) { setError((e && e.message) || "Could not start ABA payment."); }); }
+        else if (method === "aba") { setWaiting(true); emp.abaForm(id).then(abaSubmitForm).catch(function (e) { setWaiting(false); setError((e && e.message) || "Could not start ABA payment."); }); }
         else { setDone(true); } // cod → admin confirms; credits added on confirmation
       }).catch(function (e) { setBusy(false); setError((e && e.message) || "Purchase failed."); });
     };
@@ -1892,7 +1909,7 @@
                 .catch(function () { setDone(true); });
             } else {
               setPaymentId(res.payment.id); setWaiting(true); // aba
-              emp.abaCheckout(res.payment.id).then(function (d) { setKhqr(d.qr_string || d.qr_image || ""); }).catch(function () {});
+              emp.abaForm(res.payment.id).then(abaSubmitForm).catch(function () {});
             }
           } else {
             setDone(true); onPaid && onPaid();

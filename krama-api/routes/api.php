@@ -116,6 +116,7 @@ Route::middleware('auth:api')->group(function () {
     Route::post('employer/payments/{id}/khqr',           [PaymentController::class, 'generateKhqr'])->middleware('throttle:20,1');
     Route::post('employer/payments/{id}/stripe-checkout',[PaymentController::class, 'stripeCheckout'])->middleware('throttle:20,1');
     Route::post('employer/payments/{id}/aba-checkout',   [PaymentController::class, 'abaCheckout'])->middleware('throttle:20,1');
+    Route::post('employer/payments/{id}/aba-form',       [PaymentController::class, 'abaForm'])->middleware('throttle:20,1');
     Route::get('employer/payments/{id}/verify',          [PaymentController::class, 'verifyPayment'])->middleware('throttle:60,1');
     Route::get('employer/payments/{id}/invoice',         [PaymentController::class, 'invoice'])->middleware('throttle:60,1');
 

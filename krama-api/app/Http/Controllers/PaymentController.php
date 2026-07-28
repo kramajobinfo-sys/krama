@@ -449,6 +449,49 @@ class PaymentController extends Controller
         ]);
     }
 
+    // POST /api/employer/payments/{id}/aba-form — return the signed ABA PayWay "purchase"
+    // form (action URL + fields). The browser POSTs it to open PayWay's HOSTED checkout page,
+    // which shows ABA Pay + KHQR + Card (Visa/Mastercard) tabs (payment_option left empty).
+    // Confirmation comes back via the pushback callback and/or the verify endpoint.
+    public function abaForm(Request $request, $id)
+    {
+        $this->requirePermission('post_jobs');
+
+        $user    = $request->user();
+        $company = $this->employerCompany($user);
+        $payment = Payment::where('company_id', $company->id)->where('id', $id)->firstOrFail();
+
+        if ($payment->status !== 'pending') {
+            return response()->json(['message' => 'This payment is already ' . $payment->status . '.'], 422);
+        }
+
+        $pay = Setting::where('group', 'payment')->pluck('value', 'key')->toArray();
+        $mid = trim($pay['aba_merchant_id'] ?? '');
+        $key = trim($pay['aba_api_key'] ?? '');
+        if ($mid === '' || $key === '') {
+            return response()->json(['message' => 'ABA payment is not configured. Please contact support.'], 422);
+        }
+
+        $nameParts = preg_split('/\s+/', trim((string) ($user->name ?: $company->name ?: 'Krama Customer')), 2);
+        $buyer = [
+            'firstname' => $nameParts[0] ?? 'Krama',
+            'lastname'  => $nameParts[1] ?? 'Customer',
+            'email'     => (string) ($user->email ?: 'noreply@kramajob.com'),
+            'phone'     => (string) ($user->phone ?: ''),
+        ];
+
+        $apiBase    = rtrim(config('app.url', 'http://localhost'), '/');
+        $frontend   = rtrim(config('app.frontend_url', 'http://localhost/krama'), '/');
+        $returnUrl  = $apiBase . '/api/payments/aba/callback';                          // server pushback (POST)
+        $successUrl = $frontend . '/ui_kits/employer-dashboard/index.html?aba=success'; // browser redirect after pay
+
+        $payment->update(['method' => 'aba']);
+
+        $req = \App\Services\PaymentService::abaPurchaseFields($payment, $mid, $key, $buyer, $returnUrl, $successUrl);
+
+        return response()->json(['action' => $req['action'], 'fields' => $req['fields']]);
+    }
+
     // POST /api/payments/stripe/webhook — Stripe webhook. We don't trust the event payload;
     // we take the session id and re-verify authoritatively via the Stripe API.
     public function stripeWebhook(Request $request)
