@@ -587,7 +587,7 @@ class AuthController extends Controller
             'user_id'    => $user->id,
             'type'       => 'refresh',
             'token_hash' => $hash,
-            'expires_at' => now()->addMinutes(config('jwt.refresh_ttl')),
+            'expires_at' => now()->addMinutes((int) config('jwt.refresh_ttl')),
             'created_at' => now(),
         ]);
 

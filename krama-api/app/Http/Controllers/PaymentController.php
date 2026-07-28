@@ -165,7 +165,7 @@ class PaymentController extends Controller
                 'status'     => $isTrial ? 'trial' : ($isFreePlan ? 'active' : 'pending'),
                 'started_at' => now(),
                 'renews_at'  => $isTrial
-                    ? now()->addDays($trialDays)
+                    ? now()->addDays((int) $trialDays)
                     : ($isFreePlan ? null : ($plan->interval === 'once' ? null : now()->addMonth())),
             ]);
 

@@ -627,7 +627,7 @@ class JobController extends Controller
             if ($creditSub) {
                 DB::transaction(function () use ($creditSub, $job, $days) {
                     $creditSub->increment('featured_credits_used');
-                    $job->update(['is_featured' => true, 'featured_until' => now()->addDays($days)]);
+                    $job->update(['is_featured' => true, 'featured_until' => now()->addDays((int) $days)]);
                 });
 
                 return response()->json([
