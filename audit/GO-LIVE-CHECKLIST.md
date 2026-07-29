@@ -1,6 +1,6 @@
 # KRAMA — Go-Live Readiness Checklist
 
-**Prepared:** 2026-07-30 · **Target launch:** tomorrow · **Scope:** current `main` (Laravel 8.83) app.
+**Prepared:** 2026-07-30 · **Target launch:** tomorrow · **Scope:** `main` @ `33e9ca9` — the **Laravel 12** upgrade + all security hardening + the NBC exchange-rate feature (deploy target; **requires PHP 8.2+** on the host — confirmed available via cPanel PHP Selector).
 **Method:** evidence-based. Every ✅ cites a file verified this pass. Anything not verifiable from code is marked **Verification required** (host/ops/live-credential facts — not code).
 
 ---
@@ -90,3 +90,52 @@ Candidate: apply to job, saved jobs, messages, job alerts email. Employer: post 
 | Core Candidate/Employer/Admin workflows | ✅ code fixed · ⚠ end-to-end runtime = §E |
 
 **Recommendation:** **Do not launch until B1–B3 are completed and verified on the production server, and at least one real payment + one verification email succeed on staging.** Once those pass, this is a GO — the code itself carries no remaining Critical/High defects.
+
+---
+
+## F. Deployment sequence (Laravel 12 → production)
+
+**Launch decision:** deploy `main` (now the L12 + hardened tree) on the cPanel host's **PHP 8.2**.
+
+### F0. Settled state (local)
+`main` @ `33e9ca9`, working tree clean. Contents verified: L12 (`composer ^12`, fruitcake removed, `(int)env` jwt casts, built-in `HandleCors`), XSS `HtmlSanitizer` on write, mobile account menu, employer Team mobile fit, candidate alerts/Recommended fixes, public search-cap fix (`getAllPages`), and the NBC exchange-rate feature (`443aa5b`, auto-sync + safe manual fallback).
+```
+33e9ca9  docs: go-live checklist
+443aa5b  Tax invoice: NBC exchange-rate + safe fallback
+9acda28  (consolidated: L12 + all hardening + all UX fixes)
+```
+
+### F1. Settle origin/main on GitHub  ⚠ (requires GitHub auth — run by the team, not from the dev sandbox)
+> ⚠️ **First freeze any parallel session's git operations** — `main`'s history was being rewritten; a mid-push force-push would clobber this. One session owns the push.
+```bash
+git fetch origin
+git log --oneline main..origin/main      # what origin has that local doesn't
+```
+- **Empty** → `git push origin main` (clean fast-forward).
+- **Not empty** → origin diverged; the exchange-rate commit `443aa5b` touches only the 8 tax-invoice files and cherry-picks cleanly — reconcile onto origin/main, then push.
+- **Verify on GitHub:** `origin/main` HEAD shows the "Tax invoice: NBC exchange-rate…" commit.
+
+### F2. Deploy on the server (PHP 8.2 CLI = `php`; project at `/home/seagzdgt/krama-api`)
+First confirm the checkout type: `cd ~/krama-api && git remote -v && git log --oneline -1`.
+```bash
+# git-checkout deploy:
+git fetch origin && git reset --hard origin/main
+composer install --no-dev --optimize-autoloader          # builds the Laravel 12 vendor on PHP 8.2
+```
+- Confirm PHP 8.2 extensions incl. **gd** (avatar/image resize) are enabled (cPanel PHP Selector — a version switch can reset extensions).
+
+### F3. Config gates (B1–B3) + finalize
+- **B1** `.env`: `APP_ENV=production`, `APP_DEBUG=false`, `LOG_LEVEL=warning`, `BCRYPT_ROUNDS=12`, `APP_URL`/`FRONTEND_URL`/`CORS_ALLOWED_ORIGINS=https://kramajob.com`, real `DB_*`/`MAIL_*`; then `php artisan key:generate` + `php artisan jwt:secret` (fresh unique secrets).
+- **B2** cron (cPanel → Cron Jobs, once per minute): `* * * * * php /home/seagzdgt/krama-api/artisan schedule:run >/dev/null 2>&1`
+- **B3** `.env`: `QUEUE_CONNECTION=sync` (shared host can't keep a worker alive).
+- Finalize: `php artisan config:cache && php artisan route:cache` (re-run after ANY `.env` change); `chmod -R 775 storage bootstrap/cache`.
+
+### F4. Post-deploy verification (on the live host)
+- `https://kramajob.com/api/health` → 200.
+- Login (candidate + employer + admin), one **real payment** → fulfillment, one **verification email** received.
+- NBC scrape (else the manual fallback rate is used — still correct):
+  `php artisan tinker --execute="var_dump(App\Services\ExchangeRateService::fetchFromNbc());"`
+- Confirm the scheduler fired: a pending payment reconciles within ~3 min.
+
+### The one standing risk
+The only thing between here and a clean deploy is the **parallel session rewriting git history**. Pick one authoritative `main`, push it once, freeze the rest. All application code is verified ready.
