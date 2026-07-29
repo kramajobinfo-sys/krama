@@ -5108,7 +5108,7 @@
     const [abaSaved, setAbaSaved] = React.useState(false);
     const [stripeKey, setStripeKey] = React.useState("");
     const [stripeSaved, setStripeSaved] = React.useState(false);
-    const VAT_DEFAULTS = { vat_enabled: false, vat_rate: "10", supplier_legal_name: "", supplier_vat_tin: "", supplier_address: "" };
+    const VAT_DEFAULTS = { vat_enabled: false, vat_rate: "10", supplier_legal_name: "", supplier_legal_name_kh: "", supplier_vat_tin: "", supplier_address: "", exchange_rate_khr: "4100" };
     const [vat, setVat] = React.useState(VAT_DEFAULTS);
     const [vatSaved, setVatSaved] = React.useState(false);
     const CVM_DEFAULTS = { enabled: true, pack_size: 20, pack_price: 10, currency: "USD", cost_deterministic: 1, cost_ai: 3, ai_provider: "claude", claude_api_key: "", claude_model: "", gemini_api_key: "", gemini_model: "gemini-flash-latest" };
@@ -5127,12 +5127,12 @@
         .then(function(d) { if (d && Object.keys(d).length) { setCvm(Object.assign({}, CVM_DEFAULTS, d)); } })
         .catch(function() {});
       window.KRAMA_ADMIN_API.fetchSettings('tax')
-        .then(function(d) { if (d) { setVat({ vat_enabled: !!Number(d.vat_enabled), vat_rate: (d.vat_rate != null && d.vat_rate !== "") ? String(d.vat_rate) : "10", supplier_legal_name: d.supplier_legal_name || "", supplier_vat_tin: d.supplier_vat_tin || "", supplier_address: d.supplier_address || "" }); } })
+        .then(function(d) { if (d) { setVat({ vat_enabled: !!Number(d.vat_enabled), vat_rate: (d.vat_rate != null && d.vat_rate !== "") ? String(d.vat_rate) : "10", supplier_legal_name: d.supplier_legal_name || "", supplier_legal_name_kh: d.supplier_legal_name_kh || "", supplier_vat_tin: d.supplier_vat_tin || "", supplier_address: d.supplier_address || "", exchange_rate_khr: (d.exchange_rate_khr != null && d.exchange_rate_khr !== "") ? String(d.exchange_rate_khr) : "4100" }); } })
         .catch(function() {});
     }, []);
     const setVatField = (k, v) => setVat(function (x) { return Object.assign({}, x, { [k]: v }); });
     const saveVat = () => {
-      window.KRAMA_ADMIN_API.updateSettings('tax', { vat_enabled: vat.vat_enabled ? 1 : 0, vat_rate: vat.vat_rate === "" ? 0 : Number(vat.vat_rate), supplier_legal_name: vat.supplier_legal_name, supplier_vat_tin: vat.supplier_vat_tin, supplier_address: vat.supplier_address })
+      window.KRAMA_ADMIN_API.updateSettings('tax', { vat_enabled: vat.vat_enabled ? 1 : 0, vat_rate: vat.vat_rate === "" ? 0 : Number(vat.vat_rate), supplier_legal_name: vat.supplier_legal_name, supplier_legal_name_kh: vat.supplier_legal_name_kh, supplier_vat_tin: vat.supplier_vat_tin, supplier_address: vat.supplier_address, exchange_rate_khr: vat.exchange_rate_khr === "" ? 4100 : Number(vat.exchange_rate_khr) })
         .then(function() { setVatSaved(true); setTimeout(function() { setVatSaved(false); }, 3000); })
         .catch(function(e) { alert('Save failed: ' + (e && e.message ? e.message : 'Unknown error')); });
     };
@@ -5336,15 +5336,19 @@
           {vatSaved && <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: "var(--success-subtle)", border: "1px solid var(--success-border)", borderRadius: "var(--radius-md)", color: "var(--success)", fontWeight: 600, fontSize: "var(--text-sm)", margin: "10px 0" }}>{I("circle-check-big", 15)} Tax settings saved.</div>}
           {vat.vat_enabled && (
             <div style={{ marginTop: 14 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "160px 1fr", gap: 16 }} className="krm-form-grid">
+              <div style={{ display: "grid", gridTemplateColumns: "140px 160px 1fr", gap: 16 }} className="krm-form-grid">
                 <Input label="VAT rate (%)" type="number" value={vat.vat_rate} onChange={(e) => setVatField("vat_rate", e.target.value)} />
-                <Input label="Supplier legal name" placeholder="Your company Co., Ltd." value={vat.supplier_legal_name} onChange={(e) => setVatField("supplier_legal_name", e.target.value)} />
+                <Input label="Exchange rate (៛/US$)" type="number" value={vat.exchange_rate_khr} onChange={(e) => setVatField("exchange_rate_khr", e.target.value)} />
+                <Input label="Supplier legal name (English)" placeholder="Your company Co., Ltd." value={vat.supplier_legal_name} onChange={(e) => setVatField("supplier_legal_name", e.target.value)} />
+              </div>
+              <div style={{ marginTop: 16 }}>
+                <Input label="Supplier legal name (Khmer)" placeholder="ឈ្មោះក្រុមហ៊ុនជាភាសាខ្មែរ" value={vat.supplier_legal_name_kh} onChange={(e) => setVatField("supplier_legal_name_kh", e.target.value)} />
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginTop: 16 }} className="krm-form-grid">
                 <Input label="Supplier VAT TIN" placeholder="e.g. K001-901234567" value={vat.supplier_vat_tin} onChange={(e) => setVatField("supplier_vat_tin", e.target.value)} />
                 <Input label="Supplier address" placeholder="Registered address" value={vat.supplier_address} onChange={(e) => setVatField("supplier_address", e.target.value)} />
               </div>
-              <div style={{ fontSize: "var(--text-xs)", color: "var(--text-faint)", marginTop: 8 }}>These identify the supplier (you) on every tax invoice, as required by the General Department of Taxation. VAT is added on top of the plan price (exclusive).</div>
+              <div style={{ fontSize: "var(--text-xs)", color: "var(--text-faint)", marginTop: 8 }}>These identify the supplier (you) on every Cambodia-standard tax invoice (GDT Prakas 723). The tax invoice is bilingual (Khmer / English) and shows the total in Khmer Riel at the exchange rate above. VAT is added on top of the plan price (exclusive).</div>
             </div>
           )}
           <div style={{ marginTop: 16 }}><Button variant="primary" iconLeft={I("check", 16)} onClick={saveVat}>Save tax settings</Button></div>

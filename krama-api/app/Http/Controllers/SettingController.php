@@ -38,11 +38,13 @@ class SettingController extends Controller
             'stripe_secret_key' => 'nullable|string|max:255',
         ],
         'tax' => [
-            'vat_enabled'         => 'boolean',
-            'vat_rate'            => 'nullable|numeric|min:0|max:100',
-            'supplier_legal_name' => 'nullable|string|max:190',
-            'supplier_vat_tin'    => 'nullable|string|max:50',
-            'supplier_address'    => 'nullable|string|max:255',
+            'vat_enabled'            => 'boolean',
+            'vat_rate'               => 'nullable|numeric|min:0|max:100',
+            'supplier_legal_name'    => 'nullable|string|max:190',
+            'supplier_legal_name_kh' => 'nullable|string|max:190',
+            'supplier_vat_tin'       => 'nullable|string|max:50',
+            'supplier_address'       => 'nullable|string|max:255',
+            'exchange_rate_khr'      => 'nullable|numeric|min:0|max:100000',
         ],
         'homepage' => [
             'featured_companies_limit' => 'integer|min:1|max:50',

@@ -144,6 +144,7 @@ class PaymentController extends Controller
         $isTaxInvoice = $vatEnabled && $charge > 0 && trim((string) $company->vat_tin) !== '';
         $subtotal     = round((float) $charge, 2);
         $vatAmount    = $isTaxInvoice ? round($subtotal * $vatRate / 100, 2) : 0.0;
+        $fxRate       = $isTaxInvoice ? round((float) ($tax['exchange_rate_khr'] ?? 4100), 4) : null;
         if ($isTaxInvoice) {
             $charge = round($subtotal + $vatAmount, 2); // exclusive: total = net + VAT
         }
@@ -175,7 +176,7 @@ class PaymentController extends Controller
             ->where('plan_id', $plan->id)
             ->exists();
 
-        DB::transaction(function () use ($company, $plan, $data, $isTrial, $isFreePlan, $trialDays, $charge, $subtotal, $vatRate, $vatAmount, $isTaxInvoice, &$payment, &$subscription) {
+        DB::transaction(function () use ($company, $plan, $data, $isTrial, $isFreePlan, $trialDays, $charge, $subtotal, $vatRate, $vatAmount, $isTaxInvoice, $fxRate, &$payment, &$subscription) {
             $subscription = Subscription::create([
                 'company_id' => $company->id,
                 'plan_id'    => $plan->id,
@@ -203,6 +204,7 @@ class PaymentController extends Controller
                 'vat_amount'          => $vatAmount,
                 'customer_vat_tin'    => $isTaxInvoice ? $company->vat_tin : null,
                 'customer_legal_name' => $isTaxInvoice ? ($company->vat_legal_name ?: $company->name) : null,
+                'fx_rate'             => $fxRate,
                 'created_at'      => now(),
             ]);
         });

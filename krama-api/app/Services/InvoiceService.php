@@ -74,6 +74,33 @@ class InvoiceService
         return $map[$key] ?? ($m ? ucfirst((string) $m) : 'Online');
     }
 
+    // Brand logo as a self-contained data URI for embedding in the PDF (dompdf renders
+    // data URIs even with remote fetching disabled). Prefers the admin-configured Brand
+    // logo, falling back to the bundled KRAMA asset.
+    private static function logoDataUri(): string
+    {
+        $brand = Setting::where('group', 'brand')->pluck('value', 'key')->toArray();
+        $url   = (string) ($brand['logoUrl'] ?? '');
+        if (strpos($url, 'data:image/') === 0) {
+            return $url;
+        }
+        foreach ([base_path('../krama/assets/apple-touch-icon.png'), base_path('../krama/assets/krama-icon.png'), base_path('../krama/assets/LOGO KRAMA.jpg')] as $p) {
+            if (is_file($p)) {
+                $mime = preg_match('/\.jpe?g$/i', $p) ? 'image/jpeg' : 'image/png';
+                return 'data:' . $mime . ';base64,' . base64_encode((string) file_get_contents($p));
+            }
+        }
+        return '';
+    }
+
+    // USD → Khmer Riel string (whole riel) at the supplied rate. GDT requires the total
+    // shown in KHR; the rate is snapshotted on the payment so the figure never drifts.
+    private static function riel($usd, $rate): string
+    {
+        $khr = round(((float) $usd) * (float) $rate);
+        return '៛' . number_format($khr);
+    }
+
     // The invoice document as HTML (dompdf-compatible: tables + inline styles).
     public static function html(Payment $payment): string
     {
@@ -95,6 +122,9 @@ class InvoiceService
         $ownerEmail     = optional(optional($company)->owner)->email ?? '';
 
         $e = fn ($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
+        // Wrap Khmer text in the bundled Khmer font (Battambang) — dompdf picks one font per
+        // element, so Khmer script must be isolated in its own span or it renders as tofu.
+        $km = fn ($s) => "<span style=\"font-family:'khmer'\">" . htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8') . "</span>";
         $teal = '#0d9488';
 
         // Discount breakdown (e.g. a 20%-off Yearly plan): show the list price as the line item
@@ -114,30 +144,46 @@ class InvoiceService
             $discountRow = "<tr><td style='padding:6px 12px;text-align:right;color:#6b7280'>Discount ({$pct}%)</td><td style='padding:6px 12px;text-align:right;color:#047857'>-" . $e($save) . "</td></tr>";
         }
 
-        // ── VAT / Tax invoice (Cambodia). is_tax_invoice + amounts are snapshotted on the payment. ──
-        $isTax    = (bool) $payment->is_tax_invoice;
-        $docTitle = $isTax ? 'TAX INVOICE' : 'INVOICE';
-        $taxSet   = Setting::where('group', 'tax')->pluck('value', 'key')->toArray();
-        $supLegal = $isTax ? (string) ($taxSet['supplier_legal_name'] ?? '') : '';
-        $supTin   = $isTax ? (string) ($taxSet['supplier_vat_tin'] ?? '') : '';
-        $supAddr  = $isTax ? (string) ($taxSet['supplier_address'] ?? '') : '';
-        $supLegalLine = $supLegal ? "<div style='margin-top:2px'>" . $e($supLegal) . "</div>" : '';
-        $supTinLine   = $supTin   ? "<div style='color:#6b7280;margin-top:2px'>VAT TIN: " . $e($supTin) . "</div>" : '';
-        $supAddrLine  = $supAddr  ? "<div style='color:#6b7280;margin-top:2px'>" . $e($supAddr) . "</div>" : '';
+        // ── VAT / Tax invoice (Cambodia GDT — Prakas 723 / Instruction 1127). is_tax_invoice +
+        // amounts + FX rate are snapshotted on the payment so the issued invoice is immutable.
+        // Khmer is the primary language with English below (Khmer-language requirement); the
+        // total is shown in Khmer Riel at the snapshotted rate (KHR-total requirement). ──
+        $isTax      = (bool) $payment->is_tax_invoice;
+        $docTitleKh = $isTax ? 'វិក្កយបត្រអាករ' : 'វិក្កយបត្រ';
+        $docTitleEn = $isTax ? 'TAX INVOICE' : 'INVOICE';
+        $taxSet     = Setting::where('group', 'tax')->pluck('value', 'key')->toArray();
+        $supLegal   = $isTax ? (string) ($taxSet['supplier_legal_name'] ?? '') : '';
+        $supLegalKh = $isTax ? (string) ($taxSet['supplier_legal_name_kh'] ?? '') : '';
+        $supTin     = $isTax ? (string) ($taxSet['supplier_vat_tin'] ?? '') : '';
+        $supAddr    = $isTax ? (string) ($taxSet['supplier_address'] ?? '') : '';
+        $tinLabel   = $km('លេខអត្តសញ្ញាណកម្មសារពើពន្ធ') . " (VAT TIN)";
+        $supLegalKhLine = $supLegalKh ? "<div style='margin-top:2px;font-weight:bold'>" . $km($supLegalKh) . "</div>" : '';
+        $supLegalLine   = $supLegal   ? "<div style='margin-top:2px'>" . $e($supLegal) . "</div>" : '';
+        $supTinLine     = $supTin     ? "<div style='color:#6b7280;margin-top:2px'>{$tinLabel}: " . $e($supTin) . "</div>" : '';
+        $supAddrLine    = $supAddr    ? "<div style='color:#6b7280;margin-top:2px'>" . $e($supAddr) . "</div>" : '';
         $custTin   = (string) ($payment->customer_vat_tin ?? '');
         $custLegal = (string) ($payment->customer_legal_name ?? '');
         $custLegalLine = ($isTax && $custLegal && $custLegal !== $companyName) ? "<div style='margin-top:2px'>" . $e($custLegal) . "</div>" : '';
-        $custTinLine   = ($isTax && $custTin) ? "<div style='color:#6b7280;margin-top:2px'>VAT TIN: " . $e($custTin) . "</div>" : '';
+        $custTinLine   = ($isTax && $custTin) ? "<div style='color:#6b7280;margin-top:2px'>{$tinLabel}: " . $e($custTin) . "</div>" : '';
 
         if ($isTax) {
-            $lineAmount  = self::money($payment->subtotal, $payment->currency);
-            $vatPct      = rtrim(rtrim(number_format((float) $payment->vat_rate, 2), '0'), '.');
-            $vatMoney    = self::money($payment->vat_amount, $payment->currency);
+            $lineAmount = self::money($payment->subtotal, $payment->currency);
+            $vatPct     = rtrim(rtrim(number_format((float) $payment->vat_rate, 2), '0'), '.');
+            $vatMoney   = self::money($payment->vat_amount, $payment->currency);
+            $fxRate     = (float) ($payment->fx_rate ?: ($taxSet['exchange_rate_khr'] ?? 4100));
+            $totalKhr   = self::riel($payment->amount, $fxRate);
+            $rateNote   = $km('អត្រាប្តូរប្រាក់') . ' / Exchange rate: ' . $km('៛' . number_format($fxRate)) . ' / US$1';
+            $lblSub     = $km('សរុបរង (មិនរួមអាករ)') . '<div style=\'font-size:9px;color:#9ca3af\'>Subtotal (excl. VAT)</div>';
+            $lblVat     = $km("អាករលើតម្លៃបន្ថែម ({$vatPct}%)") . '<div style=\'font-size:9px;color:#9ca3af\'>VAT (' . $vatPct . '%)</div>';
+            $lblTot     = $km('សរុប (រួមអាករ)') . '<div style=\'font-size:9px;color:#d1fae5\'>Total (incl. VAT)</div>';
+            $lblKhr     = $km('សរុបជាប្រាក់រៀល') . '<div style=\'font-size:9px;color:#9ca3af\'>Total in KHR</div>';
             $totalsTable = "<table style='width:100%;border-collapse:collapse;margin-top:10px'>
-      <tr><td style='padding:6px 12px;text-align:right;color:#6b7280;width:80%'>Subtotal (excl. VAT)</td><td style='padding:6px 12px;text-align:right'>" . $e($lineAmount) . "</td></tr>
-      <tr><td style='padding:6px 12px;text-align:right;color:#6b7280'>VAT ({$vatPct}%)</td><td style='padding:6px 12px;text-align:right'>" . $e($vatMoney) . "</td></tr>
-      <tr><td style='padding:10px 12px;text-align:right;font-size:15px;font-weight:bold;color:{$teal};border-top:2px solid #e5e7eb'>Total (incl. VAT)</td><td style='padding:10px 12px;text-align:right;font-size:15px;font-weight:bold;color:{$teal};border-top:2px solid #e5e7eb'>" . $e($amount) . "</td></tr>
-    </table>";
+      <tr><td style='padding:5px 12px;text-align:right;color:#374151;width:70%;vertical-align:top'>{$lblSub}</td><td style='padding:5px 12px;text-align:right;vertical-align:top'>" . $e($lineAmount) . "</td></tr>
+      <tr><td style='padding:5px 12px;text-align:right;color:#374151;vertical-align:top'>{$lblVat}</td><td style='padding:5px 12px;text-align:right;vertical-align:top'>" . $e($vatMoney) . "</td></tr>
+      <tr><td style='padding:8px 12px;text-align:right;font-size:15px;font-weight:bold;color:#fff;background:{$teal};vertical-align:top'>{$lblTot}</td><td style='padding:8px 12px;text-align:right;font-size:15px;font-weight:bold;color:#fff;background:{$teal};vertical-align:top'>" . $e($amount) . "</td></tr>
+      <tr><td style='padding:5px 12px;text-align:right;color:#374151;vertical-align:top'>{$lblKhr}</td><td style='padding:5px 12px;text-align:right;font-weight:bold;vertical-align:top'>{$km($totalKhr)}</td></tr>
+    </table>
+    <div style='text-align:right;color:#9ca3af;font-size:10px;margin-top:4px'>{$rateNote}</div>";
         } else {
             $totalsTable = "<table style='width:100%;border-collapse:collapse;margin-top:10px'>
       <tr><td style='padding:6px 12px;text-align:right;color:#6b7280;width:80%'>Subtotal</td><td style='padding:6px 12px;text-align:right'>" . $e($lineAmount) . "</td></tr>
@@ -152,33 +198,63 @@ class InvoiceService
         $fromEmailLine = $fromEmail ? "<div style='color:#6b7280;margin-top:2px'>" . $e($fromEmail) . "</div>" : '';
         $periodLine = $period ? "<div style='color:#6b7280;margin-top:3px;font-size:11px'>" . $e($period) . "</div>" : '';
 
+        // Logo (data URI) + document title with Khmer primary / English secondary.
+        $logo = self::logoDataUri();
+        $logoBlock = $logo
+            ? "<img src='" . $logo . "' alt='KRAMA' style='height:48px;display:block' />"
+            : "<div style='font-size:24px;font-weight:bold;letter-spacing:3px;color:{$teal}'>KRAMA</div>";
+
+        // Seller signature block — required on Cambodian tax invoices (name + signature of seller).
+        $signatureBlock = $isTax ? "
+    <table style='width:100%;border-collapse:collapse;margin-top:18px'>
+      <tr>
+        <td style='width:55%'></td>
+        <td style='vertical-align:bottom'>
+          <div style='border-bottom:1px solid #9ca3af;height:28px'></div>
+          <div style='margin-top:6px;color:#374151'>{$km('ហត្ថលេខា និងឈ្មោះអ្នកលក់')}</div>
+          <div style='color:#9ca3af;font-size:10px'>Seller's signature &amp; name</div>
+        </td>
+      </tr>
+    </table>" : "";
+
+        $descHead = $km('បរិយាយ') . " / Description";
+        $amtHead  = $km('ចំនួនទឹកប្រាក់') . " / Amount";
+        $fromHead = $km('អ្នកផ្គត់ផ្គង់') . " / Supplier";
+        $billHead = $km('អតិថិជន') . " / Bill to";
+        $mLabel   = $km('មធ្យោបាយបង់ប្រាក់') . " / Payment method";
+        $sLabel   = $km('ស្ថានភាព') . " / Status";
+        $paidTxt  = $km('បានបង់') . " / PAID";
+        $noLabel  = $km('លេខ') . " / No.";
+        $dateLabel = $km('កាលបរិច្ឆេទ') . " / Date";
+
         return "<!DOCTYPE html><html><head><meta charset='utf-8'></head>
 <body style='margin:0;font-family:Helvetica,Arial,sans-serif;color:#111827;font-size:12px'>
-  <div style='padding:38px 42px'>
+  <div style='padding:24px 42px'>
     <table style='width:100%;border-collapse:collapse'>
       <tr>
         <td style='vertical-align:top'>
-          <div style='font-size:24px;font-weight:bold;letter-spacing:3px;color:{$teal}'>KRAMA</div>
-          <div style='color:#6b7280;margin-top:4px'>Jobs &amp; Hiring — Cambodia</div>
+          {$logoBlock}
+          <div style='color:#6b7280;margin-top:6px'>Jobs &amp; Hiring — Cambodia</div>
         </td>
         <td style='vertical-align:top;text-align:right'>
-          <div style='font-size:26px;font-weight:bold;letter-spacing:2px;color:{$teal}'>{$docTitle}</div>
-          <div style='margin-top:6px;font-weight:bold'>" . $e($no) . "</div>
-          <div style='color:#6b7280'>" . $e($dateStr) . "</div>
+          <div style='font-size:22px;font-weight:bold;color:{$teal}'>{$km($docTitleKh)}</div>
+          <div style='font-size:15px;font-weight:bold;letter-spacing:2px;color:{$teal}'>{$docTitleEn}</div>
+          <div style='margin-top:8px;font-weight:bold'>{$noLabel}: " . $e($no) . "</div>
+          <div style='color:#6b7280'>{$dateLabel}: " . $e($dateStr) . "</div>
         </td>
       </tr>
     </table>
 
-    <table style='width:100%;border-collapse:collapse;margin-top:30px'>
+    <table style='width:100%;border-collapse:collapse;margin-top:16px'>
       <tr>
         <td style='vertical-align:top;width:50%'>
-          <div style='color:#9ca3af;text-transform:uppercase;font-size:10px;letter-spacing:1px'>From</div>
+          <div style='color:#9ca3af;font-size:10px;letter-spacing:1px'>{$fromHead}</div>
           <div style='font-weight:bold;margin-top:4px'>" . $e($fromName) . "</div>
-          {$supLegalLine}{$supTinLine}{$supAddrLine}
+          {$supLegalKhLine}{$supLegalLine}{$supTinLine}{$supAddrLine}
           {$fromEmailLine}
         </td>
         <td style='vertical-align:top;width:50%'>
-          <div style='color:#9ca3af;text-transform:uppercase;font-size:10px;letter-spacing:1px'>Bill to</div>
+          <div style='color:#9ca3af;font-size:10px;letter-spacing:1px'>{$billHead}</div>
           <div style='font-weight:bold;margin-top:4px'>" . $e($companyName) . "</div>
           {$custLegalLine}{$custTinLine}
           {$addrLine}
@@ -187,14 +263,14 @@ class InvoiceService
       </tr>
     </table>
 
-    <div style='margin-top:26px'>
-      <span style='color:#047857;border:2px solid #047857;padding:4px 14px;font-weight:bold;font-size:13px;border-radius:6px'>PAID</span>
+    <div style='margin-top:18px'>
+      <span style='color:#047857;border:2px solid #047857;padding:4px 14px;font-weight:bold;font-size:13px;border-radius:6px'>{$paidTxt}</span>
     </div>
 
-    <table style='width:100%;border-collapse:collapse;margin-top:18px'>
+    <table style='width:100%;border-collapse:collapse;margin-top:14px'>
       <tr>
-        <th style='text-align:left;background:{$teal};color:#fff;padding:10px 12px;font-size:11px;text-transform:uppercase;letter-spacing:.5px'>Description</th>
-        <th style='text-align:right;background:{$teal};color:#fff;padding:10px 12px;font-size:11px;text-transform:uppercase;letter-spacing:.5px'>Amount</th>
+        <th style='text-align:left;background:{$teal};color:#fff;padding:10px 12px;font-size:11px;letter-spacing:.5px'>{$descHead}</th>
+        <th style='text-align:right;background:{$teal};color:#fff;padding:10px 12px;font-size:11px;letter-spacing:.5px'>{$amtHead}</th>
       </tr>
       <tr>
         <td style='padding:12px;border-bottom:1px solid #e5e7eb'>" . $e($desc) . "{$periodLine}</td>
@@ -204,12 +280,13 @@ class InvoiceService
 
     {$totalsTable}
 
-    <table style='width:100%;border-collapse:collapse;margin-top:18px'>
-      <tr><td style='padding:4px 12px;color:#6b7280'>Payment method</td><td style='padding:4px 12px;text-align:right'>" . $e($method) . "</td></tr>
-      <tr><td style='padding:4px 12px;color:#6b7280'>Status</td><td style='padding:4px 12px;text-align:right'>Paid</td></tr>
+    <table style='width:100%;border-collapse:collapse;margin-top:14px'>
+      <tr><td style='padding:4px 12px;color:#6b7280'>{$mLabel}</td><td style='padding:4px 12px;text-align:right'>" . $e($method) . "</td></tr>
+      <tr><td style='padding:4px 12px;color:#6b7280'>{$sLabel}</td><td style='padding:4px 12px;text-align:right'>{$paidTxt}</td></tr>
     </table>
+    {$signatureBlock}
 
-    <div style='margin-top:40px;padding-top:16px;border-top:1px solid #e5e7eb;color:#6b7280;font-size:11px;line-height:1.7'>
+    <div style='margin-top:14px;padding-top:10px;border-top:1px solid #e5e7eb;color:#6b7280;font-size:11px;line-height:1.6'>
       Thank you for choosing Krama. Payments are accepted via KHQR, ABA, and Wing.<br>
       This invoice was generated automatically. " . ($fromEmail ? ('For questions, contact ' . $e($fromEmail) . '.') : '') . "
     </div>
@@ -222,11 +299,38 @@ class InvoiceService
     // self-contained (no images/URLs), which also sidesteps dompdf's SVG/data-URI issues.
     public static function pdf(Payment $payment): string
     {
+        // Writable dir where dompdf caches the converted (.ufm) fonts it installs.
+        $fontDir = storage_path('fonts');
+        if (! is_dir($fontDir)) {
+            @mkdir($fontDir, 0775, true);
+        }
+
         $options = new Options();
         $options->set('isRemoteEnabled', false);
         $options->set('isPhpEnabled', false);
+        $options->set('isFontSubsettingEnabled', true);
+        $options->set('defaultFont', 'Helvetica');
+        $options->set('fontDir', $fontDir);
+        $options->set('fontCache', $fontDir);
+        // Allow dompdf to read the bundled font files from the project tree (file:// chroot).
+        $options->set('chroot', [base_path(), $fontDir]);
 
         $dompdf = new Dompdf($options);
+
+        // Register the bundled Khmer font (OFL Battambang) under family "khmer" so Khmer
+        // script in the tax invoice renders instead of showing empty boxes.
+        try {
+            $fm  = $dompdf->getFontMetrics();
+            $reg = resource_path('fonts/khmer/Battambang-Regular.ttf');
+            $bld = resource_path('fonts/khmer/Battambang-Bold.ttf');
+            if (is_file($reg)) {
+                $fm->registerFont(['family' => 'khmer', 'weight' => 'normal', 'style' => 'normal'], $reg);
+                $fm->registerFont(['family' => 'khmer', 'weight' => 'bold', 'style' => 'normal'], is_file($bld) ? $bld : $reg);
+            }
+        } catch (\Throwable $e) {
+            Log::warning('Khmer font registration failed: ' . $e->getMessage());
+        }
+
         $dompdf->loadHtml(self::html($payment));
         $dompdf->setPaper('a4');
         $dompdf->render();
