@@ -127,17 +127,17 @@
                 </div>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginTop: 14, flexWrap: "wrap" }}>
                   {custom ? (
-                    <span style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-4xl)", fontWeight: 800, color: textStrong }}>{TR("Custom")}</span>
+                    <span style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-3xl)", fontWeight: 800, color: textStrong }}>{TR("Custom")}</span>
                   ) : trial ? (
                     <React.Fragment>
-                      <span style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-4xl)", fontWeight: 800, color: textStrong }}>{p.trial_days || 7}</span>
+                      <span style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-3xl)", fontWeight: 800, color: textStrong }}>{p.trial_days || 7}</span>
                       <span style={{ color: textMuted, fontSize: "var(--text-base)" }}>{TR("days free")}</span>
                     </React.Fragment>
                   ) : free ? (
-                    <span style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-4xl)", fontWeight: 800, color: textStrong }}>{TR("Free")}</span>
+                    <span style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-3xl)", fontWeight: 800, color: textStrong }}>{TR("Free")}</span>
                   ) : (
                     <React.Fragment>
-                      <span style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-4xl)", fontWeight: 800, color: textStrong, whiteSpace: "nowrap" }}>${p.has_discount ? p.effective_price : p.price}</span>
+                      <span style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-3xl)", fontWeight: 800, color: textStrong, whiteSpace: "nowrap" }}>${p.has_discount ? p.effective_price : p.price}</span>
                       <span style={{ color: textMuted, fontSize: "var(--text-base)", whiteSpace: "nowrap" }}>/ {p.interval}</span>
                       {p.has_discount ? <span style={{ color: textMuted, fontSize: "var(--text-base)", textDecoration: "line-through", whiteSpace: "nowrap", flexBasis: "100%" }}>${p.price}</span> : null}
                     </React.Fragment>
