@@ -604,8 +604,96 @@
   ];
   const APP_BARS = [["Jan", 320], ["Feb", 410], ["Mar", 380], ["Apr", 520], ["May", 610], ["Jun", 470], ["Jul", 680], ["Aug", 540], ["Sep", 720], ["Oct", 660], ["Nov", 810], ["Dec", 760]];
 
+  // Assign people to a company with a role. Admin = full control; Recruiter = needs approval.
+  function CompanyAccessModal({ company, onClose, onFlash }) {
+    const [data, setData] = React.useState(null);
+    const [loading, setLoading] = React.useState(true);
+    const [form, setForm] = React.useState({ email: "", name: "", role: "company_admin" });
+    const [busy, setBusy] = React.useState(false);
+    const [err, setErr] = React.useState("");
+
+    const load = React.useCallback(function () {
+      setLoading(true);
+      adm.companyMembers(company.id)
+        .then(function (d) { setData(d); setLoading(false); })
+        .catch(function (e) { setErr((e && e.message) || "Failed to load."); setLoading(false); });
+    }, [company.id]);
+    React.useEffect(function () { load(); }, [load]);
+
+    const add = function () {
+      if (!form.email.trim()) { setErr("Email is required."); return; }
+      setBusy(true); setErr("");
+      adm.addCompanyMember(company.id, { email: form.email.trim(), name: form.name.trim() || null, role: form.role })
+        .then(function (r) { setForm({ email: "", name: "", role: "company_admin" }); onFlash((r && r.message) || "Member assigned."); load(); })
+        .catch(function (e) { setErr((e && e.message) || "Failed to assign."); })
+        .then(function () { setBusy(false); });
+    };
+    const changeRole = function (m, role) {
+      adm.updateCompanyMember(company.id, m.id, { role: role })
+        .then(function () { onFlash("Role updated."); load(); })
+        .catch(function (e) { setErr((e && e.message) || "Failed to update role."); });
+    };
+    const remove = function (m) {
+      adm.removeCompanyMember(company.id, m.id)
+        .then(function () { onFlash("Member removed."); load(); })
+        .catch(function (e) { setErr((e && e.message) || "Failed to remove."); });
+    };
+
+    return (
+      <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+        <div onClick={(e) => e.stopPropagation()} style={{ background: "var(--surface-card)", borderRadius: "var(--radius-xl)", width: "100%", maxWidth: 560, maxHeight: "88vh", overflow: "auto", boxShadow: "var(--shadow-xl)" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 22px", borderBottom: "1px solid var(--border)" }}>
+            <div style={{ fontWeight: 700, fontSize: "var(--text-md)", color: "var(--text-strong)" }}>Manage access — {company.name}</div>
+            <button onClick={onClose} aria-label="Close" style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--text-muted)", display: "inline-flex" }}>{I("x", 18)}</button>
+          </div>
+          <div style={{ padding: 22, display: "flex", flexDirection: "column", gap: 16 }}>
+            <p style={{ margin: 0, fontSize: "var(--text-sm)", color: "var(--text-muted)" }}><strong>Admin</strong> = full control (post jobs, edit profile, manage team &amp; billing). <strong>Recruiter</strong> = can post, but jobs need admin approval.</p>
+            {err && <div style={{ padding: "9px 12px", background: "var(--danger-subtle)", color: "var(--danger)", borderRadius: "var(--radius-md)", fontSize: "var(--text-sm)" }}>{err}</div>}
+            {loading ? <div style={{ color: "var(--text-muted)", fontSize: "var(--text-sm)" }}>Loading…</div> : (
+              <React.Fragment>
+                {data && data.owner && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: "var(--surface-sunken)", borderRadius: "var(--radius-md)" }}>
+                    <Avatar src={data.owner.avatar_url || undefined} name={data.owner.name} size={30} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 600, color: "var(--text-strong)", fontSize: "var(--text-sm)" }}>{data.owner.name}</div>
+                      <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>{data.owner.email}</div>
+                    </div>
+                    <span style={{ fontSize: "var(--text-xs)", fontWeight: 700, color: "#fff", background: "var(--brand)", padding: "2px 9px", borderRadius: 999 }}>Owner</span>
+                  </div>
+                )}
+                {data && (data.members || []).map(function (m) {
+                  return (
+                    <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", border: "1px solid var(--border)", borderRadius: "var(--radius-md)" }}>
+                      <Avatar src={m.avatar_url || undefined} name={m.name} size={30} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontWeight: 600, color: "var(--text-strong)", fontSize: "var(--text-sm)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.name}</div>
+                        <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.email}</div>
+                      </div>
+                      <Select value={m.company_role} onChange={(e) => changeRole(m, e.target.value)} options={[{ value: "company_admin", label: "Admin" }, { value: "recruitment", label: "Recruiter" }]} size="sm" containerStyle={{ minWidth: 118, flexShrink: 0 }} />
+                      <button onClick={() => remove(m)} title="Remove from company" style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--danger)", display: "inline-flex", flexShrink: 0 }}>{I("trash-2", 16)}</button>
+                    </div>
+                  );
+                })}
+                {data && (data.members || []).length === 0 && <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>No additional members yet — just the owner.</div>}
+                <div style={{ borderTop: "1px solid var(--border)", paddingTop: 14, display: "flex", flexDirection: "column", gap: 10 }}>
+                  <div style={{ fontWeight: 700, fontSize: "var(--text-sm)", color: "var(--text-strong)" }}>Assign a user</div>
+                  <Input label="Email" value={form.email} onChange={(e) => setForm(Object.assign({}, form, { email: e.target.value }))} placeholder="person@example.com" />
+                  <Input label="Name (only used for new accounts)" value={form.name} onChange={(e) => setForm(Object.assign({}, form, { name: e.target.value }))} placeholder="Optional" />
+                  <Select label="Role" value={form.role} onChange={(e) => setForm(Object.assign({}, form, { role: e.target.value }))} options={[{ value: "company_admin", label: "Admin (full control)" }, { value: "recruitment", label: "Recruiter (jobs need approval)" }]} />
+                  <Button variant="primary" disabled={busy} onClick={add} iconLeft={I("user-plus", 15)}>{busy ? "Assigning…" : "Assign user"}</Button>
+                  <p style={{ margin: 0, fontSize: "var(--text-xs)", color: "var(--text-faint)" }}>If the email isn't a Krama account yet, a new employer account is created — they log in and reset their password.</p>
+                </div>
+              </React.Fragment>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   function CompaniesMgmt() {
     const [tab, setTab] = React.useState("pending");
+    const [accessCompany, setAccessCompany] = React.useState(null);
     const [companies, setCompanies] = React.useState([]);
     const [counts, setCounts] = React.useState({ pending: 0, approved: 0, suspended: 0 });
     const [loading, setLoading] = React.useState(true);
@@ -676,13 +764,13 @@
         <Tabs value={tab} onChange={(v) => { setPage(1); setTab(v); }} tabs={[{ value: "pending", label: "Pending", count: counts.pending }, { value: "approved", label: "Approved", count: counts.approved }, { value: "suspended", label: "Suspended", count: counts.suspended }]} style={{ marginBottom: 18 }} />
         {actionMsg && <div style={{ padding: "10px 14px", background: "var(--success-subtle)", color: "var(--success)", borderRadius: "var(--radius-md)", marginBottom: 14, fontWeight: 600, fontSize: "var(--text-sm)" }}>{actionMsg}</div>}
         <div className="krm-table-wrap"><Card padding={0}>
-          <div style={{ display: "grid", gridTemplateColumns: "2fr 1.3fr 1.1fr 0.6fr 0.9fr 270px", padding: "12px 20px", fontSize: "var(--text-xs)", fontWeight: 700, letterSpacing: ".04em", textTransform: "uppercase", color: "var(--text-faint)", borderBottom: "1px solid var(--border)" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "2fr 1.3fr 1.1fr 0.6fr 0.9fr 340px", padding: "12px 20px", fontSize: "var(--text-xs)", fontWeight: 700, letterSpacing: ".04em", textTransform: "uppercase", color: "var(--text-faint)", borderBottom: "1px solid var(--border)" }}>
             <span>Company</span><span>Industry</span><span>Reg. number</span><span>Jobs</span><span>Status</span><span style={{ textAlign: "right" }}>Actions</span>
           </div>
           {loading && <div style={{ padding: "28px 20px", color: "var(--text-muted)", fontSize: "var(--text-sm)", textAlign: "center" }}>Loading…</div>}
           {!loading && companies.length === 0 && <div style={{ padding: "28px 20px", color: "var(--text-muted)", fontSize: "var(--text-sm)", textAlign: "center" }}>No companies in this tab.</div>}
           {!loading && companies.map((c, i) => (
-            <div key={c.id} style={{ display: "grid", gridTemplateColumns: "2fr 1.3fr 1.1fr 0.6fr 0.9fr 270px", alignItems: "center", padding: "14px 20px", borderBottom: i < companies.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>
+            <div key={c.id} style={{ display: "grid", gridTemplateColumns: "2fr 1.3fr 1.1fr 0.6fr 0.9fr 340px", alignItems: "center", padding: "14px 20px", borderBottom: i < companies.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <label title="Upload / change logo" style={{ position: "relative", cursor: logoBusy === c.id ? "wait" : "pointer", flexShrink: 0, display: "inline-flex" }}>
                   <Avatar src={c.logo_url || undefined} name={c.name} square size={34} />
@@ -695,11 +783,12 @@
               <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>{c.registration_number || "--"}</span>
               <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-sm)", color: "var(--text-body)" }}>{c.jobs_count || 0}</span>
               <span><StatusBadge status={c.status} /></span>
-              <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", alignItems: "center" }}>
+              <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", alignItems: "center", flexWrap: "wrap" }}>
                 <label title={(c.cover_banner_url ? "Replace cover banner" : "Upload cover banner") + " — recommended 1600 × 220px (top band of the company profile page)"} style={{ display: "inline-flex", alignItems: "center", gap: 5, height: 30, padding: "0 10px", borderRadius: "var(--radius-sm)", cursor: coverBusy === c.id ? "wait" : "pointer", border: "1px solid " + (c.cover_banner_url ? "var(--brand)" : "var(--border-strong)"), background: c.cover_banner_url ? "var(--brand-subtle)" : "var(--surface-card)", color: c.cover_banner_url ? "var(--text-brand)" : "var(--text-muted)", fontFamily: "var(--font-sans)", fontSize: "var(--text-xs)", fontWeight: 700, flexShrink: 0 }}>
                   {I(coverBusy === c.id ? "loader" : "image", 13)} Cover
                   <input type="file" accept="image/*" disabled={coverBusy === c.id} onChange={(e) => { onCoverPick(c, e.target.files[0]); e.target.value = ""; }} style={{ display: "none" }} />
                 </label>
+                <Button variant="secondary" size="sm" iconLeft={I("users", 13)} onClick={() => setAccessCompany(c)}>Access</Button>
                 {c.status === "pending" && (
                   <React.Fragment>
                     <Button variant="primary" size="sm" iconLeft={I("check", 13)} onClick={() => doAction(() => adm.approveCompany(c.id), "Company approved.")}>Approve</Button>
@@ -721,6 +810,7 @@
             </div>
           )}
         </Card></div>
+        {accessCompany && <CompanyAccessModal company={accessCompany} onClose={() => setAccessCompany(null)} onFlash={flashMsg} />}
       </div>
     );
   }

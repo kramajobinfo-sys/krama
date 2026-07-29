@@ -6,7 +6,11 @@ use App\Models\Company;
 use App\Support\HtmlSanitizer;
 use App\Models\CompanyAward;
 use App\Models\CompanyPhoto;
+use App\Models\Role;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class CompanyController extends Controller
 {
@@ -504,6 +508,149 @@ class CompanyController extends Controller
         $this->auditLog('company.' . $label, ['company_id' => $company->id, 'company_name' => $company->name]);
 
         return response()->json(['message' => "Company $label.", 'is_verified' => $company->is_verified]);
+    }
+
+    // ── Admin: company access / team management ───────────────────────────────
+    // A company's people = its owner (companies.user_id, always full control) plus any
+    // members linked via users.company_id + company_role:
+    //   'company_admin' = full control (posts published directly, manages team + billing)
+    //   'recruitment'   = recruiter (can post, but jobs need company-admin approval)
+
+    // GET /api/admin/companies/{id}/members
+    public function adminMembers(Request $request, $id)
+    {
+        $this->requirePermission('approve_companies');
+
+        $company = Company::findOrFail($id);
+
+        $owner = $company->user_id
+            ? User::select('id', 'name', 'email', 'avatar_url', 'status')->find($company->user_id)
+            : null;
+
+        $members = User::select('id', 'name', 'email', 'avatar_url', 'company_role', 'status', 'created_at')
+            ->where('company_id', $company->id)
+            ->orderBy('created_at')
+            ->get();
+
+        return response()->json([
+            'company' => $company->only('id', 'name', 'logo_url'),
+            'owner'   => $owner,
+            'members' => $members,
+        ]);
+    }
+
+    // POST /api/admin/companies/{id}/members — attach an existing user (by email) or
+    // create+invite a new one, with a company role. Full control = 'company_admin'.
+    public function adminAddMember(Request $request, $id)
+    {
+        $this->requirePermission('approve_companies');
+
+        $company = Company::findOrFail($id);
+
+        $data = $request->validate([
+            'email' => 'required|email|max:190',
+            'name'  => 'nullable|string|max:120',
+            'role'  => 'required|in:company_admin,recruitment',
+        ]);
+
+        $existing = User::where('email', $data['email'])->first();
+
+        if ($existing) {
+            // Can't re-add the owner or someone already attached to another company.
+            if ((int) $company->user_id === (int) $existing->id) {
+                return response()->json(['message' => 'That user is already the company owner (full control).'], 422);
+            }
+            if ($existing->company_id && (int) $existing->company_id !== (int) $company->id) {
+                return response()->json(['message' => 'That account already belongs to another company. Remove it there first.'], 422);
+            }
+            if (optional($existing->role)->slug !== 'employer') {
+                return response()->json(['message' => 'That account is not an employer account. Use a different email or create a new member.'], 422);
+            }
+            $existing->update(['company_id' => $company->id, 'company_role' => $data['role']]);
+            $member = $existing;
+            $created = false;
+        } else {
+            $employerRole = Role::where('slug', 'employer')->first();
+            if (! $employerRole) {
+                abort(500, 'Employer role not found.');
+            }
+            $member = User::create([
+                'role_id'       => $employerRole->id,
+                'company_id'    => $company->id,
+                'company_role'  => $data['role'],
+                'name'          => $data['name'] ?: strstr($data['email'], '@', true),
+                'email'         => $data['email'],
+                'password_hash' => Hash::make(Str::random(24)),
+                'status'        => 'active',
+            ]);
+            $created = true;
+        }
+
+        $this->auditLog('company.member_assigned', [
+            'company_id' => $company->id,
+            'user_id'    => $member->id,
+            'role'       => $data['role'],
+            'created'    => $created,
+        ]);
+
+        return response()->json([
+            'message' => $created
+                ? 'Member created and assigned. They can log in and reset their password.'
+                : 'User assigned to the company.',
+            'member'  => $member->only('id', 'name', 'email', 'company_role', 'status', 'created_at'),
+        ], $created ? 201 : 200);
+    }
+
+    // PATCH /api/admin/companies/{id}/members/{userId} — change a member's role
+    public function adminUpdateMember(Request $request, $id, $userId)
+    {
+        $this->requirePermission('approve_companies');
+
+        $company = Company::findOrFail($id);
+
+        if ((int) $company->user_id === (int) $userId) {
+            return response()->json(['message' => "The owner's role can't be changed here."], 422);
+        }
+
+        $data = $request->validate([
+            'role' => 'required|in:company_admin,recruitment',
+        ]);
+
+        $member = User::where('company_id', $company->id)->where('id', $userId)->firstOrFail();
+        $member->update(['company_role' => $data['role']]);
+
+        $this->auditLog('company.member_role_changed', [
+            'company_id' => $company->id,
+            'user_id'    => $member->id,
+            'role'       => $data['role'],
+        ]);
+
+        return response()->json([
+            'message' => 'Member role updated.',
+            'member'  => $member->only('id', 'name', 'email', 'company_role', 'status'),
+        ]);
+    }
+
+    // DELETE /api/admin/companies/{id}/members/{userId} — detach a member (keeps the account)
+    public function adminRemoveMember(Request $request, $id, $userId)
+    {
+        $this->requirePermission('approve_companies');
+
+        $company = Company::findOrFail($id);
+
+        if ((int) $company->user_id === (int) $userId) {
+            return response()->json(['message' => "The owner can't be removed here. Transfer ownership first."], 422);
+        }
+
+        $member = User::where('company_id', $company->id)->where('id', $userId)->firstOrFail();
+        $member->update(['company_id' => null, 'company_role' => null]);
+
+        $this->auditLog('company.member_removed', [
+            'company_id' => $company->id,
+            'user_id'    => $member->id,
+        ]);
+
+        return response()->json(['message' => 'Member removed from the company.']);
     }
 
     // ----------------------------------------------------------------

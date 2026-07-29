@@ -250,6 +250,11 @@
     suspendCompany: function (id) { return req("PATCH", "/admin/companies/" + id + "/suspend"); },
     reinstateCompany: function (id) { return req("PATCH", "/admin/companies/" + id + "/approve"); },
     verifyCompany: function (id) { return req("PATCH", "/admin/companies/" + id + "/verify"); },
+    // Company access / team: assign users with a role (company_admin = full control).
+    companyMembers: function (id) { return req("GET", "/admin/companies/" + id + "/members"); },
+    addCompanyMember: function (id, data) { return req("POST", "/admin/companies/" + id + "/members", data); },
+    updateCompanyMember: function (id, userId, data) { return req("PATCH", "/admin/companies/" + id + "/members/" + userId, data); },
+    removeCompanyMember: function (id, userId) { return req("DELETE", "/admin/companies/" + id + "/members/" + userId); },
     uploadCompanyLogo: function (id, file) {
       var form = new FormData();
       form.append("logo", file);

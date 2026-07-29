@@ -331,6 +331,11 @@ Route::middleware(['auth:api', 'permission:site_settings'])->group(function () {
     Route::patch('admin/companies/{id}/verify',  [CompanyController::class, 'verify']);
     Route::post('admin/companies/{id}/logo',         [CompanyController::class, 'adminUploadLogo'])->middleware('throttle:20,1');
     Route::post('admin/companies/{id}/cover-banner', [CompanyController::class, 'adminUploadCoverBanner'])->middleware('throttle:20,1');
+    // Company access / team (assign users with a role: company_admin = full control)
+    Route::get('admin/companies/{id}/members',              [CompanyController::class, 'adminMembers']);
+    Route::post('admin/companies/{id}/members',             [CompanyController::class, 'adminAddMember'])->middleware('throttle:20,1');
+    Route::patch('admin/companies/{id}/members/{userId}',   [CompanyController::class, 'adminUpdateMember']);
+    Route::delete('admin/companies/{id}/members/{userId}',  [CompanyController::class, 'adminRemoveMember']);
 
     // Admin: job moderation
     Route::get('admin/jobs',                 [JobController::class, 'adminIndex']);
