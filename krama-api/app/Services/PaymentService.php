@@ -78,8 +78,10 @@ class PaymentService
             if ($paid->subscription_id && $paid->subscription) {
                 try {
                     $companyName = $paid->company->name ?? 'A company';
-                    $planName    = optional($paid->subscription->plan)->name ?: 'plan';
-                    $priceLabel  = ($paid->currency ?: '') . number_format((float) $paid->amount, 2);
+                    $subPlan     = optional($paid->subscription->plan);
+                    $planName    = $subPlan->name ?: 'plan';
+                    $discNote    = ((int) ($subPlan->discount_percent ?? 0) > 0) ? (' — ' . (int) $subPlan->discount_percent . '% off') : '';
+                    $priceLabel  = ($paid->currency ?: '') . number_format((float) $paid->amount, 2) . $discNote;
 
                     \App\Models\Notification::recordAdmins(
                         'subscription_active',

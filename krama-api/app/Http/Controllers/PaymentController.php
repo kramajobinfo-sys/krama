@@ -189,7 +189,8 @@ class PaymentController extends Controller
         });
 
         if ($payment && $payment->status === 'pending') {
-            \App\Models\Notification::recordAdmins('payment_pending', 'New payment pending', 'Payment ' . $payment->currency . number_format((float) $payment->amount, 2) . ' from “' . $company->name . '” is awaiting confirmation.');
+            $discNote = $plan->has_discount ? ' (' . (int) $plan->discount_percent . '% off)' : '';
+            \App\Models\Notification::recordAdmins('payment_pending', 'New payment pending', 'Payment ' . $payment->currency . number_format((float) $payment->amount, 2) . $discNote . ' from “' . $company->name . '” is awaiting confirmation.');
         }
 
         // Telegram: announce the subscription to the admin chat — but ONLY when it is

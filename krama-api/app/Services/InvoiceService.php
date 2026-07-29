@@ -97,6 +97,23 @@ class InvoiceService
         $e = fn ($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
         $teal = '#0d9488';
 
+        // Discount breakdown (e.g. a 20%-off Yearly plan): show the list price as the line item
+        // plus a Discount row so the customer sees list − discount = total paid. Guarded so it only
+        // shows when the plan's current effective price still reconciles with what was actually
+        // paid (avoids a mismatched breakdown if the plan's discount was edited after payment).
+        $invPlan = optional($payment->subscription)->plan;
+        $paidAmt = (float) $payment->amount;
+        $hasInvoiceDiscount = $invPlan && ! empty($invPlan->has_discount)
+            && (float) $invPlan->price > $paidAmt
+            && abs(((float) $invPlan->effective_price) - $paidAmt) < 0.01;
+        $lineAmount = $hasInvoiceDiscount ? self::money($invPlan->price, $payment->currency) : $amount;
+        $discountRow = '';
+        if ($hasInvoiceDiscount) {
+            $save = self::money($invPlan->price - $paidAmt, $payment->currency);
+            $pct  = (int) $invPlan->discount_percent;
+            $discountRow = "<tr><td style='padding:6px 12px;text-align:right;color:#6b7280'>Discount ({$pct}%)</td><td style='padding:6px 12px;text-align:right;color:#047857'>-" . $e($save) . "</td></tr>";
+        }
+
         $addrLine = $companyAddress ? "<div style='color:#6b7280;margin-top:2px'>" . $e($companyAddress) . "</div>" : '';
         $ownerLine = $ownerEmail ? "<div style='color:#6b7280;margin-top:2px'>" . $e($ownerEmail) . "</div>" : '';
         $fromEmailLine = $fromEmail ? "<div style='color:#6b7280;margin-top:2px'>" . $e($fromEmail) . "</div>" : '';
@@ -146,12 +163,13 @@ class InvoiceService
       </tr>
       <tr>
         <td style='padding:12px;border-bottom:1px solid #e5e7eb'>" . $e($desc) . "{$periodLine}</td>
-        <td style='padding:12px;border-bottom:1px solid #e5e7eb;text-align:right'>" . $e($amount) . "</td>
+        <td style='padding:12px;border-bottom:1px solid #e5e7eb;text-align:right'>" . $e($lineAmount) . "</td>
       </tr>
     </table>
 
     <table style='width:100%;border-collapse:collapse;margin-top:10px'>
-      <tr><td style='padding:6px 12px;text-align:right;color:#6b7280;width:80%'>Subtotal</td><td style='padding:6px 12px;text-align:right'>" . $e($amount) . "</td></tr>
+      <tr><td style='padding:6px 12px;text-align:right;color:#6b7280;width:80%'>Subtotal</td><td style='padding:6px 12px;text-align:right'>" . $e($lineAmount) . "</td></tr>
+      {$discountRow}
       <tr><td style='padding:6px 12px;text-align:right;color:#6b7280'>Tax</td><td style='padding:6px 12px;text-align:right'>—</td></tr>
       <tr>
         <td style='padding:10px 12px;text-align:right;font-size:15px;font-weight:bold;color:{$teal};border-top:2px solid #e5e7eb'>Total paid</td>
