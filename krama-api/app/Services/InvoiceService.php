@@ -114,6 +114,39 @@ class InvoiceService
             $discountRow = "<tr><td style='padding:6px 12px;text-align:right;color:#6b7280'>Discount ({$pct}%)</td><td style='padding:6px 12px;text-align:right;color:#047857'>-" . $e($save) . "</td></tr>";
         }
 
+        // ── VAT / Tax invoice (Cambodia). is_tax_invoice + amounts are snapshotted on the payment. ──
+        $isTax    = (bool) $payment->is_tax_invoice;
+        $docTitle = $isTax ? 'TAX INVOICE' : 'INVOICE';
+        $taxSet   = Setting::where('group', 'tax')->pluck('value', 'key')->toArray();
+        $supLegal = $isTax ? (string) ($taxSet['supplier_legal_name'] ?? '') : '';
+        $supTin   = $isTax ? (string) ($taxSet['supplier_vat_tin'] ?? '') : '';
+        $supAddr  = $isTax ? (string) ($taxSet['supplier_address'] ?? '') : '';
+        $supLegalLine = $supLegal ? "<div style='margin-top:2px'>" . $e($supLegal) . "</div>" : '';
+        $supTinLine   = $supTin   ? "<div style='color:#6b7280;margin-top:2px'>VAT TIN: " . $e($supTin) . "</div>" : '';
+        $supAddrLine  = $supAddr  ? "<div style='color:#6b7280;margin-top:2px'>" . $e($supAddr) . "</div>" : '';
+        $custTin   = (string) ($payment->customer_vat_tin ?? '');
+        $custLegal = (string) ($payment->customer_legal_name ?? '');
+        $custLegalLine = ($isTax && $custLegal && $custLegal !== $companyName) ? "<div style='margin-top:2px'>" . $e($custLegal) . "</div>" : '';
+        $custTinLine   = ($isTax && $custTin) ? "<div style='color:#6b7280;margin-top:2px'>VAT TIN: " . $e($custTin) . "</div>" : '';
+
+        if ($isTax) {
+            $lineAmount  = self::money($payment->subtotal, $payment->currency);
+            $vatPct      = rtrim(rtrim(number_format((float) $payment->vat_rate, 2), '0'), '.');
+            $vatMoney    = self::money($payment->vat_amount, $payment->currency);
+            $totalsTable = "<table style='width:100%;border-collapse:collapse;margin-top:10px'>
+      <tr><td style='padding:6px 12px;text-align:right;color:#6b7280;width:80%'>Subtotal (excl. VAT)</td><td style='padding:6px 12px;text-align:right'>" . $e($lineAmount) . "</td></tr>
+      <tr><td style='padding:6px 12px;text-align:right;color:#6b7280'>VAT ({$vatPct}%)</td><td style='padding:6px 12px;text-align:right'>" . $e($vatMoney) . "</td></tr>
+      <tr><td style='padding:10px 12px;text-align:right;font-size:15px;font-weight:bold;color:{$teal};border-top:2px solid #e5e7eb'>Total (incl. VAT)</td><td style='padding:10px 12px;text-align:right;font-size:15px;font-weight:bold;color:{$teal};border-top:2px solid #e5e7eb'>" . $e($amount) . "</td></tr>
+    </table>";
+        } else {
+            $totalsTable = "<table style='width:100%;border-collapse:collapse;margin-top:10px'>
+      <tr><td style='padding:6px 12px;text-align:right;color:#6b7280;width:80%'>Subtotal</td><td style='padding:6px 12px;text-align:right'>" . $e($lineAmount) . "</td></tr>
+      {$discountRow}
+      <tr><td style='padding:6px 12px;text-align:right;color:#6b7280'>Tax</td><td style='padding:6px 12px;text-align:right'>—</td></tr>
+      <tr><td style='padding:10px 12px;text-align:right;font-size:15px;font-weight:bold;color:{$teal};border-top:2px solid #e5e7eb'>Total paid</td><td style='padding:10px 12px;text-align:right;font-size:15px;font-weight:bold;color:{$teal};border-top:2px solid #e5e7eb'>" . $e($amount) . "</td></tr>
+    </table>";
+        }
+
         $addrLine = $companyAddress ? "<div style='color:#6b7280;margin-top:2px'>" . $e($companyAddress) . "</div>" : '';
         $ownerLine = $ownerEmail ? "<div style='color:#6b7280;margin-top:2px'>" . $e($ownerEmail) . "</div>" : '';
         $fromEmailLine = $fromEmail ? "<div style='color:#6b7280;margin-top:2px'>" . $e($fromEmail) . "</div>" : '';
@@ -129,7 +162,7 @@ class InvoiceService
           <div style='color:#6b7280;margin-top:4px'>Jobs &amp; Hiring — Cambodia</div>
         </td>
         <td style='vertical-align:top;text-align:right'>
-          <div style='font-size:26px;font-weight:bold;letter-spacing:2px;color:{$teal}'>INVOICE</div>
+          <div style='font-size:26px;font-weight:bold;letter-spacing:2px;color:{$teal}'>{$docTitle}</div>
           <div style='margin-top:6px;font-weight:bold'>" . $e($no) . "</div>
           <div style='color:#6b7280'>" . $e($dateStr) . "</div>
         </td>
@@ -141,11 +174,13 @@ class InvoiceService
         <td style='vertical-align:top;width:50%'>
           <div style='color:#9ca3af;text-transform:uppercase;font-size:10px;letter-spacing:1px'>From</div>
           <div style='font-weight:bold;margin-top:4px'>" . $e($fromName) . "</div>
+          {$supLegalLine}{$supTinLine}{$supAddrLine}
           {$fromEmailLine}
         </td>
         <td style='vertical-align:top;width:50%'>
           <div style='color:#9ca3af;text-transform:uppercase;font-size:10px;letter-spacing:1px'>Bill to</div>
           <div style='font-weight:bold;margin-top:4px'>" . $e($companyName) . "</div>
+          {$custLegalLine}{$custTinLine}
           {$addrLine}
           {$ownerLine}
         </td>
@@ -167,15 +202,7 @@ class InvoiceService
       </tr>
     </table>
 
-    <table style='width:100%;border-collapse:collapse;margin-top:10px'>
-      <tr><td style='padding:6px 12px;text-align:right;color:#6b7280;width:80%'>Subtotal</td><td style='padding:6px 12px;text-align:right'>" . $e($lineAmount) . "</td></tr>
-      {$discountRow}
-      <tr><td style='padding:6px 12px;text-align:right;color:#6b7280'>Tax</td><td style='padding:6px 12px;text-align:right'>—</td></tr>
-      <tr>
-        <td style='padding:10px 12px;text-align:right;font-size:15px;font-weight:bold;color:{$teal};border-top:2px solid #e5e7eb'>Total paid</td>
-        <td style='padding:10px 12px;text-align:right;font-size:15px;font-weight:bold;color:{$teal};border-top:2px solid #e5e7eb'>" . $e($amount) . "</td>
-      </tr>
-    </table>
+    {$totalsTable}
 
     <table style='width:100%;border-collapse:collapse;margin-top:18px'>
       <tr><td style='padding:4px 12px;color:#6b7280'>Payment method</td><td style='padding:4px 12px;text-align:right'>" . $e($method) . "</td></tr>

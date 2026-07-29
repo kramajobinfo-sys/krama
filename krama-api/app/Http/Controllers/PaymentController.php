@@ -135,6 +135,19 @@ class PaymentController extends Controller
         $isTrial = $isFreePlan && (int) $plan->trial_days > 0;
         $trialDays = $isTrial ? (int) $plan->trial_days : 0;
 
+        // VAT (Cambodia) — added ON TOP (exclusive) when the tax feature is enabled AND this
+        // company is VAT-registered (has a VAT TIN on file). Snapshotted onto the payment so the
+        // issued invoice is immutable. Free/trial ($0) plans never carry VAT.
+        $tax          = Setting::where('group', 'tax')->pluck('value', 'key')->toArray();
+        $vatEnabled   = ! empty($tax['vat_enabled']) && (int) $tax['vat_enabled'] === 1;
+        $vatRate      = (float) ($tax['vat_rate'] ?? 10);
+        $isTaxInvoice = $vatEnabled && $charge > 0 && trim((string) $company->vat_tin) !== '';
+        $subtotal     = round((float) $charge, 2);
+        $vatAmount    = $isTaxInvoice ? round($subtotal * $vatRate / 100, 2) : 0.0;
+        if ($isTaxInvoice) {
+            $charge = round($subtotal + $vatAmount, 2); // exclusive: total = net + VAT
+        }
+
         // A $0 plan (free OR trial) can only be used once per company — block repeat use so a
         // trial plan can't be re-subscribed over and over for unlimited free access.
         if ($isFreePlan) {
@@ -162,7 +175,7 @@ class PaymentController extends Controller
             ->where('plan_id', $plan->id)
             ->exists();
 
-        DB::transaction(function () use ($company, $plan, $data, $isTrial, $isFreePlan, $trialDays, $charge, &$payment, &$subscription) {
+        DB::transaction(function () use ($company, $plan, $data, $isTrial, $isFreePlan, $trialDays, $charge, $subtotal, $vatRate, $vatAmount, $isTaxInvoice, &$payment, &$subscription) {
             $subscription = Subscription::create([
                 'company_id' => $company->id,
                 'plan_id'    => $plan->id,
@@ -184,6 +197,12 @@ class PaymentController extends Controller
                 'method'          => ($isTrial || $isFreePlan) ? 'other' : $data['method'],
                 'status'          => ($isTrial || $isFreePlan) ? 'paid' : 'pending',
                 'paid_at'         => ($isTrial || $isFreePlan) ? now() : null,
+                'is_tax_invoice'      => $isTaxInvoice,
+                'subtotal'            => $subtotal,
+                'vat_rate'            => $isTaxInvoice ? $vatRate : 0,
+                'vat_amount'          => $vatAmount,
+                'customer_vat_tin'    => $isTaxInvoice ? $company->vat_tin : null,
+                'customer_legal_name' => $isTaxInvoice ? ($company->vat_legal_name ?: $company->name) : null,
                 'created_at'      => now(),
             ]);
         });

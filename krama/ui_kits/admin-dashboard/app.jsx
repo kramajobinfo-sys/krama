@@ -5046,8 +5046,8 @@
         </div>
         {msg && <div style={{ padding: "10px 14px", background: "var(--success-subtle)", color: "var(--success)", borderRadius: "var(--radius-md)", marginBottom: 14, fontWeight: 600, fontSize: "var(--text-sm)" }}>{msg}</div>}
         <div className="krm-table-wrap"><Card padding={0}>
-          <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1.4fr 0.9fr 0.8fr 1.1fr 0.9fr 1.4fr", padding: "10px 22px", fontSize: "var(--text-xs)", fontWeight: 700, letterSpacing: ".04em", textTransform: "uppercase", color: "var(--text-faint)", borderBottom: "1px solid var(--border-subtle)" }}>
-            <span>Invoice</span><span>Employer</span><span>Plan</span><span>Amount</span><span>Method</span><span>Date</span><span style={{ textAlign: "right" }}>Status / Actions</span>
+          <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1.4fr 0.9fr 0.8fr 0.9fr 1.1fr 0.9fr 1.4fr", padding: "10px 22px", fontSize: "var(--text-xs)", fontWeight: 700, letterSpacing: ".04em", textTransform: "uppercase", color: "var(--text-faint)", borderBottom: "1px solid var(--border-subtle)" }}>
+            <span>Invoice</span><span>Employer</span><span>Plan</span><span>Amount</span><span>VAT</span><span>Method</span><span>Date</span><span style={{ textAlign: "right" }}>Status / Actions</span>
           </div>
           {!apiTx && <div style={{ padding: "28px 22px", color: "var(--text-muted)", fontSize: "var(--text-sm)", textAlign: "center" }}>Loading…</div>}
           {apiTx && apiTx.length === 0 && <div style={{ padding: "28px 22px", color: "var(--text-muted)", fontSize: "var(--text-sm)", textAlign: "center" }}>No transactions yet.</div>}
@@ -5063,11 +5063,12 @@
                     ? ("★ Featured boost" + (t.job && t.job.title ? " — " + t.job.title : ""))
                     : (t.subscription && t.subscription.plan ? t.subscription.plan.name : "--");
                   return (
-                    <div key={t.id} style={{ display: "grid", gridTemplateColumns: "1.4fr 1.4fr 0.9fr 0.8fr 1.1fr 0.9fr 1.4fr", alignItems: "center", padding: "12px 22px", borderBottom: i < slice.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>
+                    <div key={t.id} style={{ display: "grid", gridTemplateColumns: "1.4fr 1.4fr 0.9fr 0.8fr 0.9fr 1.1fr 0.9fr 1.4fr", alignItems: "center", padding: "12px 22px", borderBottom: i < slice.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>
                       <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-xs)", color: "var(--text-body)" }}>{t.invoice_no || t.id}</span>
                       <span style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-strong)" }}>{employer}</span>
                       <span style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>{plan}</span>
                       <span style={{ fontWeight: 600, color: "var(--text-strong)" }}>${parseFloat(t.amount || 0).toFixed(2)}</span>
+                      <span style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>{t.is_tax_invoice ? <span title={"Tax invoice · " + (t.vat_rate || 10) + "% VAT"} style={{ color: "var(--brand)", fontWeight: 600 }}>${parseFloat(t.vat_amount || 0).toFixed(2)}</span> : "--"}</span>
                       <span style={{ fontSize: "var(--text-sm)", color: "var(--text-body)" }}>{t.method || "--"}</span>
                       <span style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>{fmtDate(t.paid_at || t.created_at)}</span>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "flex-end" }}>
@@ -5107,6 +5108,9 @@
     const [abaSaved, setAbaSaved] = React.useState(false);
     const [stripeKey, setStripeKey] = React.useState("");
     const [stripeSaved, setStripeSaved] = React.useState(false);
+    const VAT_DEFAULTS = { vat_enabled: false, vat_rate: "10", supplier_legal_name: "", supplier_vat_tin: "", supplier_address: "" };
+    const [vat, setVat] = React.useState(VAT_DEFAULTS);
+    const [vatSaved, setVatSaved] = React.useState(false);
     const CVM_DEFAULTS = { enabled: true, pack_size: 20, pack_price: 10, currency: "USD", cost_deterministic: 1, cost_ai: 3, ai_provider: "claude", claude_api_key: "", claude_model: "", gemini_api_key: "", gemini_model: "gemini-flash-latest" };
     const [cvm, setCvm] = React.useState(CVM_DEFAULTS);
     const [cvmSaved, setCvmSaved] = React.useState(false);
@@ -5122,7 +5126,16 @@
       window.KRAMA_ADMIN_API.fetchSettings('cv_match')
         .then(function(d) { if (d && Object.keys(d).length) { setCvm(Object.assign({}, CVM_DEFAULTS, d)); } })
         .catch(function() {});
+      window.KRAMA_ADMIN_API.fetchSettings('tax')
+        .then(function(d) { if (d) { setVat({ vat_enabled: !!Number(d.vat_enabled), vat_rate: (d.vat_rate != null && d.vat_rate !== "") ? String(d.vat_rate) : "10", supplier_legal_name: d.supplier_legal_name || "", supplier_vat_tin: d.supplier_vat_tin || "", supplier_address: d.supplier_address || "" }); } })
+        .catch(function() {});
     }, []);
+    const setVatField = (k, v) => setVat(function (x) { return Object.assign({}, x, { [k]: v }); });
+    const saveVat = () => {
+      window.KRAMA_ADMIN_API.updateSettings('tax', { vat_enabled: vat.vat_enabled ? 1 : 0, vat_rate: vat.vat_rate === "" ? 0 : Number(vat.vat_rate), supplier_legal_name: vat.supplier_legal_name, supplier_vat_tin: vat.supplier_vat_tin, supplier_address: vat.supplier_address })
+        .then(function() { setVatSaved(true); setTimeout(function() { setVatSaved(false); }, 3000); })
+        .catch(function(e) { alert('Save failed: ' + (e && e.message ? e.message : 'Unknown error')); });
+    };
     const saveCvm = () => {
       window.KRAMA_ADMIN_API.updateSettings('cv_match', cvm)
         .then(function() { setCvmSaved(true); setTimeout(function() { setCvmSaved(false); }, 3000); })
@@ -5308,6 +5321,33 @@
             )}
           </div>
           <div style={{ marginTop: 16 }}><Button variant="primary" iconLeft={I("check", 16)} onClick={saveCvm}>Save CV Match pricing</Button></div>
+        </Card>
+        <Card padding={24} style={{ marginBottom: 18 }}>
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, marginBottom: 8 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 40, height: 40, borderRadius: "var(--radius-md)", background: "var(--accent-subtle)", color: "var(--accent)" }}>{I("receipt", 20)}</span>
+              <div>
+                <h3 style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: "var(--text-strong)" }}>Tax / VAT (Cambodia)</h3>
+                <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginTop: 2 }}>When enabled, VAT-registered employers who add their VAT TIN get a compliant <strong>TAX INVOICE</strong> with VAT added on top. Others get a plain invoice.</p>
+              </div>
+            </div>
+            <Switch checked={!!vat.vat_enabled} onChange={(v) => setVatField("vat_enabled", v)} />
+          </div>
+          {vatSaved && <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: "var(--success-subtle)", border: "1px solid var(--success-border)", borderRadius: "var(--radius-md)", color: "var(--success)", fontWeight: 600, fontSize: "var(--text-sm)", margin: "10px 0" }}>{I("circle-check-big", 15)} Tax settings saved.</div>}
+          {vat.vat_enabled && (
+            <div style={{ marginTop: 14 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "160px 1fr", gap: 16 }} className="krm-form-grid">
+                <Input label="VAT rate (%)" type="number" value={vat.vat_rate} onChange={(e) => setVatField("vat_rate", e.target.value)} />
+                <Input label="Supplier legal name" placeholder="Your company Co., Ltd." value={vat.supplier_legal_name} onChange={(e) => setVatField("supplier_legal_name", e.target.value)} />
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginTop: 16 }} className="krm-form-grid">
+                <Input label="Supplier VAT TIN" placeholder="e.g. K001-901234567" value={vat.supplier_vat_tin} onChange={(e) => setVatField("supplier_vat_tin", e.target.value)} />
+                <Input label="Supplier address" placeholder="Registered address" value={vat.supplier_address} onChange={(e) => setVatField("supplier_address", e.target.value)} />
+              </div>
+              <div style={{ fontSize: "var(--text-xs)", color: "var(--text-faint)", marginTop: 8 }}>These identify the supplier (you) on every tax invoice, as required by the General Department of Taxation. VAT is added on top of the plan price (exclusive).</div>
+            </div>
+          )}
+          <div style={{ marginTop: 16 }}><Button variant="primary" iconLeft={I("check", 16)} onClick={saveVat}>Save tax settings</Button></div>
         </Card>
         <div style={{ fontSize: "var(--text-xs)", color: "var(--text-faint)", display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
           {I("shield", 13)} Payment method settings saved to the database via the API.

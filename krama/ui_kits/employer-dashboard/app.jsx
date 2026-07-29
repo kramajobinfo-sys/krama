@@ -1124,7 +1124,7 @@
     React.useEffect(function () {
       if (company) {
         var sl = company.social_links || {};
-        setForm({ name: company.name || "", registration_no: company.registration_no || "", industry: company.industry || "", website: company.website || "", address: company.address || "", description: company.description || "", logo_url: company.logo_url || "", facebook_url: sl.facebook || "", linkedin_url: sl.linkedin || "", twitter_url: sl.twitter || "", instagram_url: sl.instagram || "", company_size: company.company_size || "", culture_values: company.culture_values || "", benefits_tags: Array.isArray(company.benefits_tags) ? company.benefits_tags : [] });
+        setForm({ name: company.name || "", registration_no: company.registration_no || "", industry: company.industry || "", website: company.website || "", address: company.address || "", description: company.description || "", logo_url: company.logo_url || "", facebook_url: sl.facebook || "", linkedin_url: sl.linkedin || "", twitter_url: sl.twitter || "", instagram_url: sl.instagram || "", company_size: company.company_size || "", culture_values: company.culture_values || "", benefits_tags: Array.isArray(company.benefits_tags) ? company.benefits_tags : [], vat_tin: company.vat_tin || "", vat_legal_name: company.vat_legal_name || "", vat_address: company.vat_address || "" });
         setAboutImageUrl(company.about_image_url || "");
         setCoverBannerUrl(company.cover_banner_url || "");
         setGallery(Array.isArray(company.gallery) ? company.gallery : []);
@@ -1142,7 +1142,7 @@
 
     const save = () => {
       setSaving(true); setErr(""); setMsg("");
-      var payload = { name: form.name, registration_no: form.registration_no, industry: form.industry, website: form.website, address: form.address, description: form.description, social_links: { facebook: form.facebook_url, linkedin: form.linkedin_url, twitter: form.twitter_url, instagram: form.instagram_url }, company_size: form.company_size || null, culture_values: form.culture_values || null, benefits_tags: form.benefits_tags && form.benefits_tags.length ? form.benefits_tags : null };
+      var payload = { name: form.name, registration_no: form.registration_no, industry: form.industry, website: form.website, address: form.address, description: form.description, social_links: { facebook: form.facebook_url, linkedin: form.linkedin_url, twitter: form.twitter_url, instagram: form.instagram_url }, company_size: form.company_size || null, culture_values: form.culture_values || null, benefits_tags: form.benefits_tags && form.benefits_tags.length ? form.benefits_tags : null, vat_tin: form.vat_tin || null, vat_legal_name: form.vat_legal_name || null, vat_address: form.vat_address || null };
       emp.updateCompany(company.id, payload)
         .then(function (updated) { setSaving(false); flash("Profile saved."); onSaved && onSaved(updated); })
         .catch(function (e) { setSaving(false); flash((e && e.message) || "Save failed.", true); });
@@ -1300,6 +1300,18 @@
                 <Input label="Website" value={form.website} onChange={(e) => set("website", e.target.value)} iconLeft={I("globe", 16)} />
               </div>
               <Input label="Address" value={form.address} onChange={(e) => set("address", e.target.value)} iconLeft={I("map-pin", 16)} />
+
+              {/* Tax / VAT details — opt-in for Cambodia tax invoices */}
+              <div style={{ marginTop: 4, padding: "16px 18px", borderRadius: "var(--radius-md)", border: "1px solid var(--border)", background: "var(--surface-sunken)" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-strong)", marginBottom: 4 }}>{I("receipt", 15)} Tax / VAT details <span style={{ fontWeight: 500, color: "var(--text-faint)" }}>— optional</span></div>
+                <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginBottom: 12 }}>Enter your <strong>VAT TIN</strong> if your company is VAT-registered. Payments will then be issued as a compliant <strong>tax invoice</strong> (VAT added on top) instead of a plain invoice. Leave blank if not registered.</div>
+                <Input label="VAT TIN" value={form.vat_tin} onChange={(e) => set("vat_tin", e.target.value)} placeholder="e.g. K001-901234567" />
+                <div className="krm-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginTop: 12 }}>
+                  <Input label="Legal name (on invoice)" value={form.vat_legal_name} onChange={(e) => set("vat_legal_name", e.target.value)} placeholder="Registered company name" />
+                  <Input label="Billing address (on invoice)" value={form.vat_address} onChange={(e) => set("vat_address", e.target.value)} placeholder="Registered address" />
+                </div>
+              </div>
+
               <RichEditor label="About the company" rows={5} value={form.description} onChange={(v) => set("description", v)} placeholder="Tell candidates about your company, culture, and mission…" />
 
               {/* Cover banner image */}
@@ -2357,17 +2369,22 @@
         </div>
         <div className="krm-table-wrap"><Card padding={0}>
           <div style={{ padding: "16px 22px", borderBottom: "1px solid var(--border)", fontWeight: 700, color: "var(--text-strong)" }}>Billing history</div>
-          <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 0.8fr 1fr 0.8fr 44px", padding: "10px 22px", fontSize: "var(--text-xs)", fontWeight: 700, letterSpacing: ".04em", textTransform: "uppercase", color: "var(--text-faint)", borderBottom: "1px solid var(--border-subtle)" }}>
-            <span>Invoice</span><span>Date</span><span>Amount</span><span>Method</span><span>Status</span><span></span>
+          <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 0.9fr 1fr 1fr 0.8fr 44px", padding: "10px 22px", fontSize: "var(--text-xs)", fontWeight: 700, letterSpacing: ".04em", textTransform: "uppercase", color: "var(--text-faint)", borderBottom: "1px solid var(--border-subtle)" }}>
+            <span>Invoice</span><span>Date</span><span>Amount</span><span>Type</span><span>Method</span><span>Status</span><span></span>
           </div>
           {invSlice.length === 0 && <div style={{ padding: "24px 22px", color: "var(--text-muted)", fontSize: "var(--text-sm)", textAlign: "center" }}>No payments yet.</div>}
           {invSlice.map((inv, i) => (
-            <div key={inv.id} style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 0.8fr 1fr 0.8fr", alignItems: "center", padding: "13px 22px", borderBottom: i < invSlice.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>
+            <div key={inv.id} style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 0.9fr 1fr 1fr 0.8fr 44px", alignItems: "center", padding: "13px 22px", borderBottom: i < invSlice.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>
               <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-sm)", color: "var(--text-body)" }}>{inv.invoice_no || ("#" + inv.id)}</span>
               <span style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>{fmtDate(inv.created_at)}</span>
-              <span style={{ fontWeight: 600, color: "var(--text-strong)" }}>${Number(inv.amount).toLocaleString()}</span>
+              <span style={{ fontWeight: 600, color: "var(--text-strong)" }}>
+                ${Number(inv.amount).toLocaleString()}
+                {inv.is_tax_invoice && Number(inv.vat_amount) > 0 && <span style={{ display: "block", fontSize: "var(--text-xs)", fontWeight: 500, color: "var(--text-faint)" }}>incl. ${Number(inv.vat_amount).toLocaleString()} VAT</span>}
+              </span>
+              <span>{inv.is_tax_invoice ? <Badge tone="brand">Tax invoice</Badge> : <Badge tone="neutral">Invoice</Badge>}</span>
               <span style={{ fontSize: "var(--text-sm)", color: "var(--text-body)", textTransform: "uppercase" }}>{inv.method}</span>
               <span><Badge tone={inv.status === "paid" ? "success" : inv.status === "refunded" ? "neutral" : "warning"}>{inv.status}</Badge></span>
+              <span>{inv.status === "paid" && <button title="Download invoice" onClick={() => emp.downloadInvoice(inv.id)} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 32, height: 32, borderRadius: "var(--radius-md)", border: "1px solid var(--border)", background: "var(--surface-card)", color: "var(--text-muted)", cursor: "pointer" }}>{I("download", 15)}</button>}</span>
             </div>
           ))}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 22px", borderTop: "1px solid var(--border-subtle)" }}>
