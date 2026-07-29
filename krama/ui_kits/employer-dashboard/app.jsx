@@ -2294,10 +2294,11 @@
                 border: current ? "1.5px solid var(--brand)" : (dark ? "none" : undefined),
                 background: dark ? "var(--stone-900, #1a1a1a)" : undefined,
               }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                   <h3 style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: textStrong }}>{p.name}</h3>
                   {popular && <Badge tone="accent">Popular</Badge>}
                   {current && <Badge tone="brand">Current</Badge>}
+                  {!isCustom && planHasDiscount(p) && <span style={{ fontSize: "var(--text-xs)", fontWeight: 700, color: "#fff", background: "#16a34a", padding: "2px 9px", borderRadius: 999 }}>Save {p.discount_percent}%</span>}
                 </div>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginTop: 12 }}>
                   {isCustom ? (
