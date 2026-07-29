@@ -98,12 +98,7 @@ Candidate: apply to job, saved jobs, messages, job alerts email. Employer: post 
 **Launch decision:** deploy `main` (now the L12 + hardened tree) on the cPanel host's **PHP 8.2**.
 
 ### F0. Settled state (local)
-`main` @ `33e9ca9`, working tree clean. Contents verified: L12 (`composer ^12`, fruitcake removed, `(int)env` jwt casts, built-in `HandleCors`), XSS `HtmlSanitizer` on write, mobile account menu, employer Team mobile fit, candidate alerts/Recommended fixes, public search-cap fix (`getAllPages`), and the NBC exchange-rate feature (`443aa5b`, auto-sync + safe manual fallback).
-```
-33e9ca9  docs: go-live checklist
-443aa5b  Tax invoice: NBC exchange-rate + safe fallback
-9acda28  (consolidated: L12 + all hardening + all UX fixes)
-```
+`main` working tree clean. **Last code commit = `443aa5b`** (NBC exchange-rate, auto-sync + safe manual fallback); doc commits sit on top (`68425f5` at time of writing). Contents verified: L12 (`composer ^12`, fruitcake removed, `(int)env` jwt casts, built-in `HandleCors`), XSS `HtmlSanitizer` on write, mobile account menu, employer Team mobile fit, candidate alerts/Recommended fixes, public search-cap fix (`getAllPages`), NBC exchange-rate. The code base `9acda28` is the consolidated L12 + all hardening + all UX fixes.
 
 ### F1. Settle origin/main on GitHub  ⚠ (requires GitHub auth — run by the team, not from the dev sandbox)
 > ⚠️ **First freeze any parallel session's git operations** — `main`'s history was being rewritten; a mid-push force-push would clobber this. One session owns the push.
@@ -115,18 +110,31 @@ git log --oneline main..origin/main      # what origin has that local doesn't
 - **Not empty** → origin diverged; the exchange-rate commit `443aa5b` touches only the 8 tax-invoice files and cherry-picks cleanly — reconcile onto origin/main, then push.
 - **Verify on GitHub:** `origin/main` HEAD shows the "Tax invoice: NBC exchange-rate…" commit.
 
-### F2. Deploy on the server (PHP 8.2 CLI = `php`; project at `/home/seagzdgt/krama-api`)
-First confirm the checkout type: `cd ~/krama-api && git remote -v && git log --oneline -1`.
+### F2. Deploy the code — BOTH the API and the frontend (⚠ confirm server layout first — NOT yet verified)
+The repo root holds **two** deployable parts: `krama-api/` (Laravel API) **and** `krama/ui_kits/` (the static frontend — mobile menu, admin exchange-rate UI, etc.). Both must reach production. First confirm how each is checked out/served:
 ```bash
-# git-checkout deploy:
-git fetch origin && git reset --hard origin/main
-composer install --no-dev --optimize-autoloader          # builds the Laravel 12 vendor on PHP 8.2
+cd ~/krama-api && git remote -v && git log --oneline -1     # is THIS a git checkout, and of the whole repo or just the API?
 ```
-- Confirm PHP 8.2 extensions incl. **gd** (avatar/image resize) are enabled (cPanel PHP Selector — a version switch can reset extensions).
+- **If `~/krama-api` is a full-repo checkout** (contains `krama-api/` + `krama/` inside it, and the domain docroot points into it):
+  ```bash
+  git fetch origin && git reset --hard origin/main
+  ```
+- **If `~/krama-api` is only the API dir** (repo split across folders / files uploaded) — deploy each part to its real location:
+  - **API** → the `krama-api` dir (git pull there, or upload).
+  - **Frontend** → wherever `kramajob.com` is served (e.g. `public_html` / the domain docroot): update `krama/ui_kits/*` there. 🔴 **Do NOT skip this** — the mobile-menu, admin exchange-rate UI, candidate/employer mobile fixes live in `krama/ui_kits` and won't reach users otherwise.
+
+Then build the Laravel 12 vendor **under PHP 8.2** (in the `krama-api` dir):
+```bash
+composer install --no-dev --optimize-autoloader
+# if `composer` runs under the wrong PHP, force 8.2 explicitly, e.g.:
+#   php ~/composer.phar install --no-dev --optimize-autoloader
+```
+- Confirm PHP 8.2 extensions incl. **gd** (avatar/image resize), `mbstring`, `openssl`, `pdo_mysql`, `curl`, `dom`, `fileinfo` are enabled (cPanel PHP Selector — a version switch can reset extensions).
 
 ### F3. Config gates (B1–B3) + finalize
 - **B1** `.env`: `APP_ENV=production`, `APP_DEBUG=false`, `LOG_LEVEL=warning`, `BCRYPT_ROUNDS=12`, `APP_URL`/`FRONTEND_URL`/`CORS_ALLOWED_ORIGINS=https://kramajob.com`, real `DB_*`/`MAIL_*`; then `php artisan key:generate` + `php artisan jwt:secret` (fresh unique secrets).
-- **B2** cron (cPanel → Cron Jobs, once per minute): `* * * * * php /home/seagzdgt/krama-api/artisan schedule:run >/dev/null 2>&1`
+- **B2** cron (cPanel → Cron Jobs, once per minute) — ⚠ use the **absolute** PHP 8.2 binary (cron's `PATH` differs from your shell; get it from `which php`, e.g. `/opt/alt/php82/usr/bin/php`), not bare `php`:
+  `* * * * * /opt/alt/php82/usr/bin/php /home/seagzdgt/krama-api/artisan schedule:run >/dev/null 2>&1`
 - **B3** `.env`: `QUEUE_CONNECTION=sync` (shared host can't keep a worker alive).
 - Finalize: `php artisan config:cache && php artisan route:cache` (re-run after ANY `.env` change); `chmod -R 775 storage bootstrap/cache`.
 
