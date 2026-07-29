@@ -1,0 +1,37 @@
+# ============================================================================
+#  krama/ — static frontend (SPA UI kits + shared _ds_bundle.js + vendor libs)
+#  P-2/P-3 (audit): compress large text payloads and long-cache immutable media.
+#  Safe defaults — every block is IfModule-guarded, so it's a no-op where a
+#  module is unavailable. cPanel/LiteSpeed honours these mod_deflate/mod_expires
+#  directives too. HTML/JSX stay no-store via each kit's own .htaccess, so app
+#  updates still take effect immediately.
+# ============================================================================
+
+# ── Compression (the big win: app.jsx / _ds_bundle.js are 200–540 KB each) ──
+<IfModule mod_deflate.c>
+  # By file extension — reliable even when .jsx isn't served with a JS mime type.
+  <FilesMatch "\.(js|jsx|mjs|css|html?|json|map|svg|xml|txt)$">
+    SetOutputFilter DEFLATE
+  </FilesMatch>
+  # And by content type, as a belt-and-suspenders fallback.
+  AddOutputFilterByType DEFLATE text/html text/plain text/css text/xml text/javascript \
+    application/javascript application/x-javascript application/json image/svg+xml application/xml
+</IfModule>
+
+# ── Long-cache truly-immutable media + fonts (paths/content don't change) ──
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType image/png  "access plus 30 days"
+  ExpiresByType image/jpeg "access plus 30 days"
+  ExpiresByType image/gif  "access plus 30 days"
+  ExpiresByType image/webp "access plus 30 days"
+  ExpiresByType image/svg+xml "access plus 30 days"
+  ExpiresByType image/x-icon  "access plus 30 days"
+  ExpiresByType font/woff2 "access plus 180 days"
+  ExpiresByType font/woff  "access plus 180 days"
+  ExpiresByType font/ttf   "access plus 180 days"
+</IfModule>
+
+# NOTE: JS/CSS are intentionally NOT force-cached here — the app hand-patches
+# _ds_bundle.js and versions assets via ?v= query strings. Once a real build
+# step lands (audit P-1), switch to hashed filenames + Cache-Control: immutable.
