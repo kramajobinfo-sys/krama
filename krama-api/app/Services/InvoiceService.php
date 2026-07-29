@@ -6,8 +6,6 @@ use App\Helpers\EmailTemplates;
 use App\Helpers\MailConfig;
 use App\Models\Payment;
 use App\Models\Setting;
-use Dompdf\Dompdf;
-use Dompdf\Options;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
@@ -294,48 +292,47 @@ class InvoiceService
 </body></html>";
     }
 
-    // Render the invoice to PDF bytes (dompdf 3.x, used directly — the Laravel wrapper
-    // requires Laravel 9+). Remote/file fetching is disabled: the invoice HTML is
-    // self-contained (no images/URLs), which also sidesteps dompdf's SVG/data-URI issues.
+    // Render the invoice to PDF bytes with mPDF. mPDF is used (not dompdf) specifically
+    // because Khmer is a complex script: it needs OpenType shaping — stacking subscript
+    // consonants (coeng) and reordering pre-base vowels. dompdf places glyphs in logical
+    // order with no shaping, so Khmer comes out broken; mPDF applies GSUB/GPOS (useOTL).
     public static function pdf(Payment $payment): string
     {
-        // Writable dir where dompdf caches the converted (.ufm) fonts it installs.
-        $fontDir = storage_path('fonts');
-        if (! is_dir($fontDir)) {
-            @mkdir($fontDir, 0775, true);
+        $tmp = storage_path('app/mpdf');
+        if (! is_dir($tmp)) {
+            @mkdir($tmp, 0775, true);
         }
 
-        $options = new Options();
-        $options->set('isRemoteEnabled', false);
-        $options->set('isPhpEnabled', false);
-        $options->set('isFontSubsettingEnabled', true);
-        $options->set('defaultFont', 'Helvetica');
-        $options->set('fontDir', $fontDir);
-        $options->set('fontCache', $fontDir);
-        // Allow dompdf to read the bundled font files from the project tree (file:// chroot).
-        $options->set('chroot', [base_path(), $fontDir]);
+        $defaultConfig     = (new \Mpdf\Config\ConfigVariables())->getDefaults();
+        $defaultFontConfig = (new \Mpdf\Config\FontVariables())->getDefaults();
 
-        $dompdf = new Dompdf($options);
+        $mpdf = new \Mpdf\Mpdf([
+            'mode'             => 'utf-8',
+            'format'           => 'A4',
+            'tempDir'          => $tmp,
+            'default_font'     => 'helvetica',
+            'margin_left'      => 0,
+            'margin_right'     => 0,
+            'margin_top'       => 0,
+            'margin_bottom'    => 0,
+            // Auto-detect script runs and shape them (safety net for any stray Khmer).
+            'autoScriptToLang' => true,
+            'autoLangToFont'   => true,
+            // Register the bundled Battambang Khmer font (family "khmer") with OpenType
+            // layout enabled so coeng/vowel shaping is applied. The `khmeros` family that
+            // ships with mPDF is the built-in fallback.
+            'fontDir'  => array_merge($defaultConfig['fontDir'], [resource_path('fonts/khmer')]),
+            'fontdata' => $defaultFontConfig['fontdata'] + [
+                'khmer' => [
+                    'R'      => 'Battambang-Regular.ttf',
+                    'B'      => 'Battambang-Bold.ttf',
+                    'useOTL' => 0xFF,
+                ],
+            ],
+        ]);
+        $mpdf->WriteHTML(self::html($payment));
 
-        // Register the bundled Khmer font (OFL Battambang) under family "khmer" so Khmer
-        // script in the tax invoice renders instead of showing empty boxes.
-        try {
-            $fm  = $dompdf->getFontMetrics();
-            $reg = resource_path('fonts/khmer/Battambang-Regular.ttf');
-            $bld = resource_path('fonts/khmer/Battambang-Bold.ttf');
-            if (is_file($reg)) {
-                $fm->registerFont(['family' => 'khmer', 'weight' => 'normal', 'style' => 'normal'], $reg);
-                $fm->registerFont(['family' => 'khmer', 'weight' => 'bold', 'style' => 'normal'], is_file($bld) ? $bld : $reg);
-            }
-        } catch (\Throwable $e) {
-            Log::warning('Khmer font registration failed: ' . $e->getMessage());
-        }
-
-        $dompdf->loadHtml(self::html($payment));
-        $dompdf->setPaper('a4');
-        $dompdf->render();
-
-        return (string) $dompdf->output();
+        return $mpdf->Output('', \Mpdf\Output\Destination::STRING_RETURN);
     }
 
     // Deliver a paid invoice: email (PDF attached) + Telegram (admin channel + employer chat).
