@@ -260,6 +260,7 @@ Route::middleware(['auth:api', 'permission:site_settings'])->group(function () {
 
     // Admin: settings
     Route::get('admin/settings',               [SettingController::class, 'adminAll']);
+    Route::get('admin/exchange-rate',          [SettingController::class, 'nbcExchangeRate']);
     Route::get('admin/settings/{group}',       [SettingController::class, 'adminGroup']);
     Route::patch('admin/settings/{group}',     [SettingController::class, 'update']);
     Route::post('admin/settings/smtp/test',    [SettingController::class, 'testSmtp']);

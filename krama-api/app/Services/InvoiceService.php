@@ -168,7 +168,7 @@ class InvoiceService
             $lineAmount = self::money($payment->subtotal, $payment->currency);
             $vatPct     = rtrim(rtrim(number_format((float) $payment->vat_rate, 2), '0'), '.');
             $vatMoney   = self::money($payment->vat_amount, $payment->currency);
-            $fxRate     = (float) ($payment->fx_rate ?: ($taxSet['exchange_rate_khr'] ?? 4100));
+            $fxRate     = (float) ($payment->fx_rate ?: ExchangeRateService::usdToKhr((float) ($taxSet['exchange_rate_khr'] ?? 0) ?: null));
             $totalKhr   = self::riel($payment->amount, $fxRate);
             $rateNote   = $km('អត្រាប្តូរប្រាក់') . ' / Exchange rate: ' . $km('៛' . number_format($fxRate)) . ' / US$1';
             $lblSub     = $km('សរុបរង (មិនរួមអាករ)') . '<div style=\'font-size:9px;color:#9ca3af\'>Subtotal (excl. VAT)</div>';
@@ -202,15 +202,18 @@ class InvoiceService
             ? "<img src='" . $logo . "' alt='KRAMA' style='height:48px;display:block' />"
             : "<div style='font-size:24px;font-weight:bold;letter-spacing:3px;color:{$teal}'>KRAMA</div>";
 
-        // Seller signature block — required on Cambodian tax invoices (name + signature of seller).
+        // Seller signature block — required on Cambodian tax invoices (name + signature of
+        // seller). A signing space, then a rule, then the bilingual caption centred below it.
         $signatureBlock = $isTax ? "
-    <table style='width:100%;border-collapse:collapse;margin-top:18px'>
+    <table style='width:100%;border-collapse:collapse;margin-top:34px'>
       <tr>
-        <td style='width:55%'></td>
-        <td style='vertical-align:bottom'>
-          <div style='border-bottom:1px solid #9ca3af;height:28px'></div>
-          <div style='margin-top:6px;color:#374151'>{$km('ហត្ថលេខា និងឈ្មោះអ្នកលក់')}</div>
-          <div style='color:#9ca3af;font-size:10px'>Seller's signature &amp; name</div>
+        <td style='width:56%'></td>
+        <td style='width:44%;vertical-align:bottom'>
+          <div style='height:46px'></div>
+          <div style='border-top:1px solid #9ca3af;padding-top:7px;text-align:center'>
+            <div style='color:#374151'>{$km('ហត្ថលេខា និងឈ្មោះអ្នកលក់')}</div>
+            <div style='color:#9ca3af;font-size:10px;margin-top:2px'>Seller's signature &amp; name</div>
+          </div>
         </td>
       </tr>
     </table>" : "";
@@ -224,6 +227,8 @@ class InvoiceService
         $paidTxt  = $km('បានបង់') . " / PAID";
         $noLabel  = $km('លេខ') . " / No.";
         $dateLabel = $km('កាលបរិច្ឆេទ') . " / Date";
+        $docNoteKh = $isTax ? $km('នេះជាវិក្កយបត្រអាករបង្កើតដោយកុំព្យូទ័រ។') : $km('នេះជាវិក្កយបត្រដែលបង្កើតដោយស្វ័យប្រវត្តិ។');
+        $docNoteEn = $isTax ? 'This is a computer-generated tax invoice.' : 'This invoice was generated automatically.';
 
         return "<!DOCTYPE html><html><head><meta charset='utf-8'></head>
 <body style='margin:0;font-family:Helvetica,Arial,sans-serif;color:#111827;font-size:12px'>
@@ -284,9 +289,9 @@ class InvoiceService
     </table>
     {$signatureBlock}
 
-    <div style='margin-top:14px;padding-top:10px;border-top:1px solid #e5e7eb;color:#6b7280;font-size:11px;line-height:1.6'>
-      Thank you for choosing Krama. Payments are accepted via KHQR, ABA, and Wing.<br>
-      This invoice was generated automatically. " . ($fromEmail ? ('For questions, contact ' . $e($fromEmail) . '.') : '') . "
+    <div style='margin-top:20px;padding-top:10px;border-top:1px solid #e5e7eb;color:#6b7280;font-size:11px;line-height:1.7'>
+      {$km('សូមអរគុណសម្រាប់ការជ្រើសរើសសេវាកម្ម Krama។')} Thank you for choosing Krama.<br>
+      {$docNoteKh} " . $docNoteEn . ($fromEmail ? (' ' . $km('សម្រាប់ព័ត៌មានបន្ថែម សូមទាក់ទង') . ' / For enquiries, contact ' . $e($fromEmail) . '.') : '') . "
     </div>
   </div>
 </body></html>";

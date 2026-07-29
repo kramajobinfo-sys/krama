@@ -144,7 +144,9 @@ class PaymentController extends Controller
         $isTaxInvoice = $vatEnabled && $charge > 0 && trim((string) $company->vat_tin) !== '';
         $subtotal     = round((float) $charge, 2);
         $vatAmount    = $isTaxInvoice ? round($subtotal * $vatRate / 100, 2) : 0.0;
-        $fxRate       = $isTaxInvoice ? round((float) ($tax['exchange_rate_khr'] ?? 4100), 4) : null;
+        // Snapshot the official NBC USD→KHR rate at issue time (falls back to the admin's
+        // manual tax.exchange_rate_khr, then 4100, if NBC can't be reached).
+        $fxRate       = $isTaxInvoice ? round(\App\Services\ExchangeRateService::usdToKhr((float) ($tax['exchange_rate_khr'] ?? 0) ?: null), 4) : null;
         if ($isTaxInvoice) {
             $charge = round($subtotal + $vatAmount, 2); // exclusive: total = net + VAT
         }

@@ -324,6 +324,7 @@
 
     // Settings
     fetchSettings: function (group) { return req("GET", "/admin/settings/" + group); },
+    fetchNbcRate: function () { return req("GET", "/admin/exchange-rate"); },
     updateSettings: function (group, data) { return req("PATCH", "/admin/settings/" + group, data); },
     testSmtp: function (email) { return req("POST", "/admin/settings/smtp/test", { email: email }); },
     testTelegram: function () { return req("POST", "/admin/settings/telegram/test", {}); },

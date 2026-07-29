@@ -5111,6 +5111,7 @@
     const VAT_DEFAULTS = { vat_enabled: false, vat_rate: "10", supplier_legal_name: "", supplier_legal_name_kh: "", supplier_vat_tin: "", supplier_address: "", exchange_rate_khr: "4100" };
     const [vat, setVat] = React.useState(VAT_DEFAULTS);
     const [vatSaved, setVatSaved] = React.useState(false);
+    const [nbcRate, setNbcRate] = React.useState(null);
     const CVM_DEFAULTS = { enabled: true, pack_size: 20, pack_price: 10, currency: "USD", cost_deterministic: 1, cost_ai: 3, ai_provider: "claude", claude_api_key: "", claude_model: "", gemini_api_key: "", gemini_model: "gemini-flash-latest" };
     const [cvm, setCvm] = React.useState(CVM_DEFAULTS);
     const [cvmSaved, setCvmSaved] = React.useState(false);
@@ -5129,6 +5130,7 @@
       window.KRAMA_ADMIN_API.fetchSettings('tax')
         .then(function(d) { if (d) { setVat({ vat_enabled: !!Number(d.vat_enabled), vat_rate: (d.vat_rate != null && d.vat_rate !== "") ? String(d.vat_rate) : "10", supplier_legal_name: d.supplier_legal_name || "", supplier_legal_name_kh: d.supplier_legal_name_kh || "", supplier_vat_tin: d.supplier_vat_tin || "", supplier_address: d.supplier_address || "", exchange_rate_khr: (d.exchange_rate_khr != null && d.exchange_rate_khr !== "") ? String(d.exchange_rate_khr) : "4100" }); } })
         .catch(function() {});
+      window.KRAMA_ADMIN_API.fetchNbcRate().then(function(d){ setNbcRate(d); }).catch(function(){});
     }, []);
     const setVatField = (k, v) => setVat(function (x) { return Object.assign({}, x, { [k]: v }); });
     const saveVat = () => {
@@ -5336,10 +5338,16 @@
           {vatSaved && <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: "var(--success-subtle)", border: "1px solid var(--success-border)", borderRadius: "var(--radius-md)", color: "var(--success)", fontWeight: 600, fontSize: "var(--text-sm)", margin: "10px 0" }}>{I("circle-check-big", 15)} Tax settings saved.</div>}
           {vat.vat_enabled && (
             <div style={{ marginTop: 14 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "140px 160px 1fr", gap: 16 }} className="krm-form-grid">
+              <div style={{ display: "grid", gridTemplateColumns: "140px 180px 1fr", gap: 16 }} className="krm-form-grid">
                 <Input label="VAT rate (%)" type="number" value={vat.vat_rate} onChange={(e) => setVatField("vat_rate", e.target.value)} />
-                <Input label="Exchange rate (៛/US$)" type="number" value={vat.exchange_rate_khr} onChange={(e) => setVatField("exchange_rate_khr", e.target.value)} />
+                <Input label="Fallback rate (៛/US$)" type="number" value={vat.exchange_rate_khr} onChange={(e) => setVatField("exchange_rate_khr", e.target.value)} />
                 <Input label="Supplier legal name (English)" placeholder="Your company Co., Ltd." value={vat.supplier_legal_name} onChange={(e) => setVatField("supplier_legal_name", e.target.value)} />
+              </div>
+              <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", borderRadius: "var(--radius-md)", background: "var(--surface-sunken)", border: "1px solid var(--border-subtle)", fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>
+                {I("refresh-cw", 15)}
+                {nbcRate && nbcRate.nbc_rate
+                  ? <span>Tax invoices use the <strong style={{ color: "var(--text-strong)" }}>NBC official rate — ៛{Number(nbcRate.nbc_rate).toLocaleString()} / US$1</strong> today, auto-synced every ~6 hours. The <strong style={{ color: "var(--text-strong)" }}>Fallback rate</strong> above is used only if NBC can't be reached.</span>
+                  : <span>Tax invoices auto-sync the rate from the <strong style={{ color: "var(--text-strong)" }}>National Bank of Cambodia</strong> (~6-hourly). <strong style={{ color: "var(--text-strong)" }}>NBC couldn't be reached just now</strong> — the <strong style={{ color: "var(--text-strong)" }}>Fallback rate</strong> above will be used meanwhile, so keep it accurate.</span>}
               </div>
               <div style={{ marginTop: 16 }}>
                 <Input label="Supplier legal name (Khmer)" placeholder="ឈ្មោះក្រុមហ៊ុនជាភាសាខ្មែរ" value={vat.supplier_legal_name_kh} onChange={(e) => setVatField("supplier_legal_name_kh", e.target.value)} />

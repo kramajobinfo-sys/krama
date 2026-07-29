@@ -277,6 +277,21 @@ class SettingController extends Controller
     }
 
     // POST /api/admin/settings/smtp/test — send a test email using current DB SMTP config
+    // GET /api/admin/exchange-rate — the live NBC official USD→KHR rate plus the manual
+    // fallback, so the Tax settings screen can show which rate tax invoices will use.
+    public function nbcExchangeRate()
+    {
+        $manual = (float) (Setting::where('group', 'tax')->where('key', 'exchange_rate_khr')->value('value') ?: 0);
+        $nbc    = \App\Services\ExchangeRateService::fetchFromNbc();
+
+        return response()->json([
+            'nbc_rate'  => $nbc,                                                       // riel/US$ from NBC, or null if unreachable
+            'fallback'  => $manual > 0 ? $manual : 4100,                               // used when NBC is down
+            'effective' => \App\Services\ExchangeRateService::usdToKhr($manual > 0 ? $manual : null),
+            'source'    => $nbc ? 'nbc' : 'fallback',
+        ]);
+    }
+
     public function testSmtp(Request $request)
     {
         $this->requirePermission('site_settings');
