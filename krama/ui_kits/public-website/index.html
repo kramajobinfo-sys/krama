@@ -1,5 +1,18 @@
 <!-- @dsCard group="Public website" viewport="1280x780" name="Public website" subtitle="Home · job search · job detail — interactive" -->
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<script>
+/* Production clean-URL support: on kramajob.com this page is served at "/" via an
+   Apache internal rewrite, but its assets live under /krama/ui_kits/public-website/.
+   If we're served from anywhere OTHER than that real folder, inject a <base> so every
+   relative URL — CSS/JS assets, the JSX fetch (uses document.baseURI), and the
+   ../<dashboard>/ cross-app links — resolves against the real folder. Local dev serves
+   this file from its own folder, so the guard is false and nothing is injected. */
+(function(){
+  if (location.pathname.indexOf('/ui_kits/public-website/') === -1) {
+    document.write('<base href="/krama/ui_kits/public-website/">');
+  }
+})();
+</script>
 <title>KRAMA — Public website</title>
 <link rel="stylesheet" href="../../styles.css">
 <link rel="icon" type="image/png" href="../../assets/favicon.png">
@@ -21,7 +34,7 @@
 <div id="root"></div>
 <script>
 var JSX_FILES = ['chrome.jsx','home.jsx','jobs.jsx','job-detail.jsx','company-detail.jsx','auth.jsx','apply.jsx','pages.jsx','forum.jsx','chat.jsx','app.jsx'];
-var JSX_V = 243;
+var JSX_V = 244;
 function showLoadError(msg) {
   var el = document.getElementById('root');
   el.innerHTML = '<div style="padding:40px;font-family:sans-serif"><h2 style="color:#c00">Failed to load</h2><pre style="font-size:13px;color:#555;white-space:pre-wrap">' + msg + '</pre></div>';

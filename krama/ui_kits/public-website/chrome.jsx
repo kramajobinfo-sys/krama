@@ -25,12 +25,12 @@
       const token = localStorage.getItem("krama_access_token");
       if (roleSlug === "employer") {
         if (token) localStorage.setItem("krama_employer_token", token);
-        window.location.href = "/krama/krama/ui_kits/employer-dashboard/index.html";
+        window.location.href = "../employer-dashboard/index.html";
       } else if (isAdmin) {
         if (token) localStorage.setItem("krama_admin_token", token);
-        window.location.href = "/krama/krama/ui_kits/admin-dashboard/index.html";
+        window.location.href = "../admin-dashboard/index.html";
       } else {
-        window.location.href = "/krama/krama/ui_kits/candidate-dashboard/index.html";
+        window.location.href = "../candidate-dashboard/index.html";
       }
     };
 
@@ -136,12 +136,12 @@
       const token = localStorage.getItem("krama_access_token");
       if (roleSlug === "employer") {
         if (token) localStorage.setItem("krama_employer_token", token);
-        window.location.href = "/krama/krama/ui_kits/employer-dashboard/index.html";
+        window.location.href = "../employer-dashboard/index.html";
       } else if (isAdmin) {
         if (token) localStorage.setItem("krama_admin_token", token);
-        window.location.href = "/krama/krama/ui_kits/admin-dashboard/index.html";
+        window.location.href = "../admin-dashboard/index.html";
       } else {
-        window.location.href = "/krama/krama/ui_kits/candidate-dashboard/index.html";
+        window.location.href = "../candidate-dashboard/index.html";
       }
     };
 

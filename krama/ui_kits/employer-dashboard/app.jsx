@@ -114,7 +114,7 @@
     badges = badges || {};
     return (
       <aside className={"krm-sidebar" + (open ? " open" : "")} style={{ width: 248, flexShrink: 0, background: "var(--surface-card)", borderRight: "1px solid var(--border)", display: "flex", flexDirection: "column", padding: "20px 14px", position: "sticky", top: 0, height: "100vh" }}>
-        <a href="/krama/krama/ui_kits/public-website/index.html" style={{ display: "flex", alignItems: "center", gap: 10, margin: "4px 8px 22px", textDecoration: "none" }}>
+        <a href="../public-website/index.html" style={{ display: "flex", alignItems: "center", gap: 10, margin: "4px 8px 22px", textDecoration: "none" }}>
           <img src={window.getKramaLogo("../../assets/krama-icon.png")} height="36" alt="KRAMA" />
           <span style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: "var(--text-lg)", letterSpacing: ".08em", color: "var(--text-strong)" }}>{window.KRAMA_BRAND_NAME || "KRAMA"}</span>
         </a>
@@ -161,7 +161,7 @@
       if (!n.read_at) { emp.markNotifRead(n.id).then(function () { setUnread(function (u) { return Math.max(0, u - 1); }); }).catch(function () {}); }
       setOpen(false);
       if (n.type === "forum_reply" || n.type === "forum_mention") {
-        window.location.href = "/krama/krama/ui_kits/public-website/index.html" + (n.link ? "?thread=" + n.link : "");
+        window.location.href = "../public-website/index.html" + (n.link ? "?thread=" + n.link : "");
         return;
       }
       var route = ROUTE[n.type]; if (route && onNav) onNav(route);
@@ -2964,7 +2964,7 @@
         localStorage.removeItem("krama_refresh_token");
         localStorage.removeItem("krama_admin_token");
         localStorage.removeItem("krama_admin_refresh_token");
-        window.location.href = "/krama/krama/ui_kits/public-website/index.html";
+        window.location.href = "../public-website/index.html";
       });
     };
 

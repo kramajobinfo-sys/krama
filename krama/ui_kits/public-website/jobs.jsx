@@ -256,7 +256,7 @@
             <div style={{ textAlign: "center", paddingTop: 12 }}>
               <p style={{ color: "var(--text-body)", fontSize: "var(--text-sm)", marginBottom: 18 }}>Sign in to your candidate account to set up job alerts.</p>
               <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
-                <button onClick={() => { onClose(); window.location.href = "/krama/krama/ui_kits/candidate-dashboard/index.html"; }} style={{ padding: "10px 22px", background: "var(--brand)", color: "#fff", border: "none", borderRadius: "var(--radius-md)", fontWeight: 700, cursor: "pointer", fontSize: "var(--text-sm)" }}>{TR("Sign in")}</button>
+                <button onClick={() => { onClose(); window.location.href = "../candidate-dashboard/index.html"; }} style={{ padding: "10px 22px", background: "var(--brand)", color: "#fff", border: "none", borderRadius: "var(--radius-md)", fontWeight: 700, cursor: "pointer", fontSize: "var(--text-sm)" }}>{TR("Sign in")}</button>
                 <button onClick={onClose} style={{ padding: "10px 18px", background: "var(--surface-sunken)", color: "var(--text-body)", border: "1px solid var(--border-strong)", borderRadius: "var(--radius-md)", fontWeight: 600, cursor: "pointer", fontSize: "var(--text-sm)" }}>{TR("Cancel")}</button>
               </div>
             </div>
