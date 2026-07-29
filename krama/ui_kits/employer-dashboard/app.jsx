@@ -2300,7 +2300,7 @@
                   {current && <Badge tone="brand">Current</Badge>}
                   {!isCustom && planHasDiscount(p) && <span style={{ fontSize: "var(--text-xs)", fontWeight: 700, color: "#fff", background: "#16a34a", padding: "2px 9px", borderRadius: 999 }}>Save {p.discount_percent}%</span>}
                 </div>
-                <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginTop: 12 }}>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginTop: 12, flexWrap: "wrap" }}>
                   {isCustom ? (
                     <span style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-4xl)", fontWeight: 800, color: textStrong }}>Custom</span>
                   ) : isTrialPlan ? (
@@ -2312,9 +2312,9 @@
                     <span style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-4xl)", fontWeight: 800, color: textStrong }}>Free</span>
                   ) : (
                     <React.Fragment>
-                      <span style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-4xl)", fontWeight: 800, color: textStrong }}>${planHasDiscount(p) ? planCharge(p) : p.price}</span>
-                      <span style={{ color: textMuted, fontSize: "var(--text-sm)" }}>/ {p.interval}</span>
-                      {planHasDiscount(p) ? <span style={{ color: textMuted, fontSize: "var(--text-sm)", textDecoration: "line-through", marginLeft: 4 }}>${p.price}</span> : null}
+                      <span style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-4xl)", fontWeight: 800, color: textStrong, whiteSpace: "nowrap" }}>${planHasDiscount(p) ? planCharge(p) : p.price}</span>
+                      <span style={{ color: textMuted, fontSize: "var(--text-sm)", whiteSpace: "nowrap" }}>/ {p.interval}</span>
+                      {planHasDiscount(p) ? <span style={{ color: textMuted, fontSize: "var(--text-sm)", textDecoration: "line-through", whiteSpace: "nowrap", flexBasis: "100%" }}>${p.price}</span> : null}
                     </React.Fragment>
                   )}
                 </div>
