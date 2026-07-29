@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Helpers\EmailTemplates;
 use App\Helpers\MailConfig;
 use App\Models\Application;
+use App\Models\Company;
 use App\Models\Job;
 use App\Models\Resume;
 use App\Models\User;
@@ -170,13 +171,22 @@ class ApplicationController extends Controller
     }
 
     // GET /api/employer/jobs/{id}/applications — employer sees applicants for a job
+    // The company this employer acts for: the one they own, or (for company_admin /
+    // recruiter members) the one linked via users.company_id. Applicant access is granted
+    // to any member of the company with the view_applicants permission, not just the owner.
+    private function employerCompanyId($user): ?int
+    {
+        $owned = Company::where('user_id', $user->id)->value('id');
+        return $owned ?: $user->company_id;
+    }
+
     public function jobApplications(Request $request, $jobId)
     {
         $user = $request->user();
         $this->requirePermission('view_applicants');
 
-        // Confirm job belongs to this employer's company
-        $job = Job::whereHas('company', fn ($q) => $q->where('user_id', $user->id))
+        // Confirm the job belongs to this employer's company (owner or member)
+        $job = Job::where('company_id', $this->employerCompanyId($user))
             ->findOrFail($jobId);
 
         $q = Application::with([
@@ -226,8 +236,8 @@ class ApplicationController extends Controller
             'stage' => 'required|in:reviewed,shortlisted,interview,offered,rejected',
         ]);
 
-        // Verify employer owns the job this application belongs to
-        $application = Application::whereHas('job.company', fn ($q) => $q->where('user_id', $user->id))
+        // Verify the application's job belongs to this employer's company (owner or member)
+        $application = Application::whereHas('job', fn ($q) => $q->where('company_id', $this->employerCompanyId($user)))
             ->findOrFail($id);
 
         $application->update(['stage' => $data['stage']]);
@@ -345,9 +355,9 @@ class ApplicationController extends Controller
         $user = $request->user();
         $this->requirePermission('view_applicants');
 
-        // Verify employer owns the job this application belongs to
+        // Verify the application's job belongs to this employer's company (owner or member)
         $application = Application::with(['resume', 'candidate'])
-            ->whereHas('job.company', fn ($q) => $q->where('user_id', $user->id))
+            ->whereHas('job', fn ($q) => $q->where('company_id', $this->employerCompanyId($user)))
             ->findOrFail($id);
 
         // Respect candidate's CV visibility preference

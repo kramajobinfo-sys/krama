@@ -11,7 +11,7 @@ class UploadController extends Controller
         $this->requirePermission('site_settings');
 
         $request->validate([
-            'image' => 'required|image|max:5120', // 5 MB max
+            'image' => 'required|image|mimes:jpeg,jpg,png,gif,webp|max:5120', // 5 MB max; SVG excluded (stored raw → XSS)
         ]);
 
         $file = $request->file('image');
@@ -34,7 +34,7 @@ class UploadController extends Controller
         $this->requirePermission('post_jobs');
 
         $request->validate([
-            'image' => 'required|image|max:5120', // 5 MB max
+            'image' => 'required|image|mimes:jpeg,jpg,png,gif,webp|max:5120', // 5 MB max; SVG excluded (stored raw → XSS)
         ]);
 
         $file = $request->file('image');
