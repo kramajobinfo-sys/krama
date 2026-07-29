@@ -208,6 +208,7 @@ Route::middleware('auth:api')->group(function () {
     Route::get('employer/team',                [TeamController::class, 'index']);
     Route::post('employer/team',               [TeamController::class, 'store'])->middleware('throttle:10,1');
     Route::delete('employer/team/{id}',        [TeamController::class, 'destroy']);
+    Route::patch('employer/team/{id}/role',    [TeamController::class, 'setRole']);
     Route::patch('employer/team/{id}/password',[TeamController::class, 'setPassword']);
 
     // Community forum — participation (any authenticated user; throttled anti-spam)

@@ -167,6 +167,7 @@
     fetchTeam: function () { return req("GET", "/employer/team"); },
     inviteRecruiter: function (data) { return req("POST", "/employer/team", data); },
     removeTeamMember: function (id) { return req("DELETE", "/employer/team/" + id); },
+    updateMemberRole: function (id, role) { return req("PATCH", "/employer/team/" + id + "/role", { role: role }); },
     setMemberPassword: function (id, password) { return req("PATCH", "/employer/team/" + id + "/password", { password: password }); },
 
     // Applicants

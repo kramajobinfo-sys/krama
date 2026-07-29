@@ -2394,6 +2394,7 @@
     const [inviteName, setInviteName] = React.useState("");
     const [inviteEmail, setInviteEmail] = React.useState("");
     const [invitePassword, setInvitePassword] = React.useState("");
+    const [inviteRole, setInviteRole] = React.useState("recruitment");
     const [inviting, setInviting] = React.useState(false);
     const [msg, setMsg] = React.useState(null);
     const [pwdModal, setPwdModal] = React.useState(null);
@@ -2412,16 +2413,20 @@
     const invite = () => {
       if (!inviteName.trim() || !inviteEmail.trim()) return;
       setInviting(true);
-      emp.inviteRecruiter({ name: inviteName.trim(), email: inviteEmail.trim() }).then(function () {
-        flash("Recruiter added. Set their password below.");
-        setInviteOpen(false); setInviteName(""); setInviteEmail(""); setInvitePassword("");
+      emp.inviteRecruiter({ name: inviteName.trim(), email: inviteEmail.trim(), role: inviteRole }).then(function () {
+        flash((inviteRole === "company_admin" ? "Admin" : "Recruiter") + " added. Set their password below.");
+        setInviteOpen(false); setInviteName(""); setInviteEmail(""); setInvitePassword(""); setInviteRole("recruitment");
         load();
-      }).catch(function (e) { flash((e && e.message) || "Failed to add recruiter.", false); }).finally(function () { setInviting(false); });
+      }).catch(function (e) { flash((e && e.message) || "Failed to add member.", false); }).finally(function () { setInviting(false); });
     };
 
     const remove = (member) => {
       if (!window.confirm('Remove ' + member.name + ' from the team?')) return;
       emp.removeTeamMember(member.id).then(function () { flash("Team member removed."); load(); }).catch(function (e) { flash((e && e.message) || "Failed.", false); });
+    };
+
+    const changeRole = (member, role) => {
+      emp.updateMemberRole(member.id, role).then(function () { flash("Role updated to " + (role === "company_admin" ? "Admin" : "Recruiter") + "."); load(); }).catch(function (e) { flash((e && e.message) || "Failed to change role.", false); });
     };
 
     const setPassword = () => {
@@ -2437,13 +2442,15 @@
 
     const recruiters = data ? (data.recruiters || []) : [];
     const owner = data ? data.owner : null;
+    // Owner (company_role null) and company_admin can manage the team; recruiters can only view.
+    const isTeamAdmin = user && user.company_role !== "recruitment";
 
     return (
       <div className="krm-page-pad" style={{ padding: 28, maxWidth: 860 }}>
         <ScreenHead
           title="Team"
-          sub="Manage recruiters who can post jobs on behalf of your company."
-          action={<Button variant="primary" iconLeft={I("user-plus", 15)} onClick={() => setInviteOpen(true)}>Add recruiter</Button>}
+          sub="Add admins (full control) or recruiters (post jobs you approve) to your company."
+          action={isTeamAdmin ? <Button variant="primary" iconLeft={I("user-plus", 15)} onClick={() => setInviteOpen(true)}>Add member</Button> : null}
         />
         {msg && <div style={{ padding: "10px 14px", background: msg.ok ? "var(--success-subtle)" : "var(--danger-subtle)", color: msg.ok ? "var(--success)" : "var(--danger)", borderRadius: "var(--radius-md)", fontSize: "var(--text-sm)", fontWeight: 600, marginBottom: 14 }}>{msg.text}</div>}
 
@@ -2473,9 +2480,13 @@
                 <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>{r.email}</div>
               </div>
               <div className="krm-team-actions" style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
-                <Badge tone="neutral">Recruiter</Badge>
-                <Button variant="secondary" size="sm" iconLeft={I("key", 13)} onClick={() => { setPwdModal(r); setNewPwd(""); }}>Set password</Button>
-                <Button variant="ghost" size="sm" onClick={() => remove(r)}>Remove</Button>
+                {isTeamAdmin ? (
+                  <Select value={r.company_role || "recruitment"} onChange={(e) => changeRole(r, e.target.value)} options={[{ value: "company_admin", label: "Admin" }, { value: "recruitment", label: "Recruiter" }]} size="sm" containerStyle={{ minWidth: 120 }} />
+                ) : (
+                  <Badge tone={r.company_role === "company_admin" ? "brand" : "neutral"}>{r.company_role === "company_admin" ? "Admin" : "Recruiter"}</Badge>
+                )}
+                {isTeamAdmin && <Button variant="secondary" size="sm" iconLeft={I("key", 13)} onClick={() => { setPwdModal(r); setNewPwd(""); }}>Set password</Button>}
+                {isTeamAdmin && <Button variant="ghost" size="sm" onClick={() => remove(r)}>Remove</Button>}
               </div>
             </div>
           ))}
@@ -2499,15 +2510,16 @@
         {inviteOpen && (
           <div onClick={() => setInviteOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 300, background: "var(--surface-overlay)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
             <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", maxWidth: 420, background: "var(--surface-card)", borderRadius: "var(--radius-xl)", boxShadow: "var(--shadow-xl)", overflow: "hidden" }}>
-              <div style={{ padding: "18px 22px", borderBottom: "1px solid var(--border)", fontWeight: 700, fontSize: "var(--text-md)", color: "var(--text-strong)" }}>Add recruiter</div>
+              <div style={{ padding: "18px 22px", borderBottom: "1px solid var(--border)", fontWeight: 700, fontSize: "var(--text-md)", color: "var(--text-strong)" }}>Add team member</div>
               <div style={{ padding: "18px 22px", display: "flex", flexDirection: "column", gap: 14 }}>
-                <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>Create a recruiter account linked to your company. They can log in and post jobs that you approve.</div>
+                <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>Create an account linked to your company. An <strong>Admin</strong> has full control; a <strong>Recruiter</strong> posts jobs that you approve.</div>
                 <Input label="Full name" value={inviteName} onChange={(e) => setInviteName(e.target.value)} placeholder="e.g. Sokha Dara" />
-                <Input label="Email address" type="email" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} placeholder="recruiter@company.com" />
+                <Input label="Email address" type="email" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} placeholder="member@company.com" />
+                <Select label="Role" value={inviteRole} onChange={(e) => setInviteRole(e.target.value)} options={[{ value: "recruitment", label: "Recruiter (you approve their jobs)" }, { value: "company_admin", label: "Admin (full control)" }]} />
               </div>
               <div style={{ display: "flex", gap: 10, padding: "14px 22px", borderTop: "1px solid var(--border)" }}>
                 <Button variant="ghost" onClick={() => setInviteOpen(false)} style={{ flex: 1 }}>Cancel</Button>
-                <Button variant="primary" style={{ flex: 1 }} disabled={!inviteName.trim() || !inviteEmail.trim() || inviting} onClick={invite}>{inviting ? "Adding…" : "Add recruiter"}</Button>
+                <Button variant="primary" style={{ flex: 1 }} disabled={!inviteName.trim() || !inviteEmail.trim() || inviting} onClick={invite}>{inviting ? "Adding…" : "Add member"}</Button>
               </div>
             </div>
           </div>

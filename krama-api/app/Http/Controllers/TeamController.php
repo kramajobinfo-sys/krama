@@ -70,7 +70,10 @@ class TeamController extends Controller
         $data = $request->validate([
             'name'  => 'required|string|max:120',
             'email' => 'required|email|max:190|unique:users,email',
+            'role'  => 'sometimes|in:company_admin,recruitment',
         ]);
+        // Default to recruiter (limited); 'company_admin' grants full control (FB-Page-style admin).
+        $role = $data['role'] ?? 'recruitment';
 
         // Find the employer role id (role_id = 4 in the seeded DB)
         $employerRole = Role::where('slug', 'employer')->first();
@@ -78,25 +81,26 @@ class TeamController extends Controller
             abort(500, 'Employer role not found.');
         }
 
-        // Create the recruiter user with a temporary password they can reset
+        // Create the member with a temporary password they can reset
         $recruiter = User::create([
             'role_id'      => $employerRole->id,
             'company_id'   => $company->id,
-            'company_role' => 'recruitment',
+            'company_role' => $role,
             'name'         => $data['name'],
             'email'        => $data['email'],
             'password_hash'=> Hash::make(\Illuminate\Support\Str::random(24)),
             'status'       => 'active',
         ]);
 
-        $this->auditLog('team.recruiter_invited', [
+        $this->auditLog('team.member_invited', [
             'company_id'   => $company->id,
             'recruiter_id' => $recruiter->id,
             'email'        => $recruiter->email,
+            'role'         => $role,
         ]);
 
         return response()->json([
-            'message'   => 'Recruiter invited. They can log in and reset their password.',
+            'message'   => ($role === 'company_admin' ? 'Admin' : 'Recruiter') . ' added. They can log in and reset their password.',
             'recruiter' => $recruiter->only('id', 'name', 'email', 'company_role', 'status', 'created_at'),
         ], 201);
     }
@@ -121,6 +125,33 @@ class TeamController extends Controller
         ]);
 
         return response()->json(['message' => 'Team member removed.']);
+    }
+
+    // PATCH /api/employer/team/{id}/role — company admin promotes/demotes a member
+    // between 'company_admin' (full control) and 'recruitment' (needs approval).
+    public function setRole(Request $request, $id)
+    {
+        $user = $request->user();
+        $company = $this->resolveCompany($user);
+        $this->requireCompanyAdmin($user, $company);
+
+        $data = $request->validate([
+            'role' => 'required|in:company_admin,recruitment',
+        ]);
+
+        $member = User::where('company_id', $company->id)->where('id', $id)->firstOrFail();
+        $member->update(['company_role' => $data['role']]);
+
+        $this->auditLog('team.member_role_changed', [
+            'company_id' => $company->id,
+            'user_id'    => $member->id,
+            'role'       => $data['role'],
+        ]);
+
+        return response()->json([
+            'message' => 'Member role updated.',
+            'member'  => $member->only('id', 'name', 'email', 'company_role', 'status'),
+        ]);
     }
 
     // PATCH /api/employer/team/{id}/password — company admin sets a recruiter's password
