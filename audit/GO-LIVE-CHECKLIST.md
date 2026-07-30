@@ -149,13 +149,19 @@ APP_PUBLIC_PATH=/home/seagzdgt/kramajob.com     # makes uploads + storage web-se
 QUEUE_CONNECTION=sync                            # shared host: no persistent worker
 DB_DATABASE=… DB_USERNAME=… DB_PASSWORD=…        # production DB
 MAIL_*                                           # kramajob.com SMTP (verify — was seagullguesthouse)
-# Stripe / ABA / Bakong keys — LIVE or sandbox (your call)
+SEED_ADMIN_EMAIL=you@kramajob.com                # real super-admin login (NOT the dev default)
+SEED_ADMIN_PASSWORD=<strong-unique-password>     # used once by the seeder in F5
+# Payments = SANDBOX at launch: ABA sandbox creds are configured in Admin UI post-login;
+#   Stripe test keys / Bakong sandbox as applicable. Flip to live later via Admin + .env.
 ```
 Then (you run — writes secrets): `php artisan key:generate` and `php artisan jwt:secret`.
 
-### F5. Database (fresh launch — decision)
-- **Clean slate (recommended):** `php artisan migrate:fresh --force` (**DROPS all test data**) → then re-create the production admin + baseline settings (seeder or `php artisan tinker`).
-- **Keep current test rows:** `php artisan migrate --force` (pending migrations only).
+### F5. Database — clean slate (chosen)
+```bash
+cd ~/krama-api
+php artisan migrate:fresh --seed --force
+```
+`DatabaseSeeder` now seeds **baseline only** in production (roles, permissions, categories, locations, plans, default settings, **one super-admin from `SEED_ADMIN_*`**). `MockDataSeeder` (demo companies/jobs + demo users with known passwords) is gated to `local`/`testing` and will **not** run under `APP_ENV=production`. ⚠ Run this **before** `config:cache` (F7) so the seeder can read `SEED_ADMIN_*` from `.env`. Verify: `php artisan tinker --execute="echo \App\Models\User::count().' users, '.\App\Models\Job::count().' jobs';"` → 1 user, 0 jobs.
 
 ### F6. Deploy the frontend + docroot (`~/kramajob.com`)
 ```bash

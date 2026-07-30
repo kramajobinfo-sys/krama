@@ -153,14 +153,20 @@ class DatabaseSeeder extends Seeder
         DB::table('settings')->insertOrIgnore($settings);
 
         // ── Super-admin user ──────────────────────────────────────────────────
+        // Credentials come from env so a PRODUCTION seed never ships the public
+        // default. Set SEED_ADMIN_EMAIL / SEED_ADMIN_PASSWORD (+ optional NAME)
+        // in .env before seeding; local dev falls back to the well-known dev login.
         $superAdminRoleId = $roleIds['super_admin'];
-        $exists = DB::table('users')->where('email', 'admin@krama.local')->exists();
+        $adminEmail = env('SEED_ADMIN_EMAIL', 'admin@krama.local');
+        $adminPass  = env('SEED_ADMIN_PASSWORD', 'Admin@1234');
+        $adminName  = env('SEED_ADMIN_NAME', 'Krama Admin');
+        $exists = DB::table('users')->where('email', $adminEmail)->exists();
         if (! $exists) {
             DB::table('users')->insert([
                 'role_id'           => $superAdminRoleId,
-                'name'              => 'Krama Admin',
-                'email'             => 'admin@krama.local',
-                'password_hash'     => Hash::make('Admin@1234'),
+                'name'              => $adminName,
+                'email'             => $adminEmail,
+                'password_hash'     => Hash::make($adminPass),
                 'status'            => 'active',
                 'email_verified_at' => now(),
                 'created_at'        => now(),
@@ -168,7 +174,10 @@ class DatabaseSeeder extends Seeder
             ]);
         }
 
-        // ── Mock company & job data ───────────────────────────────────────────
-        $this->call(MockDataSeeder::class);
+        // ── Mock company & job data — local/dev ONLY, never production ─────────
+        // (MockDataSeeder also creates demo users with known passwords.)
+        if (app()->environment('local', 'testing')) {
+            $this->call(MockDataSeeder::class);
+        }
     }
 }
