@@ -100,7 +100,7 @@ Candidate: apply to job, saved jobs, messages, job alerts email. Employer: post 
 ### F0. Settled state (local)
 `main` working tree clean at **`8a7c368`** ("Frontend: production-ready URLs for kramajob.com" — 22 cross-app links relativized + path-aware `<base>` for the clean root URL + cache-bust bumps), on top of the L12 + hardening + NBC exchange-rate tree. Contents verified: L12 (`composer ^12`, fruitcake removed, `(int)env` jwt casts, built-in `HandleCors`), XSS `HtmlSanitizer` on write, mobile account menu, employer Team mobile fit, candidate alerts/Recommended fixes, public search-cap fix (`getAllPages`), NBC exchange-rate. The code base `9acda28` is the consolidated L12 + all hardening + all UX fixes.
 
-### F1. Settle origin/main on GitHub  ⚠ (requires GitHub auth — run by the team, not from the dev sandbox)
+### F1. Settle origin/main on GitHub  ℹ️ (backup/record only — NOT a deploy gate; the deploy uses the F2 zip, not a server pull)
 > ⚠️ **First freeze any parallel session's git operations** — `main`'s history was being rewritten; a mid-push force-push would clobber this. One session owns the push.
 ```bash
 git fetch origin
@@ -118,12 +118,13 @@ git log --oneline main..origin/main      # what origin has that local doesn't
 
 **Wiring (one origin):** the docroot `index.php` boots the API from `../krama-api`; `bootstrap/app.php` reads **`APP_PUBLIC_PATH`** from `~/krama-api/.env` and binds `public_path()` to the docroot, so uploads (`UploadController` → `public_path('uploads')`) + the `storage` symlink land web-accessibly under `~/kramajob.com/`. Real files (`/krama/...`) are served static; everything else (`/api/*`, `/jobs/{slug}`, `/sitemap.xml`, `/robots.txt`) → `index.php` → Laravel. `/` is internally rewritten to the React public site.
 
-### F2. Server — backup + fetch current code
+### F2. Server — backup + upload code (zip)  ← deploy does NOT need GitHub
+Deploy method = **zip upload** (built locally from the committed tree, so the server needs no GitHub access — F1 becomes backup-only, not a gate). Upload `krama-deploy-<sha>.zip` via **cPanel File Manager** to `~/`, then:
 ```bash
 cd ~ && tar czf ~/krama-backup-$(date +%F).tgz krama-api kramajob.com   # rollback insurance
-rm -rf ~/krama-src
-git clone https://github.com/kramajobinfo-sys/krama.git ~/krama-src     # private repo → PAT/deploy key
-cd ~/krama-src && git checkout main && git log --oneline -1             # expect 8a7c368
+rm -rf ~/krama-src && mkdir -p ~/krama-src
+unzip -q ~/krama-deploy-*.zip -d ~/krama-src
+ls ~/krama-src        # expect: audit  krama  krama-api
 ```
 
 ### F3. Deploy the API to ~/krama-api  (preserve .env / storage / uploads)
@@ -173,8 +174,11 @@ for i in app artisan bootstrap cache composer.json composer.lock config database
          routes storage tailwind.config.js tests vendor vite.config.js; do
   [ -e "$i" ] && mv "$i" ~/kramajob_placeholder_bak/
 done
-# b) Frontend + c) docroot bootstrap (boots ../krama-api)
-rsync -a --delete ~/krama-src/krama/  ~/kramajob.com/krama/
+# b) Frontend — WHITELIST copy: only the runtime files reach the web.
+#    (Keeps the internal .md reports, .claude/, and DS-source dirs OFF /krama/.)
+rm -rf ~/kramajob.com/krama && mkdir -p ~/kramajob.com/krama
+cp -a ~/krama-src/krama/{ui_kits,assets,vendor,fonts,_ds_bundle.js,brand.js,styles.css,.htaccess} ~/kramajob.com/krama/
+# c) docroot bootstrap (boots ../krama-api)
 cp ~/krama-src/krama-api/public_html_index.php  ~/kramajob.com/index.php
 ```
 Create `~/kramajob.com/.htaccess`:
