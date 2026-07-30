@@ -98,7 +98,7 @@ Candidate: apply to job, saved jobs, messages, job alerts email. Employer: post 
 **Launch decision:** deploy `main` (now the L12 + hardened tree) on the cPanel host's **PHP 8.2**.
 
 ### F0. Settled state (local)
-`main` working tree clean. **Last code commit = `443aa5b`** (NBC exchange-rate, auto-sync + safe manual fallback); doc commits sit on top (`68425f5` at time of writing). Contents verified: L12 (`composer ^12`, fruitcake removed, `(int)env` jwt casts, built-in `HandleCors`), XSS `HtmlSanitizer` on write, mobile account menu, employer Team mobile fit, candidate alerts/Recommended fixes, public search-cap fix (`getAllPages`), NBC exchange-rate. The code base `9acda28` is the consolidated L12 + all hardening + all UX fixes.
+`main` working tree clean at **`8a7c368`** ("Frontend: production-ready URLs for kramajob.com" — 22 cross-app links relativized + path-aware `<base>` for the clean root URL + cache-bust bumps), on top of the L12 + hardening + NBC exchange-rate tree. Contents verified: L12 (`composer ^12`, fruitcake removed, `(int)env` jwt casts, built-in `HandleCors`), XSS `HtmlSanitizer` on write, mobile account menu, employer Team mobile fit, candidate alerts/Recommended fixes, public search-cap fix (`getAllPages`), NBC exchange-rate. The code base `9acda28` is the consolidated L12 + all hardening + all UX fixes.
 
 ### F1. Settle origin/main on GitHub  ⚠ (requires GitHub auth — run by the team, not from the dev sandbox)
 > ⚠️ **First freeze any parallel session's git operations** — `main`'s history was being rewritten; a mid-push force-push would clobber this. One session owns the push.
@@ -110,40 +110,109 @@ git log --oneline main..origin/main      # what origin has that local doesn't
 - **Not empty** → origin diverged; the exchange-rate commit `443aa5b` touches only the 8 tax-invoice files and cherry-picks cleanly — reconcile onto origin/main, then push.
 - **Verify on GitHub:** `origin/main` HEAD shows the "Tax invoice: NBC exchange-rate…" commit.
 
-### F2. Deploy the code — BOTH the API and the frontend (⚠ confirm server layout first — NOT yet verified)
-The repo root holds **two** deployable parts: `krama-api/` (Laravel API) **and** `krama/ui_kits/` (the static frontend — mobile menu, admin exchange-rate UI, etc.). Both must reach production. First confirm how each is checked out/served:
+**Confirmed server layout** (cPanel user `seagzdgt`, home `/home/seagzdgt`):
+- `~/krama-api/` — Laravel **API app-root**, OUTSIDE the webroot (test copy). Its `.env` holds all secrets.
+- `~/kramajob.com/` — **document root** for kramajob.com (confirmed in cPanel → Domains). Currently a throwaway default-Laravel placeholder; holds `cgi-bin/` + `.well-known/` (cPanel/SSL — **must keep**).
+- `~/krama.seagullguesthouse.com/` — the proven-working test site. Reference only; leave as-is.
+- `~/public_html`, `~/uat.seagullguesthouse.com`, `~/*.cpanel.site` — UNRELATED hotel app. 🔴 **NEVER touch.**
+
+**Wiring (one origin):** the docroot `index.php` boots the API from `../krama-api`; `bootstrap/app.php` reads **`APP_PUBLIC_PATH`** from `~/krama-api/.env` and binds `public_path()` to the docroot, so uploads (`UploadController` → `public_path('uploads')`) + the `storage` symlink land web-accessibly under `~/kramajob.com/`. Real files (`/krama/...`) are served static; everything else (`/api/*`, `/jobs/{slug}`, `/sitemap.xml`, `/robots.txt`) → `index.php` → Laravel. `/` is internally rewritten to the React public site.
+
+### F2. Server — backup + fetch current code
 ```bash
-cd ~/krama-api && git remote -v && git log --oneline -1     # is THIS a git checkout, and of the whole repo or just the API?
+cd ~ && tar czf ~/krama-backup-$(date +%F).tgz krama-api kramajob.com   # rollback insurance
+rm -rf ~/krama-src
+git clone https://github.com/kramajobinfo-sys/krama.git ~/krama-src     # private repo → PAT/deploy key
+cd ~/krama-src && git checkout main && git log --oneline -1             # expect 8a7c368
 ```
-- **If `~/krama-api` is a full-repo checkout** (contains `krama-api/` + `krama/` inside it, and the domain docroot points into it):
-  ```bash
-  git fetch origin && git reset --hard origin/main
-  ```
-- **If `~/krama-api` is only the API dir** (repo split across folders / files uploaded) — deploy each part to its real location:
-  - **API** → the `krama-api` dir (git pull there, or upload).
-  - **Frontend** → wherever `kramajob.com` is served (e.g. `public_html` / the domain docroot): update `krama/ui_kits/*` there. 🔴 **Do NOT skip this** — the mobile-menu, admin exchange-rate UI, candidate/employer mobile fixes live in `krama/ui_kits` and won't reach users otherwise.
 
-Then build the Laravel 12 vendor **under PHP 8.2** (in the `krama-api` dir):
+### F3. Deploy the API to ~/krama-api  (preserve .env / storage / uploads)
 ```bash
-composer install --no-dev --optimize-autoloader
-# if `composer` runs under the wrong PHP, force 8.2 explicitly, e.g.:
-#   php ~/composer.phar install --no-dev --optimize-autoloader
+rsync -a --delete \
+  --exclude='.env' --exclude='.env.*' --exclude='/vendor/' \
+  --exclude='/storage/' --exclude='/public/uploads/' \
+  ~/krama-src/krama-api/  ~/krama-api/
+cd ~/krama-api
+/opt/alt/php82/usr/bin/php $(which composer) install --no-dev --optimize-autoloader --no-interaction
 ```
-- Confirm PHP 8.2 extensions incl. **gd** (avatar/image resize), `mbstring`, `openssl`, `pdo_mysql`, `curl`, `dom`, `fileinfo` are enabled (cPanel PHP Selector — a version switch can reset extensions).
+Confirm PHP 8.2 extensions: **gd**, `mbstring`, `openssl`, `pdo_mysql`, `curl`, `dom`, `fileinfo` (cPanel PHP Selector).
 
-### F3. Config gates (B1–B3) + finalize
-- **B1** `.env`: `APP_ENV=production`, `APP_DEBUG=false`, `LOG_LEVEL=warning`, `BCRYPT_ROUNDS=12`, `APP_URL`/`FRONTEND_URL`/`CORS_ALLOWED_ORIGINS=https://kramajob.com`, real `DB_*`/`MAIL_*`; then `php artisan key:generate` + `php artisan jwt:secret` (fresh unique secrets).
-- **B2** cron (cPanel → Cron Jobs, once per minute) — ⚠ use the **absolute** PHP 8.2 binary (cron's `PATH` differs from your shell; get it from `which php`, e.g. `/opt/alt/php82/usr/bin/php`), not bare `php`:
-  `* * * * * /opt/alt/php82/usr/bin/php /home/seagzdgt/krama-api/artisan schedule:run >/dev/null 2>&1`
-- **B3** `.env`: `QUEUE_CONNECTION=sync` (shared host can't keep a worker alive).
-- Finalize: `php artisan config:cache && php artisan route:cache` (re-run after ANY `.env` change); `chmod -R 775 storage bootstrap/cache`.
+### F4. Production `.env` (`~/krama-api/.env`)  ← secrets: **you** edit, never scripted
+```
+APP_ENV=production
+APP_DEBUG=false
+LOG_LEVEL=warning
+BCRYPT_ROUNDS=12
+APP_URL=https://kramajob.com
+FRONTEND_URL=https://kramajob.com
+APP_PUBLIC_PATH=/home/seagzdgt/kramajob.com     # makes uploads + storage web-servable
+QUEUE_CONNECTION=sync                            # shared host: no persistent worker
+DB_DATABASE=… DB_USERNAME=… DB_PASSWORD=…        # production DB
+MAIL_*                                           # kramajob.com SMTP (verify — was seagullguesthouse)
+# Stripe / ABA / Bakong keys — LIVE or sandbox (your call)
+```
+Then (you run — writes secrets): `php artisan key:generate` and `php artisan jwt:secret`.
 
-### F4. Post-deploy verification (on the live host)
-- `https://kramajob.com/api/health` → 200.
-- Login (candidate + employer + admin), one **real payment** → fulfillment, one **verification email** received.
-- NBC scrape (else the manual fallback rate is used — still correct):
-  `php artisan tinker --execute="var_dump(App\Services\ExchangeRateService::fetchFromNbc());"`
-- Confirm the scheduler fired: a pending payment reconciles within ~3 min.
+### F5. Database (fresh launch — decision)
+- **Clean slate (recommended):** `php artisan migrate:fresh --force` (**DROPS all test data**) → then re-create the production admin + baseline settings (seeder or `php artisan tinker`).
+- **Keep current test rows:** `php artisan migrate --force` (pending migrations only).
+
+### F6. Deploy the frontend + docroot (`~/kramajob.com`)
+```bash
+# a) Move the placeholder aside (KEEP cgi-bin + .well-known) — reversible
+mkdir -p ~/kramajob_placeholder_bak && cd ~/kramajob.com
+for i in app artisan bootstrap cache composer.json composer.lock config database \
+         .editorconfig .env .env.example .gitattributes .gitignore .htaccess \
+         package.json phpunit.xml postcss.config.js public README.md resources \
+         routes storage tailwind.config.js tests vendor vite.config.js; do
+  [ -e "$i" ] && mv "$i" ~/kramajob_placeholder_bak/
+done
+# b) Frontend + c) docroot bootstrap (boots ../krama-api)
+rsync -a --delete ~/krama-src/krama/  ~/kramajob.com/krama/
+cp ~/krama-src/krama-api/public_html_index.php  ~/kramajob.com/index.php
+```
+Create `~/kramajob.com/.htaccess`:
+```apache
+<IfModule mod_rewrite.c>
+    <IfModule mod_negotiation.c>
+        Options -MultiViews -Indexes
+    </IfModule>
+    RewriteEngine On
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+    # Clean homepage: serve the React public site at "/" (assets resolve via the page's <base>)
+    RewriteRule ^$ krama/ui_kits/public-website/index.html [L]
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_URI} (.+)/$
+    RewriteRule ^ %1 [L,R=301]
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^ index.php [L]
+</IfModule>
+```
+
+### F7. Storage link, uploads dir, caches, cron
+```bash
+cd ~/krama-api
+php artisan storage:link                          # → ~/kramajob.com/storage (uses APP_PUBLIC_PATH)
+mkdir -p ~/kramajob.com/uploads && chmod 755 ~/kramajob.com/uploads
+chmod -R 775 storage bootstrap/cache
+php artisan config:cache
+php artisan route:cache                            # if it errors on a closure route, skip this one
+php artisan view:cache
+```
+Cron (cPanel → Cron Jobs, every minute — **absolute** PHP 8.2 binary):
+```
+* * * * * /opt/alt/php82/usr/bin/php /home/seagzdgt/krama-api/artisan schedule:run >/dev/null 2>&1
+```
+
+### F8. Post-deploy verification (live)
+- `curl -I https://kramajob.com/` → 200; browser shows the React homepage at the **clean `/`**.
+- Log in → Employer / Candidate / Admin dashboards load; cross-links back to `/` work.
+- `https://kramajob.com/sitemap.xml` + `/robots.txt` → 200 (Laravel SEO routes).
+- One **real payment** → fulfillment; one **verification email** received; an **avatar upload** lands under `/uploads/` and renders.
+- NBC scrape: `php artisan tinker --execute="var_dump(App\Services\ExchangeRateService::fetchFromNbc());"` → a real number (else fallback rate — still correct).
+- Scheduler: a pending payment reconciles within ~3 min.
 
 ### The one standing risk
 The only thing between here and a clean deploy is the **parallel session rewriting git history**. Pick one authoritative `main`, push it once, freeze the rest. All application code is verified ready.
