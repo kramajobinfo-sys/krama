@@ -36,7 +36,10 @@ if (is_file($envFile) && ($envLines = @file($envFile))) {
         if (preg_match('/^APP_PUBLIC_PATH=(.*)$/', trim($line), $m)) {
             $publicPath = trim($m[1], " \t\n\r\0\x0B\"'");
             if ($publicPath !== '') {
-                $app->instance('path.public', $publicPath);
+                // Laravel 9+ resolves public_path() from the $publicPath PROPERTY
+                // (via usePublicPath()), NOT the 'path.public' container binding —
+                // so instance('path.public', …) alone is silently ignored on L12.
+                $app->usePublicPath($publicPath);
             }
             break;
         }
