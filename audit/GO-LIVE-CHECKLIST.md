@@ -177,7 +177,9 @@ done
 # b) Frontend — WHITELIST copy: only the runtime files reach the web.
 #    (Keeps the internal .md reports, .claude/, and DS-source dirs OFF /krama/.)
 rm -rf ~/kramajob.com/krama && mkdir -p ~/kramajob.com/krama
-cp -a ~/krama-src/krama/{ui_kits,assets,vendor,fonts,_ds_bundle.js,brand.js,styles.css,.htaccess} ~/kramajob.com/krama/
+cp -a ~/krama-src/krama/{ui_kits,assets,vendor,fonts,tokens,_ds_bundle.js,brand.js,styles.css,.htaccess} ~/kramajob.com/krama/
+# NOTE: tokens/ is REQUIRED — styles.css @imports ./tokens/*.css (colors, typography,
+# spacing, elevation, motion, base). Omitting it renders the app unstyled (serif fallback).
 # c) docroot bootstrap (boots ../krama-api)
 cp ~/krama-src/krama-api/public_html_index.php  ~/kramajob.com/index.php
 ```
