@@ -2995,13 +2995,17 @@
       // mobile image exists, mobile falls back to the desktop image. _src(Mobile) is dropped
       // afterward so no base64 is ever persisted.
       const jobs = [];
+      // Auto-compress before upload (desktop ≤1600px, mobile ≤1080px, JPEG q0.85) so
+      // large photos never exceed the upload limit and the site stays fast on mobile.
       if (slideForm._src) jobs.push(
         dataUrlToFile(slideForm._src, "banner.jpg")
+          .then(function(file) { return compressImage(file, 1600, 0.85); })
           .then(function(file) { return window.KRAMA_ADMIN_API.uploadImage(file); })
           .then(function(url) { return ["image", url]; })
       );
       if (slideForm._srcMobile) jobs.push(
         dataUrlToFile(slideForm._srcMobile, "banner-mobile.jpg")
+          .then(function(file) { return compressImage(file, 1080, 0.85); })
           .then(function(file) { return window.KRAMA_ADMIN_API.uploadImage(file); })
           .then(function(url) { return ["imageMobile", url]; })
       );
