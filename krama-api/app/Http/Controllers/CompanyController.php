@@ -513,6 +513,48 @@ class CompanyController extends Controller
         return response()->json(['message' => "Company $label.", 'is_verified' => $company->is_verified]);
     }
 
+    // POST /api/admin/companies — admin creates a company shell (e.g. on an employer's
+    // behalf). The owner (companies.user_id, required) defaults to the acting admin as a
+    // placeholder; an employer is attached later via adminAddMember (the Access modal) as
+    // 'company_admin' = full control, and manages it from the employer dashboard.
+    public function adminStore(Request $request)
+    {
+        $this->requirePermission('approve_companies');
+
+        $data = $request->validate([
+            'name'            => 'required|string|max:190',
+            'registration_no' => 'nullable|string|max:80',
+            'industry'        => 'nullable|string|max:120',
+            'website'         => ['nullable', 'url', 'max:190', 'regex:/^https?:\/\//'],
+            'address'         => 'nullable|string|max:255',
+            'location_id'     => 'nullable|exists:locations,id',
+            'logo_url'        => ['nullable', 'url', 'max:255', 'regex:/^https?:\/\//'],
+            'description'     => 'nullable|string|max:10000',
+            'status'          => 'nullable|in:pending,approved',
+        ]);
+
+        // Same sanitize-on-write rule as store()/update() — the description is rendered raw.
+        if (array_key_exists('description', $data)) {
+            $data['description'] = HtmlSanitizer::clean($data['description']);
+        }
+
+        $status = $data['status'] ?? 'approved';
+        unset($data['status']);
+
+        $company = new Company($data);
+        $company->user_id = $request->user()->id; // placeholder owner; reassign via members
+        $company->status  = $status;
+        $company->save();
+
+        $this->auditLog('company.admin_created', [
+            'company_id'   => $company->id,
+            'company_name' => $company->name,
+            'status'       => $status,
+        ]);
+
+        return response()->json($company->load('location:id,name'), 201);
+    }
+
     // ── Admin: company access / team management ───────────────────────────────
     // A company's people = its owner (companies.user_id, always full control) plus any
     // members linked via users.company_id + company_role:

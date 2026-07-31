@@ -691,9 +691,57 @@
     );
   }
 
+  // Admin creates a company on an employer's behalf; assign the employer afterward via
+  // the Access button (CompanyAccessModal) — they then manage it from their dashboard.
+  function CreateCompanyModal({ onClose, onCreated }) {
+    const BLANK = { name: "", industry: "", website: "", address: "", registration_no: "", description: "", status: "approved" };
+    const [f, setF] = React.useState(BLANK);
+    const [saving, setSaving] = React.useState(false);
+    const [err, setErr] = React.useState("");
+    const set = (k, v) => setF(function (x) { return Object.assign({}, x, { [k]: v }); });
+    const submit = () => {
+      if (!f.name.trim()) { setErr("Company name is required."); return; }
+      setSaving(true); setErr("");
+      var payload = { name: f.name.trim(), status: f.status };
+      ["industry", "address", "registration_no", "description"].forEach(function (k) { if (f[k] && f[k].trim()) payload[k] = f[k].trim(); });
+      if (f.website && f.website.trim()) {
+        var w = f.website.trim();
+        payload.website = /^https?:\/\//i.test(w) ? w : "https://" + w; // API requires an http(s) URL
+      }
+      adm.createCompany(payload)
+        .then(function (c) { setSaving(false); onCreated(c); onClose(); })
+        .catch(function (e) { setSaving(false); setErr((e && e.message) || "Failed to create company."); });
+    };
+    return (
+      <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 200, background: "var(--surface-overlay)", display: "flex", justifyContent: "flex-end", animation: "krmfade var(--dur-base) var(--ease-out)" }}>
+        <div onClick={(e) => e.stopPropagation()} style={{ width: 520, maxWidth: "94vw", height: "100%", background: "var(--surface-card)", boxShadow: "var(--shadow-xl)", display: "flex", flexDirection: "column", animation: "krmslide var(--dur-base) var(--ease-out)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "20px 24px", borderBottom: "1px solid var(--border)" }}>
+            <div style={{ flex: 1, fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "var(--text-lg)", color: "var(--text-strong)" }}>Create company</div>
+            <IconButton aria-label="Close" onClick={onClose}>{I("x", 18)}</IconButton>
+          </div>
+          <div style={{ flex: 1, overflowY: "auto", padding: 24, display: "flex", flexDirection: "column", gap: 16 }}>
+            <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", lineHeight: 1.5 }}>Create a company on an employer's behalf. After saving, use <strong>Access</strong> on its row to assign an employer (full control) — they'll manage it from their own dashboard.</div>
+            <Input label="Company name *" value={f.name} onChange={(e) => set("name", e.target.value)} placeholder="e.g. ACME Cambodia" />
+            <Input label="Industry" value={f.industry} onChange={(e) => set("industry", e.target.value)} placeholder="e.g. Financial services" />
+            <Input label="Website" value={f.website} onChange={(e) => set("website", e.target.value)} placeholder="example.com" />
+            <Input label="Address" value={f.address} onChange={(e) => set("address", e.target.value)} />
+            <Input label="Registration no." value={f.registration_no} onChange={(e) => set("registration_no", e.target.value)} />
+            <Textarea label="Description" value={f.description} onChange={(e) => set("description", e.target.value)} rows={4} placeholder="Optional — the employer can fill this in later." />
+            <Select label="Status" value={f.status} onChange={(e) => set("status", e.target.value)} options={[{ value: "approved", label: "Approved (visible in the public directory)" }, { value: "pending", label: "Pending (hidden until ready)" }]} />
+            {err && <div style={{ color: "var(--danger)", fontSize: "var(--text-sm)", fontWeight: 600 }}>{err}</div>}
+          </div>
+          <div style={{ padding: "16px 24px", borderTop: "1px solid var(--border)" }}>
+            <Button variant="primary" block disabled={saving} onClick={submit}>{saving ? "Creating…" : "Create company"}</Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   function CompaniesMgmt() {
     const [tab, setTab] = React.useState("pending");
     const [accessCompany, setAccessCompany] = React.useState(null);
+    const [createOpen, setCreateOpen] = React.useState(false);
     const [companies, setCompanies] = React.useState([]);
     const [counts, setCounts] = React.useState({ pending: 0, approved: 0, suspended: 0 });
     const [loading, setLoading] = React.useState(true);
@@ -728,7 +776,14 @@
 
     React.useEffect(() => { loadCompanies(tab, page); }, [tab, page]);
 
-    const flashMsg = (msg) => { setActionMsg(msg); setTimeout(() => setActionMsg(""), 3000); };
+    const flashMsg = (msg) => { setActionMsg(msg); setTimeout(() => setActionMsg(""), 4000); };
+
+    const onCreated = (c) => {
+      var st = c.status === "approved" ? "approved" : "pending";
+      flashMsg("Company “" + c.name + "” created. Use Access on its row to assign an employer.");
+      setCounts(function (p) { return Object.assign({}, p, { [st]: (p[st] || 0) + 1 }); });
+      setTab(st); setPage(1); loadCompanies(st, 1);
+    };
 
     const doAction = (fn, msg) => {
       fn().then(function () { flashMsg(msg); loadCompanies(tab, page); }).catch(function (e) { flashMsg("Error: " + (e && e.message)); });
@@ -760,7 +815,7 @@
 
     return (
       <div className="krm-page-pad" style={{ padding: 28 }}>
-        <ScreenHead title="Company management" sub="Approve, reject, or suspend employer companies." />
+        <ScreenHead title="Company management" sub="Approve, reject, or suspend employer companies — or create one on an employer's behalf." action={<Button variant="primary" iconLeft={I("plus", 16)} onClick={() => setCreateOpen(true)}>Create company</Button>} />
         <Tabs value={tab} onChange={(v) => { setPage(1); setTab(v); }} tabs={[{ value: "pending", label: "Pending", count: counts.pending }, { value: "approved", label: "Approved", count: counts.approved }, { value: "suspended", label: "Suspended", count: counts.suspended }]} style={{ marginBottom: 18 }} />
         {actionMsg && <div style={{ padding: "10px 14px", background: "var(--success-subtle)", color: "var(--success)", borderRadius: "var(--radius-md)", marginBottom: 14, fontWeight: 600, fontSize: "var(--text-sm)" }}>{actionMsg}</div>}
         <div className="krm-table-wrap"><Card padding={0}>
@@ -811,6 +866,7 @@
           )}
         </Card></div>
         {accessCompany && <CompanyAccessModal company={accessCompany} onClose={() => setAccessCompany(null)} onFlash={flashMsg} />}
+        {createOpen && <CreateCompanyModal onClose={() => setCreateOpen(false)} onCreated={onCreated} />}
       </div>
     );
   }

@@ -327,6 +327,7 @@ Route::middleware(['auth:api', 'permission:site_settings'])->group(function () {
 
     // Admin: company moderation
     Route::get('admin/companies',               [CompanyController::class, 'adminIndex']);
+    Route::post('admin/companies',              [CompanyController::class, 'adminStore']);
     Route::patch('admin/companies/{id}/approve', [CompanyController::class, 'approve']);
     Route::patch('admin/companies/{id}/reject',  [CompanyController::class, 'reject']);
     Route::patch('admin/companies/{id}/suspend', [CompanyController::class, 'suspend']);

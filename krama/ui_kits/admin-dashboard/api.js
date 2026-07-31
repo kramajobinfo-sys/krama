@@ -250,6 +250,8 @@
     suspendCompany: function (id) { return req("PATCH", "/admin/companies/" + id + "/suspend"); },
     reinstateCompany: function (id) { return req("PATCH", "/admin/companies/" + id + "/approve"); },
     verifyCompany: function (id) { return req("PATCH", "/admin/companies/" + id + "/verify"); },
+    // Admin creates a company shell (assign an employer to it later via addCompanyMember).
+    createCompany: function (data) { return req("POST", "/admin/companies", data); },
     // Company access / team: assign users with a role (company_admin = full control).
     companyMembers: function (id) { return req("GET", "/admin/companies/" + id + "/members"); },
     addCompanyMember: function (id, data) { return req("POST", "/admin/companies/" + id + "/members", data); },
