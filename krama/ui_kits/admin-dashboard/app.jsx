@@ -365,9 +365,12 @@
     const PERIODS = [{ value: "month", label: "/ month" }, { value: "year", label: "/ year" }, { value: "day", label: "/ day" }, { value: "hour", label: "/ hour" }];
 
     return (
-      <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 400, background: "var(--surface-overlay, rgba(0,0,0,0.5))", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "40px 16px", overflowY: "auto" }}>
-        <div onClick={function (e) { e.stopPropagation(); }} style={{ width: "100%", maxWidth: 640, background: "var(--surface-card)", borderRadius: "var(--radius-xl)", boxShadow: "var(--shadow-xl)", overflow: "hidden" }}>
-          <div style={{ padding: "18px 22px", borderBottom: "1px solid var(--border)", fontWeight: 700, fontSize: "var(--text-md)", color: "var(--text-strong)" }}>Post a job on behalf of an employer</div>
+      <div style={{ position: "fixed", inset: 0, zIndex: 400, background: "var(--surface-overlay, rgba(0,0,0,0.5))", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "40px 16px", overflowY: "auto" }}>
+        <div style={{ width: "100%", maxWidth: 640, background: "var(--surface-card)", borderRadius: "var(--radius-xl)", boxShadow: "var(--shadow-xl)", overflow: "hidden" }}>
+          <div style={{ padding: "18px 22px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ flex: 1, fontWeight: 700, fontSize: "var(--text-md)", color: "var(--text-strong)" }}>Post a job on behalf of an employer</div>
+            <IconButton aria-label="Close" onClick={onClose}>{I("x", 18)}</IconButton>
+          </div>
           <div style={{ padding: "20px 22px", display: "flex", flexDirection: "column", gap: 14, maxHeight: "68vh", overflowY: "auto" }}>
             <Select label="Company *" value={form.company_id} onChange={function (e) { set("company_id", e.target.value); }}
               options={[{ value: "", label: "— Select a company —" }].concat(companies.map(function (c) { return { value: String(c.id), label: c.name }; }))} />
@@ -713,8 +716,8 @@
         .catch(function (e) { setSaving(false); setErr((e && e.message) || "Failed to create company."); });
     };
     return (
-      <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 200, background: "var(--surface-overlay)", display: "flex", justifyContent: "flex-end", animation: "krmfade var(--dur-base) var(--ease-out)" }}>
-        <div onClick={(e) => e.stopPropagation()} style={{ width: 520, maxWidth: "94vw", height: "100%", background: "var(--surface-card)", boxShadow: "var(--shadow-xl)", display: "flex", flexDirection: "column", animation: "krmslide var(--dur-base) var(--ease-out)" }}>
+      <div style={{ position: "fixed", inset: 0, zIndex: 200, background: "var(--surface-overlay)", display: "flex", justifyContent: "flex-end", animation: "krmfade var(--dur-base) var(--ease-out)" }}>
+        <div style={{ width: 520, maxWidth: "94vw", height: "100%", background: "var(--surface-card)", boxShadow: "var(--shadow-xl)", display: "flex", flexDirection: "column", animation: "krmslide var(--dur-base) var(--ease-out)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "20px 24px", borderBottom: "1px solid var(--border)" }}>
             <div style={{ flex: 1, fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "var(--text-lg)", color: "var(--text-strong)" }}>Create company</div>
             <IconButton aria-label="Close" onClick={onClose}>{I("x", 18)}</IconButton>
