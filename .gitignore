@@ -41,3 +41,6 @@ yarn-error.log
 
 # ── Logs / temp ─────────────────────────────────────────────
 *.log
+
+# Local patch/deploy zip artifacts
+/krama_fix_bug/
