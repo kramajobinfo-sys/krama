@@ -2922,12 +2922,27 @@
     };
     const saveBanner = (d) => {
       var isNew = d.isNew;
-      var op = isNew ? adm.createBanner(d) : adm.updateBanner(d.id, d);
-      op.then(function(saved) {
-        setBanners(function(arr) { return isNew ? [...arr, saved] : arr.map(function(b) { return b.id === saved.id ? saved : b; }); });
-        setBannerEditing(null);
-        bannerFlash(isNew ? "Banner created." : "Banner saved.");
-      }).catch(function(e) { bannerFlash("Error: " + (e && e.message)); });
+      var persist = function(dd) {
+        var op = isNew ? adm.createBanner(dd) : adm.updateBanner(dd.id, dd);
+        op.then(function(saved) {
+          setBanners(function(arr) { return isNew ? [...arr, saved] : arr.map(function(b) { return b.id === saved.id ? saved : b; }); });
+          setBannerEditing(null);
+          bannerFlash(isNew ? "Banner created." : "Banner saved.");
+        }).catch(function(e) { bannerFlash("Error: " + (e && e.message)); });
+      };
+      // A freshly-picked image is a data: URL, which the API rejects (image_url must
+      // be http(s)). Upload it first (compressed) and save the returned URL instead —
+      // otherwise bannerToApi silently drops it and the banner saves with no image.
+      if (d.image && /^data:/.test(d.image)) {
+        bannerFlash("Uploading image…");
+        dataUrlToFile(d.image, "banner.jpg")
+          .then(function(file) { return compressImage(file, 1600, 0.85); })
+          .then(function(file) { return adm.uploadImage(file); })
+          .then(function(url) { persist(Object.assign({}, d, { image: url })); })
+          .catch(function(e) { bannerFlash("Image upload failed: " + (e && e.message)); });
+      } else {
+        persist(d);
+      }
     };
     const toggleCategory = (slug) => {
       setS((x) => {
