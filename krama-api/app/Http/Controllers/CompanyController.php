@@ -533,6 +533,12 @@ class CompanyController extends Controller
             'status'          => 'nullable|in:pending,approved',
         ]);
 
+        // No duplicate companies — reject if the name already exists (case-insensitive).
+        $data['name'] = trim($data['name']);
+        if (Company::whereRaw('LOWER(name) = ?', [mb_strtolower($data['name'])])->exists()) {
+            return response()->json(['message' => 'A company named “' . $data['name'] . '” already exists.'], 422);
+        }
+
         // Same sanitize-on-write rule as store()/update() — the description is rendered raw.
         if (array_key_exists('description', $data)) {
             $data['description'] = HtmlSanitizer::clean($data['description']);
