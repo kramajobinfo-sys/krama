@@ -259,7 +259,7 @@
         </div>
         <SocialButtons onError={(msg) => setError(msg)} onSocialLogin={(provider, token) => {
           setError(""); setLoading(true);
-          window.KRAMA_API.socialLogin(provider, token)
+          window.KRAMA_API.socialLogin(provider, token, role)
             .then((user) => { setLoading(false); if (onLogin) onLogin(user); })
             .catch((e) => { setLoading(false); setError((e && e.message) || "Social sign-in failed. Please try again."); });
         }} />

@@ -479,6 +479,7 @@ class AuthController extends Controller
         $data = $request->validate([
             'provider' => 'required|in:google,facebook',
             'token'    => 'required|string|max:4000',
+            'role'     => 'nullable|in:employer,candidate', // honored only when CREATING a new account
         ]);
 
         $social = Setting::where('group', 'social')->pluck('value', 'key')->toArray();
@@ -512,8 +513,10 @@ class AuthController extends Controller
                 return response()->json(['message' => 'This account is not active.'], 403);
             }
         } else {
-            // First-time social sign-in → create a candidate account.
-            $role = Role::where('slug', 'candidate')->firstOrFail();
+            // First-time social sign-in → honor the role picked on the register page
+            // (default candidate). Only applies to brand-new accounts.
+            $roleSlug = (($data['role'] ?? null) === 'employer') ? 'employer' : 'candidate';
+            $role = Role::where('slug', $roleSlug)->firstOrFail();
             $user = new User([
                 'role_id'       => $role->id,
                 'name'          => $profile['name'] ?: strtok($profile['email'], '@'),

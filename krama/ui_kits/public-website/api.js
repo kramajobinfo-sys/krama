@@ -293,8 +293,8 @@
     return post("/auth/request-otp", { phone: phone });
   }
 
-  function socialLogin(provider, token) {
-    return post("/auth/social", { provider: provider, token: token }).then(function (r) {
+  function socialLogin(provider, token, role) {
+    return post("/auth/social", { provider: provider, token: token, role: role }).then(function (r) {
       setTokens(r.access_token, r.refresh_token);
       window.KRAMA_AUTH.user = r.user;
       return r.user;
