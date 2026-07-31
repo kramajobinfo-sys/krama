@@ -2,6 +2,8 @@
 (function init() {
   if (!window.KramaDesignSystem_1a6f65) { return setTimeout(init, 40); }
   const NS = window.KramaDesignSystem_1a6f65;
+  // Home page target: clean "/" in production, relative path in local dev (same host check as api.js).
+  const HOME_URL = /^(localhost|127\.0\.0\.1|::1|192\.168\.|10\.)/.test(location.hostname) ? "../public-website/index.html" : "/";
   const { Button, Badge, Avatar, Card, StatCard, Tabs, ProgressTracker, JobCard, EmptyState, Input, Textarea, Select, Tag, Switch, Modal } = NS;
 
   const LucideIcon = React.memo(function ({ name, size }) {
@@ -118,10 +120,10 @@
     return (
       <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--surface-page)", padding: 16 }}>
         <Card padding={40} style={{ width: "100%", maxWidth: 380 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 28 }}>
+          <a href={HOME_URL} title="Go to Krama home" style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 28, textDecoration: "none", cursor: "pointer" }}>
             <img src={window.getKramaLogo("../../assets/krama-icon.png")} height="42" alt="KRAMA" />
             <span style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: "var(--text-xl)", letterSpacing: ".08em", color: "var(--text-strong)" }}>{window.KRAMA_BRAND_NAME || "KRAMA"}</span>
-          </div>
+          </a>
           <h2 style={{ fontSize: "var(--text-xl)", fontWeight: 700, color: "var(--text-strong)", marginBottom: 6 }}>Candidate sign in</h2>
           <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginBottom: 24 }}>Access your applications and saved jobs.</p>
           {error && <div style={{ marginBottom: 16, padding: "10px 14px", background: "var(--danger-subtle)", color: "var(--danger)", borderRadius: "var(--radius-md)", fontSize: "var(--text-sm)" }}>{error}</div>}
@@ -1548,7 +1550,7 @@
         localStorage.removeItem("krama_admin_refresh_token");
         localStorage.removeItem("krama_employer_token");
         localStorage.removeItem("krama_employer_refresh_token");
-        window.location.href = "../public-website/index.html";
+        window.location.href = HOME_URL;
       }
       cand.logout().then(doLogout).catch(doLogout);
     }

@@ -3,6 +3,8 @@
   if (!window.KramaDesignSystem_1a6f65) { return setTimeout(init, 40); }
   const NS = window.KramaDesignSystem_1a6f65;
   const { Button, Badge, StatusBadge, Avatar, Card, StatCard, Tabs, Checkbox, Switch, Select, Input, Textarea, IconButton, EmptyState } = NS;
+  // Home page target: clean "/" in production, relative path in local dev (same host check as api.js).
+  const HOME_URL = /^(localhost|127\.0\.0\.1|::1|192\.168\.|10\.)/.test(location.hostname) ? "../public-website/index.html" : "/";
   // LucideIcon isolates lucide's DOM mutations inside a <span> React controls.
   // lucide.createIcons() replaces <i> with <svg> in-place; if React owns the <i>
   // directly it loses track of the node and throws removeChild errors on re-renders.
@@ -99,10 +101,10 @@
     return (
       <div className="krm-login-outer" style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--stone-900)" }}>
         <div className="krm-login-card" style={{ width: "100%", maxWidth: 380, background: "var(--surface-card)", borderRadius: "var(--radius-xl)", boxShadow: "var(--shadow-xl)", padding: 36 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 24 }}>
+          <a href={HOME_URL} title="Go to Krama home" style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 24, textDecoration: "none", cursor: "pointer" }}>
             <img src={window.getKramaLogo("../../assets/krama-icon.png")} height="40" alt="KRAMA" />
             <span style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: "var(--text-xl)", letterSpacing: ".08em", color: "var(--text-strong)" }}>{window.KRAMA_BRAND_NAME || "KRAMA"}</span>
-          </div>
+          </a>
           <h1 style={{ fontSize: "var(--text-2xl)", fontWeight: 700, color: "var(--text-strong)", marginBottom: 6 }}>Admin console</h1>
           <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginBottom: 24 }}>Sign in with your admin credentials.</p>
           {error && <div style={{ padding: "10px 14px", background: "var(--danger-subtle)", color: "var(--danger)", borderRadius: "var(--radius-md)", fontSize: "var(--text-sm)", marginBottom: 16 }}>{error}</div>}
@@ -5958,15 +5960,15 @@
     }, [authUser, page]);
 
     const handleLogout = () => {
-      adm.logout().then(function () {
-        // Also clear the public-website and employer tokens so the user
-        // is fully signed out on every page, not just the admin dashboard.
+      var done = function () {
+        // Clear tokens for every kit so the user is fully signed out platform-wide.
         localStorage.removeItem("krama_access_token");
         localStorage.removeItem("krama_refresh_token");
         localStorage.removeItem("krama_employer_token");
         localStorage.removeItem("krama_employer_refresh_token");
-        window.location.href = "../public-website/index.html";
-      });
+        window.location.href = HOME_URL;
+      };
+      adm.logout().then(done).catch(done); // redirect home even if the API call fails
     };
 
     if (authLoading) {

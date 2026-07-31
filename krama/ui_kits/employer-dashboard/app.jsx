@@ -4,6 +4,8 @@
   const NS = window.KramaDesignSystem_1a6f65;
   const { Button, Badge, StatusBadge, Avatar, Card, StatCard, Tabs, EmptyState, Input, Textarea, Select, Switch } = NS;
   const emp = window.KRAMA_EMPLOYER_API;
+  // Home page target: clean "/" in production, relative path in local dev (same host check as api.js).
+  const HOME_URL = /^(localhost|127\.0\.0\.1|::1|192\.168\.|10\.)/.test(location.hostname) ? "../public-website/index.html" : "/";
   if (!document.getElementById('kre-css')) { var _krecss = document.createElement('style'); _krecss.id = 'kre-css'; _krecss.textContent = '.krama-rich-body:empty:before{content:attr(data-placeholder);color:var(--text-faint,#bbb);pointer-events:none;display:block}.krama-rich-body ul,.krama-rich-body ol{margin:6px 0;padding-left:22px}.krama-rich-body li{margin-bottom:3px}'; document.head.appendChild(_krecss); }
 
   // LucideIcon isolates lucide's DOM mutations inside a <span> React controls,
@@ -418,10 +420,10 @@
     return (
       <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--surface-page)" }}>
         <div style={{ width: "100%", maxWidth: 380, background: "var(--surface-card)", borderRadius: "var(--radius-xl)", boxShadow: "var(--shadow-xl)", padding: 36 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 24 }}>
+          <a href={HOME_URL} title="Go to Krama home" style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 24, textDecoration: "none", cursor: "pointer" }}>
             <img src={window.getKramaLogo("../../assets/krama-icon.png")} height="40" alt="KRAMA" />
             <span style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: "var(--text-xl)", letterSpacing: ".08em", color: "var(--text-strong)" }}>{window.KRAMA_BRAND_NAME || "KRAMA"}</span>
-          </div>
+          </a>
           <h1 style={{ fontSize: "var(--text-2xl)", fontWeight: 700, color: "var(--text-strong)", marginBottom: 6 }}>Employer login</h1>
           <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginBottom: 22 }}>Manage your jobs and applicants.</p>
           {error && <div style={{ padding: "10px 14px", background: "var(--danger-subtle)", color: "var(--danger)", borderRadius: "var(--radius-md)", fontSize: "var(--text-sm)", marginBottom: 16 }}>{error}</div>}
@@ -2959,13 +2961,14 @@
     const handlePost = () => { setPosting({ mode: "create" }); };
 
     const handleLogout = () => {
-      emp.logout().then(function () {
+      var done = function () {
         localStorage.removeItem("krama_access_token");
         localStorage.removeItem("krama_refresh_token");
         localStorage.removeItem("krama_admin_token");
         localStorage.removeItem("krama_admin_refresh_token");
-        window.location.href = "../public-website/index.html";
-      });
+        window.location.href = HOME_URL;
+      };
+      emp.logout().then(done).catch(done); // redirect home even if the API call fails
     };
 
     if (authLoading) {
