@@ -95,6 +95,13 @@ class CompanyController extends Controller
             'description'     => 'nullable|string|max:10000',
         ]);
 
+        // No duplicate companies — reject if the name already exists (case-insensitive),
+        // matching the admin create-company guard (adminStore).
+        $data['name'] = trim($data['name']);
+        if (Company::whereRaw('LOWER(name) = ?', [mb_strtolower($data['name'])])->exists()) {
+            return response()->json(['message' => 'A company named “' . $data['name'] . '” already exists.'], 422);
+        }
+
         // C-S1: the company "about" description + culture & values are rendered raw
         // (rich text) on the public profile, so strip unsafe HTML before storing.
         foreach (['description', 'culture_values'] as $richField) {
