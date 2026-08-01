@@ -442,30 +442,12 @@ class JobController extends Controller
     // path (admin approve, employer direct-publish, and company approval).
     private function notifyNewlyPublished(Job $job): void
     {
-        // Run all post-publish notifications AFTER the HTTP response is sent, so a slow
-        // or unreachable SMTP server (or a social API) never blocks — or drops — the
-        // publish request. Terminating callbacks run in-process on kernel shutdown, so
-        // no queue worker is needed (safe on shared hosting). Social is done first so
-        // the job posts to social media promptly even if email delivery is slow.
-        app()->terminating(function () use ($job) {
-            try {
-                \App\Services\SocialPostService::shareJob($job);
-            } catch (\Throwable $e) {
-                Log::warning('Social post dispatch failed: ' . $e->getMessage());
-            }
-
-            try {
-                $this->sendJobAlertEmails($job);
-            } catch (\Throwable $e) {
-                Log::warning('Job alert dispatch failed: ' . $e->getMessage());
-            }
-
-            try {
-                $this->sendFollowerEmails($job);
-            } catch (\Throwable $e) {
-                Log::warning('Follower notification dispatch failed: ' . $e->getMessage());
-            }
-        });
+        // Fan-out (social share + job-alert emails + follower emails) runs on the QUEUE via
+        // NotifyJobPublished, processed by the scheduled `queue:work`. Dispatching just inserts
+        // one queue row, so the publish request returns immediately and the heavy blocking
+        // SMTP/social work never holds a web worker. (Was an app()->terminating() callback that
+        // still occupied the worker for the full duration — see NotifyJobPublished.)
+        \App\Jobs\NotifyJobPublished::dispatch($job->id);
     }
 
     // PATCH /api/jobs/{id}/reject — admin rejects/takes down a job (platform moderation)
@@ -906,100 +888,6 @@ class JobController extends Controller
     }
 
     // Notify all candidates who follow the job's company.
-    private function sendFollowerEmails(Job $job): void
-    {
-        if (!MailConfig::isConfigured()) return;
-
-        $job->loadMissing(['company:id,name', 'location:id,name']);
-
-        $followers = DB::table('company_followers')
-            ->join('users', 'users.id', '=', 'company_followers.candidate_id')
-            ->where('company_followers.company_id', $job->company_id)
-            ->select('users.id', 'users.name', 'users.email')
-            ->get();
-
-        if ($followers->isEmpty()) return;
-
-        MailConfig::applyFromDb();
-
-        $jobUrl       = config('app.url') . '/jobs/' . $job->id;
-        $locationName = $job->location->name ?? '';
-        $jobType      = $job->job_type ?? 'full_time';
-        $companyName  = $job->company->name ?? '';
-
-        foreach ($followers as $candidate) {
-            if (!$candidate->email) continue;
-            try {
-                [$subject, $html] = EmailTemplates::newJobFromFollowedCompany(
-                    $candidate->name,
-                    $companyName,
-                    $job->title,
-                    $locationName,
-                    $jobType,
-                    $jobUrl
-                );
-                Mail::html($html, fn ($m) => $m->to($candidate->email, $candidate->name)->subject($subject));
-            } catch (\Exception $e) {
-                Log::warning("Follower email failed for candidate {$candidate->id}: " . $e->getMessage());
-            }
-        }
-    }
-
-    // Send email to every candidate whose job alert matches the newly published job.
-    private function sendJobAlertEmails(Job $job): void
-    {
-        if (!MailConfig::isConfigured()) return;
-
-        $job->loadMissing(['category:id,name', 'location:id,name', 'company:id,name']);
-
-        $alerts = JobAlert::with('candidate:id,name,email')
-            ->where(function ($q) use ($job) {
-                $q->whereNull('category_id')->orWhere('category_id', $job->category_id);
-            })
-            ->where(function ($q) use ($job) {
-                $q->whereNull('location_id')->orWhere('location_id', $job->location_id);
-            })
-            ->where(function ($q) use ($job) {
-                $q->whereNull('job_type')->orWhere('job_type', $job->job_type);
-            })
-            ->where(function ($q) use ($job) {
-                $q->whereNull('is_remote')->orWhere('is_remote', $job->is_remote);
-            })
-            ->where(function ($q) use ($job) {
-                $q->whereNull('keyword')
-                  ->orWhereRaw('LOWER(?) LIKE CONCAT(\'%\', LOWER(keyword), \'%\')', [$job->title]);
-            })
-            ->get();
-
-        if ($alerts->isEmpty()) return;
-
-        MailConfig::applyFromDb();
-
-        $jobUrl = config('app.url') . '/jobs/' . $job->id;
-        $locationName = $job->location->name ?? '';
-        $jobType = $job->job_type ?? 'full_time';
-        $companyName = $job->company->name ?? '';
-
-        // Deduplicate by candidate so a candidate with multiple matching alerts gets one email
-        $seen = [];
-        foreach ($alerts as $alert) {
-            $candidate = $alert->candidate;
-            if (!$candidate || !$candidate->email || isset($seen[$candidate->id])) continue;
-            $seen[$candidate->id] = true;
-
-            try {
-                [$subject, $html] = EmailTemplates::jobAlertMatch(
-                    $candidate->name,
-                    $job->title,
-                    $companyName,
-                    $locationName,
-                    $jobType,
-                    $jobUrl
-                );
-                Mail::html($html, fn ($m) => $m->to($candidate->email, $candidate->name)->subject($subject));
-            } catch (\Exception $e) {
-                Log::warning("Job alert email failed for candidate {$candidate->id}: " . $e->getMessage());
-            }
-        }
-    }
+    // (sendFollowerEmails + sendJobAlertEmails moved to App\Jobs\NotifyJobPublished so the
+    //  fan-out runs on the queue instead of holding a web worker — see notifyNewlyPublished.)
 }

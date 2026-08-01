@@ -22,6 +22,14 @@ class Kernel extends ConsoleKernel
         $schedule->command('payments:verify-pending')->everyThreeMinutes()->withoutOverlapping();
         $schedule->command('forum:digest')->dailyAt('08:00');
         $schedule->command('queue:prune-failed', ['--hours' => 168])->weekly();
+
+        // Drain the queue every minute (shared-host pattern: no long-running worker daemon).
+        // Processes NotifyJobPublished (post-publish email/social fan-out) and any other
+        // queued jobs (e.g. SendEmailVerificationJob) shortly after they are dispatched.
+        // --stop-when-empty + --max-time keep each run short; withoutOverlapping avoids pile-up.
+        $schedule->command('queue:work --stop-when-empty --max-time=55 --tries=2 --sleep=1')
+            ->everyMinute()
+            ->withoutOverlapping();
     }
 
     /**
