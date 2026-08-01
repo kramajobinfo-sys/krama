@@ -21,6 +21,7 @@ class Kernel extends ConsoleKernel
         $schedule->command('features:expire')->dailyAt('00:10');
         $schedule->command('payments:verify-pending')->everyThreeMinutes()->withoutOverlapping();
         $schedule->command('forum:digest')->dailyAt('08:00');
+        $schedule->command('feeds:import')->everySixHours()->withoutOverlapping();
         $schedule->command('queue:prune-failed', ['--hours' => 168])->weekly();
 
         // Drain the queue every minute (shared-host pattern: no long-running worker daemon).
