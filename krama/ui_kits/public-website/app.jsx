@@ -51,6 +51,7 @@ function App() {
 
   const toggleSave = (id) => {
     const api = window.KRAMA_API;
+    if (typeof id === "string" && id.indexOf("ext-") === 0) return; // external listings aren't saveable
     if (!user) { nav("login"); return; }
     setSaved((s) => {
       if (s.includes(id)) { api.unsaveJob(id).catch(() => {}); return s.filter((x) => x !== id); }
@@ -59,9 +60,18 @@ function App() {
     });
   };
 
-  const openJob = (j) => { setJob(j); setPage("detail"); window.scrollTo(0, 0); };
+  const openJob = (j) => {
+    // Aggregated external listings link out to their source instead of opening an internal detail page.
+    if (j && j.external && j.applyUrl) { window.open(j.applyUrl, "_blank", "noopener"); return; }
+    setJob(j); setPage("detail"); window.scrollTo(0, 0);
+  };
   const nav = (p, opts) => {
     opts = opts || {};
+    // Aggregated external company → open its source profile in a new tab (no internal page).
+    if (p === "company" && typeof opts.companyId === "string" && opts.companyId.indexOf("ext-co-") === 0) {
+      var ext = ((window.KRAMA_DATA && window.KRAMA_DATA.companies) || []).find(function (c) { return c.id === opts.companyId; });
+      if (ext && ext.profileUrl) { window.open(ext.profileUrl, "_blank", "noopener"); return; }
+    }
     setJobCategory(opts.category || "All categories");
     setJobCompany(opts.company || "");
     setJobKeyword(opts.keyword || "");

@@ -76,6 +76,28 @@ class FeedSourceController extends Controller
         return response()->json(['message' => 'Feed source deleted.']);
     }
 
+    // GET /api/external-jobs — PUBLIC: active aggregated job listings (link back to source)
+    public function publicJobs()
+    {
+        $jobs = ExternalJob::where('is_active', true)
+            ->orderByRaw('posted_at IS NULL, posted_at DESC')
+            ->limit(300)
+            ->get(['id', 'source_name', 'apply_url', 'title', 'company_name', 'location_text', 'job_type', 'salary_text', 'description_excerpt', 'posted_at']);
+
+        return response()->json($jobs);
+    }
+
+    // GET /api/external-companies — PUBLIC: active aggregated company profiles
+    public function publicCompanies()
+    {
+        $companies = ExternalCompany::where('is_active', true)
+            ->orderBy('name')
+            ->limit(300)
+            ->get(['id', 'source_name', 'profile_url', 'name', 'logo_url', 'industry', 'location_text', 'website', 'description_excerpt']);
+
+        return response()->json($companies);
+    }
+
     // POST /api/admin/feed-sources/{id}/run — fetch + import this feed now (synchronous)
     public function run(Request $request, $id, FeedImportService $service)
     {

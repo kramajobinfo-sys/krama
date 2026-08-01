@@ -182,6 +182,60 @@
     };
   }
 
+  // Aggregated external listings — mapped to the same card shape as native items,
+  // but flagged external + carrying "via {source}" attribution and a link-out URL.
+  function normaliseExternalJob(x) {
+    var src = x.source_name || "External";
+    var co = x.company_name || "";
+    return {
+      id:              "ext-job-" + x.id,
+      title:           x.title,
+      company:         co ? (co + " · via " + src) : ("via " + src),
+      companyId:       null,
+      companyIndustry: "", companyWebsite: "", companyAddress: "",
+      isVerified:      false,
+      location:        x.location_text || "",
+      salary:          x.salary_text || "",
+      type:            x.job_type ? fmtJobType(x.job_type) : "",
+      remote:          /remote/i.test(x.location_text || ""),
+      featured:        false,
+      postedAt:        x.posted_at ? fmtPostedAt(x.posted_at) : "",
+      expiresAt:       null,
+      category:        "",
+      workingDays:     null, workingTime: null, mapLocation: null,
+      experienceLevel: null,
+      description:     x.description_excerpt || null,
+      requirements:    null, benefits: null,
+      slug:            null,
+      logo:            null,
+      salaryMin:       0, salaryMax: 0,
+      external:        true,
+      source:          src,
+      applyUrl:        x.apply_url,
+      _raw:            x,
+    };
+  }
+
+  function normaliseExternalCompany(x) {
+    var src = x.source_name || "External";
+    var loc = x.location_text || "";
+    return {
+      id:            "ext-co-" + x.id,
+      name:          x.name,
+      industry:      x.industry || "",                                   // kept clean so the industry filter still works
+      location:      loc ? (loc + " · via " + src) : ("via " + src),     // attribution shown on the location line
+
+      openJobs:      0,
+      followerCount: 0,
+      verified:      false,
+      logo:          x.logo_url || null,
+      external:      true,
+      source:        src,
+      profileUrl:    x.profile_url,
+      _raw:          x,
+    };
+  }
+
   function normaliseBanner(b) {
     return {
       id:      String(b.id),
@@ -232,14 +286,25 @@
       // Attach logos
       var L = window.KRAMA_LOGOS || {};
       normalised.forEach(function (j) { if (!j.logo && L[j.company]) j.logo = L[j.company]; });
-    }).catch(function () { /* keep static fallback */ });
+    }).catch(function () { /* keep static fallback */ }).then(function () {
+      // Blend aggregated external jobs (best-effort — a failure never breaks the site)
+      return get("/external-jobs").then(function (list) {
+        var ext = (list || []).map(normaliseExternalJob);
+        if (ext.length) D.jobs = (D.jobs || []).concat(ext);
+      }).catch(function () {});
+    });
 
     var companies = getAllPages("/companies", 100).then(function (list) {
       var normalised = list.map(normaliseCompany);
       D.companies = normalised;
       var L = window.KRAMA_LOGOS || {};
       normalised.forEach(function (c) { if (!c.logo && L[c.name]) c.logo = L[c.name]; });
-    }).catch(function () {});
+    }).catch(function () {}).then(function () {
+      return get("/external-companies").then(function (list) {
+        var ext = (list || []).map(normaliseExternalCompany);
+        if (ext.length) D.companies = (D.companies || []).concat(ext);
+      }).catch(function () {});
+    });
 
     var banners = get("/banners").then(function (r) {
       D.banners = (r || []).map(normaliseBanner);
