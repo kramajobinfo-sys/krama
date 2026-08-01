@@ -46,6 +46,10 @@ class SettingController extends Controller
             'supplier_address'       => 'nullable|string|max:255',
             'exchange_rate_khr'      => 'nullable|numeric|min:0|max:100000',
         ],
+        'seo' => [
+            'google_indexing_enabled' => 'boolean',
+            'google_indexing_key'     => 'nullable|string|max:8000',
+        ],
         'homepage' => [
             'featured_companies_limit' => 'integer|min:1|max:50',
             'featured_jobs_limit'      => 'integer|min:1|max:50',
@@ -141,6 +145,7 @@ class SettingController extends Controller
         'password',                                // smtp
         'bakong_token', 'aba_api_key', 'stripe_secret_key', // payment gateways
         'facebook_page_token', 'linkedin_token',   // social_post
+        'google_indexing_key',                     // seo — Google service-account JSON
     ];
 
     /**
@@ -290,6 +295,13 @@ class SettingController extends Controller
             'effective' => \App\Services\ExchangeRateService::usdToKhr($manual > 0 ? $manual : null),
             'source'    => $nbc ? 'nbc' : 'fallback',
         ]);
+    }
+
+    // POST /api/admin/seo/indexing/test — verify the saved Google service-account key works.
+    public function testGoogleIndexing()
+    {
+        $this->requirePermission('site_settings');
+        return response()->json(\App\Services\GoogleIndexingService::test());
     }
 
     public function testSmtp(Request $request)

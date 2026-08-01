@@ -63,6 +63,35 @@ class Job extends Model
         return $this->belongsTo(Subscription::class);
     }
 
+    // Notify Google (Indexing API) when a job page becomes public or is taken down —
+    // best-effort, deferred to after the response, and a no-op unless SEO indexing is
+    // configured (see GoogleIndexingService). Keeps Google for Jobs fresh.
+    protected static function booted(): void
+    {
+        static::created(function (self $job) {
+            if ($job->status === 'published') self::pingGoogle($job->slug, 'URL_UPDATED');
+        });
+        static::updated(function (self $job) {
+            if (! $job->wasChanged('status')) return;
+            if ($job->status === 'published') {
+                self::pingGoogle($job->slug, 'URL_UPDATED');
+            } elseif ($job->getOriginal('status') === 'published') {
+                self::pingGoogle($job->slug, 'URL_DELETED');
+            }
+        });
+        static::deleted(function (self $job) {
+            self::pingGoogle($job->slug, 'URL_DELETED');
+        });
+    }
+
+    private static function pingGoogle(?string $slug, string $type): void
+    {
+        if (! $slug) return;
+        app()->terminating(function () use ($slug, $type) {
+            try { \App\Services\GoogleIndexingService::publish(url('/jobs/' . $slug), $type); } catch (\Throwable $e) {}
+        });
+    }
+
     public static function generateSlug(string $title): string
     {
         $base = Str::slug($title);

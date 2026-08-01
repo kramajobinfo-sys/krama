@@ -262,6 +262,7 @@ Route::middleware(['auth:api', 'permission:site_settings'])->group(function () {
     Route::get('admin/settings',               [SettingController::class, 'adminAll']);
     Route::get('admin/exchange-rate',          [SettingController::class, 'nbcExchangeRate']);
     Route::get('admin/seo/overview',           [\App\Http\Controllers\SeoController::class, 'adminOverview']);
+    Route::post('admin/seo/indexing/test',     [SettingController::class, 'testGoogleIndexing']);
     Route::get('admin/settings/{group}',       [SettingController::class, 'adminGroup']);
     Route::patch('admin/settings/{group}',     [SettingController::class, 'update']);
     Route::post('admin/settings/smtp/test',    [SettingController::class, 'testSmtp']);

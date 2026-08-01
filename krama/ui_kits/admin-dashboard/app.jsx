@@ -5952,12 +5952,32 @@
   function SeoPanel() {
     const [d, setD] = React.useState(null);
     const [loading, setLoading] = React.useState(true);
+    const [gi, setGi] = React.useState({ enabled: false, key: "" });
+    const [giSaved, setGiSaved] = React.useState(false);
+    const [giBusy, setGiBusy] = React.useState(false);
+    const [giTest, setGiTest] = React.useState(null);
     React.useEffect(function () {
       window.KRAMA_ADMIN_API.fetchSeoOverview()
         .then(function (r) { setD(r); setLoading(false); })
         .catch(function () { setLoading(false); });
+      window.KRAMA_ADMIN_API.fetchSettings("seo")
+        .then(function (s) { if (s) setGi({ enabled: !!Number(s.google_indexing_enabled), key: s.google_indexing_key || "" }); })
+        .catch(function () {});
     }, []);
     const openUrl = function (url) { if (url) window.open(url, "_blank", "noopener"); };
+    const setGiField = function (k, v) { setGi(function (x) { return Object.assign({}, x, { [k]: v }); }); };
+    const saveGi = function () {
+      setGiBusy(true); setGiTest(null);
+      window.KRAMA_ADMIN_API.updateSettings("seo", { google_indexing_enabled: gi.enabled ? 1 : 0, google_indexing_key: gi.key })
+        .then(function () { setGiBusy(false); setGiSaved(true); setTimeout(function () { setGiSaved(false); }, 3000); })
+        .catch(function (e) { setGiBusy(false); alert("Save failed: " + (e && e.message ? e.message : "error")); });
+    };
+    const testGi = function () {
+      setGiBusy(true); setGiTest(null);
+      window.KRAMA_ADMIN_API.testGoogleIndexing()
+        .then(function (r) { setGiBusy(false); setGiTest(r); })
+        .catch(function (e) { setGiBusy(false); setGiTest({ ok: false, message: (e && e.message) || "Test failed." }); });
+    };
 
     var linkRow = function (label, url, hint) {
       return (
@@ -6009,6 +6029,24 @@
               <div style={{ fontWeight: 700, color: "var(--text-strong)", marginBottom: 6 }}>Preview company pages</div>
               {(d.companies || []).length === 0 && <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", padding: "8px 0" }}>No approved companies yet.</div>}
               {(d.companies || []).map(function (c, i) { return <div key={i}>{linkRow(c.name, c.url, null)}</div>; })}
+            </Card>
+
+            <Card padding={20} style={{ marginBottom: 16 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 4 }}>
+                <div style={{ fontWeight: 700, color: "var(--text-strong)" }}>Push new jobs to Google (Indexing API)</div>
+                <Switch checked={gi.enabled} onChange={function (v) { setGiField("enabled", typeof v === "boolean" ? v : !gi.enabled); }} />
+              </div>
+              <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginBottom: 12, lineHeight: 1.6 }}>
+                When on, Krama notifies Google the moment a job is <strong>published</strong> or <strong>closed</strong>, so it shows in Google for Jobs quickly and expired jobs drop out fast. Paste a Google Cloud <strong>service-account JSON key</strong> (with the Indexing API enabled), and add that service account as an <strong>Owner</strong> of your site in Search Console.
+              </div>
+              <Textarea label="Service-account JSON key" rows={5} value={gi.key} onChange={function (e) { setGiField("key", e.target.value); }} placeholder={'{ "type": "service_account", "client_email": "…", "private_key": "…" }  — leave blank to keep the saved key'} />
+              <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 12, flexWrap: "wrap" }}>
+                <Button variant="primary" size="sm" onClick={saveGi} disabled={giBusy}>{giBusy ? "Working…" : "Save"}</Button>
+                <Button variant="secondary" size="sm" onClick={testGi} disabled={giBusy}>Test connection</Button>
+                {giSaved && <span style={{ color: "var(--success)", fontSize: "var(--text-sm)", fontWeight: 600 }}>Saved.</span>}
+                {giTest && <span style={{ color: giTest.ok ? "var(--success)" : "var(--danger)", fontSize: "var(--text-sm)" }}>{giTest.message}</span>}
+              </div>
+              <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: 10, display: "flex", alignItems: "center", gap: 5 }}>{I("info", 12)} Fires only on your live public domain (not local dev).</div>
             </Card>
 
             <Card padding={20}>
