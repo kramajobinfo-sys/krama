@@ -96,14 +96,27 @@ class PaymentController extends Controller
             ->unique()
             ->values();
 
+        // Featured credits — pooled across the company's active/trial subscriptions, mirroring
+        // JobController::featuredCreditsForCompany (the pool the boost flow actually spends from).
+        $featuredSubs = Subscription::with('plan')
+            ->where('company_id', $company->id)
+            ->whereIn('status', ['active', 'trial'])
+            ->get();
+        $featuredPool      = (int) $featuredSubs->sum(fn ($s) => (int) ($s->plan->featured_credits ?? 0));
+        $featuredUsed      = (int) $featuredSubs->sum(fn ($s) => (int) $s->featured_credits_used);
+        $featuredRemaining = (int) $featuredSubs->sum(fn ($s) => max(0, (int) ($s->plan->featured_credits ?? 0) - (int) $s->featured_credits_used));
+
         return response()->json([
-            'company'           => $company->only('id', 'name'),
-            'subscription'      => $subscription,
-            'all_subscriptions' => $allSubscriptions,
-            'jobs_used'         => $jobsUsed,
-            'jobs_remaining'    => $jobsRemaining,
-            'jobs_limit'        => $jobLimit,
-            'used_plan_ids'     => $usedPlanIds,
+            'company'            => $company->only('id', 'name'),
+            'subscription'       => $subscription,
+            'all_subscriptions'  => $allSubscriptions,
+            'jobs_used'          => $jobsUsed,
+            'jobs_remaining'     => $jobsRemaining,
+            'jobs_limit'         => $jobLimit,
+            'used_plan_ids'      => $usedPlanIds,
+            'featured_pool'      => $featuredPool,
+            'featured_used'      => $featuredUsed,
+            'featured_remaining' => $featuredRemaining,
         ]);
     }
 

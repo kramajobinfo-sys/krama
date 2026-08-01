@@ -2168,6 +2168,7 @@
     const [sub, setSub] = React.useState(null);
     const [allSubs, setAllSubs] = React.useState([]);
     const [quota, setQuota] = React.useState({ used: 0, remaining: null, limit: null });
+    const [featured, setFeatured] = React.useState({ pool: 0, used: 0, remaining: 0 });
     const [payments, setPayments] = React.useState([]);
     const [payMeta, setPayMeta] = React.useState({ total: 0, last_page: 1, current_page: 1 });
     const [loading, setLoading] = React.useState(true);
@@ -2195,6 +2196,7 @@
           setSub(latestSub);
           setAllSubs(Array.isArray(subResp.all_subscriptions) ? subResp.all_subscriptions : []);
           setQuota({ used: subResp.jobs_used || 0, remaining: subResp.jobs_remaining !== undefined ? subResp.jobs_remaining : null, limit: subResp.jobs_limit !== undefined ? subResp.jobs_limit : null });
+          setFeatured({ pool: subResp.featured_pool || 0, used: subResp.featured_used || 0, remaining: subResp.featured_remaining || 0 });
           setUsedPlanIds(Array.isArray(subResp.used_plan_ids) ? subResp.used_plan_ids : []);
           if (onSubChange) onSubChange();
           setLoading(false);
@@ -2214,6 +2216,7 @@
             setSub(latestSub);
             setAllSubs(Array.isArray(r.all_subscriptions) ? r.all_subscriptions : []);
             setQuota({ used: r.jobs_used || 0, remaining: r.jobs_remaining !== undefined ? r.jobs_remaining : null, limit: r.jobs_limit !== undefined ? r.jobs_limit : null });
+            setFeatured({ pool: r.featured_pool || 0, used: r.featured_used || 0, remaining: r.featured_remaining || 0 });
             if (onSubChange) onSubChange();
             fetchPayHistory(1);
           }
@@ -2307,6 +2310,24 @@
                 </div>
               );
             })}
+            {featured.pool > 0 && (
+              <div style={{ padding: "12px 20px", borderTop: "1px solid var(--border)", background: "var(--surface-card)" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".05em" }}>Featured credits</span>
+                    <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>Free boosts included in your active plan{allSubs.length > 1 ? "s" : ""}</span>
+                  </div>
+                  <span style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: featured.remaining <= 0 ? "var(--text-muted)" : "var(--text-body)", whiteSpace: "nowrap" }}>{featured.used} / {featured.pool} · {featured.remaining <= 0 ? "All used" : featured.remaining + " remaining"}</span>
+                </div>
+                <div style={{ height: 5, borderRadius: 99, background: "var(--border)", overflow: "hidden" }}>
+                  <div style={{ height: "100%", borderRadius: 99, width: Math.min(100, featured.pool > 0 ? Math.round((featured.used / featured.pool) * 100) : 0) + "%", background: featured.remaining <= 0 ? "var(--warning, #f59e0b)" : "var(--accent, var(--brand))" }} />
+                </div>
+                <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: 6, display: "flex", alignItems: "center", gap: 5 }}>
+                  {I("star", 12)}
+                  <span>Use a credit to feature a job free. After they run out, featuring costs the pay-per-boost price.</span>
+                </div>
+              </div>
+            )}
             {allSubs.length === 0 && quota.limit === null && sub.status !== "expired" && (
               <div style={{ padding: "10px 20px", borderTop: "1px solid var(--border)", background: "var(--surface-sunken, var(--surface-card))", fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
                 {I("infinity", 14)} Unlimited job posts included in this plan
