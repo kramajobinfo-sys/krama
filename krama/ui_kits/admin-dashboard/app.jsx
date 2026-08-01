@@ -134,6 +134,7 @@
     { id: "forum",    label: "Forum",      icon: "messages-square" },
     { id: "homepage", label: "Homepage", icon: "layout-template" },
     { id: "seo", label: "SEO", icon: "search" },
+    { id: "feeds", label: "Feeds", icon: "rss" },
     { id: "chat", label: "Chat agent", icon: "bot" },
     { id: "social", label: "Social login", icon: "share-2" },
     { id: "email", label: "Email", icon: "mail" },
@@ -5967,6 +5968,149 @@
   }
 
   // Read-only panel: the auto-generated, crawlable public SEO pages (jobs/companies/sitemap).
+  function FeedsPanel() {
+    const BLANK = { name: "", url: "", kind: "jobs", format: "rss", enabled: true };
+    const [sources, setSources] = React.useState(null);
+    const [modal, setModal] = React.useState(null);   // { mode:"create"|"edit", data }
+    const [saving, setSaving] = React.useState(false);
+    const [runningId, setRunningId] = React.useState(null);
+    const [delId, setDelId] = React.useState(null);
+    const [flash, setFlash] = React.useState(null);
+
+    const load = function () {
+      window.KRAMA_ADMIN_API.fetchFeedSources()
+        .then(function (r) { setSources(Array.isArray(r) ? r : []); })
+        .catch(function () { setSources([]); });
+    };
+    React.useEffect(load, []);
+    const say = function (m) { setFlash(m); setTimeout(function () { setFlash(null); }, 3500); };
+
+    const openCreate = function () { setModal({ mode: "create", data: Object.assign({}, BLANK) }); };
+    const openEdit = function (s) { setModal({ mode: "edit", data: { name: s.name, url: s.url, kind: s.kind, format: s.format, enabled: !!s.enabled, _id: s.id } }); };
+    const setF = function (k, v) { setModal(function (m) { return Object.assign({}, m, { data: Object.assign({}, m.data, { [k]: v }) }); }); };
+
+    const save = function () {
+      var d = modal.data;
+      if (!d.name.trim() || !d.url.trim()) { say("Name and feed URL are required."); return; }
+      var payload = { name: d.name.trim(), url: d.url.trim(), kind: d.kind, format: d.format, enabled: !!d.enabled };
+      setSaving(true);
+      var call = modal.mode === "edit" ? window.KRAMA_ADMIN_API.updateFeedSource(d._id, payload) : window.KRAMA_ADMIN_API.createFeedSource(payload);
+      call.then(function () { setSaving(false); setModal(null); say(modal.mode === "edit" ? "Feed updated." : "Feed added."); load(); })
+        .catch(function (e) { setSaving(false); say("Error: " + (e && e.message ? e.message : "save failed")); });
+    };
+
+    const runNow = function (s) {
+      setRunningId(s.id);
+      window.KRAMA_ADMIN_API.runFeedSource(s.id)
+        .then(function (r) {
+          setRunningId(null);
+          var res = r && r.result;
+          if (res && res.ok) say(s.name + ": imported " + res.imported + " item(s)" + (res.deactivated ? ", " + res.deactivated + " removed" : "") + ".");
+          else say(s.name + ": " + ((res && res.error) || "import failed") );
+          load();
+        })
+        .catch(function (e) { setRunningId(null); say("Run failed: " + (e && e.message ? e.message : "error")); });
+    };
+
+    const confirmDelete = function () {
+      window.KRAMA_ADMIN_API.deleteFeedSource(delId)
+        .then(function () { setDelId(null); say("Feed deleted."); load(); })
+        .catch(function (e) { setDelId(null); say("Error: " + (e && e.message ? e.message : "delete failed")); });
+    };
+
+    const KIND_OPTS = [{ value: "jobs", label: "Job listings" }, { value: "companies", label: "Company profiles" }];
+    const FMT_OPTS = [{ value: "rss", label: "RSS 2.0" }, { value: "atom", label: "Atom" }, { value: "jsonld", label: "JSON-LD (page schema)" }, { value: "json", label: "JSON" }];
+    const fmtWhen = function (iso) { if (!iso) return "never"; try { return new Date(iso).toLocaleString(); } catch (e) { return iso; } };
+
+    return (
+      <div>
+        <ScreenHead title="Feeds" sub="Aggregate external job & company listings from RSS/Atom/JSON feeds." action={<Button variant="primary" iconLeft={I("plus", 16)} onClick={openCreate}>Add feed</Button>} />
+
+        {flash && <div style={{ marginBottom: 16, padding: "10px 14px", background: "var(--brand-subtle)", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", color: "var(--text-brand)", fontSize: "var(--text-sm)", fontWeight: 600 }}>{flash}</div>}
+
+        <div style={{ marginBottom: 18, padding: "12px 16px", background: "var(--surface-sunken, var(--surface-page))", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", fontSize: "var(--text-xs)", color: "var(--text-muted)", display: "flex", gap: 10, alignItems: "flex-start" }}>
+          <span style={{ color: "var(--text-brand)", flexShrink: 0, marginTop: 1 }}>{I("info", 15)}</span>
+          <span>Aggregated listings show a short excerpt with <strong>Apply/View linking back to the source</strong> — they never replace native Krama jobs. Only add feeds you are permitted to syndicate; imports run automatically every 6 hours.</span>
+        </div>
+
+        {sources === null && <div style={{ padding: 24, color: "var(--text-muted)" }}>Loading…</div>}
+        {sources && sources.length === 0 && (
+          <div style={{ padding: "48px 24px", textAlign: "center", color: "var(--text-muted)", background: "var(--surface-card)", borderRadius: "var(--radius-lg)", border: "1px dashed var(--border)" }}>
+            {I("rss", 32)}<div style={{ marginTop: 12, fontWeight: 600 }}>No feeds yet</div>
+            <div style={{ fontSize: "var(--text-sm)", marginTop: 4 }}>Add a job or company feed to start aggregating.</div>
+          </div>
+        )}
+        {sources && sources.length > 0 && (
+          <div className="krm-table-wrap"><Card padding={0}>
+            <div style={{ display: "grid", gridTemplateColumns: "1.6fr 0.8fr 0.7fr 0.7fr 1.3fr 1.4fr", padding: "10px 20px", fontSize: "var(--text-xs)", fontWeight: 700, letterSpacing: ".04em", textTransform: "uppercase", color: "var(--text-faint)", borderBottom: "1px solid var(--border-subtle)" }}>
+              <span>Feed</span><span>Kind</span><span>Format</span><span>Active</span><span>Last import</span><span style={{ textAlign: "right" }}>Actions</span>
+            </div>
+            {sources.map((s, i) => (
+              <div key={s.id} style={{ display: "grid", gridTemplateColumns: "1.6fr 0.8fr 0.7fr 0.7fr 1.3fr 1.4fr", alignItems: "center", padding: "14px 20px", borderBottom: i < sources.length - 1 ? "1px solid var(--border-subtle)" : "none", opacity: s.enabled ? 1 : 0.55 }}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontWeight: 700, color: "var(--text-strong)", fontSize: "var(--text-sm)", display: "flex", alignItems: "center", gap: 6 }}>
+                    {s.name}{!s.enabled && <Badge tone="neutral">Disabled</Badge>}
+                  </div>
+                  <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.url}</div>
+                </div>
+                <span style={{ fontSize: "var(--text-sm)", color: "var(--text-body)" }}>{s.kind === "companies" ? "Companies" : "Jobs"}</span>
+                <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", textTransform: "uppercase" }}>{s.format}</span>
+                <span style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-body)" }}>{s.active_items}</span>
+                <div>
+                  <Badge tone={s.last_status === "ok" ? "success" : (s.last_status === "error" ? "danger" : "neutral")}>{s.last_status || "not run"}</Badge>
+                  <div style={{ fontSize: "var(--text-xs)", color: "var(--text-faint)", marginTop: 3 }}>{fmtWhen(s.last_fetched_at)}</div>
+                  {s.last_status === "error" && s.last_error && <div style={{ fontSize: "var(--text-xs)", color: "var(--danger)", marginTop: 2, maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={s.last_error}>{s.last_error}</div>}
+                </div>
+                <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
+                  <Button variant="primary" size="sm" disabled={runningId === s.id} onClick={() => runNow(s)}>{runningId === s.id ? "Running…" : "Run now"}</Button>
+                  <Button variant="secondary" size="sm" onClick={() => openEdit(s)}>Edit</Button>
+                  <Button variant="danger" size="sm" onClick={() => setDelId(s.id)}>Delete</Button>
+                </div>
+              </div>
+            ))}
+          </Card></div>
+        )}
+
+        {modal && (
+          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+            <div style={{ background: "var(--surface-card)", borderRadius: "var(--radius-xl)", width: "100%", maxWidth: 520, maxHeight: "90vh", overflow: "auto", boxShadow: "var(--shadow-xl)", padding: 28 }}>
+              <h2 style={{ fontSize: "var(--text-xl)", fontWeight: 700, color: "var(--text-strong)", marginBottom: 20 }}>{modal.mode === "edit" ? "Edit feed" : "Add feed"}</h2>
+              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                <Input label="Name" value={modal.data.name} onChange={(e) => setF("name", e.target.value)} placeholder="e.g. Bongthom Jobs" />
+                <Input label="Feed URL" value={modal.data.url} onChange={(e) => setF("url", e.target.value)} placeholder="https://example.com/jobs.rss" />
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                  <Select label="Content type" value={modal.data.kind} onChange={(e) => setF("kind", e.target.value)} options={KIND_OPTS} />
+                  <Select label="Feed format" value={modal.data.format} onChange={(e) => setF("format", e.target.value)} options={FMT_OPTS} />
+                </div>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <span style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-strong)" }}>Enabled</span>
+                  <Switch checked={modal.data.enabled} onChange={(v) => setF("enabled", v)} />
+                </div>
+              </div>
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 24 }}>
+                <Button variant="secondary" onClick={() => setModal(null)}>Cancel</Button>
+                <Button variant="primary" disabled={saving} onClick={save}>{saving ? "Saving…" : (modal.mode === "edit" ? "Save changes" : "Add feed")}</Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {delId && (
+          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+            <div style={{ background: "var(--surface-card)", borderRadius: "var(--radius-xl)", width: "100%", maxWidth: 420, boxShadow: "var(--shadow-xl)", padding: 28 }}>
+              <h2 style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: "var(--text-strong)", marginBottom: 10 }}>Delete this feed?</h2>
+              <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginBottom: 20 }}>Its imported listings will be removed too. This can't be undone.</p>
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+                <Button variant="secondary" onClick={() => setDelId(null)}>Cancel</Button>
+                <Button variant="danger" onClick={confirmDelete}>Delete</Button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   function SeoPanel() {
     const [d, setD] = React.useState(null);
     const [loading, setLoading] = React.useState(true);
@@ -6148,6 +6292,7 @@
 
           {page === "homepage" && <Homepage />}
           {page === "seo" && <SeoPanel />}
+          {page === "feeds" && <FeedsPanel />}
           {page === "chat" && <ChatAgentSettings />}
           {page === "social" && <SocialLoginSettings />}
           {page === "email" && <EmailSettings />}

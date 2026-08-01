@@ -272,6 +272,13 @@ Route::middleware(['auth:api', 'permission:site_settings'])->group(function () {
     Route::post('admin/settings/telegram/test', [SettingController::class, 'testTelegram']);
     Route::post('admin/settings/telegram/activate', [SettingController::class, 'activateTelegram']);
 
+    // Admin: external feed aggregation (jobs + company profiles)
+    Route::get('admin/feed-sources',           [\App\Http\Controllers\FeedSourceController::class, 'index']);
+    Route::post('admin/feed-sources',          [\App\Http\Controllers\FeedSourceController::class, 'store']);
+    Route::put('admin/feed-sources/{id}',      [\App\Http\Controllers\FeedSourceController::class, 'update']);
+    Route::delete('admin/feed-sources/{id}',   [\App\Http\Controllers\FeedSourceController::class, 'destroy']);
+    Route::post('admin/feed-sources/{id}/run', [\App\Http\Controllers\FeedSourceController::class, 'run']);
+
     // Admin: image upload (banner/hero backgrounds)
     Route::post('admin/upload/image',          [UploadController::class, 'storeImage']);
 
