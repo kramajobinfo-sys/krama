@@ -126,7 +126,7 @@ class AuthController extends Controller
         $user->save();
 
         if ($email) {
-            SendEmailVerificationJob::dispatch($user);
+            SendEmailVerificationJob::dispatch($user)->afterResponse(); // send AFTER the HTTP response so signup isn't blocked on SMTP
         }
 
         $token = JWTAuth::fromUser($user);
@@ -261,7 +261,7 @@ class AuthController extends Controller
 
         if ($emailChanged) {
             $user->forceFill(['email_verified_at' => null])->save();
-            SendEmailVerificationJob::dispatch($user);
+            SendEmailVerificationJob::dispatch($user)->afterResponse(); // send AFTER the HTTP response so signup isn't blocked on SMTP
         }
 
         return response()->json($this->userPayload($user->fresh()->load('role.permissions')));
@@ -378,7 +378,7 @@ class AuthController extends Controller
         }
         RateLimiter::hit($key, 600);
 
-        SendEmailVerificationJob::dispatch($user);
+        SendEmailVerificationJob::dispatch($user)->afterResponse(); // send AFTER the HTTP response so signup isn't blocked on SMTP
 
         return response()->json(['message' => 'Verification email sent.']);
     }
@@ -422,13 +422,16 @@ class AuthController extends Controller
         $resetUrl  = $frontend . '?reset=1&token=' . $raw . '&email=' . urlencode($user->email);
 
         if (MailConfig::isConfigured()) {
-            try {
-                MailConfig::applyFromDb();
-                [$subject, $html] = EmailTemplates::passwordReset($user->name, $resetUrl);
-                Mail::html($html, fn ($m) => $m->to($user->email, $user->name)->subject($subject));
-            } catch (\Exception $e) {
-                Log::warning('Password reset email failed: ' . $e->getMessage());
-            }
+            // Send AFTER the HTTP response so forgot-password isn't blocked on SMTP.
+            app()->terminating(function () use ($user, $resetUrl) {
+                try {
+                    MailConfig::applyFromDb();
+                    [$subject, $html] = EmailTemplates::passwordReset($user->name, $resetUrl);
+                    Mail::html($html, fn ($m) => $m->to($user->email, $user->name)->subject($subject));
+                } catch (\Exception $e) {
+                    Log::warning('Password reset email failed: ' . $e->getMessage());
+                }
+            });
         }
 
         return $generic;
