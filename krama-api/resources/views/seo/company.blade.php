@@ -1,6 +1,6 @@
 @extends('seo.layout')
 
-@section('title', $company->name . ' — Jobs &amp; company profile | Krama')
+@section('title', $company->name . ' — Jobs & company profile | Krama')
 
 @php $ogImg = $company->cover_banner_url ?: ($company->logo_url ?: null); @endphp
 @if($ogImg)
