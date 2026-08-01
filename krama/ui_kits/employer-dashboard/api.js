@@ -158,7 +158,12 @@
     deleteJob: function (id) { return req("DELETE", "/jobs/" + id); },
     submitJob: function (id, subscriptionId) { return req("PATCH", "/jobs/" + id + "/submit", subscriptionId ? { subscription_id: subscriptionId } : undefined); },
     boostQuote: function (id) { return req("GET", "/employer/jobs/" + id + "/boost"); },
-    boostJob: function (id, method) { return req("POST", "/employer/jobs/" + id + "/boost", method ? { method: method } : {}); },
+    boostJob: function (id, method, currency) {
+      var body = {};
+      if (method) body.method = method;
+      if (currency) body.currency = currency;
+      return req("POST", "/employer/jobs/" + id + "/boost", body);
+    },
     closeJob: function (id) { return req("PATCH", "/jobs/" + id + "/close"); },
     companyApproveJob: function (id, subscriptionId) { return req("PATCH", "/employer/jobs/" + id + "/approve", subscriptionId ? { subscription_id: subscriptionId } : undefined); },
     companyRejectJob: function (id, reason) { return req("PATCH", "/employer/jobs/" + id + "/reject", { reason: reason }); },

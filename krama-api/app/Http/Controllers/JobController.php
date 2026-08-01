@@ -626,15 +626,29 @@ class JobController extends Controller
         // Attribute the payment to the company's primary (latest active/trial) subscription.
         $sub  = $this->primaryActiveSubscription($company);
         $data = $request->validate([
-            'method' => 'nullable|in:stripe,aba,acleda,wing,khqr,cod,card,other',
+            'method'   => 'nullable|in:stripe,aba,acleda,wing,khqr,cod,card,other',
+            'currency' => 'sometimes|in:USD,KHR',
         ]);
+
+        // Billing currency — the boost may be paid in USD (default) or Khmer Riel. Mirrors
+        // PaymentController::subscribe(): KHR converts the price at the snapshotted NBC rate, and
+        // every gateway reads payment.amount+currency, so a KHR boost is a genuine riel transaction
+        // (ABA/Bakong settle it to the KHR account). Only convert from a USD base price — if an admin
+        // has configured boost_currency=KHR the price is already riel and must not be re-converted.
+        $fxRate = null;
+        if (($data['currency'] ?? 'USD') === 'KHR' && strtoupper((string) $currency) === 'USD' && $price > 0) {
+            $manual   = (float) (Setting::where('group', 'tax')->where('key', 'exchange_rate_khr')->value('value') ?: 0);
+            $fxRate   = round(\App\Services\ExchangeRateService::usdToKhr($manual > 0 ? $manual : null), 4);
+            $price    = round($price * $fxRate); // whole riel — the riel has no minor unit
+            $currency = 'KHR';
+        }
 
         // M-5: generate the invoice number and insert the payment in one transaction
         // so nextBoostInvoiceNo()'s lockForUpdate is actually effective (a lock held
         // outside a transaction is released immediately, letting concurrent boosts mint
         // duplicate invoice numbers). Mirrors the subscribe flow in PaymentController.
         $payment = null;
-        DB::transaction(function () use ($company, $sub, $job, $price, $currency, $data, &$payment) {
+        DB::transaction(function () use ($company, $sub, $job, $price, $currency, $fxRate, $data, &$payment) {
             $payment = Payment::create([
                 'company_id'      => $company->id,
                 'subscription_id' => $sub ? $sub->id : null,
@@ -643,6 +657,7 @@ class JobController extends Controller
                 'invoice_no'      => $this->nextBoostInvoiceNo(),
                 'amount'          => $price,
                 'currency'        => $currency,
+                'fx_rate'         => $fxRate,
                 'method'          => $data['method'] ?? 'khqr',
                 'status'          => 'pending',
                 'created_at'      => now(),

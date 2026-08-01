@@ -2888,25 +2888,36 @@
     const [method, setMethod] = React.useState("khqr");
     const [busy, setBusy] = React.useState(false);
     const [err, setErr] = React.useState("");
+    const [billCur, setBillCur] = React.useState("USD"); // billing currency: USD or KHR
+    const [fxRate, setFxRate] = React.useState(null);    // NBC USD→KHR rate for the riel option
     React.useEffect(function () {
       if (!job) { setQuote(null); return; }
-      setLoading(true); setErr(""); setQuote(null);
+      setLoading(true); setErr(""); setQuote(null); setBillCur("USD");
       emp.boostQuote(job.id)
         .then(function (q) { setQuote(q); setLoading(false); })
         .catch(function (e) { setErr((e && e.message) || "Failed to load boost details."); setLoading(false); });
     }, [job && job.id]);
+    React.useEffect(function () {
+      emp.exchangeRate().then(function (d) { if (d && d.rate) setFxRate(Number(d.rate)); }).catch(function () {});
+    }, []);
     if (!job) return null;
     var days = quote ? quote.boost_days : 30;
     var hasCredits = quote && quote.credits_remaining > 0;
     var price = quote ? quote.boost_price : null;
-    var currency = quote ? quote.boost_currency : "USD";
+    var baseCur = quote ? quote.boost_currency : "USD";
+    // KHR is offered only when the base price is USD and we have a live NBC rate.
+    var canKhr = fxRate && String(baseCur).toUpperCase() === "USD" && Number(price) > 0;
+    var payCur = canKhr ? billCur : baseCur;
+    var payAmt = (canKhr && billCur === "KHR") ? Math.round(Number(price) * fxRate) : Number(price);
+    var fmtMoney = function (cur, amt) { return String(cur).toUpperCase() === "KHR" ? ("៛" + Math.round(amt).toLocaleString()) : ("$" + Number(amt).toFixed(2)); };
+    var priceLabel = fmtMoney(payCur, payAmt);
     var methods = [
       { v: "khqr", l: "KHQR" }, { v: "aba", l: "ABA" }, { v: "acleda", l: "ACLEDA" },
       { v: "wing", l: "Wing" }, { v: "card", l: "Card" }, { v: "cod", l: "Cash" },
     ];
     var submit = function () {
       setBusy(true); setErr("");
-      emp.boostJob(job.id, hasCredits ? null : method).then(function (r) {
+      emp.boostJob(job.id, hasCredits ? null : method, (!hasCredits && canKhr) ? billCur : undefined).then(function (r) {
         setBusy(false);
         onDone(r && r.requires_payment
           ? "Payment pending — the job will be featured once an admin confirms it."
@@ -2938,7 +2949,21 @@
               </div>
             ) : (
               <div style={{ fontSize: "var(--text-sm)", color: "var(--text-body)", lineHeight: 1.6 }}>
-                You have no featured credits left. Feature this job for <strong>{days} days</strong> for <strong>{currency} {Number(price).toFixed(2)}</strong>.
+                You have no featured credits left. Feature this job for <strong>{days} days</strong> for <strong>{priceLabel}</strong>.
+                {canKhr && (
+                  <div style={{ marginTop: 12 }}>
+                    <label style={{ fontSize: "var(--text-xs)", fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 6 }}>Pay in</label>
+                    <div style={{ display: "flex", gap: 6 }}>
+                      {[{ v: "USD", l: fmtMoney("USD", Number(price)) + " · USD" }, { v: "KHR", l: fmtMoney("KHR", Number(price) * fxRate) + " · KHR" }].map(function (c) {
+                        var on = billCur === c.v;
+                        return (
+                          <button key={c.v} type="button" onClick={function () { setBillCur(c.v); }} style={{ flex: 1, padding: "8px 12px", borderRadius: "var(--radius-md)", border: "1.5px solid " + (on ? "var(--brand)" : "var(--border)"), background: on ? "var(--brand-subtle)" : "var(--surface-page)", color: on ? "var(--text-brand)" : "var(--text-muted)", fontFamily: "var(--font-sans)", fontSize: "var(--text-xs)", fontWeight: 700, cursor: "pointer" }}>{c.l}</button>
+                        );
+                      })}
+                    </div>
+                    {billCur === "KHR" && <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: 6 }}>At the NBC rate (៛{Math.round(fxRate).toLocaleString()} / US$1).</div>}
+                  </div>
+                )}
                 <div style={{ marginTop: 12 }}>
                   <label style={{ fontSize: "var(--text-xs)", fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 6 }}>Payment method</label>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
@@ -2956,7 +2981,7 @@
             <Button variant="secondary" onClick={onClose}>Cancel</Button>
             {!loading && quote && !quote.already_featured && (
               <Button variant="primary" disabled={busy} onClick={submit}>
-                {busy ? "Working…" : hasCredits ? ("Feature for " + days + " days") : ("Pay " + currency + " " + Number(price).toFixed(2))}
+                {busy ? "Working…" : hasCredits ? ("Feature for " + days + " days") : ("Pay " + priceLabel)}
               </Button>
             )}
           </div>
