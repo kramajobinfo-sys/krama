@@ -1096,6 +1096,44 @@
     );
   }
 
+  // Shown when the employer has no company yet — lets them create one instead of
+  // getting stuck on a "Loading…" screen. After creating, the full profile appears.
+  function CreateCompanyForm({ onCreated }) {
+    const [f, setF] = React.useState({ name: "", industry: "", website: "", address: "", description: "" });
+    const [saving, setSaving] = React.useState(false);
+    const [err, setErr] = React.useState("");
+    const set = (k, v) => setF(function (x) { return Object.assign({}, x, { [k]: v }); });
+    const submit = () => {
+      if (!f.name.trim()) { setErr("Please enter your company name."); return; }
+      setSaving(true); setErr("");
+      var payload = { name: f.name.trim() };
+      ["industry", "address", "description"].forEach(function (k) { if (f[k] && f[k].trim()) payload[k] = f[k].trim(); });
+      if (f.website && f.website.trim()) { var w = f.website.trim(); payload.website = /^https?:\/\//i.test(w) ? w : "https://" + w; }
+      emp.createCompany(payload)
+        .then(function (c) { setSaving(false); onCreated && onCreated(c); })
+        .catch(function (e) { setSaving(false); setErr((e && e.message) || "Could not create the company."); });
+    };
+    return (
+      <div className="krm-page-pad" style={{ padding: 28 }}>
+        <div style={{ maxWidth: 620 }}>
+          <h2 style={{ fontSize: "var(--text-xl)", fontWeight: 700, color: "var(--text-strong)", margin: 0 }}>Create your company profile</h2>
+          <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginTop: 6, marginBottom: 20 }}>Set up your company to start posting jobs. You can add a logo, photos, and more after it's created.</p>
+          <Card padding={24}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <Input label="Company name *" value={f.name} onChange={(e) => set("name", e.target.value)} placeholder="e.g. ACME Cambodia" />
+              <Input label="Industry" value={f.industry} onChange={(e) => set("industry", e.target.value)} placeholder="e.g. Financial services" />
+              <Input label="Website" value={f.website} onChange={(e) => set("website", e.target.value)} placeholder="example.com" />
+              <Input label="Address" value={f.address} onChange={(e) => set("address", e.target.value)} />
+              <Textarea label="About the company" value={f.description} onChange={(e) => set("description", e.target.value)} rows={4} placeholder="A short description of what your company does." />
+              {err && <div style={{ color: "var(--danger)", fontSize: "var(--text-sm)", fontWeight: 600 }}>{err}</div>}
+              <div><Button variant="primary" disabled={saving} onClick={submit}>{saving ? "Creating…" : "Create company profile"}</Button></div>
+            </div>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
   function CompanyProfile({ company, onSaved, jobs }) {
     const [tab, setTab] = React.useState("about");
     // About tab
@@ -2871,6 +2909,7 @@
     const [authUser, setAuthUser] = React.useState(null);
     const [authLoading, setAuthLoading] = React.useState(true);
     const [company, setCompany] = React.useState(null);
+    const [companyLoaded, setCompanyLoaded] = React.useState(false); // true once the company fetch settles (distinguishes "loading" from "no company yet")
     const [sidebarOpen, setSidebarOpen] = React.useState(false);
     const [jobs, setJobs] = React.useState([]);
     const [jobsLoading, setJobsLoading] = React.useState(true);
@@ -2942,7 +2981,7 @@
 
     React.useEffect(function () {
       if (!authUser) return;
-      emp.fetchCompany().then(setCompany).catch(function () { setCompany(null); });
+      emp.fetchCompany().then(setCompany).catch(function () { setCompany(null); }).then(function () { setCompanyLoaded(true); });
       loadSub();
       loadJobs();
     }, [authUser, loadJobs, loadSub]);
@@ -2998,7 +3037,11 @@
           {page === "applicants" && <Applicants jobs={jobs} onGoToMessages={() => setPage("messages")} />}
           {page === "cvmatch" && <EmployerCvMatch />}
           {page === "team" && isCompanyAdmin(authUser) && <Team user={authUser} />}
-          {page === "company" && <CompanyProfile company={company} onSaved={setCompany} jobs={jobs} />}
+          {page === "company" && (!companyLoaded
+            ? <div className="krm-page-pad" style={{ padding: 28, color: "var(--text-muted)" }}>Loading…</div>
+            : company
+              ? <CompanyProfile company={company} onSaved={setCompany} jobs={jobs} />
+              : <CreateCompanyForm onCreated={function (c) { setCompany(c); }} />)}
           {page === "messages" && <Messages user={authUser} />}
           {page === "billing" && <Billing onSubChange={loadSub} />}
           {page === "profile" && <MyProfile user={authUser} onUserUpdate={u => setAuthUser(u)} />}
