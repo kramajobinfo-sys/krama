@@ -244,6 +244,7 @@
     createUser: function (data) { return req("POST", "/admin/users", data); },
     updateUser: function (id, data) { return req("PATCH", "/admin/users/" + id, data); },
     changeUserPassword: function (id, password) { return req("PATCH", "/admin/users/" + id, { password: password }); },
+    deleteUser: function (id) { return req("DELETE", "/admin/users/" + id); },
 
     approveCompany: function (id) { return req("PATCH", "/admin/companies/" + id + "/approve"); },
     rejectCompany: function (id) { return req("PATCH", "/admin/companies/" + id + "/reject"); },

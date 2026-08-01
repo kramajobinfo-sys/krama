@@ -301,6 +301,7 @@ Route::middleware(['auth:api', 'permission:site_settings'])->group(function () {
     Route::get('admin/users',                       [UserController::class, 'adminUsers']);
     Route::post('admin/users',                      [UserController::class, 'adminCreateUser']);
     Route::patch('admin/users/{id}',                [UserController::class, 'adminUpdateUser']);
+    Route::delete('admin/users/{id}',               [UserController::class, 'adminDeleteUser']);
 
     // Admin: experience levels
     Route::get('admin/experience-levels',          [ExperienceLevelController::class, 'adminIndex']);

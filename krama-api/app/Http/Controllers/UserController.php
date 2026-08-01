@@ -155,4 +155,35 @@ class UserController extends Controller
 
         return response()->json($user->fresh()->load('role:id,slug,name'));
     }
+
+    // DELETE /api/admin/users/{id} — permanently delete an account (e.g. test cleanup).
+    // Guards: can't delete yourself or an admin/super-admin; refuses if the account has
+    // related data (company/jobs/applications) so real data is never cascaded away.
+    public function adminDeleteUser(Request $request, $id)
+    {
+        $this->requirePermission('manage_users');
+
+        $actor = $request->user();
+        $user  = User::with('role:id,slug')->findOrFail($id);
+
+        if ((int) $user->id === (int) $actor->id) {
+            return response()->json(['message' => 'You cannot delete your own account.'], 422);
+        }
+        if (in_array(optional($user->role)->slug, ['admin', 'super_admin'], true)) {
+            return response()->json(['message' => 'Admin accounts cannot be deleted here.'], 422);
+        }
+
+        $email = $user->email;
+        try {
+            $user->delete();
+        } catch (\Illuminate\Database\QueryException $e) {
+            return response()->json([
+                'message' => 'This account has related data (company, jobs, or applications) and cannot be deleted. Suspend it instead.',
+            ], 422);
+        }
+
+        $this->auditLog('user.deleted', ['user_id' => (int) $id, 'user_email' => $email]);
+
+        return response()->json(['message' => 'Account deleted.']);
+    }
 }

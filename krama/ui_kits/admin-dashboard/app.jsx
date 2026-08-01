@@ -909,6 +909,13 @@
         .catch(function (e) { flashMsg("Error: " + (e && e.message)); });
     };
 
+    const deleteUser = (c) => {
+      if (!window.confirm("Delete “" + c.name + "” (" + (c.email || "no email") + ")?\n\nThis permanently removes the account and cannot be undone.")) return;
+      adm.deleteUser(c.id)
+        .then(function () { flashMsg("Account deleted."); load(); })
+        .catch(function (e) { flashMsg("Error: " + ((e && e.message) || "Could not delete.")); });
+    };
+
     const runSearch = () => { setPage(1); setQuery(search.trim()); };
     const setFilter = (s) => { setPage(1); setStatus(s); };
 
@@ -959,6 +966,7 @@
               <span><Badge tone={c.status === "active" ? "success" : "danger"}>{c.status === "active" ? "Active" : "Suspended"}</Badge></span>
               <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
                 <Button variant="secondary" size="sm" onClick={() => toggleStatus(c)}>{c.status === "active" ? "Suspend" : "Activate"}</Button>
+                <Button variant="ghost" size="sm" onClick={() => deleteUser(c)} style={{ color: "var(--danger)" }}>Delete</Button>
               </div>
             </div>
           ))}
