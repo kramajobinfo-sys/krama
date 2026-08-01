@@ -159,8 +159,17 @@ class EmployerCvMatchController extends Controller
             $results = $results->take((int) ($data['limit'] ?? 3))->values();
         }
 
-        // Charge on success.
-        Company::where('id', $company->id)->decrement('cv_match_credits', $cost);
+        // Charge on success — atomic conditional decrement so two concurrent runs can't
+        // both pass the earlier balance check and drive the balance negative (free AI runs).
+        // Only one run whose spend still fits the live balance is charged.
+        $charged = Company::where('id', $company->id)
+            ->where('cv_match_credits', '>=', $cost)
+            ->decrement('cv_match_credits', $cost);
+
+        if ($charged !== 1) {
+            $live = (int) Company::where('id', $company->id)->value('cv_match_credits');
+            return response()->json(['message' => 'Not enough credits for this comparison.', 'need_credits' => true, 'balance' => $live, 'cost' => $cost], 402);
+        }
         $newBalance = (int) Company::where('id', $company->id)->value('cv_match_credits');
 
         // Persist the run so the employer can re-view results later without paying again.

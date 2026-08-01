@@ -157,12 +157,28 @@ SEED_ADMIN_PASSWORD=<strong-unique-password>     # used once by the seeder in F5
 ```
 Then (you run — writes secrets): `php artisan key:generate` and `php artisan jwt:secret`.
 
-### F5. Database — clean slate (chosen)
+### F5. Database
+
+> 🛑 **RE-DEPLOY (the normal case): use `migrate` — NEVER `migrate:fresh`.**
+> On a site that already has data, `migrate:fresh` **DROPS EVERY TABLE** (users, jobs,
+> applications, payments/invoices) = total data loss. Back up the DB first (F2), then:
+
 ```bash
 cd ~/krama-api
-php artisan migrate:fresh --seed --force
+php artisan migrate --force        # applies ONLY new/pending migrations; preserves all data
+php artisan migrate:status         # confirm the new migrations ran
 ```
-`DatabaseSeeder` now seeds **baseline only** in production (roles, permissions, categories, locations, plans, default settings, **one super-admin from `SEED_ADMIN_*`**). `MockDataSeeder` (demo companies/jobs + demo users with known passwords) is gated to `local`/`testing` and will **not** run under `APP_ENV=production`. ⚠ Run this **before** `config:cache` (F7) so the seeder can read `SEED_ADMIN_*` from `.env`. Verify: `php artisan tinker --execute="echo \App\Models\User::count().' users, '.\App\Models\Job::count().' jobs';"` → 1 user, 0 jobs.
+Do **not** re-run seeders on a re-deploy — reference data already exists and re-seeding risks the known-password admin fallback.
+
+<details><summary><b>F5-ALT — FIRST LAUNCH ONLY (empty database, no live data)</b></summary>
+
+Only when standing up a brand-new empty DB for the very first time:
+```bash
+cd ~/krama-api
+php artisan migrate:fresh --seed --force   # ⚠ DESTRUCTIVE — wipes the DB. First launch only.
+```
+`DatabaseSeeder` seeds **baseline only** in production (roles, permissions, categories, locations, plans, default settings, **one super-admin from `SEED_ADMIN_*` — which MUST be set in `.env` first**). `MockDataSeeder` (demo companies/jobs + demo users with known passwords) is gated to `local`/`testing` and will **not** run under `APP_ENV=production`. Run this **before** `config:cache` (F7) so the seeder can read `SEED_ADMIN_*`. Verify: `php artisan tinker --execute="echo \App\Models\User::count().' users, '.\App\Models\Job::count().' jobs';"` → 1 user, 0 jobs.
+</details>
 
 ### F6. Deploy the frontend + docroot (`~/kramajob.com`)
 ```bash

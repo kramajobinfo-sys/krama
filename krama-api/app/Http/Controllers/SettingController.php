@@ -203,7 +203,7 @@ class SettingController extends Controller
 
         $settings = [];
         foreach ($rows as $row) {
-            $settings[$row->key] = $this->castValue($row->value);
+            $settings = self::appendSetting($settings, $row);
         }
 
         return response()->json($settings);
@@ -217,12 +217,29 @@ class SettingController extends Controller
         $all = Setting::all()->groupBy('group')->map(function ($rows) {
             $out = [];
             foreach ($rows as $row) {
-                $out[$row->key] = $this->castValue($row->value);
+                $out = self::appendSetting($out, $row);
             }
             return $out;
         });
 
         return response()->json($all);
+    }
+
+    /**
+     * Add one setting row to an output array. Credentials (SECRET_KEYS) are NEVER sent to
+     * the browser — the value is blanked and a companion `{key}_set` boolean signals whether
+     * one is stored. Combined with the blank-preserve guard in update(), the admin UI shows
+     * "configured / not set" and only overwrites a secret when a new value is typed.
+     */
+    private function appendSetting(array $out, $row): array
+    {
+        if (in_array($row->key, self::SECRET_KEYS, true)) {
+            $out[$row->key]          = '';
+            $out[$row->key . '_set'] = trim((string) $row->value) !== '';
+        } else {
+            $out[$row->key] = $this->castValue($row->value);
+        }
+        return $out;
     }
 
     // PATCH /api/admin/settings/{group} — admin: update one or many keys in a group

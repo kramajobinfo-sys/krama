@@ -42,8 +42,22 @@ class PaymentService
             return false;
         }
 
-        DB::transaction(function () use ($payment) {
-            $payment->update(['status' => 'paid', 'paid_at' => now()]);
+        // Atomically claim the pending→paid transition and apply the effect in ONE
+        // transaction. The conditional UPDATE (… WHERE status='pending') is a row-level
+        // compare-and-swap: of the concurrent callers (gateway webhook, the employer's
+        // verify poll, and the scheduled `payments:verify-pending` sweep) exactly ONE
+        // flips the row and applies the effect; the losers see 0 affected rows and bail.
+        // This prevents double credit top-ups / duplicate invoices. If a side effect
+        // throws, the whole transaction rolls back and the payment stays pending (retryable).
+        $applied = DB::transaction(function () use ($payment) {
+            $claimed = Payment::where('id', $payment->id)
+                ->where('status', 'pending')
+                ->update(['status' => 'paid', 'paid_at' => now()]);
+
+            if ($claimed !== 1) {
+                return false;
+            }
+            $payment->status = 'paid'; // reflect the committed flip on the in-memory model
 
             if ($payment->purpose === 'featured_boost') {
                 if ($payment->job_id) {
@@ -60,7 +74,13 @@ class PaymentService
                 Subscription::where('id', $payment->subscription_id)
                     ->update(['status' => 'active']);
             }
+
+            return true;
         });
+
+        if (! $applied) {
+            return false;
+        }
 
         // Generate + deliver the invoice, and announce a confirmed subscription, AFTER the
         // response is sent — so payment confirmation is never blocked/failed by mail/telegram,

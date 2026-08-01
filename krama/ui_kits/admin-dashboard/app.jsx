@@ -5211,6 +5211,10 @@
     const [abaSaved, setAbaSaved] = React.useState(false);
     const [stripeKey, setStripeKey] = React.useState("");
     const [stripeSaved, setStripeSaved] = React.useState(false);
+    // Whether each credential is already stored on the server (the secret value itself is
+    // never sent to the browser — only a `{key}_set` flag). Drives "saved / leave blank to keep".
+    const [secretSet, setSecretSet] = React.useState({});
+    const secretPh = (isSet, fallback) => isSet ? "•••••••• saved — leave blank to keep" : fallback;
     const VAT_DEFAULTS = { vat_enabled: false, vat_rate: "10", supplier_legal_name: "", supplier_legal_name_kh: "", supplier_vat_tin: "", supplier_address: "", exchange_rate_khr: "4100" };
     const [vat, setVat] = React.useState(VAT_DEFAULTS);
     const [vatSaved, setVatSaved] = React.useState(false);
@@ -5225,7 +5229,7 @@
         })
         .catch(function() {});
       window.KRAMA_ADMIN_API.fetchSettings('payment')
-        .then(function(d) { if (d) { setBakongToken(d.bakong_token || ""); setBakongCity(d.merchant_city || ""); setAbaMerchant(d.aba_merchant_id || ""); setAbaKey(d.aba_api_key || ""); setAbaSandbox(!!d.aba_sandbox); setStripeKey(d.stripe_secret_key || ""); } })
+        .then(function(d) { if (d) { setBakongToken(d.bakong_token || ""); setBakongCity(d.merchant_city || ""); setAbaMerchant(d.aba_merchant_id || ""); setAbaKey(d.aba_api_key || ""); setAbaSandbox(!!d.aba_sandbox); setStripeKey(d.stripe_secret_key || ""); setSecretSet({ bakong_token: !!d.bakong_token_set, aba_api_key: !!d.aba_api_key_set, stripe_secret_key: !!d.stripe_secret_key_set }); } })
         .catch(function() {});
       window.KRAMA_ADMIN_API.fetchSettings('cv_match')
         .then(function(d) { if (d && Object.keys(d).length) { setCvm(Object.assign({}, CVM_DEFAULTS, d)); } })
@@ -5326,7 +5330,7 @@
                   </div>
                   {bakongSaved && <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 13px", background: "var(--success-subtle)", border: "1px solid var(--success-border)", borderRadius: "var(--radius-md)", color: "var(--success)", fontWeight: 600, fontSize: "var(--text-sm)", marginBottom: 12 }}>{I("circle-check-big", 14)} Saved.</div>}
                   <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 16 }} className="krm-form-grid">
-                    <Input label="Bakong API token" type="password" placeholder="eyJhbGciOi…" value={bakongToken} onChange={(e) => setBakongToken(e.target.value)} />
+                    <Input label="Bakong API token" type="password" placeholder={secretPh(secretSet.bakong_token, "eyJhbGciOi…")} value={bakongToken} onChange={(e) => setBakongToken(e.target.value)} />
                     <Input label="Merchant city" placeholder="Phnom Penh" value={bakongCity} onChange={(e) => setBakongCity(e.target.value)} />
                   </div>
                   <div style={{ fontSize: "var(--text-xs)", color: "var(--text-faint)", marginTop: 8 }}>Paste your Bakong token to auto-confirm KHQR payments. Stored server-side, never sent to browsers. Leave blank to confirm manually.</div>
@@ -5343,7 +5347,7 @@
                   {abaSaved && <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 13px", background: "var(--success-subtle)", border: "1px solid var(--success-border)", borderRadius: "var(--radius-md)", color: "var(--success)", fontWeight: 600, fontSize: "var(--text-sm)", marginBottom: 12 }}>{I("circle-check-big", 14)} Saved.</div>}
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 16 }} className="krm-form-grid">
                     <Input label="PayWay merchant ID" placeholder="ec123456" value={abaMerchant} onChange={(e) => setAbaMerchant(e.target.value)} />
-                    <Input label="PayWay API key" type="password" placeholder="••••••••••••" value={abaKey} onChange={(e) => setAbaKey(e.target.value)} />
+                    <Input label="PayWay API key" type="password" placeholder={secretPh(secretSet.aba_api_key, "••••••••••••")} value={abaKey} onChange={(e) => setAbaKey(e.target.value)} />
                   </div>
                   <div style={{ fontSize: "var(--text-xs)", color: "var(--text-faint)", marginTop: 8 }}>Set your PayWay pushback URL to <code style={{ fontFamily: "var(--font-mono)" }}>/api/payments/aba/callback</code>. Stored server-side. Leave blank to confirm manually.</div>
                   <label style={{ display: "flex", alignItems: "flex-start", gap: 10, marginTop: 14, padding: "10px 12px", borderRadius: "var(--radius-md)", background: abaSandbox ? "var(--warning-subtle, #fef3c7)" : "var(--surface-sunken)", border: "1px solid " + (abaSandbox ? "var(--warning-border, #fcd34d)" : "var(--border-subtle)"), cursor: "pointer" }}>
@@ -5365,7 +5369,7 @@
                   </div>
                   {stripeSaved && <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 13px", background: "var(--success-subtle)", border: "1px solid var(--success-border)", borderRadius: "var(--radius-md)", color: "var(--success)", fontWeight: 600, fontSize: "var(--text-sm)", marginBottom: 12 }}>{I("circle-check-big", 14)} Saved.</div>}
                   <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 16 }} className="krm-form-grid">
-                    <Input label="Stripe secret key" type="password" placeholder="sk_live_… or sk_test_…" value={stripeKey} onChange={(e) => setStripeKey(e.target.value)} />
+                    <Input label="Stripe secret key" type="password" placeholder={secretPh(secretSet.stripe_secret_key, "sk_live_… or sk_test_…")} value={stripeKey} onChange={(e) => setStripeKey(e.target.value)} />
                   </div>
                   <div style={{ fontSize: "var(--text-xs)", color: "var(--text-faint)", marginTop: 8 }}>Paste your Stripe secret key to accept Visa/Mastercard via Stripe Checkout. Set your Stripe webhook to <code style={{ fontFamily: "var(--font-mono)" }}>/api/payments/stripe/webhook</code>. Stored server-side. Leave blank to confirm manually.</div>
                   <div style={{ marginTop: 12 }}><Button variant="secondary" size="sm" iconLeft={I("check", 14)} onClick={saveStripe}>Save verification</Button></div>
