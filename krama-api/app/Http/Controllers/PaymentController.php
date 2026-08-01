@@ -19,6 +19,18 @@ class PaymentController extends Controller
         return response()->json(Plan::where('is_active', true)->orderBy('sort_order')->orderBy('price')->get());
     }
 
+    // GET /api/exchange-rate — the official NBC USD→KHR rate the checkout uses to price a plan
+    // in Khmer Riel. Public so the employer checkout can show the riel equivalent before paying.
+    // Mirrors the exact rate subscribe() snapshots (manual tax override → NBC → 4100 fallback).
+    public function exchangeRate()
+    {
+        $manual = (float) (Setting::where('group', 'tax')->where('key', 'exchange_rate_khr')->value('value') ?: 0);
+
+        return response()->json([
+            'rate' => round(\App\Services\ExchangeRateService::usdToKhr($manual > 0 ? $manual : null), 4),
+        ]);
+    }
+
     // GET /api/employer/subscription — employer's current subscription + plan
     public function mySubscription(Request $request)
     {
@@ -132,8 +144,9 @@ class PaymentController extends Controller
         $company = $this->employerCompany($user);
 
         $data = $request->validate([
-            'plan_id' => 'required|exists:plans,id',
-            'method'  => 'required|in:stripe,aba,acleda,wing,khqr,cod,card,other,trial',
+            'plan_id'  => 'required|exists:plans,id',
+            'method'   => 'required|in:stripe,aba,acleda,wing,khqr,cod,card,other,trial',
+            'currency' => 'sometimes|in:USD,KHR',
         ]);
 
         $plan = Plan::where('is_active', true)->findOrFail($data['plan_id']);
@@ -164,6 +177,22 @@ class PaymentController extends Controller
             $charge = round($subtotal + $vatAmount, 2); // exclusive: total = net + VAT
         }
 
+        // Billing currency — the employer may pay in USD (default) or Khmer Riel. Plans are
+        // priced in USD (the single source of truth); choosing KHR converts the FINAL charge
+        // at the official NBC USD→KHR rate and snapshots that rate on the payment so the riel
+        // figure never drifts. Every gateway reads payment.amount + payment.currency, so a KHR
+        // payment is a genuine riel transaction (KHQR/ABA settle it to the KHR account). A GDT
+        // tax invoice must stay USD-canonical (it already presents a KHR total via fx_rate), so
+        // the KHR option is ignored when a tax invoice is being issued.
+        $payCurrency = 'USD';
+        $payAmount   = $charge;
+        if (($data['currency'] ?? 'USD') === 'KHR' && ! $isTaxInvoice && $charge > 0) {
+            $rate        = round(\App\Services\ExchangeRateService::usdToKhr((float) ($tax['exchange_rate_khr'] ?? 0) ?: null), 4);
+            $payCurrency = 'KHR';
+            $payAmount   = round($charge * $rate); // whole riel — the riel has no minor unit
+            $fxRate      = $rate;                   // snapshot so KHR reconciles back to USD
+        }
+
         // A $0 plan (free OR trial) can only be used once per company — block repeat use so a
         // trial plan can't be re-subscribed over and over for unlimited free access.
         if ($isFreePlan) {
@@ -191,7 +220,7 @@ class PaymentController extends Controller
             ->where('plan_id', $plan->id)
             ->exists();
 
-        DB::transaction(function () use ($company, $plan, $data, $isTrial, $isFreePlan, $trialDays, $charge, $subtotal, $vatRate, $vatAmount, $isTaxInvoice, $fxRate, &$payment, &$subscription) {
+        DB::transaction(function () use ($company, $plan, $data, $isTrial, $isFreePlan, $trialDays, $payAmount, $payCurrency, $subtotal, $vatRate, $vatAmount, $isTaxInvoice, $fxRate, &$payment, &$subscription) {
             $subscription = Subscription::create([
                 'company_id' => $company->id,
                 'plan_id'    => $plan->id,
@@ -208,8 +237,8 @@ class PaymentController extends Controller
                 'company_id'      => $company->id,
                 'subscription_id' => $subscription->id,
                 'invoice_no'      => $this->nextInvoiceNo(),
-                'amount'          => $charge,
-                'currency'        => $plan->currency,
+                'amount'          => $payAmount,
+                'currency'        => $payCurrency,
                 'method'          => ($isTrial || $isFreePlan) ? 'other' : $data['method'],
                 'status'          => ($isTrial || $isFreePlan) ? 'paid' : 'pending',
                 'paid_at'         => ($isTrial || $isFreePlan) ? now() : null,

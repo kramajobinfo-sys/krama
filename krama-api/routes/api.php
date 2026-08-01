@@ -54,6 +54,7 @@ Route::middleware('auth:api')->prefix('auth')->group(function () {
 
 // Plans — public
 Route::get('plans', [PaymentController::class, 'plans']);
+Route::get('exchange-rate', [PaymentController::class, 'exchangeRate']);
 
 // Reference data — public
 Route::get('categories',        [CategoryController::class,      'index']);

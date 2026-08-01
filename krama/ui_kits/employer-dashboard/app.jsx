@@ -1925,7 +1925,16 @@
     const [waiting, setWaiting] = React.useState(false);
     const [attempts, setAttempts] = React.useState(0);
     const [notConfirmed, setNotConfirmed] = React.useState(false); // payment declined / not confirmed in time
-    React.useEffect(() => { if (plan) { setDone(false); setMethod(available[0] || null); setError(""); setKhqr(null); setStripeUrl(null); setPaymentId(null); setWaiting(false); setAttempts(0); setNotConfirmed(false); } }, [plan]);
+    const [currency, setCurrency] = React.useState("USD");         // billing currency: USD or KHR
+    const [fxRate, setFxRate] = React.useState(null);              // NBC USD→KHR rate for the riel option
+    React.useEffect(() => { if (plan) { setDone(false); setMethod(available[0] || null); setError(""); setKhqr(null); setStripeUrl(null); setPaymentId(null); setWaiting(false); setAttempts(0); setNotConfirmed(false); setCurrency("USD"); } }, [plan]);
+
+    // Fetch the official NBC USD→KHR rate once so the employer can pay in riel. If it can't be
+    // reached the KHR option is simply hidden and checkout stays USD-only.
+    React.useEffect(function () {
+      emp.exchangeRate().then(function (d) { if (d && d.rate) setFxRate(Number(d.rate)); }).catch(function () {});
+    }, []);
+    const khrOf = function (usd) { return fxRate ? Math.round(Number(usd) * fxRate) : null; };
 
     // While awaiting a gateway payment (KHQR/Bakong, ABA, or Stripe card), poll the backend
     // which verifies the payment against the gateway and fulfills it on confirmation. If the
@@ -1966,7 +1975,7 @@
     const confirm = () => {
       if (!isTrial && !isFree && !method) return;
       setBusy(true); setError("");
-      emp.subscribe(plan.id, isTrial ? "trial" : (isFree ? "other" : PAY_META[method].apiMethod))
+      emp.subscribe(plan.id, isTrial ? "trial" : (isFree ? "other" : PAY_META[method].apiMethod), (!isTrial && !isFree) ? currency : undefined)
         .then(function (res) {
           setBusy(false);
           // KHQR / ABA / Card(Stripe): enter the waiting state and poll for gateway confirmation.
@@ -2119,8 +2128,29 @@
               <div style={{ padding: 22, display: "flex", flexDirection: "column", gap: 16, maxHeight: "66vh", overflowY: "auto" }}>
                 <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", padding: "14px 16px", background: "var(--surface-sunken)", borderRadius: "var(--radius-md)" }}>
                   <span style={{ fontWeight: 600, color: "var(--text-body)" }}>{plan.name} plan</span>
-                  <span><strong style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-2xl)", color: "var(--text-strong)" }}>${planCharge(plan)}</strong>{planHasDiscount(plan) ? <span style={{ color: "var(--text-muted)", fontSize: "var(--text-sm)", textDecoration: "line-through", marginLeft: 6 }}>${plan.price}</span> : null}<span style={{ color: "var(--text-muted)", fontSize: "var(--text-sm)" }}> / {plan.interval}</span></span>
+                  <span>{currency === "KHR" && fxRate ? (
+                    <strong style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-2xl)", color: "var(--text-strong)" }}>៛{khrOf(planCharge(plan)).toLocaleString()}</strong>
+                  ) : (
+                    <React.Fragment><strong style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-2xl)", color: "var(--text-strong)" }}>${planCharge(plan)}</strong>{planHasDiscount(plan) ? <span style={{ color: "var(--text-muted)", fontSize: "var(--text-sm)", textDecoration: "line-through", marginLeft: 6 }}>${plan.price}</span> : null}</React.Fragment>
+                  )}<span style={{ color: "var(--text-muted)", fontSize: "var(--text-sm)" }}> / {plan.interval}</span></span>
                 </div>
+                {fxRate ? (
+                  <div>
+                    <div style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-strong)", marginBottom: 10 }}>Pay in</div>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      {[{ v: "USD", label: "US Dollar", amt: "$" + planCharge(plan) }, { v: "KHR", label: "Khmer Riel", amt: "៛" + khrOf(planCharge(plan)).toLocaleString() }].map(function (c) {
+                        var on = currency === c.v;
+                        return (
+                          <button key={c.v} type="button" onClick={function () { setCurrency(c.v); }} style={{ flex: 1, padding: "12px 14px", cursor: "pointer", textAlign: "left", border: "1.5px solid " + (on ? "var(--brand)" : "var(--border-strong)"), background: on ? "var(--brand-subtle)" : "var(--surface-card)", borderRadius: "var(--radius-md)" }}>
+                            <div style={{ fontWeight: 700, fontSize: "var(--text-base)", color: on ? "var(--text-brand)" : "var(--text-strong)" }}>{c.amt}</div>
+                            <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>{c.label}</div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {currency === "KHR" ? <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: 6 }}>Charged in riel at the National Bank of Cambodia rate (៛{Math.round(fxRate).toLocaleString()} / US$1).</div> : null}
+                  </div>
+                ) : null}
                 <div>
                   <div style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-strong)", marginBottom: 10 }}>Payment method</div>
                   {available.length === 0 ? (

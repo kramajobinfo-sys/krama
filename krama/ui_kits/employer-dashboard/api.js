@@ -219,9 +219,12 @@
     fetchSubscription: function () { return req("GET", "/employer/subscription"); },
     fetchPayments: function (page) { return req("GET", "/employer/payments?per_page=10&page=" + (page || 1)); },
     changePassword: function (currentPassword, newPassword) { return req("POST", "/auth/me/password", { current_password: currentPassword, password: newPassword, password_confirmation: newPassword }); },
-    subscribe: function (planId, method) {
-      return req("POST", "/employer/subscribe", { plan_id: planId, method: method });
+    subscribe: function (planId, method, currency) {
+      var body = { plan_id: planId, method: method };
+      if (currency) body.currency = currency;
+      return req("POST", "/employer/subscribe", body);
     },
+    exchangeRate: function () { return req("GET", "/exchange-rate"); },
     generateKhqr: function (paymentId) { return req("POST", "/employer/payments/" + paymentId + "/khqr"); },
     stripeCheckout: function (paymentId) { return req("POST", "/employer/payments/" + paymentId + "/stripe-checkout"); },
     abaCheckout: function (paymentId) { return req("POST", "/employer/payments/" + paymentId + "/aba-checkout"); },

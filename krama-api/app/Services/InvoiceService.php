@@ -57,8 +57,11 @@ class InvoiceService
     private static function money($amount, $currency): string
     {
         $cur = strtoupper((string) ($currency ?: 'USD'));
-        $num = number_format((float) $amount, 2);
-        return $cur === 'USD' ? ('$' . $num) : ($num . ' ' . $cur);
+        if ($cur === 'USD') return '$' . number_format((float) $amount, 2);
+        // Khmer Riel has no minor unit — show a whole-riel amount. Use the "KHR " prefix (not the
+        // ៛ glyph) so it renders in the invoice's Latin body font without needing the Khmer face.
+        if ($cur === 'KHR') return 'KHR ' . number_format(round((float) $amount));
+        return number_format((float) $amount, 2) . ' ' . $cur;
     }
 
     private static function methodLabel($m): string
