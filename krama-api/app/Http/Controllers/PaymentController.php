@@ -759,7 +759,7 @@ class PaymentController extends Controller
         Subscription::expireOverdue();
 
         $q = Subscription::with([
-            'plan:id,name,price,currency,interval',
+            'plan:id,name,price,currency,interval,featured_credits',
             'company:id,name,logo_url,user_id',
             'company.owner:id,name,email',
             'latestPayment',

@@ -4974,8 +4974,8 @@
         {subs && subs.length === 0 && <div style={{ padding: "40px 24px", textAlign: "center", color: "var(--text-muted)", background: "var(--surface-card)", borderRadius: "var(--radius-lg)", border: "1px dashed var(--border)" }}>No subscriptions found.</div>}
         {subs && subs.length > 0 && (
           <div className="krm-table-wrap"><Card padding={0}>
-            <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1.2fr 1fr 0.8fr 1.3fr 0.85fr 0.85fr 1.1fr", padding: "10px 20px", fontSize: "var(--text-xs)", fontWeight: 700, letterSpacing: ".04em", textTransform: "uppercase", color: "var(--text-faint)", borderBottom: "1px solid var(--border-subtle)" }}>
-              <span>Company</span><span>Employee Account</span><span>Plan</span><span>Status</span><span>Payment</span><span>Started</span><span>End date</span><span style={{ textAlign: "right" }}>Actions</span>
+            <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1.2fr 1fr 0.9fr 0.8fr 1.3fr 0.85fr 0.85fr 1.1fr", padding: "10px 20px", fontSize: "var(--text-xs)", fontWeight: 700, letterSpacing: ".04em", textTransform: "uppercase", color: "var(--text-faint)", borderBottom: "1px solid var(--border-subtle)" }}>
+              <span>Company</span><span>Employee Account</span><span>Plan</span><span>Featured</span><span>Status</span><span>Payment</span><span>Started</span><span>End date</span><span style={{ textAlign: "right" }}>Actions</span>
             </div>
             {subs.map((s, i) => {
               var pay = s.latest_payment;
@@ -4985,8 +4985,14 @@
               var endLabel = s.status === "expired" ? "Expired" : s.status === "pending" ? "Activates" : s.status === "trial" ? "Trial ends" : "Renews";
               var endColor = s.status === "expired" ? "var(--danger)" : "var(--text-muted)";
               var endWeight = s.status === "expired" ? 600 : 400;
+              // Featured credits: this subscription's own allocation (plan pool − used).
+              // Only active/trial subs can actually spend them; others show usage for history.
+              var fcPool = s.plan ? (s.plan.featured_credits || 0) : 0;
+              var fcUsed = s.featured_credits_used || 0;
+              var fcLeft = Math.max(0, fcPool - fcUsed);
+              var fcActive = s.status === "active" || s.status === "trial";
               return (
-              <div key={s.id} style={{ display: "grid", gridTemplateColumns: "1.4fr 1.2fr 1fr 0.8fr 1.3fr 0.85fr 0.85fr 1.1fr", alignItems: "center", padding: "14px 20px", borderBottom: i < subs.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>
+              <div key={s.id} style={{ display: "grid", gridTemplateColumns: "1.4fr 1.2fr 1fr 0.9fr 0.8fr 1.3fr 0.85fr 0.85fr 1.1fr", alignItems: "center", padding: "14px 20px", borderBottom: i < subs.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <Avatar src={s.company && s.company.logo_url} name={s.company ? s.company.name : "?"} size={32} square />
                   <div>
@@ -5008,6 +5014,14 @@
                 <div>
                   <div style={{ fontWeight: 600, fontSize: "var(--text-sm)", color: "var(--text-body)" }}>{s.plan ? s.plan.name : "--"}</div>
                   {s.job_post_limit != null && <div style={{ fontSize: "var(--text-xs)", color: "var(--text-brand)", fontWeight: 600, marginTop: 2 }}>{s.job_post_limit} slots (custom)</div>}
+                </div>
+                <div title={fcPool > 0 ? (fcUsed + " of " + fcPool + " featured credits used" + (fcActive ? "" : " (plan is " + s.status + ")")) : "This plan includes no featured credits"} style={{ opacity: fcActive ? 1 : 0.55 }}>
+                  {fcPool > 0 ? (
+                    <React.Fragment>
+                      <div style={{ fontWeight: 600, fontSize: "var(--text-sm)", color: "var(--text-body)" }}>{fcUsed} / {fcPool}</div>
+                      <div style={{ fontSize: "var(--text-xs)", color: fcLeft > 0 ? "var(--text-brand)" : "var(--text-faint)", fontWeight: 600, marginTop: 2 }}>{fcLeft} left</div>
+                    </React.Fragment>
+                  ) : <span style={{ fontSize: "var(--text-xs)", color: "var(--text-faint)" }}>—</span>}
                 </div>
                 <Badge tone={STONE[s.status] || "neutral"}>{(s.status||"").replace("_"," ")}</Badge>
                 <div>
