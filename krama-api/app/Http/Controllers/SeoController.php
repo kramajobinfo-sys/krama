@@ -111,6 +111,27 @@ class SeoController extends Controller
         return response($xml, 200, ['Content-Type' => 'application/xml; charset=UTF-8']);
     }
 
+    /** GET /api/admin/seo/overview — data for the admin SEO panel (counts + preview links). */
+    public function adminOverview()
+    {
+        $base = rtrim(url('/'), '/');
+
+        return response()->json([
+            'base_url'      => $base,
+            'is_local'      => (bool) preg_match('#localhost|127\.0\.0\.1#', $base),
+            'sitemap_url'   => $base . '/sitemap.xml',
+            'robots_url'    => $base . '/robots.txt',
+            'job_count'     => Job::where('status', 'published')->count(),
+            'company_count' => Company::where('status', 'approved')->count(),
+            'jobs'          => Job::where('status', 'published')->whereNotNull('slug')
+                ->orderByDesc('published_at')->limit(8)->get(['id', 'title', 'slug'])
+                ->map(fn ($j) => ['title' => $j->title, 'url' => $base . '/jobs/' . $j->slug]),
+            'companies'     => Company::where('status', 'approved')
+                ->orderBy('name')->limit(8)->get(['id', 'name'])
+                ->map(fn ($c) => ['name' => $c->name, 'url' => $base . '/companies/' . $c->id]),
+        ]);
+    }
+
     // ── helpers ──────────────────────────────────────────────────────────────
 
     /** Plain-text ~155-char excerpt from (possibly HTML) rich text, for meta descriptions. */

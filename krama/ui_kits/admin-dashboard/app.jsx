@@ -133,6 +133,7 @@
     { id: "reviews",   label: "Reviews",    icon: "star" },
     { id: "forum",    label: "Forum",      icon: "messages-square" },
     { id: "homepage", label: "Homepage", icon: "layout-template" },
+    { id: "seo", label: "SEO", icon: "search" },
     { id: "chat", label: "Chat agent", icon: "bot" },
     { id: "social", label: "Social login", icon: "share-2" },
     { id: "email", label: "Email", icon: "mail" },
@@ -5947,6 +5948,86 @@
     );
   }
 
+  // Read-only panel: the auto-generated, crawlable public SEO pages (jobs/companies/sitemap).
+  function SeoPanel() {
+    const [d, setD] = React.useState(null);
+    const [loading, setLoading] = React.useState(true);
+    React.useEffect(function () {
+      window.KRAMA_ADMIN_API.fetchSeoOverview()
+        .then(function (r) { setD(r); setLoading(false); })
+        .catch(function () { setLoading(false); });
+    }, []);
+    const openUrl = function (url) { if (url) window.open(url, "_blank", "noopener"); };
+
+    var linkRow = function (label, url, hint) {
+      return (
+        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: "1px solid var(--border-subtle)" }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontWeight: 600, color: "var(--text-strong)", fontSize: "var(--text-sm)" }}>{label}</div>
+            <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{hint || url}</div>
+          </div>
+          <Button variant="secondary" size="sm" iconLeft={I("external-link", 14)} onClick={function () { openUrl(url); }}>Open</Button>
+        </div>
+      );
+    };
+
+    return (
+      <div className="krm-page-pad" style={{ padding: 28 }}>
+        <ScreenHead title="SEO" sub="The public pages Google crawls — generated automatically from your live jobs and companies. Nothing to edit here; use this to preview and check them." />
+        {loading ? (
+          <div style={{ color: "var(--text-muted)", fontSize: "var(--text-sm)" }}>Loading…</div>
+        ) : !d ? (
+          <div style={{ color: "var(--text-muted)", fontSize: "var(--text-sm)" }}>Couldn't load SEO overview.</div>
+        ) : (
+          <React.Fragment>
+            {d.is_local && (
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 16px", background: "var(--warning-subtle, #fffbeb)", border: "1px solid var(--warning-border, #fcd34d)", borderRadius: "var(--radius-md)", color: "var(--warning-fg, #92400e)", fontSize: "var(--text-sm)", marginBottom: 20 }}>
+                {I("alert-triangle", 16)}
+                <span>These pages are on a <strong>local/dev URL</strong> right now. To go live for Google, set <code>APP_URL</code> to your domain and point <code>/jobs</code>, <code>/companies</code>, and <code>/sitemap.xml</code> to Laravel on kramajob.com.</span>
+              </div>
+            )}
+
+            <div className="krm-stats-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16, marginBottom: 24 }}>
+              <StatCard label="Job pages" value={String(d.job_count)} icon={I("briefcase", 22)} tone="brand" />
+              <StatCard label="Company pages" value={String(d.company_count)} icon={I("building-2", 22)} tone="info" />
+              <StatCard label="Total crawlable pages" value={String((d.job_count || 0) + (d.company_count || 0) + 1)} icon={I("globe", 22)} tone="success" />
+            </div>
+
+            <Card padding={20} style={{ marginBottom: 16 }}>
+              <div style={{ fontWeight: 700, color: "var(--text-strong)", marginBottom: 6 }}>Key files</div>
+              {linkRow("Sitemap (sitemap.xml)", d.sitemap_url, "Lists every job & company page for search engines. Submit this in Google Search Console.")}
+              {linkRow("Robots (robots.txt)", d.robots_url, "Tells crawlers what to index + points to the sitemap.")}
+            </Card>
+
+            <Card padding={20} style={{ marginBottom: 16 }}>
+              <div style={{ fontWeight: 700, color: "var(--text-strong)", marginBottom: 6 }}>Preview job pages</div>
+              {(d.jobs || []).length === 0 && <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", padding: "8px 0" }}>No published jobs yet.</div>}
+              {(d.jobs || []).map(function (j, i) { return <div key={i}>{linkRow(j.title, j.url, null)}</div>; })}
+            </Card>
+
+            <Card padding={20} style={{ marginBottom: 16 }}>
+              <div style={{ fontWeight: 700, color: "var(--text-strong)", marginBottom: 6 }}>Preview company pages</div>
+              {(d.companies || []).length === 0 && <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", padding: "8px 0" }}>No approved companies yet.</div>}
+              {(d.companies || []).map(function (c, i) { return <div key={i}>{linkRow(c.name, c.url, null)}</div>; })}
+            </Card>
+
+            <Card padding={20}>
+              <div style={{ fontWeight: 700, color: "var(--text-strong)", marginBottom: 10 }}>Tools &amp; next steps</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+                <Button variant="secondary" size="sm" iconLeft={I("external-link", 14)} onClick={function () { openUrl("https://search.google.com/search-console"); }}>Google Search Console</Button>
+                <Button variant="secondary" size="sm" iconLeft={I("external-link", 14)} onClick={function () { openUrl("https://search.google.com/test/rich-results"); }}>Rich Results Test</Button>
+                <Button variant="secondary" size="sm" iconLeft={I("external-link", 14)} onClick={function () { openUrl("https://search.google.com/test/mobile-friendly"); }}>Mobile-Friendly Test</Button>
+              </div>
+              <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: 12, lineHeight: 1.6 }}>
+                Each job page carries <strong>JobPosting</strong> structured data, so approved jobs are eligible for <strong>Google&nbsp;for&nbsp;Jobs</strong>. After going live: submit the sitemap in Search Console, then paste a job URL into the Rich Results Test to confirm it's valid.
+              </div>
+            </Card>
+          </React.Fragment>
+        )}
+      </div>
+    );
+  }
+
   function App() {
     const [page, setPage] = React.useState("dashboard");
     const [authUser, setAuthUser] = React.useState(null);
@@ -5994,7 +6075,7 @@
 
     if (!authUser) return <AdminLogin onLogin={setAuthUser} />;
 
-    const titles = { dashboard: "Overview", jobs: "Job management", companies: "Company management", candidates: "Candidates", resumes: "Resume Builder", reviews: "Company reviews", forum: "Community forum", homepage: "Homepage content", chat: "Chat agent", social: "Social login", email: "Email settings", telegram: "Telegram notifications", sms: "SMS gateway", social_post: "Social posting", payments: "Payment settings", reports: "Reports", banners: "Promotional banner", brand: "Brand settings", settings: "Settings · Users & roles", profile: "My Profile" };
+    const titles = { dashboard: "Overview", jobs: "Job management", companies: "Company management", candidates: "Candidates", resumes: "Resume Builder", reviews: "Company reviews", forum: "Community forum", homepage: "Homepage content", seo: "SEO", chat: "Chat agent", social: "Social login", email: "Email settings", telegram: "Telegram notifications", sms: "SMS gateway", social_post: "Social posting", payments: "Payment settings", reports: "Reports", banners: "Promotional banner", brand: "Brand settings", settings: "Settings · Users & roles", profile: "My Profile" };
     return (
       <div style={{ display: "flex", minHeight: "100vh", background: "var(--surface-page)" }}>
         {sidebarOpen && <div className="krm-sidebar-backdrop open" onClick={() => setSidebarOpen(false)} />}
@@ -6010,6 +6091,7 @@
           {page === "forum"     && <ForumModeration />}
 
           {page === "homepage" && <Homepage />}
+          {page === "seo" && <SeoPanel />}
           {page === "chat" && <ChatAgentSettings />}
           {page === "social" && <SocialLoginSettings />}
           {page === "email" && <EmailSettings />}
