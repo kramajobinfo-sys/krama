@@ -1,0 +1,272 @@
+function App() {
+  const [page, setPage] = React.useState("home");
+  const [job, setJob] = React.useState(null);
+  const [jobCategory, setJobCategory] = React.useState("All categories");
+  const [jobCompany, setJobCompany] = React.useState("");
+  const [jobKeyword, setJobKeyword] = React.useState("");
+  const [jobLocation, setJobLocation] = React.useState("");
+  const [companyId, setCompanyId] = React.useState(null);
+  const [companyTab, setCompanyTab] = React.useState(null);
+  const [forumThreadId, setForumThreadId] = React.useState(null);
+  const [applyJob, setApplyJob] = React.useState(null);
+  const [saved, setSaved] = React.useState([]);
+  const [user, setUser] = React.useState(null);
+  const [ready, setReady] = React.useState(false);
+  const [lang, setLang] = React.useState(window.KRAMA_LANG || "en");
+  const toggleLang = () => {
+    var next = window.KRAMA_LANG === "km" ? "en" : "km";
+    if (window.KRAMA_SET_LANG) window.KRAMA_SET_LANG(next);
+    setLang(next);
+  };
+  React.useEffect(() => {
+    const api = window.KRAMA_API;
+    const params = new URLSearchParams(window.location.search);
+    const deepJobId = params.get("job");
+    // Password-reset deep link (?reset=1&token=…&email=…) opens the reset view.
+    if (params.get("reset")) {
+      setPage("forgot");
+    }
+    // Community deep link (?thread=N) opens that discussion (used by digest emails).
+    const deepThreadId = params.get("thread");
+    if (deepThreadId) {
+      setForumThreadId(deepThreadId);
+      setPage("community");
+    }
+    const ctrl = new AbortController();
+    setTimeout(() => ctrl.abort(), 8000);
+    Promise.allSettled([api.init(), api.fetchMe().then(u => {
+      if (u) setUser(u);
+    }), deepJobId ? fetch((/^(localhost|127\.0\.0\.1|::1|192\.168\.|10\.)/.test(window.location.hostname) ? 'http://127.0.0.1:8000/api' : window.location.protocol + '//' + window.location.host + '/api') + "/jobs/" + encodeURIComponent(deepJobId), {
+      signal: ctrl.signal
+    }).then(r => r.ok ? r.json() : null).then(j => {
+      if (j && j.id) {
+        openJob(window.KRAMA_API.normaliseJob(j));
+        return;
+      }
+      // API failed or job not found — check if init() already cached it
+      const cached = window.KRAMA_DATA && window.KRAMA_DATA.jobs && window.KRAMA_DATA.jobs.find(x => String(x.id) === String(deepJobId) || x.slug === deepJobId);
+      if (cached) {
+        openJob(cached);
+        return;
+      }
+      // Nothing found — land on jobs page rather than silent home
+      setPage("jobs");
+    }).catch(() => {
+      setPage("jobs");
+    }) : Promise.resolve()]).finally(() => setReady(true));
+  }, []);
+  const toggleSave = id => {
+    const api = window.KRAMA_API;
+    if (!user) {
+      nav("login");
+      return;
+    }
+    setSaved(s => {
+      if (s.includes(id)) {
+        api.unsaveJob(id).catch(() => {});
+        return s.filter(x => x !== id);
+      }
+      api.saveJob(id).catch(() => {});
+      return [...s, id];
+    });
+  };
+  const openJob = j => {
+    setJob(j);
+    setPage("detail");
+    window.scrollTo(0, 0);
+  };
+  const nav = (p, opts) => {
+    opts = opts || {};
+    setJobCategory(opts.category || "All categories");
+    setJobCompany(opts.company || "");
+    setJobKeyword(opts.keyword || "");
+    setJobLocation(opts.location || "");
+    if (opts.companyId != null) setCompanyId(opts.companyId);
+    setCompanyTab(opts.tab != null ? opts.tab : null);
+    setPage(p);
+    window.scrollTo(0, 0);
+  };
+  const handleLogin = u => {
+    setUser(u);
+    const roleSlug = u && u.role && u.role.slug;
+    const token = localStorage.getItem("krama_access_token");
+    if (roleSlug === "employer") {
+      if (token) localStorage.setItem("krama_employer_token", token);
+      window.location.href = "../employer-dashboard/index.html";
+    } else if (roleSlug === "admin" || roleSlug === "super_admin") {
+      if (token) localStorage.setItem("krama_admin_token", token);
+      window.location.href = "../admin-dashboard/index.html";
+    } else {
+      window.location.href = "../candidate-dashboard/index.html";
+    }
+  };
+  const handleLogout = () => {
+    window.KRAMA_API.logout();
+    setUser(null);
+    nav("home");
+  };
+  React.useEffect(() => {
+    if (window.lucide) window.lucide.createIcons();
+  });
+  const {
+    KramaHeader,
+    KramaFooter,
+    KramaHome,
+    KramaJobs,
+    KramaCompanies,
+    KramaCompanyProfile,
+    KramaJobDetail,
+    KramaLogin,
+    KramaRegister,
+    KramaForgotPassword,
+    KramaApplyModal,
+    KramaInfoPage,
+    KramaCandidateProfile,
+    KramaCommunity
+  } = window;
+  if (!ready) return /*#__PURE__*/React.createElement("div", {
+    style: {
+      minHeight: "100vh",
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "center",
+      background: "var(--teal-800)",
+      gap: 16
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 10
+    }
+  }, /*#__PURE__*/React.createElement("img", {
+    src: window.getKramaLogo("../../assets/krama-icon.png"),
+    height: "40",
+    alt: "KRAMA"
+  }), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontFamily: "var(--font-display)",
+      fontWeight: 800,
+      fontSize: "24px",
+      letterSpacing: ".08em",
+      color: "#fff",
+      opacity: 0.9
+    }
+  }, window.KRAMA_BRAND_NAME || "KRAMA")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: 36,
+      height: 36,
+      border: "3px solid rgba(255,255,255,0.2)",
+      borderTopColor: "#fff",
+      borderRadius: "50%",
+      animation: "spin 0.8s linear infinite"
+    }
+  }), /*#__PURE__*/React.createElement("style", null, `@keyframes spin { to { transform: rotate(360deg); } }`));
+  if (page === "login" || page === "register" || page === "forgot") {
+    // Auth pages reuse the standard site header + footer (shown on mobile so the
+    // page matches every other page; hidden on desktop via .krm-auth-page CSS so
+    // the split-screen Shell keeps its own chrome — desktop stays untouched).
+    return /*#__PURE__*/React.createElement("div", {
+      className: "krm-auth-page"
+    }, /*#__PURE__*/React.createElement(KramaHeader, {
+      page: "",
+      onNav: nav,
+      user: user,
+      onLogout: handleLogout,
+      lang: lang,
+      onToggleLang: toggleLang
+    }), page === "login" && /*#__PURE__*/React.createElement(KramaLogin, {
+      onNav: nav,
+      onLogin: handleLogin
+    }), page === "register" && /*#__PURE__*/React.createElement(KramaRegister, {
+      onNav: nav,
+      onLogin: handleLogin
+    }), page === "forgot" && /*#__PURE__*/React.createElement(KramaForgotPassword, {
+      onNav: nav
+    }), /*#__PURE__*/React.createElement(KramaFooter, {
+      onNav: nav
+    }));
+  }
+  const INFO = ["about", "contact", "terms", "privacy", "pricing", "employers"];
+  const headerPage = page === "detail" ? "jobs" : page === "company" ? "companies" : INFO.includes(page) ? "" : page;
+  if (page === "candidateProfile") {
+    return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(KramaHeader, {
+      page: "",
+      onNav: nav,
+      user: user,
+      onLogout: handleLogout,
+      lang: lang,
+      onToggleLang: toggleLang
+    }), KramaCandidateProfile ? /*#__PURE__*/React.createElement(KramaCandidateProfile, {
+      user: user,
+      onNav: nav,
+      onUserUpdate: u => setUser(u)
+    }) : /*#__PURE__*/React.createElement("div", {
+      style: {
+        padding: 40,
+        textAlign: "center",
+        color: "var(--text-muted)"
+      }
+    }, "Loading\u2026"), /*#__PURE__*/React.createElement(KramaFooter, {
+      onNav: nav
+    }));
+  }
+  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(KramaHeader, {
+    page: headerPage,
+    onNav: nav,
+    user: user,
+    onLogout: handleLogout,
+    lang: lang,
+    onToggleLang: toggleLang
+  }), page === "home" && /*#__PURE__*/React.createElement(KramaHome, {
+    onNav: nav,
+    onOpenJob: openJob,
+    saved: saved,
+    toggleSave: toggleSave
+  }), page === "jobs" && /*#__PURE__*/React.createElement(KramaJobs, {
+    onNav: nav,
+    onOpenJob: openJob,
+    saved: saved,
+    toggleSave: toggleSave,
+    initialCategory: jobCategory,
+    initialCompany: jobCompany,
+    initialKeyword: jobKeyword,
+    initialLocation: jobLocation
+  }), page === "companies" && /*#__PURE__*/React.createElement(KramaCompanies, {
+    onNav: nav,
+    initialCompany: jobCompany
+  }), page === "community" && /*#__PURE__*/React.createElement(KramaCommunity, {
+    onNav: nav,
+    user: user,
+    initialThreadId: forumThreadId
+  }), page === "company" && /*#__PURE__*/React.createElement(KramaCompanyProfile, {
+    companyId: companyId,
+    initialTab: companyTab,
+    onNav: nav,
+    onOpenJob: openJob,
+    saved: saved,
+    toggleSave: toggleSave
+  }), INFO.includes(page) && /*#__PURE__*/React.createElement(KramaInfoPage, {
+    slug: page,
+    onNav: nav
+  }), page === "detail" && /*#__PURE__*/React.createElement(KramaJobDetail, {
+    job: job,
+    onBack: () => nav("jobs"),
+    onOpenJob: openJob,
+    onApply: setApplyJob,
+    saved: saved,
+    toggleSave: toggleSave,
+    onNav: nav
+  }), /*#__PURE__*/React.createElement(KramaFooter, {
+    onNav: nav
+  }), /*#__PURE__*/React.createElement(KramaApplyModal, {
+    job: applyJob,
+    onClose: () => setApplyJob(null),
+    user: user,
+    onNav: nav
+  }), window.KramaChatAgent ? /*#__PURE__*/React.createElement(window.KramaChatAgent, {
+    onNav: nav
+  }) : null);
+}
+window.KramaPublicApp = App;

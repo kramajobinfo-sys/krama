@@ -1,0 +1,1690 @@
+// Community forum — landing, category, thread, and composer views.
+(function init() {
+  if (!window.KramaDesignSystem_1a6f65) {
+    return setTimeout(init, 40);
+  }
+  const {
+    Card,
+    Button,
+    Input,
+    Textarea,
+    Badge,
+    Avatar,
+    EmptyState
+  } = window.KramaDesignSystem_1a6f65;
+  const TR = window.KRAMA_T || function (s) {
+    return s;
+  };
+  const I = (n, s = 18) => /*#__PURE__*/React.createElement("i", {
+    "data-lucide": n,
+    style: {
+      width: s,
+      height: s
+    }
+  });
+  const API = () => window.KRAMA_API;
+
+  // ── Top banner (admin-editable via home_content -> "communityTopBanner"). Shown on both
+  //    desktop and mobile, same AnnouncementBar as the other public pages. ──────────────
+  const COMMUNITY_TOP_DEFAULT = {
+    visible: true,
+    theme: "teal",
+    icon: "messages-square",
+    title: "Join the conversation",
+    message: "Ask questions, share tips, and connect with people hiring across Cambodia.",
+    cta: "Start a discussion",
+    ctaUrl: "",
+    image: "",
+    fit: "cover"
+  };
+  // Page hero — same structure/size as the Companies page (admin-editable via home_content -> "communityHero").
+  const COMMUNITY_HERO_DEFAULT = {
+    heading: "Connect with the Krama community",
+    sub: "Ask questions, share knowledge, and find people hiring across Cambodia.",
+    image: "",
+    fit: "cover",
+    imgOverlay: 45
+  };
+  function loadBanner(key, def) {
+    try {
+      const s = JSON.parse(localStorage.getItem("krama_home_settings") || "{}");
+      const m = Object.assign({}, def, s[key] || {});
+      if (!m.image && def.image) m.image = def.image;
+      return m;
+    } catch (e) {
+      return Object.assign({}, def);
+    }
+  }
+  function useHomeContent() {
+    const [, setTick] = React.useState(0);
+    React.useEffect(function () {
+      var apiBase = /^(localhost|127\.0\.0\.1|::1|192\.168\.|10\.)/.test(window.location.hostname) ? 'http://127.0.0.1:8000/api' : window.location.protocol + '//' + window.location.host + '/api';
+      fetch(apiBase + '/settings/home_content', {
+        cache: 'no-cache'
+      }).then(function (r) {
+        return r.ok ? r.json() : null;
+      }).then(function (d) {
+        if (d && d.data) {
+          try {
+            localStorage.setItem('krama_home_settings', JSON.stringify(JSON.parse(d.data)));
+            setTick(1);
+          } catch (e) {}
+        }
+      }).catch(function () {});
+    }, []);
+  }
+  const BAR_THEMES = {
+    saffron: {
+      bg: "var(--saffron-500)",
+      pill: "#fff",
+      pillFg: "var(--saffron-700)"
+    },
+    teal: {
+      bg: "var(--teal-700)",
+      pill: "#fff",
+      pillFg: "var(--teal-800)"
+    },
+    dark: {
+      bg: "var(--stone-900)",
+      pill: "var(--saffron-500)",
+      pillFg: "#fff"
+    },
+    brand: {
+      bg: "var(--brand-700)",
+      pill: "#fff",
+      pillFg: "var(--brand-800)"
+    },
+    blank: {
+      bg: "var(--surface-card)",
+      pill: "var(--brand)",
+      pillFg: "#fff"
+    },
+    transparent: {
+      bg: "transparent",
+      pill: "var(--brand)",
+      pillFg: "#fff"
+    }
+  };
+  function resolveBarTheme(b) {
+    if (b.theme === "custom") return {
+      bg: b.customBg || "var(--saffron-500)",
+      pill: b.customCtaBg || "#fff",
+      pillFg: b.customCtaFg || "var(--saffron-700)",
+      fg: b.customFg || "#fff"
+    };
+    const isLight = b.theme === "transparent" || b.theme === "blank";
+    const t = BAR_THEMES[b.theme] || BAR_THEMES.teal;
+    const base = Object.assign({
+      fg: isLight ? "var(--text-body)" : "#fff"
+    }, t);
+    return b.customFg ? Object.assign({}, base, {
+      fg: b.customFg
+    }) : base;
+  }
+  function AnnouncementBar({
+    b,
+    onNav,
+    onCtaClick
+  }) {
+    const [dismissed, setDismissed] = React.useState(false);
+    if (!b || !b.visible || dismissed) return null;
+    const t = resolveBarTheme(b);
+    const hasImg = !!b.image;
+    if (b.hideText && hasImg) {
+      return /*#__PURE__*/React.createElement("div", {
+        style: {
+          position: "relative",
+          overflow: "hidden",
+          background: t.bg,
+          width: "100%",
+          aspectRatio: "1600 / 160",
+          maxHeight: 160,
+          minHeight: 60
+        }
+      }, /*#__PURE__*/React.createElement("img", {
+        src: b.image,
+        alt: "",
+        style: {
+          display: "block",
+          width: "100%",
+          height: "100%",
+          objectFit: "cover"
+        }
+      }), /*#__PURE__*/React.createElement("button", {
+        onClick: () => setDismissed(true),
+        "aria-label": "Dismiss",
+        style: {
+          position: "absolute",
+          top: 8,
+          right: 12,
+          width: 28,
+          height: 28,
+          borderRadius: "50%",
+          background: "rgba(0,0,0,0.35)",
+          border: "none",
+          color: "#fff",
+          cursor: "pointer",
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center"
+        }
+      }, I("x", 16)));
+    }
+    return /*#__PURE__*/React.createElement("div", {
+      style: {
+        position: "relative",
+        overflow: "hidden",
+        background: t.bg,
+        color: t.fg,
+        borderBottom: b.theme === "transparent" || b.theme === "blank" ? "1px solid var(--border)" : "none"
+      }
+    }, hasImg ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+      style: {
+        position: "absolute",
+        inset: 0,
+        backgroundImage: "url('" + b.image + "')",
+        backgroundSize: b.fit === "contain" ? "contain" : "cover",
+        backgroundRepeat: "no-repeat",
+        backgroundPosition: "center"
+      }
+    }), /*#__PURE__*/React.createElement("div", {
+      style: {
+        position: "absolute",
+        inset: 0,
+        background: t.bg,
+        opacity: (b.imgOverlay != null ? b.imgOverlay : 20) / 100
+      }
+    })) : /*#__PURE__*/React.createElement("div", {
+      style: {
+        position: "absolute",
+        inset: 0,
+        background: "url('../../assets/krama-pattern.svg')",
+        backgroundSize: 60,
+        opacity: 0.10
+      }
+    }), /*#__PURE__*/React.createElement("div", {
+      style: {
+        position: "relative",
+        maxWidth: 1200,
+        margin: "0 auto",
+        display: "flex",
+        alignItems: "center",
+        gap: 14,
+        padding: "10px 32px",
+        minHeight: b.hideText ? 28 : undefined
+      }
+    }, b.hideText ? /*#__PURE__*/React.createElement("div", {
+      style: {
+        flex: 1
+      }
+    }) : /*#__PURE__*/React.createElement(React.Fragment, null, b.icon && /*#__PURE__*/React.createElement("span", {
+      style: {
+        display: "inline-flex",
+        flexShrink: 0
+      }
+    }, I(b.icon, 18)), /*#__PURE__*/React.createElement("div", {
+      style: {
+        flex: 1,
+        fontSize: "var(--text-sm)",
+        fontWeight: 500
+      }
+    }, /*#__PURE__*/React.createElement("strong", {
+      style: {
+        fontWeight: 700
+      }
+    }, TR(b.title)), b.message ? " -- " + TR(b.message) : ""), b.cta && /*#__PURE__*/React.createElement("span", {
+      onClick: () => {
+        if (onCtaClick) {
+          onCtaClick();
+        } else if (b.ctaUrl) window.open(b.ctaUrl, b.ctaUrl.startsWith("http") ? "_blank" : "_self");else onNav && onNav("register");
+      },
+      style: {
+        flexShrink: 0,
+        background: t.pill,
+        color: t.pillFg,
+        fontSize: "var(--text-sm)",
+        fontWeight: 700,
+        padding: "7px 16px",
+        borderRadius: "var(--radius-pill)",
+        cursor: "pointer",
+        whiteSpace: "nowrap"
+      }
+    }, TR(b.cta))), /*#__PURE__*/React.createElement("button", {
+      onClick: () => setDismissed(true),
+      style: {
+        flexShrink: 0,
+        background: "transparent",
+        border: "none",
+        color: t.fg,
+        opacity: 0.7,
+        cursor: "pointer",
+        display: "inline-flex",
+        padding: 4
+      }
+    }, I("x", 16))));
+  }
+  const CAT_THEME = {
+    teal: {
+      bg: "var(--teal-50)",
+      fg: "var(--teal-700)"
+    },
+    saffron: {
+      bg: "var(--saffron-50)",
+      fg: "var(--saffron-600)"
+    },
+    dark: {
+      bg: "var(--stone-100)",
+      fg: "var(--stone-700)"
+    }
+  };
+  const catTheme = c => CAT_THEME[c && c.color || "teal"] || CAT_THEME.teal;
+  function timeAgo(iso) {
+    if (!iso) return "";
+    const then = new Date(iso).getTime();
+    const mins = Math.floor(Math.max(0, Date.now() - then) / 60000);
+    if (mins < 1) return TR("just now");
+    if (mins < 60) return mins + "m " + TR("ago");
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return hrs + "h " + TR("ago");
+    const days = Math.floor(hrs / 24);
+    if (days < 7) return days + "d " + TR("ago");
+    return Math.floor(days / 7) + "w " + TR("ago");
+  }
+
+  // Render a body: turn @[Name](id) mention tokens into styled spans, keep line breaks.
+  function renderBody(text) {
+    if (!text) return null;
+    const parts = [];
+    const re = /@\[([^\]]+)\]\((\d+)\)/g;
+    let last = 0,
+      m,
+      key = 0;
+    while ((m = re.exec(text)) !== null) {
+      if (m.index > last) parts.push(text.slice(last, m.index));
+      parts.push(/*#__PURE__*/React.createElement("strong", {
+        key: "m" + key++,
+        style: {
+          color: "var(--brand)",
+          fontWeight: 700
+        }
+      }, "@", m[1]));
+      last = m.index + m[0].length;
+    }
+    if (last < text.length) parts.push(text.slice(last));
+    return /*#__PURE__*/React.createElement("div", {
+      style: {
+        whiteSpace: "pre-wrap",
+        lineHeight: 1.65,
+        color: "var(--text-body)",
+        wordBreak: "break-word"
+      }
+    }, parts);
+  }
+  const errMsg = e => e && (e.message || e.errors && Object.values(e.errors).flat().join(" ")) || TR("Something went wrong. Please try again.");
+
+  // ── Vote button ────────────────────────────────────────────────────────────
+  function VoteButton({
+    score,
+    voted,
+    onVote,
+    size
+  }) {
+    const s = size || 34;
+    return /*#__PURE__*/React.createElement("button", {
+      onClick: onVote,
+      title: TR("Upvote"),
+      style: {
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 1,
+        width: s,
+        minWidth: s,
+        padding: "4px 0",
+        cursor: "pointer",
+        border: "1px solid " + (voted ? "var(--brand)" : "var(--border-strong)"),
+        background: voted ? "var(--brand-subtle)" : "var(--surface-card)",
+        color: voted ? "var(--text-brand)" : "var(--text-muted)",
+        borderRadius: "var(--radius-md)"
+      }
+    }, I("arrow-big-up", 16), /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: "var(--text-xs)",
+        fontWeight: 800
+      }
+    }, score || 0));
+  }
+
+  // ── Report control (reason dropdown) ────────────────────────────────────────
+  function ReportControl({
+    type,
+    id,
+    user,
+    onNav
+  }) {
+    const [open, setOpen] = React.useState(false);
+    const [done, setDone] = React.useState(false);
+    const reasons = [["spam", TR("Spam")], ["abuse", TR("Abuse or harassment")], ["off_topic", TR("Off-topic")], ["other", TR("Other")]];
+    const submit = reason => {
+      if (!user) {
+        onNav("login");
+        return;
+      }
+      API().forumReport({
+        reportable_type: type,
+        reportable_id: id,
+        reason: reason
+      }).then(function () {
+        setDone(true);
+        setOpen(false);
+      }).catch(function () {
+        setDone(true);
+        setOpen(false);
+      });
+    };
+    if (done) return /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: "var(--text-xs)",
+        color: "var(--text-faint)"
+      }
+    }, TR("Reported"));
+    return /*#__PURE__*/React.createElement("div", {
+      style: {
+        position: "relative"
+      }
+    }, /*#__PURE__*/React.createElement("button", {
+      onClick: () => setOpen(!open),
+      title: TR("Report"),
+      style: {
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 4,
+        background: "none",
+        border: "none",
+        cursor: "pointer",
+        color: "var(--text-faint)",
+        fontSize: "var(--text-xs)",
+        fontWeight: 600,
+        padding: 2
+      }
+    }, I("flag", 13), " ", TR("Report")), open && /*#__PURE__*/React.createElement("div", {
+      style: {
+        position: "absolute",
+        right: 0,
+        top: "100%",
+        marginTop: 4,
+        zIndex: 20,
+        background: "var(--surface-card)",
+        border: "1px solid var(--border)",
+        borderRadius: "var(--radius-md)",
+        boxShadow: "var(--shadow-lg)",
+        minWidth: 180,
+        overflow: "hidden"
+      }
+    }, reasons.map(function (r) {
+      return /*#__PURE__*/React.createElement("button", {
+        key: r[0],
+        onClick: () => submit(r[0]),
+        style: {
+          display: "block",
+          width: "100%",
+          textAlign: "left",
+          padding: "9px 14px",
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+          fontSize: "var(--text-sm)",
+          color: "var(--text-body)",
+          fontFamily: "var(--font-sans)"
+        }
+      }, r[1]);
+    })));
+  }
+
+  // ── Mention-aware reply composer ─────────────────────────────────────────────
+  function ReplyComposer({
+    participants,
+    onSubmit,
+    busy,
+    placeholder
+  }) {
+    const [text, setText] = React.useState("");
+    const [suggest, setSuggest] = React.useState([]);
+    const onChange = e => {
+      const v = e.target.value;
+      setText(v);
+      const m = v.match(/@(\w{0,30})$/);
+      if (m) {
+        const q = m[1].toLowerCase();
+        setSuggest(participants.filter(function (p) {
+          return p.name && p.name.toLowerCase().indexOf(q) !== -1;
+        }).slice(0, 5));
+      } else setSuggest([]);
+    };
+    const pick = p => {
+      setText(text.replace(/@(\w{0,30})$/, "@[" + p.name + "](" + p.id + ") "));
+      setSuggest([]);
+    };
+    const send = () => {
+      const body = text.trim();
+      if (body.length < 2) return;
+      onSubmit(body, function () {
+        setText("");
+      });
+    };
+    return /*#__PURE__*/React.createElement("div", {
+      style: {
+        position: "relative"
+      }
+    }, /*#__PURE__*/React.createElement(Textarea, {
+      rows: 3,
+      value: text,
+      onChange: onChange,
+      placeholder: placeholder || TR("Write a reply…  Use @ to mention someone.")
+    }), suggest.length > 0 && /*#__PURE__*/React.createElement("div", {
+      style: {
+        position: "absolute",
+        left: 0,
+        bottom: 54,
+        zIndex: 20,
+        background: "var(--surface-card)",
+        border: "1px solid var(--border)",
+        borderRadius: "var(--radius-md)",
+        boxShadow: "var(--shadow-lg)",
+        minWidth: 200,
+        overflow: "hidden"
+      }
+    }, suggest.map(function (p) {
+      return /*#__PURE__*/React.createElement("button", {
+        key: p.id,
+        onClick: () => pick(p),
+        style: {
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          width: "100%",
+          textAlign: "left",
+          padding: "8px 12px",
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+          fontFamily: "var(--font-sans)"
+        }
+      }, /*#__PURE__*/React.createElement(Avatar, {
+        name: p.name,
+        size: 22
+      }), " ", /*#__PURE__*/React.createElement("span", {
+        style: {
+          fontSize: "var(--text-sm)",
+          color: "var(--text-strong)"
+        }
+      }, p.name));
+    })), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        justifyContent: "flex-end",
+        marginTop: 8
+      }
+    }, /*#__PURE__*/React.createElement(Button, {
+      variant: "primary",
+      size: "sm",
+      disabled: busy || text.trim().length < 2,
+      onClick: send
+    }, busy ? TR("Posting…") : TR("Post reply"))));
+  }
+
+  // ── Thread list row ──────────────────────────────────────────────────────────
+  function ThreadRow({
+    t,
+    onOpen
+  }) {
+    const ct = catTheme(t.category);
+    return /*#__PURE__*/React.createElement("button", {
+      onClick: () => onOpen(t),
+      className: "krm-thread-card",
+      style: {
+        position: "relative",
+        display: "flex",
+        gap: 14,
+        width: "100%",
+        height: "100%",
+        textAlign: "left",
+        padding: 16,
+        background: "var(--surface-card)",
+        border: "1px solid var(--border)",
+        borderRadius: "var(--radius-lg)",
+        cursor: "pointer",
+        alignItems: "flex-start"
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "krm-thread-vote",
+      style: {
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 2,
+        minWidth: 44,
+        color: "var(--text-muted)"
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontWeight: 800,
+        fontSize: "var(--text-base)",
+        color: t.vote_score > 0 ? "var(--text-brand)" : "var(--text-muted)"
+      }
+    }, t.vote_score || 0), /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: 10,
+        textTransform: "uppercase",
+        letterSpacing: ".04em"
+      }
+    }, TR("votes"))), /*#__PURE__*/React.createElement("div", {
+      className: "krm-thread-body",
+      style: {
+        flex: 1,
+        minWidth: 0
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        marginBottom: 4,
+        flexWrap: "wrap"
+      }
+    }, t.is_pinned ? /*#__PURE__*/React.createElement(Badge, {
+      tone: "accent"
+    }, I("pin", 11), " ", TR("Pinned")) : null, t.is_locked ? /*#__PURE__*/React.createElement(Badge, {
+      tone: "neutral"
+    }, I("lock", 11), " ", TR("Locked")) : null, t.category ? /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: "var(--text-xs)",
+        fontWeight: 700,
+        color: ct.fg,
+        background: ct.bg,
+        padding: "2px 9px",
+        borderRadius: "var(--radius-pill)"
+      }
+    }, t.category.name) : null), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: "var(--text-lg)",
+        fontWeight: 700,
+        color: "var(--text-strong)",
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+        whiteSpace: "nowrap"
+      }
+    }, t.title), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        marginTop: 6,
+        color: "var(--text-muted)",
+        fontSize: "var(--text-xs)",
+        flexWrap: "wrap"
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 5
+      }
+    }, /*#__PURE__*/React.createElement(Avatar, {
+      name: t.author ? t.author.name : "?",
+      size: 18
+    }), " ", t.author ? t.author.name : TR("Unknown")), /*#__PURE__*/React.createElement("span", null, I("message-circle", 12), " ", t.reply_count || 0), /*#__PURE__*/React.createElement("span", null, I("eye", 12), " ", t.views || 0), /*#__PURE__*/React.createElement("span", null, timeAgo(t.last_activity_at || t.created_at)), (t.tags || []).map(function (tg) {
+      return /*#__PURE__*/React.createElement("span", {
+        key: tg.id,
+        style: {
+          color: "var(--text-faint)"
+        }
+      }, "#", tg.name);
+    }))));
+  }
+  function Pager({
+    page,
+    lastPage,
+    onPage
+  }) {
+    if (!lastPage || lastPage <= 1) return null;
+    return /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 12,
+        marginTop: 20
+      }
+    }, /*#__PURE__*/React.createElement(Button, {
+      variant: "secondary",
+      size: "sm",
+      disabled: page <= 1,
+      onClick: () => onPage(page - 1)
+    }, TR("Previous")), /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: "var(--text-sm)",
+        color: "var(--text-muted)"
+      }
+    }, TR("Page"), " ", page, " / ", lastPage), /*#__PURE__*/React.createElement(Button, {
+      variant: "secondary",
+      size: "sm",
+      disabled: page >= lastPage,
+      onClick: () => onPage(page + 1)
+    }, TR("Next")));
+  }
+
+  // ── Thread detail view ────────────────────────────────────────────────────────
+  function ThreadView({
+    threadId,
+    user,
+    onNav,
+    onBack,
+    goCategory
+  }) {
+    const [thread, setThread] = React.useState(null);
+    const [replies, setReplies] = React.useState([]);
+    const [page, setPage] = React.useState(1);
+    const [lastPage, setLastPage] = React.useState(1);
+    const [loading, setLoading] = React.useState(true);
+    const [err, setErr] = React.useState("");
+    const [busy, setBusy] = React.useState(false);
+    const isMod = user && user.role && (user.role.slug === "admin" || user.role.slug === "super_admin");
+    const loadThread = React.useCallback(function () {
+      setLoading(true);
+      API().forumThread(threadId).then(function (t) {
+        setThread(t);
+        setErr("");
+      }).catch(function (e) {
+        setErr(errMsg(e));
+      }).finally(function () {
+        setLoading(false);
+      });
+    }, [threadId]);
+    const loadReplies = React.useCallback(function (p) {
+      API().forumReplies(threadId, p).then(function (r) {
+        setReplies(r.data || []);
+        setPage(r.current_page || 1);
+        setLastPage(r.last_page || 1);
+      }).catch(function () {});
+    }, [threadId]);
+    React.useEffect(function () {
+      loadThread();
+      loadReplies(1);
+    }, [threadId]);
+    React.useEffect(function () {
+      if (window.lucide) window.lucide.createIcons();
+    });
+    const requireLogin = function () {
+      if (!user) {
+        onNav("login");
+        return false;
+      }
+      return true;
+    };
+    const voteThread = function () {
+      if (!requireLogin()) return;
+      API().forumVoteThread(thread.id).then(function (r) {
+        setThread(Object.assign({}, thread, {
+          vote_score: r.score,
+          voted: r.voted
+        }));
+      }).catch(function () {});
+    };
+    const toggleFollow = function () {
+      if (!requireLogin()) return;
+      const fn = thread.subscribed ? API().forumUnsubscribe : API().forumSubscribe;
+      fn(thread.id).then(function (r) {
+        setThread(Object.assign({}, thread, {
+          subscribed: r.subscribed
+        }));
+      }).catch(function () {});
+    };
+    const voteReply = function (rep) {
+      if (!requireLogin()) return;
+      API().forumVoteReply(rep.id).then(function (r) {
+        setReplies(replies.map(function (x) {
+          return x.id === rep.id ? Object.assign({}, x, {
+            vote_score: r.score,
+            voted: r.voted
+          }) : x;
+        }));
+      }).catch(function () {});
+    };
+    const submitReply = function (body, reset) {
+      if (!requireLogin()) return;
+      setBusy(true);
+      API().forumCreateReply(thread.id, {
+        body: body
+      }).then(function () {
+        reset();
+        setBusy(false);
+        // reload last page to show the new reply
+        API().forumReplies(threadId, lastPage).then(function (r) {
+          setReplies(r.data || []);
+          setPage(r.current_page || 1);
+          setLastPage(r.last_page || 1);
+          setThread(function (t) {
+            return t ? Object.assign({}, t, {
+              reply_count: (t.reply_count || 0) + 1
+            }) : t;
+          });
+        });
+      }).catch(function (e) {
+        setBusy(false);
+        setErr(errMsg(e));
+      });
+    };
+    const deleteReply = function (rep) {
+      if (!confirm(TR("Delete this reply?"))) return;
+      API().forumDeleteReply(rep.id).then(function () {
+        loadReplies(page);
+      }).catch(function () {});
+    };
+    const modReply = function (rep, hidden) {
+      API().authedPost ? null : null;
+      window.KRAMA_API_PATCH; // noop
+    };
+    const deleteThread = function () {
+      if (!confirm(TR("Delete this whole thread?"))) return;
+      API().forumDeleteThread(thread.id).then(function () {
+        onBack();
+      }).catch(function () {});
+    };
+    if (loading && !thread) return /*#__PURE__*/React.createElement("div", {
+      style: {
+        padding: 60,
+        textAlign: "center",
+        color: "var(--text-muted)"
+      }
+    }, TR("Loading…"));
+    if (err && !thread) return /*#__PURE__*/React.createElement("div", {
+      style: {
+        padding: 40
+      }
+    }, /*#__PURE__*/React.createElement(EmptyState, {
+      icon: "alert-triangle",
+      title: TR("Couldn't load this discussion"),
+      message: err
+    }));
+    if (!thread) return null;
+    const ct = catTheme(thread.category);
+    const participants = function () {
+      const seen = {},
+        list = [];
+      const add = function (u) {
+        if (u && u.id && !seen[u.id]) {
+          seen[u.id] = 1;
+          list.push({
+            id: u.id,
+            name: u.name
+          });
+        }
+      };
+      add(thread.author);
+      replies.forEach(function (r) {
+        add(r.author);
+      });
+      return list;
+    }();
+    const own = user && thread.author && user.id === thread.author.id;
+    return /*#__PURE__*/React.createElement("div", {
+      style: {
+        maxWidth: 860,
+        margin: "0 auto",
+        padding: "28px 16px 64px"
+      }
+    }, /*#__PURE__*/React.createElement("button", {
+      onClick: onBack,
+      style: {
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 6,
+        background: "none",
+        border: "none",
+        cursor: "pointer",
+        color: "var(--text-muted)",
+        fontSize: "var(--text-sm)",
+        fontWeight: 600,
+        marginBottom: 16,
+        padding: 0
+      }
+    }, I("arrow-left", 15), " ", TR("Back to Community")), /*#__PURE__*/React.createElement(Card, {
+      padding: 24
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        gap: 16
+      }
+    }, /*#__PURE__*/React.createElement(VoteButton, {
+      score: thread.vote_score,
+      voted: thread.voted,
+      onVote: voteThread
+    }), /*#__PURE__*/React.createElement("div", {
+      style: {
+        flex: 1,
+        minWidth: 0
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        marginBottom: 8,
+        flexWrap: "wrap"
+      }
+    }, thread.is_pinned ? /*#__PURE__*/React.createElement(Badge, {
+      tone: "accent"
+    }, I("pin", 11), " ", TR("Pinned")) : null, thread.is_locked ? /*#__PURE__*/React.createElement(Badge, {
+      tone: "neutral"
+    }, I("lock", 11), " ", TR("Locked")) : null, thread.category ? /*#__PURE__*/React.createElement("button", {
+      onClick: () => goCategory(thread.category),
+      style: {
+        background: ct.bg,
+        color: ct.fg,
+        border: "none",
+        cursor: "pointer",
+        fontSize: "var(--text-xs)",
+        fontWeight: 700,
+        padding: "3px 10px",
+        borderRadius: "var(--radius-pill)"
+      }
+    }, thread.category.name) : null), /*#__PURE__*/React.createElement("h1", {
+      style: {
+        fontSize: "var(--text-2xl)",
+        fontWeight: 800,
+        color: "var(--text-strong)",
+        margin: "0 0 10px",
+        letterSpacing: "-0.01em"
+      }
+    }, thread.title), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        marginBottom: 16,
+        color: "var(--text-muted)",
+        fontSize: "var(--text-sm)"
+      }
+    }, /*#__PURE__*/React.createElement(Avatar, {
+      name: thread.author ? thread.author.name : "?",
+      size: 24
+    }), /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontWeight: 600,
+        color: "var(--text-strong)"
+      }
+    }, thread.author ? thread.author.name : TR("Unknown")), /*#__PURE__*/React.createElement("span", null, "\xB7 ", timeAgo(thread.created_at)), /*#__PURE__*/React.createElement("span", null, "\xB7 ", I("eye", 13), " ", thread.views || 0)), renderBody(thread.body), (thread.tags || []).length > 0 && /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        gap: 6,
+        marginTop: 16,
+        flexWrap: "wrap"
+      }
+    }, thread.tags.map(function (tg) {
+      return /*#__PURE__*/React.createElement("span", {
+        key: tg.id,
+        style: {
+          fontSize: "var(--text-xs)",
+          color: "var(--text-muted)",
+          background: "var(--surface-sunken)",
+          padding: "3px 10px",
+          borderRadius: "var(--radius-pill)"
+        }
+      }, "#", tg.name);
+    })), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        alignItems: "center",
+        gap: 16,
+        marginTop: 18,
+        paddingTop: 14,
+        borderTop: "1px solid var(--border-subtle)",
+        flexWrap: "wrap"
+      }
+    }, /*#__PURE__*/React.createElement("button", {
+      onClick: toggleFollow,
+      style: {
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 6,
+        background: "none",
+        border: "none",
+        cursor: "pointer",
+        color: thread.subscribed ? "var(--text-brand)" : "var(--text-muted)",
+        fontSize: "var(--text-sm)",
+        fontWeight: 600,
+        padding: 0
+      }
+    }, I(thread.subscribed ? "bell-ring" : "bell", 15), " ", thread.subscribed ? TR("Following") : TR("Follow")), own ? /*#__PURE__*/React.createElement("button", {
+      onClick: deleteThread,
+      style: {
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 6,
+        background: "none",
+        border: "none",
+        cursor: "pointer",
+        color: "var(--danger)",
+        fontSize: "var(--text-sm)",
+        fontWeight: 600,
+        padding: 0
+      }
+    }, I("trash-2", 15), " ", TR("Delete")) : null, /*#__PURE__*/React.createElement(ReportControl, {
+      type: "thread",
+      id: thread.id,
+      user: user,
+      onNav: onNav
+    }))))), /*#__PURE__*/React.createElement("div", {
+      style: {
+        margin: "26px 0 12px",
+        fontSize: "var(--text-lg)",
+        fontWeight: 800,
+        color: "var(--text-strong)"
+      }
+    }, thread.reply_count || 0, " ", thread.reply_count === 1 ? TR("reply") : TR("replies")), replies.length === 0 ? /*#__PURE__*/React.createElement(Card, {
+      padding: 28
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        textAlign: "center",
+        color: "var(--text-muted)",
+        fontSize: "var(--text-sm)"
+      }
+    }, TR("No replies yet — be the first to respond."))) : /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        flexDirection: "column",
+        gap: 12
+      }
+    }, replies.map(function (r) {
+      const ownReply = user && r.author && user.id === r.author.id;
+      return /*#__PURE__*/React.createElement(Card, {
+        key: r.id,
+        padding: 18,
+        style: {
+          opacity: r.is_hidden ? 0.55 : 1
+        }
+      }, /*#__PURE__*/React.createElement("div", {
+        style: {
+          display: "flex",
+          gap: 14
+        }
+      }, /*#__PURE__*/React.createElement(VoteButton, {
+        score: r.vote_score,
+        voted: r.voted,
+        onVote: () => voteReply(r),
+        size: 30
+      }), /*#__PURE__*/React.createElement("div", {
+        style: {
+          flex: 1,
+          minWidth: 0
+        }
+      }, /*#__PURE__*/React.createElement("div", {
+        style: {
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          marginBottom: 8,
+          color: "var(--text-muted)",
+          fontSize: "var(--text-sm)"
+        }
+      }, /*#__PURE__*/React.createElement(Avatar, {
+        name: r.author ? r.author.name : "?",
+        size: 22
+      }), /*#__PURE__*/React.createElement("span", {
+        style: {
+          fontWeight: 600,
+          color: "var(--text-strong)"
+        }
+      }, r.author ? r.author.name : TR("Unknown")), /*#__PURE__*/React.createElement("span", null, "\xB7 ", timeAgo(r.created_at)), r.is_hidden ? /*#__PURE__*/React.createElement(Badge, {
+        tone: "neutral"
+      }, TR("Hidden")) : null), renderBody(r.body), /*#__PURE__*/React.createElement("div", {
+        style: {
+          display: "flex",
+          alignItems: "center",
+          gap: 16,
+          marginTop: 10
+        }
+      }, ownReply ? /*#__PURE__*/React.createElement("button", {
+        onClick: () => deleteReply(r),
+        style: {
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 5,
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+          color: "var(--danger)",
+          fontSize: "var(--text-xs)",
+          fontWeight: 600,
+          padding: 0
+        }
+      }, I("trash-2", 13), " ", TR("Delete")) : null, /*#__PURE__*/React.createElement(ReportControl, {
+        type: "reply",
+        id: r.id,
+        user: user,
+        onNav: onNav
+      })))));
+    })), /*#__PURE__*/React.createElement(Pager, {
+      page: page,
+      lastPage: lastPage,
+      onPage: loadReplies
+    }), /*#__PURE__*/React.createElement("div", {
+      style: {
+        marginTop: 26
+      }
+    }, thread.is_locked ? /*#__PURE__*/React.createElement(Card, {
+      padding: 20
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        textAlign: "center",
+        color: "var(--text-muted)",
+        fontSize: "var(--text-sm)"
+      }
+    }, I("lock", 14), " ", TR("This thread is locked. No new replies can be posted."))) : user ? /*#__PURE__*/React.createElement(Card, {
+      padding: 18
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: "var(--text-sm)",
+        fontWeight: 700,
+        color: "var(--text-strong)",
+        marginBottom: 10
+      }
+    }, TR("Add a reply")), err ? /*#__PURE__*/React.createElement("div", {
+      style: {
+        padding: "8px 12px",
+        background: "var(--danger-subtle)",
+        color: "var(--danger)",
+        borderRadius: "var(--radius-md)",
+        fontSize: "var(--text-sm)",
+        marginBottom: 10
+      }
+    }, err) : null, /*#__PURE__*/React.createElement(ReplyComposer, {
+      participants: participants,
+      onSubmit: submitReply,
+      busy: busy
+    })) : /*#__PURE__*/React.createElement(Card, {
+      padding: 20
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        textAlign: "center",
+        color: "var(--text-muted)",
+        fontSize: "var(--text-sm)"
+      }
+    }, TR("Please"), " ", /*#__PURE__*/React.createElement("a", {
+      onClick: () => onNav("login"),
+      style: {
+        color: "var(--text-brand)",
+        cursor: "pointer",
+        fontWeight: 700
+      }
+    }, TR("log in")), " ", TR("to join the discussion.")))));
+  }
+
+  // ── New-thread composer ────────────────────────────────────────────────────────
+  function Composer({
+    categories,
+    presetCategory,
+    user,
+    onNav,
+    onCreated,
+    onCancel
+  }) {
+    const [categoryId, setCategoryId] = React.useState(presetCategory ? String(presetCategory.id) : categories[0] ? String(categories[0].id) : "");
+    const [title, setTitle] = React.useState("");
+    const [body, setBody] = React.useState("");
+    const [tags, setTags] = React.useState("");
+    const [busy, setBusy] = React.useState(false);
+    const [err, setErr] = React.useState("");
+    React.useEffect(function () {
+      if (window.lucide) window.lucide.createIcons();
+    });
+    const submit = function () {
+      if (!user) {
+        onNav("login");
+        return;
+      }
+      if (!title.trim() || body.trim().length < 10 || !categoryId) {
+        setErr(TR("Add a title and at least a short message (10+ characters)."));
+        return;
+      }
+      setBusy(true);
+      setErr("");
+      const tagList = tags.split(",").map(function (t) {
+        return t.trim();
+      }).filter(Boolean).slice(0, 5);
+      API().forumCreateThread({
+        category_id: Number(categoryId),
+        title: title.trim(),
+        body: body.trim(),
+        tags: tagList
+      }).then(function (t) {
+        setBusy(false);
+        onCreated(t);
+      }).catch(function (e) {
+        setBusy(false);
+        setErr(errMsg(e));
+      });
+    };
+    return /*#__PURE__*/React.createElement("div", {
+      style: {
+        maxWidth: 760,
+        margin: "0 auto",
+        padding: "28px 16px 64px"
+      }
+    }, /*#__PURE__*/React.createElement("button", {
+      onClick: onCancel,
+      style: {
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 6,
+        background: "none",
+        border: "none",
+        cursor: "pointer",
+        color: "var(--text-muted)",
+        fontSize: "var(--text-sm)",
+        fontWeight: 600,
+        marginBottom: 16,
+        padding: 0
+      }
+    }, I("arrow-left", 15), " ", TR("Cancel")), /*#__PURE__*/React.createElement(Card, {
+      padding: 24
+    }, /*#__PURE__*/React.createElement("h1", {
+      style: {
+        fontSize: "var(--text-2xl)",
+        fontWeight: 800,
+        color: "var(--text-strong)",
+        margin: "0 0 18px"
+      }
+    }, TR("Start a discussion")), err ? /*#__PURE__*/React.createElement("div", {
+      style: {
+        padding: "10px 14px",
+        background: "var(--danger-subtle)",
+        color: "var(--danger)",
+        borderRadius: "var(--radius-md)",
+        fontSize: "var(--text-sm)",
+        marginBottom: 16
+      }
+    }, err) : null, /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "grid",
+        gap: 16
+      }
+    }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+      style: {
+        display: "block",
+        fontSize: "var(--text-sm)",
+        fontWeight: 700,
+        color: "var(--text-strong)",
+        marginBottom: 6
+      }
+    }, TR("Category")), /*#__PURE__*/React.createElement("select", {
+      value: categoryId,
+      onChange: e => setCategoryId(e.target.value),
+      style: {
+        width: "100%",
+        height: 42,
+        padding: "0 12px",
+        borderRadius: "var(--radius-md)",
+        border: "1px solid var(--border-strong)",
+        background: "var(--surface-card)",
+        color: "var(--text-strong)",
+        fontFamily: "var(--font-sans)",
+        fontSize: "var(--text-sm)"
+      }
+    }, categories.map(function (c) {
+      return /*#__PURE__*/React.createElement("option", {
+        key: c.id,
+        value: c.id
+      }, c.name);
+    }))), /*#__PURE__*/React.createElement(Input, {
+      label: TR("Title"),
+      value: title,
+      onChange: e => setTitle(e.target.value),
+      placeholder: TR("What do you want to discuss?")
+    }), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+      style: {
+        display: "block",
+        fontSize: "var(--text-sm)",
+        fontWeight: 700,
+        color: "var(--text-strong)",
+        marginBottom: 6
+      }
+    }, TR("Message")), /*#__PURE__*/React.createElement(Textarea, {
+      rows: 8,
+      value: body,
+      onChange: e => setBody(e.target.value),
+      placeholder: TR("Share the details… Use @ to mention someone.")
+    })), /*#__PURE__*/React.createElement(Input, {
+      label: TR("Tags (optional, comma-separated)"),
+      value: tags,
+      onChange: e => setTags(e.target.value),
+      placeholder: "salary, interview, remote"
+    }), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        justifyContent: "flex-end",
+        gap: 10
+      }
+    }, /*#__PURE__*/React.createElement(Button, {
+      variant: "secondary",
+      onClick: onCancel
+    }, TR("Cancel")), /*#__PURE__*/React.createElement(Button, {
+      variant: "primary",
+      disabled: busy,
+      onClick: submit
+    }, busy ? TR("Posting…") : TR("Post discussion"))))));
+  }
+
+  // ── Landing + category list ──────────────────────────────────────────────────
+  function Community({
+    onNav,
+    user,
+    initialThreadId
+  }) {
+    useHomeContent();
+    const [view, setView] = React.useState(initialThreadId ? "thread" : "list");
+    const [activeThreadId, setActiveThreadId] = React.useState(initialThreadId || null);
+    const [category, setCategory] = React.useState(null); // active category filter (object) or null
+    const [categories, setCategories] = React.useState([]);
+    const [threads, setThreads] = React.useState([]);
+    const [page, setPage] = React.useState(1);
+    const [lastPage, setLastPage] = React.useState(1);
+    const [total, setTotal] = React.useState(0);
+    const [sort, setSort] = React.useState("latest");
+    const [q, setQ] = React.useState("");
+    const [qInput, setQInput] = React.useState("");
+    const [loading, setLoading] = React.useState(true);
+    React.useEffect(function () {
+      API().forumCategories().then(function (c) {
+        setCategories(c || []);
+      }).catch(function () {});
+    }, []);
+    const loadThreads = React.useCallback(function (p) {
+      setLoading(true);
+      const params = {
+        page: p || 1,
+        per_page: 8,
+        sort: sort
+      };
+      if (category) params.category = category.id;
+      if (q) params.q = q;
+      API().forumThreads(params).then(function (r) {
+        setThreads(r.data || []);
+        setPage(r.current_page || 1);
+        setLastPage(r.last_page || 1);
+        setTotal(r.total || 0);
+      }).catch(function () {
+        setThreads([]);
+      }).finally(function () {
+        setLoading(false);
+      });
+    }, [category, sort, q]);
+    React.useEffect(function () {
+      if (view === "list") loadThreads(1);
+    }, [category, sort, q, view]);
+    React.useEffect(function () {
+      if (window.lucide) window.lucide.createIcons();
+    });
+    const openThread = function (t) {
+      setActiveThreadId(t.id);
+      setView("thread");
+      window.scrollTo(0, 0);
+    };
+    const openCategory = function (c) {
+      setCategory(c);
+      setQ("");
+      setQInput("");
+      setView("list");
+      window.scrollTo(0, 0);
+    };
+    const startNew = function () {
+      if (!user) {
+        onNav("login");
+        return;
+      }
+      setView("new");
+      window.scrollTo(0, 0);
+    };
+    const runSearch = function () {
+      setQ(qInput.trim());
+    };
+    if (view === "thread" && activeThreadId) {
+      return /*#__PURE__*/React.createElement(ThreadView, {
+        threadId: activeThreadId,
+        user: user,
+        onNav: onNav,
+        onBack: function () {
+          setView("list");
+          setActiveThreadId(null);
+        },
+        goCategory: openCategory
+      });
+    }
+    if (view === "new") {
+      return /*#__PURE__*/React.createElement(Composer, {
+        categories: categories,
+        presetCategory: category,
+        user: user,
+        onNav: onNav,
+        onCreated: function (t) {
+          openThread(t);
+        },
+        onCancel: function () {
+          setView("list");
+        }
+      });
+    }
+
+    // list view
+    return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(AnnouncementBar, {
+      b: loadBanner("communityTopBanner", COMMUNITY_TOP_DEFAULT),
+      onNav: onNav,
+      onCtaClick: startNew
+    }), (() => {
+      const h = loadBanner("communityHero", COMMUNITY_HERO_DEFAULT);
+      const hasImg = !!h.image;
+      const showTxt = !h.hideText;
+      const txt = /*#__PURE__*/React.createElement("div", {
+        className: h.hideOnMobile ? "krm-hero-hide-mobile" : undefined,
+        style: {
+          maxWidth: 1200,
+          margin: "0 auto",
+          width: "100%",
+          padding: hasImg ? "0 32px" : 0
+        }
+      }, /*#__PURE__*/React.createElement("div", {
+        style: {
+          fontSize: "var(--text-xs)",
+          fontWeight: 800,
+          letterSpacing: "0.1em",
+          textTransform: "uppercase",
+          color: "var(--teal-200)"
+        }
+      }, TR("Community")), /*#__PURE__*/React.createElement("h1", {
+        style: {
+          color: "#fff",
+          fontSize: "var(--text-4xl)",
+          fontWeight: 800,
+          letterSpacing: "-0.02em",
+          marginTop: 6
+        }
+      }, TR(h.heading)), /*#__PURE__*/React.createElement("p", {
+        style: {
+          color: "var(--stone-300)",
+          fontSize: "var(--text-lg)",
+          marginTop: 8
+        }
+      }, TR(h.sub)));
+      return /*#__PURE__*/React.createElement("div", {
+        className: "krm-page-hero" + (hasImg ? " krm-page-hero--img" : "") + (window.kHeroCls ? window.kHeroCls(h) : ""),
+        style: {
+          position: "relative",
+          background: "var(--teal-800)",
+          overflow: "hidden",
+          padding: hasImg ? 0 : "44px 32px",
+          aspectRatio: hasImg ? "1600 / 360" : undefined,
+          maxHeight: hasImg ? 360 : undefined
+        }
+      }, hasImg ? /*#__PURE__*/React.createElement("img", {
+        className: "krm-page-hero-bg",
+        src: h.image,
+        alt: "",
+        style: {
+          position: "absolute",
+          inset: 0,
+          width: "100%",
+          height: "100%",
+          objectFit: h.fit === "contain" ? "contain" : "cover",
+          display: "block"
+        }
+      }) : /*#__PURE__*/React.createElement("div", {
+        style: {
+          position: "absolute",
+          inset: 0,
+          background: "url('../../assets/krama-pattern.svg')",
+          backgroundSize: 72,
+          opacity: 0.08
+        }
+      }), showTxt && hasImg && /*#__PURE__*/React.createElement("div", {
+        style: {
+          position: "absolute",
+          inset: 0,
+          background: "var(--teal-800)",
+          opacity: (h.imgOverlay != null ? h.imgOverlay : 45) / 100
+        }
+      }), showTxt && (hasImg ? /*#__PURE__*/React.createElement("div", {
+        className: "krm-page-hero-txt",
+        style: {
+          position: "absolute",
+          inset: 0,
+          display: "flex",
+          alignItems: "center"
+        }
+      }, txt) : /*#__PURE__*/React.createElement("div", {
+        style: {
+          position: "relative"
+        }
+      }, txt)));
+    })(), /*#__PURE__*/React.createElement("div", {
+      className: "krm-forum-list",
+      style: {
+        maxWidth: 1200,
+        margin: "0 auto",
+        padding: "28px 32px 64px"
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        justifyContent: "flex-end",
+        marginBottom: 16
+      }
+    }, /*#__PURE__*/React.createElement(Button, {
+      variant: "primary",
+      iconLeft: I("plus", 15),
+      onClick: startNew
+    }, TR("New discussion"))), !category && !q && /*#__PURE__*/React.createElement("div", {
+      className: "krm-info-grid",
+      style: {
+        display: "grid",
+        gridTemplateColumns: "repeat(3,1fr)",
+        gap: 12,
+        margin: "20px 0 28px"
+      }
+    }, categories.map(function (c) {
+      const ct = catTheme(c);
+      return /*#__PURE__*/React.createElement("button", {
+        key: c.id,
+        onClick: () => openCategory(c),
+        style: {
+          display: "flex",
+          gap: 12,
+          textAlign: "left",
+          padding: 16,
+          background: "var(--surface-card)",
+          border: "1px solid var(--border)",
+          borderRadius: "var(--radius-lg)",
+          cursor: "pointer"
+        }
+      }, /*#__PURE__*/React.createElement("span", {
+        style: {
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          width: 42,
+          height: 42,
+          borderRadius: "var(--radius-md)",
+          background: ct.bg,
+          color: ct.fg,
+          flexShrink: 0
+        }
+      }, I(c.icon || "messages-square", 20)), /*#__PURE__*/React.createElement("div", {
+        style: {
+          minWidth: 0
+        }
+      }, /*#__PURE__*/React.createElement("div", {
+        style: {
+          fontWeight: 700,
+          color: "var(--text-strong)"
+        }
+      }, c.name), /*#__PURE__*/React.createElement("div", {
+        style: {
+          fontSize: "var(--text-xs)",
+          color: "var(--text-muted)",
+          marginTop: 2,
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          display: "-webkit-box",
+          WebkitLineClamp: 2,
+          WebkitBoxOrient: "vertical"
+        }
+      }, c.description), /*#__PURE__*/React.createElement("div", {
+        style: {
+          fontSize: "var(--text-xs)",
+          color: "var(--text-faint)",
+          marginTop: 6
+        }
+      }, c.threads_count || 0, " ", c.threads_count === 1 ? TR("thread") : TR("threads"))));
+    })), /*#__PURE__*/React.createElement(Card, {
+      padding: 16,
+      style: {
+        marginBottom: 18
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        gap: 10,
+        alignItems: "center",
+        flexWrap: "wrap"
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        flex: 1,
+        minWidth: 200,
+        display: "flex",
+        gap: 8,
+        alignItems: "center",
+        background: "var(--surface-sunken)",
+        borderRadius: "var(--radius-md)",
+        padding: "0 12px"
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        color: "var(--text-faint)"
+      }
+    }, I("search", 16)), /*#__PURE__*/React.createElement("input", {
+      value: qInput,
+      onChange: e => setQInput(e.target.value),
+      onKeyDown: e => {
+        if (e.key === "Enter") runSearch();
+      },
+      placeholder: TR("Search discussions…"),
+      style: {
+        flex: 1,
+        border: "none",
+        background: "none",
+        outline: "none",
+        height: 40,
+        fontFamily: "var(--font-sans)",
+        fontSize: "var(--text-sm)",
+        color: "var(--text-strong)"
+      }
+    }), q ? /*#__PURE__*/React.createElement("button", {
+      onClick: () => {
+        setQ("");
+        setQInput("");
+      },
+      style: {
+        background: "none",
+        border: "none",
+        cursor: "pointer",
+        color: "var(--text-faint)"
+      }
+    }, I("x", 16)) : null), /*#__PURE__*/React.createElement(Button, {
+      variant: "secondary",
+      size: "sm",
+      onClick: runSearch
+    }, TR("Search")), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        gap: 4,
+        background: "var(--surface-sunken)",
+        borderRadius: "var(--radius-md)",
+        padding: 4
+      }
+    }, [["latest", TR("Latest")], ["new", TR("New")], ["top", TR("Top")]].map(function (s) {
+      const on = sort === s[0];
+      return /*#__PURE__*/React.createElement("button", {
+        key: s[0],
+        onClick: () => setSort(s[0]),
+        style: {
+          padding: "6px 14px",
+          borderRadius: "var(--radius-sm)",
+          border: "none",
+          cursor: "pointer",
+          fontSize: "var(--text-sm)",
+          fontWeight: 700,
+          background: on ? "var(--surface-card)" : "transparent",
+          color: on ? "var(--text-brand)" : "var(--text-muted)",
+          boxShadow: on ? "var(--shadow-sm)" : "none"
+        }
+      }, s[1]);
+    })))), (category || q) && /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        marginBottom: 8,
+        fontSize: "var(--text-sm)",
+        color: "var(--text-muted)"
+      }
+    }, /*#__PURE__*/React.createElement("button", {
+      onClick: () => {
+        setCategory(null);
+        setQ("");
+        setQInput("");
+      },
+      style: {
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 5,
+        background: "none",
+        border: "none",
+        cursor: "pointer",
+        color: "var(--text-brand)",
+        fontWeight: 700,
+        padding: 0
+      }
+    }, I("arrow-left", 14), " ", TR("All discussions")), /*#__PURE__*/React.createElement("span", null, "\xB7"), /*#__PURE__*/React.createElement("span", null, category ? category.name : TR("Search") + ': "' + q + '"', " \u2014 ", total, " ", TR("results"))), loading ? /*#__PURE__*/React.createElement("div", {
+      style: {
+        padding: 50,
+        textAlign: "center",
+        color: "var(--text-muted)"
+      }
+    }, TR("Loading…")) : threads.length === 0 ? /*#__PURE__*/React.createElement(EmptyState, {
+      icon: "messages-square",
+      title: TR("No discussions yet"),
+      message: TR("Be the first to start a conversation.")
+    }) : /*#__PURE__*/React.createElement("div", {
+      className: "krm-forum-threads",
+      style: {
+        display: "grid",
+        gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+        gap: 12,
+        alignItems: "stretch"
+      }
+    }, threads.map(function (t) {
+      return /*#__PURE__*/React.createElement(ThreadRow, {
+        key: t.id,
+        t: t,
+        onOpen: openThread
+      });
+    })), /*#__PURE__*/React.createElement(Pager, {
+      page: page,
+      lastPage: lastPage,
+      onPage: loadThreads
+    })));
+  }
+  window.KramaCommunity = Community;
+})();
