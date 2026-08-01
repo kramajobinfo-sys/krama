@@ -342,23 +342,47 @@ class PaymentController extends Controller
             if ($mid === '' || $key === '') {
                 return response()->json(['status' => 'pending', 'configured' => false]);
             }
-            if (\App\Services\PaymentService::abaIsPaid($payment->invoice_no, $mid, $key)) {
+            $st = \App\Services\PaymentService::abaStatus($payment->invoice_no, $mid, $key);
+            if ($st === 'paid') {
                 \App\Services\PaymentService::fulfill($payment);
                 $this->auditLog('payment.aba_verified', ['payment_id' => $payment->id, 'amount' => $payment->amount]);
                 return response()->json(['status' => 'paid']);
+            }
+            if ($st === 'failed') {
+                return response()->json(['status' => 'failed']);
             }
             return response()->json(['status' => 'pending']);
         }
 
         if ($payment->method === 'card') {
-            $key = trim($pay['stripe_secret_key'] ?? '');
-            if ($key === '' || ! $payment->gateway_ref) {
-                return response()->json(['status' => 'pending', 'configured' => $key !== '']);
+            // A 'card' payment is processed through Stripe when it has a Stripe Checkout
+            // session (gateway_ref) — e.g. CV-match credit packs — otherwise through ABA
+            // PayWay's hosted card form (subscription checkout), where the transaction is
+            // keyed by invoice_no exactly like an ABA PAY payment. Verify against whichever
+            // gateway actually took the payment.
+            if ($payment->gateway_ref) {
+                $key = trim($pay['stripe_secret_key'] ?? '');
+                if ($key === '') {
+                    return response()->json(['status' => 'pending', 'configured' => false]);
+                }
+                $st = \App\Services\PaymentService::stripeSessionStatus($payment->gateway_ref, $key);
+                $gateway = 'stripe';
+            } else {
+                $mid = trim($pay['aba_merchant_id'] ?? '');
+                $key = trim($pay['aba_api_key'] ?? '');
+                if ($mid === '' || $key === '') {
+                    return response()->json(['status' => 'pending', 'configured' => false]);
+                }
+                $st = \App\Services\PaymentService::abaStatus($payment->invoice_no, $mid, $key);
+                $gateway = 'aba';
             }
-            if (\App\Services\PaymentService::stripeSessionPaid($payment->gateway_ref, $key)) {
+            if ($st === 'paid') {
                 \App\Services\PaymentService::fulfill($payment);
-                $this->auditLog('payment.stripe_verified', ['payment_id' => $payment->id, 'amount' => $payment->amount]);
+                $this->auditLog('payment.card_verified', ['payment_id' => $payment->id, 'amount' => $payment->amount, 'gateway' => $gateway]);
                 return response()->json(['status' => 'paid']);
+            }
+            if ($st === 'failed') {
+                return response()->json(['status' => 'failed']);
             }
             return response()->json(['status' => 'pending']);
         }

@@ -148,13 +148,18 @@ class PaymentService
         }
     }
 
+    // ABA PayWay payment_status values we treat as a DEFINITIVE terminal failure (the buyer
+    // will not complete this transaction) — as opposed to PENDING or a not-yet-seen tran.
+    private const ABA_FAILED_STATUSES = ['DECLINED', 'CANCELLED', 'CANCELED', 'FAILED', 'EXPIRED', 'REFUSED', 'VOID'];
+
     /**
-     * Ask ABA PayWay whether a transaction (our invoice_no == PayWay tran_id) is approved,
-     * via the check-transaction-2 endpoint. The request is signed with an HMAC-SHA512 hash
-     * (base64) of req_time + merchant_id + tran_id keyed by the merchant API key.
-     * Returns false on any error / not-yet-approved so callers leave the payment pending.
+     * Resolve an ABA PayWay transaction (our invoice_no == PayWay tran_id) to a tri-state
+     * 'paid' | 'failed' | 'pending' in a single check-transaction-2 round-trip. The request
+     * is signed with an HMAC-SHA512 hash (base64) of req_time + merchant_id + tran_id keyed
+     * by the merchant API key. Conservative: any network error or unrecognised/PENDING status
+     * resolves to 'pending' so a genuinely in-flight payment is never wrongly failed.
      */
-    public static function abaIsPaid(string $tranId, string $merchantId, string $apiKey): bool
+    public static function abaStatus(string $tranId, string $merchantId, string $apiKey): string
     {
         try {
             $reqTime = gmdate('YmdHis');
@@ -168,7 +173,7 @@ class PaymentService
             ]);
 
             if (! $resp->successful()) {
-                return false;
+                return 'pending';
             }
 
             $body = $resp->json();
@@ -180,11 +185,28 @@ class PaymentService
             $paymentStatus = strtoupper((string) data_get($body, 'data.payment_status', ''));
             $statusCodeNum = data_get($body, 'data.payment_status_code', null);
 
-            return $paymentStatus === 'APPROVED' || $statusCodeNum === 0 || $statusCodeNum === '0';
+            if ($paymentStatus === 'APPROVED' || $statusCodeNum === 0 || $statusCodeNum === '0') {
+                return 'paid';
+            }
+            if (in_array($paymentStatus, self::ABA_FAILED_STATUSES, true)) {
+                return 'failed';
+            }
+
+            return 'pending';
         } catch (\Exception $e) {
             Log::warning('ABA verify failed: ' . $e->getMessage());
-            return false;
+            return 'pending';
         }
+    }
+
+    /**
+     * Ask ABA PayWay whether a transaction is approved. Thin wrapper over abaStatus() kept
+     * for the callback + scheduled-sweep callers that only care about the paid transition.
+     * Returns false on any error / not-yet-approved so callers leave the payment pending.
+     */
+    public static function abaIsPaid(string $tranId, string $merchantId, string $apiKey): bool
+    {
+        return self::abaStatus($tranId, $merchantId, $apiKey) === 'paid';
     }
 
     /**
@@ -322,28 +344,49 @@ class PaymentService
     }
 
     /**
-     * Ask Stripe whether a Checkout Session has been paid.
-     * Returns false on any error / not-yet-paid so callers leave the payment pending.
+     * Resolve a Stripe Checkout Session to a tri-state 'paid' | 'failed' | 'pending' in a
+     * single round-trip. A session with payment_status "paid" is paid; a session whose
+     * status is "expired" (the buyer abandoned it / it timed out — a Checkout Session is
+     * only ever open → complete or open → expired) is a definitive failure; anything else
+     * (still "open") stays pending. Conservative: any error resolves to 'pending'.
      *
-     * SAFE ONLY when $sessionId is the payment's own gateway_ref (the session we
-     * created for THIS payment). Do NOT call this with an attacker-supplied session
-     * id against an unrelated payment — use stripeSessionMatchesPayment() there.
+     * SAFE ONLY when $sessionId is the payment's own gateway_ref (the session we created
+     * for THIS payment). Do NOT call this with an attacker-supplied session id against an
+     * unrelated payment — use stripeSessionMatchesPayment() there.
      */
-    public static function stripeSessionPaid(string $sessionId, string $secretKey): bool
+    public static function stripeSessionStatus(string $sessionId, string $secretKey): string
     {
         try {
             $resp = Http::withToken($secretKey)->timeout(15)
                 ->get(self::STRIPE_BASE . '/v1/checkout/sessions/' . $sessionId);
 
             if (! $resp->successful()) {
-                return false;
+                return 'pending';
             }
 
-            return (string) $resp->json('payment_status') === 'paid';
+            $body = $resp->json();
+
+            if ((string) ($body['payment_status'] ?? '') === 'paid') {
+                return 'paid';
+            }
+            if ((string) ($body['status'] ?? '') === 'expired') {
+                return 'failed';
+            }
+
+            return 'pending';
         } catch (\Exception $e) {
             Log::warning('Stripe verify failed: ' . $e->getMessage());
-            return false;
+            return 'pending';
         }
+    }
+
+    /**
+     * Ask Stripe whether a Checkout Session has been paid. Thin wrapper over
+     * stripeSessionStatus() kept for the scheduled-sweep caller.
+     */
+    public static function stripeSessionPaid(string $sessionId, string $secretKey): bool
+    {
+        return self::stripeSessionStatus($sessionId, $secretKey) === 'paid';
     }
 
     /**

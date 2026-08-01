@@ -127,7 +127,7 @@
               <button key={n.id} onClick={() => { onNav(n.id); onClose && onClose(); }} style={{ display: "flex", alignItems: "center", gap: 11, border: "none", cursor: "pointer", padding: "10px 12px", borderRadius: "var(--radius-md)", textAlign: "left", background: active ? "var(--brand-subtle)" : "transparent", color: active ? "var(--text-brand)" : "var(--text-body)", fontFamily: "var(--font-sans)", fontWeight: active ? 700 : 500, fontSize: "var(--text-base)" }}>
                 <span style={{ display: "inline-flex", color: active ? "var(--brand)" : "var(--text-muted)" }}>{I(n.icon, 19)}</span>
                 <span style={{ flex: 1 }}>{n.label}</span>
-                {badges[n.id] > 0 && <Badge tone={active ? "brand" : "neutral"}>{badges[n.id]}</Badge>}
+                {badges[n.id] > 0 && <Badge tone={n.id === "billing" ? "warning" : (active ? "brand" : "neutral")}>{badges[n.id]}</Badge>}
               </button>
             );
           })}
@@ -1923,19 +1923,41 @@
     const [stripeUrl, setStripeUrl] = React.useState(null);
     const [paymentId, setPaymentId] = React.useState(null);
     const [waiting, setWaiting] = React.useState(false);
-    React.useEffect(() => { if (plan) { setDone(false); setMethod(available[0] || null); setError(""); setKhqr(null); setStripeUrl(null); setPaymentId(null); setWaiting(false); } }, [plan]);
+    const [attempts, setAttempts] = React.useState(0);
+    const [notConfirmed, setNotConfirmed] = React.useState(false); // payment declined / not confirmed in time
+    React.useEffect(() => { if (plan) { setDone(false); setMethod(available[0] || null); setError(""); setKhqr(null); setStripeUrl(null); setPaymentId(null); setWaiting(false); setAttempts(0); setNotConfirmed(false); } }, [plan]);
 
     // While awaiting a gateway payment (KHQR/Bakong, ABA, or Stripe card), poll the backend
-    // which verifies the payment against the gateway and fulfills it on confirmation.
+    // which verifies the payment against the gateway and fulfills it on confirmation. If the
+    // gateway reports the payment failed/canceled, or it isn't confirmed within ~90s, surface
+    // a clear "payment not successful — try again" state instead of waiting forever.
     React.useEffect(function () {
       if (!waiting || !paymentId || done) return;
+      var POLL_LIMIT = 22; // ~90s at 4s intervals before prompting the employer to retry
       var t = setInterval(function () {
         emp.verifyPayment(paymentId).then(function (r) {
-          if (r && r.status === "paid") { setDone(true); onPaid && onPaid(); }
+          if (r && r.status === "paid") { setDone(true); setNotConfirmed(false); onPaid && onPaid(); return; }
+          if (r && (r.status === "failed" || r.status === "canceled" || r.status === "declined")) { setNotConfirmed(true); return; }
+          setAttempts(function (n) { var next = n + 1; if (next >= POLL_LIMIT) setNotConfirmed(true); return next; });
         }).catch(function () {});
       }, 4000);
       return function () { clearInterval(t); };
     }, [waiting, paymentId, done]);
+
+    // Re-initiate the gateway step for the SAME pending payment (no new subscription created).
+    const retryPayment = function () {
+      var id = paymentId;
+      if (!id) { onClose(); return; }
+      setNotConfirmed(false); setAttempts(0); setError("");
+      if (method === "khqr") {
+        setWaiting(true);
+        emp.generateKhqr(id).then(function (d) { setKhqr(d.qr); }).catch(function (e) { setError((e && e.message) || "Could not generate KHQR."); });
+      } else if (method === "card") {
+        setWaiting(true); emp.abaForm(id, "cards").then(abaSubmitForm).catch(function (e) { setError((e && e.message) || "Could not start card payment."); });
+      } else {
+        setWaiting(true); emp.abaForm(id).then(abaSubmitForm).catch(function (e) { setError((e && e.message) || "Could not start the payment."); });
+      }
+    };
 
     if (!plan) return null;
     const m = method ? PAY_META[method] : null;
@@ -1974,6 +1996,28 @@
       <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 200, background: "var(--surface-overlay)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
         <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", maxWidth: 460, background: "var(--surface-card)", borderRadius: "var(--radius-xl)", boxShadow: "var(--shadow-xl)", overflow: "hidden" }}>
           {!done ? (
+            notConfirmed ? (
+              <React.Fragment>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 22px", borderBottom: "1px solid var(--border)" }}>
+                  <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "var(--text-lg)", color: "var(--text-strong)" }}>Payment not confirmed</div>
+                  <button onClick={onClose} aria-label="Close" style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--text-muted)", display: "inline-flex" }}>{I("x", 18)}</button>
+                </div>
+                <div style={{ padding: "22px", display: "flex", flexDirection: "column", gap: 16 }}>
+                  <div style={{ display: "flex", gap: 12, alignItems: "flex-start", padding: "14px 16px", border: "1px solid var(--warning-border, #fcd34d)", background: "var(--warning-subtle, #fef3c7)", borderRadius: "var(--radius-md)" }}>
+                    <span style={{ color: "var(--warning, #d97706)", flexShrink: 0 }}>{I("triangle-alert", 20)}</span>
+                    <div style={{ fontSize: "var(--text-sm)", color: "var(--text-body)", lineHeight: 1.6 }}>
+                      <strong style={{ color: "var(--text-strong)" }}>Your payment wasn't successful.</strong><br />
+                      The <strong>{plan.name}</strong> plan is <strong>not active yet</strong>. If you just completed payment it can take a moment to confirm — otherwise please check out and pay again.
+                    </div>
+                  </div>
+                  {error && <div style={{ padding: "10px 14px", background: "var(--danger-subtle)", color: "var(--danger)", borderRadius: "var(--radius-md)", fontSize: "var(--text-sm)" }}>{error}</div>}
+                </div>
+                <div style={{ display: "flex", gap: 10, padding: "16px 22px", borderTop: "1px solid var(--border)" }}>
+                  <Button variant="ghost" onClick={onClose}>I'll finish later</Button>
+                  <Button variant="primary" block iconLeft={I("refresh-cw", 15)} onClick={retryPayment}>Try payment again</Button>
+                </div>
+              </React.Fragment>
+            ) :
             khqr ? (
               <React.Fragment>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 22px", borderBottom: "1px solid var(--border)" }}>
@@ -3044,7 +3088,8 @@
     const companyPending = jobs.filter((j) => j.status === "company_pending").length;
     const totalApps = jobs.reduce((s, j) => s + (j.applications_count || 0), 0);
     // Company admin sees pending-review badge on jobs tab; recruiters see awaiting-review count
-    const badges = { jobs: companyPending, applicants: totalApps, messages: unreadMsg };
+    // Alert badge on Plan & billing when a subscription is pending payment/approval.
+    const badges = { jobs: companyPending, applicants: totalApps, messages: unreadMsg, billing: (sub && sub.status === "pending") ? 1 : 0 };
 
     const titles = { dashboard: "Dashboard", jobs: "Job postings", applicants: "Applicant tracking", messages: "Messages", team: "Team", company: "Company profile", billing: "Plan & billing", profile: "My Profile" };
     return (
