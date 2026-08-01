@@ -6023,7 +6023,7 @@
     const fmtWhen = function (iso) { if (!iso) return "never"; try { return new Date(iso).toLocaleString(); } catch (e) { return iso; } };
 
     return (
-      <div>
+      <div className="krm-page-pad" style={{ padding: 28 }}>
         <ScreenHead title="Feeds" sub="Aggregate external job & company listings from RSS/Atom/JSON feeds." action={<Button variant="primary" iconLeft={I("plus", 16)} onClick={openCreate}>Add feed</Button>} />
 
         {flash && <div style={{ marginBottom: 16, padding: "10px 14px", background: "var(--brand-subtle)", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", color: "var(--text-brand)", fontSize: "var(--text-sm)", fontWeight: 600 }}>{flash}</div>}
@@ -6275,7 +6275,7 @@
 
     if (!authUser) return <AdminLogin onLogin={setAuthUser} />;
 
-    const titles = { dashboard: "Overview", jobs: "Job management", companies: "Company management", candidates: "Candidates", resumes: "Resume Builder", reviews: "Company reviews", forum: "Community forum", homepage: "Homepage content", seo: "SEO", chat: "Chat agent", social: "Social login", email: "Email settings", telegram: "Telegram notifications", sms: "SMS gateway", social_post: "Social posting", payments: "Payment settings", reports: "Reports", banners: "Promotional banner", brand: "Brand settings", settings: "Settings · Users & roles", profile: "My Profile" };
+    const titles = { dashboard: "Overview", jobs: "Job management", companies: "Company management", candidates: "Candidates", resumes: "Resume Builder", reviews: "Company reviews", forum: "Community forum", homepage: "Homepage content", seo: "SEO", feeds: "Feeds", chat: "Chat agent", social: "Social login", email: "Email settings", telegram: "Telegram notifications", sms: "SMS gateway", social_post: "Social posting", payments: "Payment settings", reports: "Reports", banners: "Promotional banner", brand: "Brand settings", settings: "Settings · Users & roles", profile: "My Profile" };
     return (
       <div style={{ display: "flex", minHeight: "100vh", background: "var(--surface-page)" }}>
         {sidebarOpen && <div className="krm-sidebar-backdrop open" onClick={() => setSidebarOpen(false)} />}
