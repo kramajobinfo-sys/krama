@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Company;
 use App\Models\Job;
+use App\Services\OgImageService;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
 /**
@@ -78,6 +80,51 @@ class SeoController extends Controller
         ], fn ($v) => $v !== null);
 
         return view('seo.company', compact('company', 'jobs', 'canonical', 'metaDesc', 'ld'));
+    }
+
+    /** GET /jobs/{slug}/og.png — dynamic 1200×630 social-share card for the job. */
+    public function jobOg(string $slug)
+    {
+        $job = Job::with(['company', 'location'])
+            ->where('slug', $slug)->where('status', 'published')->first();
+        abort_if(! $job, 404);
+
+        $key = 'og:job:' . $job->id . ':' . optional($job->updated_at)->timestamp;
+        $png = Cache::get($key);
+        if (! $png) {
+            $png = app(OgImageService::class)->job($job, $job->company);
+            if ($png) Cache::put($key, $png, now()->addDays(7));
+        }
+
+        return $this->pngResponse($png);
+    }
+
+    /** GET /companies/{id}/og.png — dynamic 1200×630 social-share card for the company. */
+    public function companyOg(int $id)
+    {
+        $company = Company::where('id', $id)->where('status', 'approved')->first();
+        abort_if(! $company, 404);
+
+        $count = Job::where('company_id', $company->id)->where('status', 'published')->count();
+        $key = 'og:company:' . $company->id . ':' . optional($company->updated_at)->timestamp . ':' . $count;
+        $png = Cache::get($key);
+        if (! $png) {
+            $png = app(OgImageService::class)->company($company, $count);
+            if ($png) Cache::put($key, $png, now()->addDays(7));
+        }
+
+        return $this->pngResponse($png);
+    }
+
+    private function pngResponse(?string $png)
+    {
+        abort_if(! $png, 500);
+
+        return response($png, 200, [
+            'Content-Type'   => 'image/png',
+            'Content-Length' => (string) strlen($png),
+            'Cache-Control'  => 'public, max-age=86400',
+        ]);
     }
 
     /** GET /sitemap.xml — published jobs + approved companies + key static pages. */

@@ -4,9 +4,11 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\SeoController;
 
 // ── SEO: server-rendered, crawlable pages for search engines + Google for Jobs ──
-Route::get('/sitemap.xml',      [SeoController::class, 'sitemap']);
-Route::get('/jobs/{slug}',      [SeoController::class, 'job']);
-Route::get('/companies/{id}',   [SeoController::class, 'company'])->whereNumber('id');
+Route::get('/sitemap.xml',           [SeoController::class, 'sitemap']);
+Route::get('/jobs/{slug}/og.png',    [SeoController::class, 'jobOg']);
+Route::get('/jobs/{slug}',           [SeoController::class, 'job']);
+Route::get('/companies/{id}/og.png', [SeoController::class, 'companyOg'])->whereNumber('id');
+Route::get('/companies/{id}',        [SeoController::class, 'company'])->whereNumber('id');
 
 /*
 |--------------------------------------------------------------------------

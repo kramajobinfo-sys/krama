@@ -2,10 +2,15 @@
 
 @section('title', $company->name . ' — Jobs & company profile | Krama')
 
-@php $ogImg = $company->cover_banner_url ?: ($company->logo_url ?: null); @endphp
-@if($ogImg)
-  @push('head')<meta property="og:image" content="{{ $ogImg }}">@endpush
-@endif
+@php $ogImg = url('/companies/' . $company->id . '/og.png'); @endphp
+@push('head')
+  <meta property="og:image" content="{{ $ogImg }}">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:type" content="image/png">
+  <meta property="og:image:alt" content="{{ $company->name }} — Jobs &amp; hiring on Krama">
+  <meta name="twitter:image" content="{{ $ogImg }}">
+@endpush
 
 @section('content')
 <article class="card">

@@ -15,12 +15,17 @@
              : $fmt($job->salary_min ?: $job->salary_max);
         $sal .= ' / ' . $per;
     }
-    $ogImg = $job->social_image ?: (optional($company)->logo_url ?: null);
+    $ogImg = url('/jobs/' . $job->slug . '/og.png');
 @endphp
 
-@if($ogImg)
-  @push('head')<meta property="og:image" content="{{ $ogImg }}">@endpush
-@endif
+@push('head')
+  <meta property="og:image" content="{{ $ogImg }}">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:type" content="image/png">
+  <meta property="og:image:alt" content="{{ $job->title }}{{ $company ? ' at ' . $company->name : '' }}">
+  <meta name="twitter:image" content="{{ $ogImg }}">
+@endpush
 
 @section('content')
 <article class="card">
