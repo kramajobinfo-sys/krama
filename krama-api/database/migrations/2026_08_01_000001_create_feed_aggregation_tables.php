@@ -10,6 +10,7 @@ return new class extends Migration
     {
         // Admin-configured external feeds (job or company sources).
         Schema::create('feed_sources', function (Blueprint $table) {
+            $table->engine = 'InnoDB'; // some hosts default to MyISAM (1000-byte key cap + no FKs)
             $table->id();
             $table->string('name', 120);                       // display source name, e.g. "Bongthom"
             $table->string('url', 1000);                       // feed URL
@@ -27,6 +28,7 @@ return new class extends Migration
 
         // Imported external job listings (kept separate from native `jobs`).
         Schema::create('external_jobs', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
             $table->id();
             $table->foreignId('feed_source_id')->constrained('feed_sources')->cascadeOnDelete();
             $table->string('external_id', 191);                // stable id from the feed (guid/link hash)
@@ -48,6 +50,7 @@ return new class extends Migration
 
         // Imported external company profiles.
         Schema::create('external_companies', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
             $table->id();
             $table->foreignId('feed_source_id')->constrained('feed_sources')->cascadeOnDelete();
             $table->string('external_id', 191);
