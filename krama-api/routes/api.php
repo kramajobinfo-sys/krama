@@ -93,6 +93,9 @@ Route::get('jobs/{id}', [JobController::class, 'show']);
 Route::get('external-jobs',      [\App\Http\Controllers\FeedSourceController::class, 'publicJobs']);
 Route::get('external-companies', [\App\Http\Controllers\FeedSourceController::class, 'publicCompanies']);
 
+// Public "notify me when jobs launch" capture (empty-state waitlist)
+Route::post('waitlist', [\App\Http\Controllers\WaitlistController::class, 'store'])->middleware('throttle:10,1');
+
 // Community forum — public reads (guest access honours the forum.allow_guest_read setting)
 Route::get('forum/categories',            [\App\Http\Controllers\ForumCategoryController::class, 'index']);
 Route::get('forum/threads',               [\App\Http\Controllers\ForumThreadController::class, 'index']);

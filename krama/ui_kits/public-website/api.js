@@ -481,8 +481,13 @@
   function forumVoteReply(id)           { return authedPost("/forum/replies/" + id + "/vote", {}); }
   function forumReport(payload)         { return authedPost("/forum/report", payload); }
 
+  function joinWaitlist(email, keyword) {
+    return post("/waitlist", { email: email, keyword: keyword || null, source: "find_jobs" });
+  }
+
   window.KRAMA_API  = {
     init: init, login: login, register: register, requestOtp: requestOtp, logout: logout,
+    joinWaitlist: joinWaitlist,
     socialLogin: socialLogin,
     forgotPassword: forgotPassword, resetPassword: resetPassword,
     fetchMe: fetchMe, updateMe: updateMe,

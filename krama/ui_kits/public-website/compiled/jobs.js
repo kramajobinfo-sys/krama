@@ -1101,6 +1101,134 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       }
     }, TR("Cancel"))))));
   }
+
+  // Shown on Find Jobs when the whole site has no jobs yet — capture a "notify me" email.
+  function NotifyEmptyState({
+    keyword,
+    onNav
+  }) {
+    const [email, setEmail] = React.useState("");
+    const [state, setState] = React.useState("idle"); // idle | sending | done | error
+    const [msg, setMsg] = React.useState("");
+    const submit = function (e) {
+      if (e && e.preventDefault) e.preventDefault();
+      var em = (email || "").trim();
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) {
+        setState("error");
+        setMsg(TR("Please enter a valid email address."));
+        return;
+      }
+      setState("sending");
+      setMsg("");
+      window.KRAMA_API.joinWaitlist(em, keyword || "").then(function (r) {
+        setState("done");
+        setMsg(r && r.message || TR("You’re on the list — we’ll email you when jobs go live."));
+      }).catch(function () {
+        setState("error");
+        setMsg(TR("Something went wrong. Please try again."));
+      });
+    };
+    return /*#__PURE__*/React.createElement("div", {
+      style: {
+        background: "var(--surface-card)",
+        border: "1px solid var(--border)",
+        borderRadius: "var(--radius-lg)",
+        padding: "48px 24px",
+        textAlign: "center"
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        width: 56,
+        height: 56,
+        borderRadius: "50%",
+        background: "var(--brand-subtle, rgba(12,126,107,0.08))",
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        color: "var(--brand)",
+        marginBottom: 16
+      }
+    }, I("rocket", 26)), /*#__PURE__*/React.createElement("h3", {
+      style: {
+        fontSize: "var(--text-xl)",
+        fontWeight: 800,
+        color: "var(--text-strong)",
+        margin: 0
+      }
+    }, TR("Jobs are coming soon")), /*#__PURE__*/React.createElement("p", {
+      style: {
+        fontSize: "var(--text-sm)",
+        color: "var(--text-muted)",
+        maxWidth: 440,
+        margin: "8px auto 0",
+        lineHeight: 1.6
+      }
+    }, TR("We’re just getting started — employers are adding roles now. Leave your email and we’ll notify you the moment jobs go live.")), state === "done" ? /*#__PURE__*/React.createElement("div", {
+      style: {
+        marginTop: 22,
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 8,
+        color: "var(--brand)",
+        fontWeight: 700,
+        fontSize: "var(--text-sm)"
+      }
+    }, I("check-circle", 18), " ", msg) : /*#__PURE__*/React.createElement("form", {
+      onSubmit: submit,
+      style: {
+        marginTop: 22,
+        display: "flex",
+        gap: 8,
+        justifyContent: "center",
+        flexWrap: "wrap"
+      }
+    }, /*#__PURE__*/React.createElement("input", {
+      type: "email",
+      value: email,
+      onChange: function (e) {
+        setEmail(e.target.value);
+      },
+      placeholder: TR("you@email.com"),
+      style: {
+        width: 260,
+        maxWidth: "80vw",
+        height: 44,
+        padding: "0 14px",
+        borderRadius: "var(--radius-md)",
+        border: "1px solid var(--border-strong)",
+        background: "var(--surface-page)",
+        color: "var(--text-body)",
+        fontFamily: "var(--font-sans)",
+        fontSize: "var(--text-sm)",
+        outline: "none"
+      }
+    }), /*#__PURE__*/React.createElement(Button, {
+      variant: "primary",
+      onClick: submit,
+      disabled: state === "sending"
+    }, state === "sending" ? "…" : TR("Notify me"))), state === "error" ? /*#__PURE__*/React.createElement("div", {
+      style: {
+        marginTop: 10,
+        color: "var(--danger)",
+        fontSize: "var(--text-xs)"
+      }
+    }, msg) : null, /*#__PURE__*/React.createElement("div", {
+      style: {
+        marginTop: 20,
+        fontSize: "var(--text-xs)",
+        color: "var(--text-faint)"
+      }
+    }, TR("Are you an employer?"), " ", /*#__PURE__*/React.createElement("span", {
+      onClick: function () {
+        onNav && onNav("employers");
+      },
+      style: {
+        color: "var(--text-brand)",
+        cursor: "pointer",
+        fontWeight: 600
+      }
+    }, TR("Post a job"))));
+  }
   function Jobs({
     onNav,
     onOpenJob,
@@ -1737,7 +1865,10 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         cursor: pageSafe === pages - 1 ? "not-allowed" : "pointer",
         color: pageSafe === pages - 1 ? "var(--text-faint)" : "var(--text-body)"
       }
-    }, I("chevron-right", 18))) : null) : /*#__PURE__*/React.createElement("div", {
+    }, I("chevron-right", 18))) : null) : (D.jobs || []).length === 0 ? /*#__PURE__*/React.createElement(NotifyEmptyState, {
+      keyword: query,
+      onNav: onNav
+    }) : /*#__PURE__*/React.createElement("div", {
       style: {
         background: "var(--surface-card)",
         border: "1px solid var(--border)",

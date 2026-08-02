@@ -301,6 +301,39 @@
     );
   }
 
+  // Shown on Find Jobs when the whole site has no jobs yet — capture a "notify me" email.
+  function NotifyEmptyState({ keyword, onNav }) {
+    const [email, setEmail] = React.useState("");
+    const [state, setState] = React.useState("idle"); // idle | sending | done | error
+    const [msg, setMsg] = React.useState("");
+    const submit = function (e) {
+      if (e && e.preventDefault) e.preventDefault();
+      var em = (email || "").trim();
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) { setState("error"); setMsg(TR("Please enter a valid email address.")); return; }
+      setState("sending"); setMsg("");
+      window.KRAMA_API.joinWaitlist(em, keyword || "").then(function (r) {
+        setState("done"); setMsg((r && r.message) || TR("You’re on the list — we’ll email you when jobs go live."));
+      }).catch(function () { setState("error"); setMsg(TR("Something went wrong. Please try again.")); });
+    };
+    return (
+      <div style={{ background: "var(--surface-card)", border: "1px solid var(--border)", borderRadius: "var(--radius-lg)", padding: "48px 24px", textAlign: "center" }}>
+        <div style={{ width: 56, height: 56, borderRadius: "50%", background: "var(--brand-subtle, rgba(12,126,107,0.08))", display: "inline-flex", alignItems: "center", justifyContent: "center", color: "var(--brand)", marginBottom: 16 }}>{I("rocket", 26)}</div>
+        <h3 style={{ fontSize: "var(--text-xl)", fontWeight: 800, color: "var(--text-strong)", margin: 0 }}>{TR("Jobs are coming soon")}</h3>
+        <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", maxWidth: 440, margin: "8px auto 0", lineHeight: 1.6 }}>{TR("We’re just getting started — employers are adding roles now. Leave your email and we’ll notify you the moment jobs go live.")}</p>
+        {state === "done" ? (
+          <div style={{ marginTop: 22, display: "inline-flex", alignItems: "center", gap: 8, color: "var(--brand)", fontWeight: 700, fontSize: "var(--text-sm)" }}>{I("check-circle", 18)} {msg}</div>
+        ) : (
+          <form onSubmit={submit} style={{ marginTop: 22, display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
+            <input type="email" value={email} onChange={function (e) { setEmail(e.target.value); }} placeholder={TR("you@email.com")} style={{ width: 260, maxWidth: "80vw", height: 44, padding: "0 14px", borderRadius: "var(--radius-md)", border: "1px solid var(--border-strong)", background: "var(--surface-page)", color: "var(--text-body)", fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)", outline: "none" }} />
+            <Button variant="primary" onClick={submit} disabled={state === "sending"}>{state === "sending" ? "…" : TR("Notify me")}</Button>
+          </form>
+        )}
+        {state === "error" ? <div style={{ marginTop: 10, color: "var(--danger)", fontSize: "var(--text-xs)" }}>{msg}</div> : null}
+        <div style={{ marginTop: 20, fontSize: "var(--text-xs)", color: "var(--text-faint)" }}>{TR("Are you an employer?")} <span onClick={function () { onNav && onNav("employers"); }} style={{ color: "var(--text-brand)", cursor: "pointer", fontWeight: 600 }}>{TR("Post a job")}</span></div>
+      </div>
+    );
+  }
+
   function Jobs({ onNav, onOpenJob, saved, toggleSave, initialCategory, initialCompany, initialKeyword, initialLocation }) {
     useHomeContent();
     const [keyword, setKeyword] = React.useState(initialKeyword || "");
@@ -548,6 +581,8 @@
                 </div>
               ) : null}
               </React.Fragment>
+            ) : (D.jobs || []).length === 0 ? (
+              <NotifyEmptyState keyword={query} onNav={onNav} />
             ) : (
               <div style={{ background: "var(--surface-card)", border: "1px solid var(--border)", borderRadius: "var(--radius-lg)" }}>
                 <EmptyState icon={I("search-x", 22)} title={TR("No jobs match your filters")}
