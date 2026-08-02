@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ApplicationController;
+use App\Http\Controllers\CompanyJobFeedController;
 use App\Http\Controllers\ResumeController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\TeamController;
@@ -197,6 +198,11 @@ Route::middleware('auth:api')->group(function () {
     Route::post('employer/upload/image',     [UploadController::class, 'employerImage'])->middleware('throttle:20,1');
     Route::post('jobs',                      [JobController::class, 'store'])->middleware('throttle:30,1');
     Route::post('jobs/ai-draft',             [JobController::class, 'employerAiDraft'])->middleware('throttle:20,1');
+    // Employer careers/ATS feed → native draft jobs
+    Route::get('employer/job-feed',          [CompanyJobFeedController::class, 'show']);
+    Route::put('employer/job-feed',          [CompanyJobFeedController::class, 'save']);
+    Route::post('employer/job-feed/sync',    [CompanyJobFeedController::class, 'sync'])->middleware('throttle:10,1');
+    Route::delete('employer/job-feed',       [CompanyJobFeedController::class, 'destroy']);
     Route::put('jobs/{id}',                  [JobController::class, 'update']);
     Route::delete('jobs/{id}',               [JobController::class, 'destroy']);
     Route::patch('jobs/{id}/submit',         [JobController::class, 'submit']);

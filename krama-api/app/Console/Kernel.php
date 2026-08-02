@@ -22,6 +22,12 @@ class Kernel extends ConsoleKernel
         $schedule->command('payments:verify-pending')->everyThreeMinutes()->withoutOverlapping();
         $schedule->command('forum:digest')->dailyAt('08:00');
         $schedule->command('feeds:import')->everySixHours()->withoutOverlapping();
+        // Employer careers/ATS feeds → refresh native draft jobs
+        $schedule->call(function () {
+            \App\Models\CompanyJobFeed::where('enabled', true)->get()->each(function ($feed) {
+                try { \App\Services\CompanyJobFeedService::sync($feed); } catch (\Throwable $e) {}
+            });
+        })->everySixHours()->withoutOverlapping()->name('company-feeds-sync');
         $schedule->command('queue:prune-failed', ['--hours' => 168])->weekly();
 
         // Drain the queue every minute (shared-host pattern: no long-running worker daemon).

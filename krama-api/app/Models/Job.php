@@ -10,7 +10,7 @@ class Job extends Model
     protected $table = 'jobs';
 
     protected $fillable = [
-        'company_id', 'user_id', 'subscription_id', 'category_id', 'location_id', 'title', 'slug',
+        'company_id', 'user_id', 'subscription_id', 'category_id', 'location_id', 'title', 'slug', 'import_ref',
         'job_type', 'experience_level', 'salary_min', 'salary_max',
         'salary_currency', 'salary_period', 'is_remote', 'description',
         'requirements', 'benefits', 'is_featured', 'featured_until', 'status',

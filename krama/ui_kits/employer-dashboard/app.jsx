@@ -479,6 +479,94 @@
     );
   }
 
+  // Connect the company's own careers/ATS feed → native draft jobs.
+  function JobFeedModal({ open, onClose, onImported }) {
+    const [feed, setFeed] = React.useState(null);
+    const [url, setUrl] = React.useState("");
+    const [format, setFormat] = React.useState("rss");
+    const [loading, setLoading] = React.useState(false);
+    const [saving, setSaving] = React.useState(false);
+    const [syncing, setSyncing] = React.useState(false);
+    const [msg, setMsg] = React.useState("");
+    const [err, setErr] = React.useState("");
+    const [result, setResult] = React.useState(null);
+
+    React.useEffect(function () {
+      if (!open) return;
+      setMsg(""); setErr(""); setResult(null); setLoading(true);
+      emp.getJobFeed().then(function (d) {
+        var f = d && d.feed;
+        setFeed(f || null);
+        setUrl(f ? (f.url || "") : "");
+        setFormat(f ? (f.format || "rss") : "rss");
+        setLoading(false);
+      }).catch(function () { setLoading(false); });
+    }, [open]);
+
+    if (!open) return null;
+
+    const save = function () {
+      if (!url.trim()) { setErr("Enter your feed URL."); return; }
+      setSaving(true); setErr(""); setMsg("");
+      emp.saveJobFeed({ url: url.trim(), format: format, enabled: true })
+        .then(function (d) { setSaving(false); setFeed(d.feed); setMsg("Feed saved — click “Sync now” to import your jobs."); })
+        .catch(function (e) { setSaving(false); setErr((e && e.message) || "Could not save the feed."); });
+    };
+    const sync = function () {
+      setSyncing(true); setErr(""); setMsg(""); setResult(null);
+      emp.syncJobFeed().then(function (d) {
+        setSyncing(false); setFeed(d.feed);
+        var r = d.result;
+        if (r && r.ok) { setResult(r); onImported && onImported(); }
+        else { setErr((r && r.error) || "Sync failed."); }
+      }).catch(function (e) { setSyncing(false); setErr((e && e.message) || "Sync failed."); });
+    };
+    const disconnect = function () {
+      emp.deleteJobFeed().then(function () { setFeed(null); setResult(null); setMsg("Feed disconnected. Your imported jobs were kept."); }).catch(function () {});
+    };
+
+    const FMT = [{ value: "rss", label: "RSS" }, { value: "atom", label: "Atom" }, { value: "json", label: "JSON / ATS API (Greenhouse, Lever…)" }];
+    const fmtWhen = function (iso) { if (!iso) return "never"; try { return new Date(iso).toLocaleString(); } catch (e) { return iso; } };
+
+    return (
+      <div style={{ position: "fixed", inset: 0, zIndex: 400, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "40px 16px", overflowY: "auto" }}>
+        <div style={{ width: "100%", maxWidth: 560, background: "var(--surface-card)", borderRadius: "var(--radius-xl)", boxShadow: "var(--shadow-xl)", overflow: "hidden" }}>
+          <div style={{ padding: "18px 22px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center" }}>
+            <div style={{ flex: 1, fontWeight: 700, fontSize: "var(--text-md)", color: "var(--text-strong)" }}>Import from a job feed</div>
+            <button type="button" aria-label="Close" onClick={onClose} style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--text-muted)", padding: 4, display: "inline-flex" }}>{I("x", 18)}</button>
+          </div>
+          <div style={{ padding: "20px 22px", display: "flex", flexDirection: "column", gap: 14 }}>
+            <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>Connect your careers page or ATS feed (Greenhouse, Lever, or an RSS feed). Your roles import as <strong>drafts</strong> you review and publish — full content, applications handled on Krama.</div>
+            {loading ? <div style={{ color: "var(--text-muted)" }}>Loading…</div> : (
+              <React.Fragment>
+                <Input label="Feed URL" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://boards-api.greenhouse.io/v1/boards/acme/jobs?content=true" />
+                <Select label="Format" value={format} onChange={(e) => setFormat(e.target.value)} options={FMT} />
+                {feed && (
+                  <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", display: "flex", gap: 14, flexWrap: "wrap" }}>
+                    <span>Last sync: {fmtWhen(feed.last_synced_at)}</span>
+                    <span>Status: <strong style={{ color: feed.last_status === "ok" ? "var(--success)" : feed.last_status === "error" ? "var(--danger)" : "inherit" }}>{feed.last_status || "not run"}</strong></span>
+                    <span>Imported: {feed.imported_count}</span>
+                  </div>
+                )}
+                {feed && feed.last_status === "error" && feed.last_error && <div style={{ fontSize: "var(--text-xs)", color: "var(--danger)" }}>{feed.last_error}</div>}
+                {msg && <div style={{ padding: "8px 12px", background: "var(--success-subtle)", color: "var(--success)", borderRadius: "var(--radius-md)", fontSize: "var(--text-sm)", fontWeight: 600 }}>{msg}</div>}
+                {err && <div style={{ padding: "8px 12px", background: "var(--danger-subtle)", color: "var(--danger)", borderRadius: "var(--radius-md)", fontSize: "var(--text-sm)" }}>{err}</div>}
+                {result && <div style={{ padding: "8px 12px", background: "var(--success-subtle)", color: "var(--success)", borderRadius: "var(--radius-md)", fontSize: "var(--text-sm)", fontWeight: 600 }}>Imported {result.imported} new draft(s), updated {result.updated}. Review them in the <strong>Draft</strong> tab, then publish.</div>}
+              </React.Fragment>
+            )}
+          </div>
+          <div style={{ display: "flex", gap: 10, padding: "14px 22px", borderTop: "1px solid var(--border)", justifyContent: "space-between", alignItems: "center" }}>
+            <div>{feed && <button type="button" onClick={disconnect} style={{ border: "none", background: "transparent", color: "var(--danger)", fontSize: "var(--text-sm)", fontWeight: 600, cursor: "pointer", padding: 0 }}>Disconnect</button>}</div>
+            <div style={{ display: "flex", gap: 10 }}>
+              <Button variant="secondary" disabled={saving} onClick={save}>{saving ? "Saving…" : "Save"}</Button>
+              <Button variant="primary" disabled={syncing || !feed} onClick={sync}>{syncing ? "Syncing…" : "Sync now"}</Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   function JobFormModal({ open, mode, job, onClose, onCreated, onPublishRequest, user }) {
     const BLANK = { title: "", job_type: "full_time", experience_level: "mid", category_id: "", location_id: "", salary_min: "", salary_max: "", salary_currency: "USD", salary_period: "month", is_remote: false, working_days: "", working_time: "", map_location: "", description: "", requirements: "", benefits: "", expires_at: "", share_social: true, social_image: "" };
     function jobToForm(j, isClone) {
@@ -746,6 +834,7 @@
     const [rejectModal, setRejectModal] = React.useState(null);
     const [rejectReason, setRejectReason] = React.useState("");
     const [boostTarget, setBoostTarget] = React.useState(null);
+    const [feedOpen, setFeedOpen] = React.useState(false);
     const flash = (m) => { setMsg(m); setTimeout(() => setMsg(""), 3000); };
     const fmtDate = (iso) => { if (!iso) return "—"; var d = new Date(iso); return d.getDate() + " " + ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][d.getMonth()]; };
     const featuredDaysLeft = (j) => { if (!j.featured_until) return null; var ms = new Date(j.featured_until) - new Date(); return ms > 0 ? Math.ceil(ms / 86400000) : null; };
@@ -839,6 +928,12 @@
             </div>
           ) : null}
         />
+        {isAdmin && (
+          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
+            <Button variant="secondary" size="sm" iconLeft={I("rss", 15)} onClick={() => setFeedOpen(true)}>Import from a job feed</Button>
+          </div>
+        )}
+        <JobFeedModal open={feedOpen} onClose={() => setFeedOpen(false)} onImported={reload} />
         {sub !== undefined && !subActive && (
           sub && sub.plan && sub.status === "pending"
             ? (
