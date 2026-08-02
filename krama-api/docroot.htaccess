@@ -1,0 +1,35 @@
+<IfModule mod_rewrite.c>
+    <IfModule mod_negotiation.c>
+        Options -MultiViews -Indexes
+    </IfModule>
+    RewriteEngine On
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+    RewriteRule ^$ krama/ui_kits/public-website/index.html [L]
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_URI} (.+)/$
+    RewriteRule ^ %1 [L,R=301]
+
+    # Clean URLs (dynamic rendering): humans get the interactive SPA on job/company
+    # detail pages; crawlers & social scrapers fall through to Laravel below, which
+    # server-renders the same page with OG cards + JobPosting/Organization JSON-LD.
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{HTTP_USER_AGENT} !(facebookexternalhit|Facebot|Twitterbot|LinkedInBot|Slackbot|TelegramBot|WhatsApp|Googlebot|Google-InspectionTool|GoogleOther|AdsBot-Google|bingbot|DuckDuckBot|Applebot|Discordbot|Pinterest|redditbot|Embedly|SkypeUriPreview|vkShare|W3C_Validator|Baiduspider|YandexBot|SemrushBot|AhrefsBot|ia_archiver) [NC]
+    RewriteRule ^(jobs/[^/]+|companies/[0-9]+)$ krama/ui_kits/public-website/index.html [L]
+
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^ index.php [L]
+</IfModule>
+
+# Don't let LiteSpeed cache dynamic pages/API. Static assets are ?v=-versioned and
+# browser-cached, so this only stops stale HTML/API — no manual flushing ever needed.
+<IfModule LiteSpeed>
+  RewriteEngine On
+  RewriteRule .* - [E=Cache-Control:no-cache]
+</IfModule>
+
+<IfModule LiteSpeed>
+RewriteEngine On
+RewriteRule .* - [E=Cache-Control:no-cache]
+</IfModule>
