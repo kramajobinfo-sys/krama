@@ -82,6 +82,26 @@ class SeoController extends Controller
         return view('seo.company', compact('company', 'jobs', 'canonical', 'metaDesc', 'ld'));
     }
 
+    /** GET /privacy — server-rendered Privacy Policy (public, crawlable; used for Facebook app review). */
+    public function privacy()
+    {
+        return view('seo.privacy', [
+            'canonical' => url('/privacy'),
+            'metaDesc'  => 'How Krama Job collects, uses, and protects your information — our full Privacy Policy.',
+            'ld'        => [],
+        ]);
+    }
+
+    /** GET /terms — server-rendered Terms of Service (public, crawlable). */
+    public function terms()
+    {
+        return view('seo.terms', [
+            'canonical' => url('/terms'),
+            'metaDesc'  => 'The Terms of Service for using Krama Job — the rules for candidates and employers.',
+            'ld'        => [],
+        ]);
+    }
+
     /** GET /jobs/{slug}/og.png — dynamic 1200×630 social-share card for the job. */
     public function jobOg(string $slug)
     {
