@@ -126,6 +126,32 @@
   }
   .krm-jobs-card { width: 100%; }
 
+  /* Job-card action row: a clean, thumb-friendly footer on phones. The plain
+     icon buttons (View / Edit / Clone) get a bordered, tappable hit area, the
+     desktop divider is dropped, and the primary/secondary actions push to the
+     right so the row reads left-to-right instead of a cramped wrap. */
+  .krm-jobs-card .krm-jobcard-foot {
+    padding-top: 12px;
+    margin-top: 2px;
+    border-top: 1px solid var(--border-subtle);
+    gap: 6px;
+  }
+  .krm-jobs-card .krm-jobcard-foot > span { display: none !important; } /* hide the vertical divider */
+  .krm-jobs-card .krm-jobcard-foot button[title] {
+    padding: 8px 10px !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 10px !important;
+    background: var(--surface-page) !important;
+    color: var(--text-body) !important;
+  }
+  .krm-jobs-card .krm-jobcard-foot button[title]:active {
+    background: var(--brand-subtle) !important;
+    border-color: var(--brand) !important;
+    color: var(--text-brand) !important;
+  }
+  /* A little breathing room before the text actions (Feature / Close / Publish …). */
+  .krm-jobs-card .krm-jobcard-foot > button:not([title]) { margin-left: 2px; }
+
   /* Status filter: the 6 tabs wrap to two cramped lines on a phone, so on mobile
      render them as a single-line, horizontally-scrollable pill bar with counts. */
   .krm-jobs-tabs-desktop { display: none !important; }

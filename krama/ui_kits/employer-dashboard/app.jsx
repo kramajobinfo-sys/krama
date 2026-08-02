@@ -1050,20 +1050,21 @@
                           <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginBottom: 10, display: "flex", alignItems: "center", gap: 4 }}>{I("user", 11)} {j.poster.name}</div>
                         )}
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, padding: "12px 0", borderTop: "1px solid var(--border-subtle)", borderBottom: "1px solid var(--border-subtle)", marginBottom: 14 }}>
-                          <div>
-                            <div style={{ fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: "var(--text-md)", color: "var(--text-strong)" }}>{j.applications_count || 0}</div>
-                            <div style={{ fontSize: "var(--text-xs)", color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".04em", marginTop: 2 }}>Applicants</div>
-                          </div>
-                          <div>
-                            <div style={{ fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: "var(--text-md)", color: "var(--text-strong)" }}>{j.views || 0}</div>
-                            <div style={{ fontSize: "var(--text-xs)", color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".04em", marginTop: 2 }}>Views</div>
-                          </div>
-                          <div>
-                            <div style={{ fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: "var(--text-md)", color: "var(--text-strong)" }}>{fmtDate(j.created_at)}</div>
-                            <div style={{ fontSize: "var(--text-xs)", color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".04em", marginTop: 2 }}>Posted</div>
-                          </div>
+                          {[
+                            { icon: "users", val: j.applications_count || 0, label: "Applicants" },
+                            { icon: "eye", val: j.views || 0, label: "Views" },
+                            { icon: "calendar", val: fmtDate(j.created_at), label: "Posted" },
+                          ].map(function (s, si) { return (
+                            <div key={si} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                <span style={{ color: "var(--brand)", display: "inline-flex", flexShrink: 0 }}>{I(s.icon, 13)}</span>
+                                <span style={{ fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: "var(--text-md)", color: "var(--text-strong)", lineHeight: 1 }}>{s.val}</span>
+                              </div>
+                              <div style={{ fontSize: "10px", color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".05em", fontWeight: 600 }}>{s.label}</div>
+                            </div>
+                          ); })}
                         </div>
-                        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
+                        <div className="krm-jobcard-foot" style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
                           {jobActions(j)}
                         </div>
                       </div>
@@ -1758,14 +1759,30 @@
     const [paymentId, setPaymentId] = React.useState(null);
     const [waiting, setWaiting] = React.useState(false);
     const [done, setDone] = React.useState(false);
+    const [attempts, setAttempts] = React.useState(0);
+    const [notConfirmed, setNotConfirmed] = React.useState(false); // payment declined / not confirmed in time
 
     React.useEffect(function () {
       if (!waiting || !paymentId || done) return;
+      var POLL_LIMIT = 22; // ~90s at 4s intervals before prompting the employer to retry
       var t = setInterval(function () {
-        emp.verifyPayment(paymentId).then(function (r) { if (r && r.status === "paid") { setDone(true); onDone && onDone(); } }).catch(function () {});
+        emp.verifyPayment(paymentId).then(function (r) {
+          if (r && r.status === "paid") { setDone(true); setNotConfirmed(false); onDone && onDone(); return; }
+          if (r && (r.status === "failed" || r.status === "canceled" || r.status === "declined")) { setNotConfirmed(true); return; }
+          setAttempts(function (n) { var next = n + 1; if (next >= POLL_LIMIT) setNotConfirmed(true); return next; });
+        }).catch(function () {});
       }, 4000);
       return function () { clearInterval(t); };
     }, [waiting, paymentId, done]);
+
+    const retryPayment = function () {
+      var id = paymentId;
+      if (!id) { onClose(); return; }
+      setNotConfirmed(false); setAttempts(0); setError("");
+      if (method === "khqr") { setWaiting(true); emp.generateKhqr(id).then(function (d) { setKhqr(d.qr); }).catch(function (e) { setError((e && e.message) || "Could not generate KHQR."); }); }
+      else if (method === "card") { setWaiting(true); emp.abaForm(id, "cards").then(abaSubmitForm).catch(function (e) { setError((e && e.message) || "Could not start card payment."); }); }
+      else { setWaiting(true); emp.abaForm(id).then(abaSubmitForm).catch(function (e) { setError((e && e.message) || "Could not start the payment."); }); }
+    };
 
     const start = () => {
       if (!method || busy) return;
@@ -1797,6 +1814,21 @@
               <h2 style={{ fontSize: "var(--text-xl)", fontWeight: 700, color: "var(--text-strong)", marginTop: 16 }}>{waiting || khqr || stripeUrl ? "Credits added!" : "Payment pending"}</h2>
               <p style={{ color: "var(--text-muted)", marginTop: 8, lineHeight: 1.55 }}>{(waiting || khqr || stripeUrl) ? (pricing.pack_size + " credits have been added to your balance.") : "Your credits will be added once payment is confirmed."}</p>
               <Button variant="primary" style={{ marginTop: 20 }} onClick={onClose}>Done</Button>
+            </div>
+          ) : notConfirmed ? (
+            <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: 16 }}>
+              <div style={{ display: "flex", gap: 12, alignItems: "flex-start", padding: "14px 16px", border: "1px solid var(--warning-border, #fcd34d)", background: "var(--warning-subtle, #fef3c7)", borderRadius: "var(--radius-md)" }}>
+                <span style={{ color: "var(--warning, #d97706)", flexShrink: 0 }}>{I("triangle-alert", 20)}</span>
+                <div style={{ fontSize: "var(--text-sm)", color: "var(--text-body)", lineHeight: 1.6 }}>
+                  <strong style={{ color: "var(--text-strong)" }}>Your payment wasn't successful.</strong><br />
+                  Your credits <strong>haven't been added</strong>. If you just completed payment it can take a moment to confirm — otherwise please try the payment again.
+                </div>
+              </div>
+              {error && <div style={{ padding: "10px 14px", background: "var(--danger-subtle)", color: "var(--danger)", borderRadius: "var(--radius-md)", fontSize: "var(--text-sm)" }}>{error}</div>}
+              <div style={{ display: "flex", gap: 10 }}>
+                <Button variant="ghost" onClick={onClose}>I'll finish later</Button>
+                <Button variant="primary" block iconLeft={I("refresh-cw", 15)} onClick={retryPayment}>Try payment again</Button>
+              </div>
             </div>
           ) : khqr ? (
             <div style={{ padding: "24px", display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
@@ -3037,9 +3069,16 @@
     const [err, setErr] = React.useState("");
     const [billCur, setBillCur] = React.useState("USD"); // billing currency: USD or KHR
     const [fxRate, setFxRate] = React.useState(null);    // NBC USD→KHR rate for the riel option
+    const [khqr, setKhqr] = React.useState(null);
+    const [paymentId, setPaymentId] = React.useState(null);
+    const [waiting, setWaiting] = React.useState(false);
+    const [done, setDone] = React.useState(false);
+    const [attempts, setAttempts] = React.useState(0);
+    const [notConfirmed, setNotConfirmed] = React.useState(false);
     React.useEffect(function () {
       if (!job) { setQuote(null); return; }
       setLoading(true); setErr(""); setQuote(null); setBillCur("USD");
+      setKhqr(null); setPaymentId(null); setWaiting(false); setDone(false); setAttempts(0); setNotConfirmed(false);
       emp.boostQuote(job.id)
         .then(function (q) { setQuote(q); setLoading(false); })
         .catch(function (e) { setErr((e && e.message) || "Failed to load boost details."); setLoading(false); });
@@ -3047,6 +3086,32 @@
     React.useEffect(function () {
       emp.exchangeRate().then(function (d) { if (d && d.rate) setFxRate(Number(d.rate)); }).catch(function () {});
     }, []);
+
+    // Poll for gateway confirmation; alert on failure / non-confirmation (see subscriptions/credits).
+    React.useEffect(function () {
+      if (!waiting || !paymentId || done) return;
+      var POLL_LIMIT = 22; // ~90s at 4s intervals before prompting the employer to retry
+      var t = setInterval(function () {
+        emp.verifyPayment(paymentId).then(function (r) {
+          if (r && r.status === "paid") { setDone(true); setNotConfirmed(false); onDone && onDone("Job featured — payment confirmed!"); return; }
+          if (r && (r.status === "failed" || r.status === "canceled" || r.status === "declined")) { setNotConfirmed(true); return; }
+          setAttempts(function (n) { var next = n + 1; if (next >= POLL_LIMIT) setNotConfirmed(true); return next; });
+        }).catch(function () {});
+      }, 4000);
+      return function () { clearInterval(t); };
+    }, [waiting, paymentId, done]);
+
+    var startGateway = function (id) {
+      if (method === "khqr") { setWaiting(true); emp.generateKhqr(id).then(function (d) { setKhqr(d.qr); }).catch(function (e) { setErr((e && e.message) || "Could not generate KHQR."); }); }
+      else if (method === "card") { setWaiting(true); emp.abaForm(id, "cards").then(abaSubmitForm).catch(function (e) { setErr((e && e.message) || "Could not start card payment."); }); }
+      else if (method === "aba") { setWaiting(true); emp.abaForm(id).then(abaSubmitForm).catch(function (e) { setErr((e && e.message) || "Could not start ABA payment."); }); }
+      else { onDone && onDone("Payment pending — the job will be featured once an admin confirms it."); } // cod/acleda/wing → admin confirms
+    };
+    var retryPayment = function () {
+      if (!paymentId) { onClose(); return; }
+      setNotConfirmed(false); setAttempts(0); setErr("");
+      startGateway(paymentId);
+    };
     if (!job) return null;
     var days = quote ? quote.boost_days : 30;
     var hasCredits = quote && quote.credits_remaining > 0;
@@ -3066,9 +3131,12 @@
       setBusy(true); setErr("");
       emp.boostJob(job.id, hasCredits ? null : method, (!hasCredits && canKhr) ? billCur : undefined).then(function (r) {
         setBusy(false);
-        onDone(r && r.requires_payment
-          ? "Payment pending — the job will be featured once an admin confirms it."
-          : ("Job featured for " + days + " days!"));
+        // Credit-covered (or otherwise no charge) → featured immediately.
+        if (!r || !r.requires_payment) { onDone("Job featured for " + days + " days!"); return; }
+        var id = r.payment && r.payment.id;
+        if (!id) { setErr("Could not start the payment."); return; }
+        setPaymentId(id);
+        startGateway(id); // KHQR/ABA/Card → live checkout + poll; cod/acleda/wing → pending-admin
       }).catch(function (e) { setBusy(false); setErr((e && e.message) || "Could not feature the job."); });
     };
     return (
@@ -3081,6 +3149,43 @@
               <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{job.title}</div>
             </div>
           </div>
+          {notConfirmed ? (
+            <React.Fragment>
+              <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 16 }}>
+                <div style={{ display: "flex", gap: 12, alignItems: "flex-start", padding: "14px 16px", border: "1px solid var(--warning-border, #fcd34d)", background: "var(--warning-subtle, #fef3c7)", borderRadius: "var(--radius-md)" }}>
+                  <span style={{ color: "var(--warning, #d97706)", flexShrink: 0 }}>{I("triangle-alert", 20)}</span>
+                  <div style={{ fontSize: "var(--text-sm)", color: "var(--text-body)", lineHeight: 1.6 }}>
+                    <strong style={{ color: "var(--text-strong)" }}>Your payment wasn't successful.</strong><br />
+                    This job is <strong>not featured yet</strong>. If you just completed payment it can take a moment to confirm — otherwise please try the payment again.
+                  </div>
+                </div>
+                {err && <div style={{ color: "var(--danger)", fontSize: "var(--text-xs)" }}>{err}</div>}
+              </div>
+              <div style={{ padding: "0 20px 18px", display: "flex", justifyContent: "flex-end", gap: 10 }}>
+                <Button variant="secondary" onClick={onClose}>I'll finish later</Button>
+                <Button variant="primary" iconLeft={I("refresh-cw", 15)} onClick={retryPayment}>Try payment again</Button>
+              </div>
+            </React.Fragment>
+          ) : khqr ? (
+            <React.Fragment>
+              <div style={{ padding: 20, display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+                <div style={{ padding: 12, border: "1px solid var(--border)", borderRadius: "var(--radius-md)", background: "#fff" }}><KhqrCanvas value={khqr} size={200} /></div>
+                <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", textAlign: "center", lineHeight: 1.55 }}>Scan with any Cambodian banking app to pay <strong style={{ color: "var(--text-body)" }}>{priceLabel}</strong>. This confirms automatically once paid.</div>
+                <div style={{ display: "inline-flex", alignItems: "center", gap: 8, color: "var(--text-brand)", fontSize: "var(--text-sm)", fontWeight: 600 }}><span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--brand)" }} />Waiting for payment…</div>
+              </div>
+              <div style={{ padding: "0 20px 18px" }}><Button variant="secondary" block onClick={onClose}>I'll finish later</Button></div>
+            </React.Fragment>
+          ) : waiting ? (
+            <React.Fragment>
+              <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 14 }}>
+                <div style={{ fontSize: "var(--text-sm)", color: "var(--text-body)", lineHeight: 1.6 }}>{method === "card" ? "Complete your Visa / Mastercard payment in the window that opened." : "Complete your ABA payment to feature this job."}</div>
+                <div style={{ display: "inline-flex", alignItems: "center", gap: 8, color: "var(--text-brand)", fontSize: "var(--text-sm)", fontWeight: 600 }}><span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--brand)" }} />Waiting for payment confirmation…</div>
+                {err && <div style={{ color: "var(--danger)", fontSize: "var(--text-xs)" }}>{err}</div>}
+              </div>
+              <div style={{ padding: "0 20px 18px" }}><Button variant="secondary" block onClick={onClose}>I'll finish later</Button></div>
+            </React.Fragment>
+          ) : (
+            <React.Fragment>
           <div style={{ padding: 20 }}>
             {loading ? (
               <div style={{ color: "var(--text-muted)", fontSize: "var(--text-sm)" }}>Loading…</div>
@@ -3132,6 +3237,8 @@
               </Button>
             )}
           </div>
+            </React.Fragment>
+          )}
         </div>
       </div>
     );
