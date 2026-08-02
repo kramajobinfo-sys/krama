@@ -223,6 +223,163 @@ class JobController extends Controller
         return response()->json($job->load(['company:id,name', 'category:id,name', 'location:id,name']), 201);
     }
 
+    // POST /api/admin/jobs/bulk-import — admin seeds many jobs at once from parsed CSV rows.
+    // Rows are resolved by NAME (company/category/location auto-resolve or create), validated
+    // per-row, published immediately. Partial success: valid rows are created, bad rows reported.
+    public function adminBulkImport(Request $request)
+    {
+        $this->requirePermission('approve_jobs');
+
+        $rows = $request->input('rows');
+        if (! is_array($rows) || count($rows) === 0) {
+            return response()->json(['message' => 'No rows to import.'], 422);
+        }
+        if (count($rows) > 500) {
+            return response()->json(['message' => 'Too many rows — import up to 500 at a time.'], 422);
+        }
+
+        $adminId   = $request->user()->id;
+        $JOB_TYPES = ['full_time', 'part_time', 'contract', 'internship', 'temporary'];
+        $EXP       = ['entry', 'junior', 'mid', 'senior', 'lead', 'executive', 'manager'];
+        $PERIODS   = ['hour', 'day', 'month', 'year'];
+
+        $companyCache = [];      // lower(name) => id
+        $locationCache = null;   // lazy: lower(name) => id
+        $results = [];
+        $created = $skipped = $failed = 0;
+
+        foreach (array_values($rows) as $i => $row) {
+            $line = $i + 1;
+            try {
+                if (! is_array($row)) { throw new \RuntimeException('Malformed row.'); }
+                $title       = trim((string) ($row['title'] ?? ''));
+                $companyName = trim((string) ($row['company'] ?? ''));
+                if ($title === '' || $companyName === '') {
+                    $results[] = ['row' => $line, 'status' => 'error', 'message' => 'Missing required ' . ($title === '' ? 'title' : 'company') . '.'];
+                    $failed++;
+                    continue;
+                }
+
+                // Resolve company by name (find-or-create an approved company owned by the admin).
+                $ckey = mb_strtolower($companyName);
+                if (! isset($companyCache[$ckey])) {
+                    $co = Company::whereRaw('LOWER(name) = ?', [$ckey])->first();
+                    if (! $co) {
+                        // status isn't in Company's $fillable → forceFill so seeded companies go live.
+                        $co = new Company();
+                        $co->forceFill(['user_id' => $adminId, 'name' => mb_substr($companyName, 0, 255), 'status' => 'approved'])->save();
+                    }
+                    $companyCache[$ckey] = $co->id;
+                }
+                $companyId = $companyCache[$ckey];
+                $company   = Company::find($companyId);
+
+                // Skip an exact re-upload (same title already published for this company).
+                $dup = Job::where('company_id', $companyId)
+                    ->whereRaw('LOWER(title) = ?', [mb_strtolower($title)])
+                    ->where('status', 'published')->exists();
+                if ($dup) {
+                    $results[] = ['row' => $line, 'status' => 'skipped', 'message' => 'Already published for ' . $company->name . '.'];
+                    $skipped++;
+                    continue;
+                }
+
+                // Location by name (else keep the raw text in map_location so it's not lost).
+                $locId = null;
+                $locName = trim((string) ($row['location'] ?? ''));
+                if ($locName !== '') {
+                    if ($locationCache === null) {
+                        $locationCache = [];
+                        foreach (\App\Models\Location::get(['id', 'name']) as $l) {
+                            $locationCache[mb_strtolower($l->name)] = $l->id;
+                        }
+                    }
+                    $locId = $locationCache[mb_strtolower($locName)] ?? null;
+                }
+
+                // Optional expiry — only honour a future date.
+                $expires = null;
+                $rawExp = trim((string) ($row['expires_at'] ?? ''));
+                if ($rawExp !== '') {
+                    try { $d = \Illuminate\Support\Carbon::parse($rawExp); if ($d->isFuture()) $expires = $d->toDateString(); } catch (\Throwable $e) {}
+                }
+
+                // Attach the company's active/trial plan if any (keeps reporting consistent, like adminStore).
+                $sub = Subscription::where('company_id', $companyId)->whereIn('status', ['active', 'trial'])
+                    ->where(fn ($q) => $q->whereNull('renews_at')->orWhere('renews_at', '>', now()))
+                    ->orderByDesc('renews_at')->first();
+
+                $job = Job::create([
+                    'company_id'       => $companyId,
+                    'user_id'          => $company->user_id ?: $adminId,
+                    'subscription_id'  => $sub?->id,
+                    'category_id'      => $this->resolveOrCreateCategory(trim((string) ($row['category'] ?? ''))),
+                    'location_id'      => $locId,
+                    'title'            => mb_substr($title, 0, 190),
+                    'slug'             => Job::generateSlug($title),
+                    'job_type'         => $this->normEnum($row['job_type'] ?? '', $JOB_TYPES, 'full_time', ['fulltime' => 'full_time', 'intern' => 'internship', 'freelance' => 'contract']),
+                    'experience_level' => $this->normEnum($row['experience_level'] ?? '', $EXP, null, ['entry_level' => 'entry', 'mid_level' => 'mid']),
+                    'salary_min'       => $this->numOrNull($row['salary_min'] ?? null),
+                    'salary_max'       => $this->numOrNull($row['salary_max'] ?? null),
+                    'salary_currency'  => mb_substr(strtoupper(trim((string) ($row['salary_currency'] ?? ''))) ?: 'USD', 0, 3),
+                    'salary_period'    => $this->normEnum($row['salary_period'] ?? '', $PERIODS, 'month'),
+                    'is_remote'        => $this->truthy($row['is_remote'] ?? ''),
+                    'description'      => $this->richTextFromCsv($row['description'] ?? ''),
+                    'requirements'     => $this->richTextFromCsv($row['requirements'] ?? ''),
+                    'benefits'         => $this->richTextFromCsv($row['benefits'] ?? ''),
+                    'map_location'     => ($locId === null && $locName !== '') ? mb_substr($locName, 0, 500) : null,
+                    'status'           => 'published',
+                    'published_at'     => now(),
+                    'expires_at'       => $expires,
+                ]);
+
+                $created++;
+                $results[] = ['row' => $line, 'status' => 'created', 'job_id' => $job->id, 'title' => $job->title, 'company' => $company->name];
+            } catch (\Throwable $e) {
+                $failed++;
+                $results[] = ['row' => $line, 'status' => 'error', 'message' => mb_substr($e->getMessage(), 0, 180)];
+            }
+        }
+
+        $this->auditLog('job.bulk_import', ['by_admin' => $adminId, 'created' => $created, 'skipped' => $skipped, 'failed' => $failed]);
+
+        return response()->json(['created' => $created, 'skipped' => $skipped, 'failed' => $failed, 'results' => $results]);
+    }
+
+    /** Normalize a loose CSV enum value ("Full-time" → "full_time"); fall back to $default. */
+    private function normEnum($v, array $allowed, $default, array $aliases = [])
+    {
+        $v = str_replace([' ', '-'], '_', mb_strtolower(trim((string) $v)));
+        if ($v === '') return $default;
+        if (isset($aliases[$v])) return $aliases[$v];
+        return in_array($v, $allowed, true) ? $v : $default;
+    }
+
+    private function truthy($v): bool
+    {
+        return in_array(mb_strtolower(trim((string) $v)), ['1', 'true', 'yes', 'y', 'remote', 'on'], true);
+    }
+
+    private function numOrNull($v)
+    {
+        if ($v === null) return null;
+        $v = preg_replace('/[^0-9.]/', '', (string) $v);
+        return $v === '' ? null : (float) $v;
+    }
+
+    /** CSV cells are plain text → wrap into safe paragraphs; pass through + sanitize real HTML. */
+    private function richTextFromCsv($v): ?string
+    {
+        $v = trim((string) $v);
+        if ($v === '') return null;
+        if (preg_match('/<[a-z][\s\S]*>/i', $v)) {
+            return HtmlSanitizer::clean($v);
+        }
+        $paras = array_filter(preg_split('/\n\s*\n/', $v), fn ($p) => trim($p) !== '');
+        $html  = implode('', array_map(fn ($p) => '<p>' . nl2br(e(trim($p))) . '</p>', $paras));
+        return HtmlSanitizer::clean($html);
+    }
+
     // PUT /api/jobs/{id} — employer updates their own draft/pending job
     public function update(Request $request, $id)
     {

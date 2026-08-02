@@ -324,6 +324,160 @@
     { title: "HR Coordinator", company: "Manulife", cat: "HR", date: "12 Jun 2026", verified: true },
   ];
 
+  // ---- Bulk import: admin seeds many jobs from a CSV (companies/categories/locations matched by name) ----
+  const BULK_COLS = ["title", "company", "category", "location", "job_type", "experience_level", "salary_min", "salary_max", "salary_currency", "salary_period", "is_remote", "description", "requirements", "benefits", "expires_at"];
+  const BULK_EXAMPLE = ["Senior Accountant", "ABC Group", "Finance", "Phnom Penh", "full_time", "senior", "800", "1200", "USD", "month", "no", "Manage the finance team and monthly reporting.", "3+ years experience; CPA a plus.", "Insurance; 13th-month salary.", "2026-12-31"];
+
+  function bulkParseCsv(text) {
+    text = String(text).replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+    var rows = [], row = [], field = "", inQ = false, i = 0;
+    while (i < text.length) {
+      var c = text[i];
+      if (inQ) {
+        if (c === '"') { if (text[i + 1] === '"') { field += '"'; i += 2; continue; } inQ = false; i++; continue; }
+        field += c; i++; continue;
+      }
+      if (c === '"') { inQ = true; i++; continue; }
+      if (c === ",") { row.push(field); field = ""; i++; continue; }
+      if (c === "\n") { row.push(field); rows.push(row); row = []; field = ""; i++; continue; }
+      field += c; i++;
+    }
+    if (field !== "" || row.length) { row.push(field); rows.push(row); }
+    return rows;
+  }
+  function bulkCsvToRows(text) {
+    var grid = bulkParseCsv(text).filter(function (r) { return r.some(function (c) { return (c || "").trim() !== ""; }); });
+    if (!grid.length) return [];
+    var headers = grid[0].map(function (h) { return (h || "").trim().toLowerCase().replace(/\s+/g, "_"); });
+    return grid.slice(1).map(function (cells) {
+      var o = {};
+      headers.forEach(function (h, idx) { if (h) o[h] = (cells[idx] != null ? String(cells[idx]) : "").trim(); });
+      return o;
+    });
+  }
+  function bulkToCsv(cols, rowsArr) {
+    var esc = function (v) { v = String(v == null ? "" : v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+    return [cols.join(",")].concat(rowsArr.map(function (r) { return r.map(esc).join(","); })).join("\n");
+  }
+  function bulkDownload(name, text) {
+    var blob = new Blob([text], { type: "text/csv;charset=utf-8;" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a"); a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+  }
+
+  function BulkImportModal({ open, onClose, onDone }) {
+    const [rows, setRows] = React.useState(null);
+    const [fileName, setFileName] = React.useState("");
+    const [parseErr, setParseErr] = React.useState("");
+    const [busy, setBusy] = React.useState(false);
+    const [result, setResult] = React.useState(null);
+    const fileRef = React.useRef(null);
+
+    if (!open) return null;
+
+    const reset = function () { setRows(null); setFileName(""); setParseErr(""); setResult(null); setBusy(false); };
+    const close = function () { reset(); onClose(); };
+
+    const onFile = function (e) {
+      var f = e.target.files && e.target.files[0];
+      if (!f) return;
+      setFileName(f.name); setParseErr(""); setResult(null);
+      var reader = new FileReader();
+      reader.onload = function () {
+        try {
+          var parsed = bulkCsvToRows(reader.result);
+          if (!parsed.length) { setParseErr("No data rows found — the first line must be the header row."); setRows(null); return; }
+          if (!("title" in parsed[0]) || !("company" in parsed[0])) { setParseErr("The file needs at least a 'title' and a 'company' column."); setRows(null); return; }
+          setRows(parsed);
+        } catch (err) { setParseErr("Could not read the file: " + ((err && err.message) || err)); setRows(null); }
+      };
+      reader.readAsText(f);
+      e.target.value = "";
+    };
+
+    const valid = rows ? rows.filter(function (r) { return (r.title || "").trim() && (r.company || "").trim(); }) : [];
+    const invalidCount = rows ? rows.length - valid.length : 0;
+
+    const submit = function () {
+      setBusy(true); setResult(null);
+      adm.adminBulkImportJobs(rows).then(function (res) {
+        setBusy(false); setResult(res);
+        if (res && res.created > 0 && onDone) onDone(res);
+      }).catch(function (e) { setBusy(false); setResult({ error: (e && e.message) || "Import failed." }); });
+    };
+
+    const badge = { display: "inline-block", padding: "1px 7px", borderRadius: 6, fontSize: "var(--text-xs)", fontWeight: 700 };
+
+    return (
+      <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+        <div style={{ background: "var(--surface-card)", borderRadius: "var(--radius-xl)", width: "100%", maxWidth: 640, maxHeight: "90vh", overflow: "auto", boxShadow: "var(--shadow-xl)", padding: 28 }}>
+          <h2 style={{ fontSize: "var(--text-xl)", fontWeight: 700, color: "var(--text-strong)", marginBottom: 6 }}>Bulk import jobs</h2>
+          <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginBottom: 18 }}>Upload a CSV to publish many jobs at once. Company, category &amp; location are matched by name (created if new); jobs go live immediately. Only import roles you have the right to post.</p>
+
+          {!result && (
+            <div>
+              <input ref={fileRef} type="file" accept=".csv,text/csv" onChange={onFile} style={{ display: "none" }} />
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", marginBottom: 16 }}>
+                <Button variant="secondary" size="sm" iconLeft={I("download", 15)} onClick={function () { bulkDownload("krama-jobs-template.csv", bulkToCsv(BULK_COLS, [BULK_EXAMPLE])); }}>Download template</Button>
+                <Button variant="secondary" size="sm" iconLeft={I("upload", 15)} onClick={function () { fileRef.current && fileRef.current.click(); }}>{fileName ? "Choose another file" : "Choose CSV file"}</Button>
+                {fileName && <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>{fileName}</span>}
+              </div>
+
+              {parseErr && <div style={{ padding: "10px 14px", background: "var(--danger-subtle, #fdecec)", color: "var(--danger)", borderRadius: "var(--radius-md)", fontSize: "var(--text-sm)", fontWeight: 600, marginBottom: 14 }}>{parseErr}</div>}
+
+              {rows && (
+                <div>
+                  <div style={{ padding: "10px 14px", background: "var(--brand-subtle)", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", fontSize: "var(--text-sm)", marginBottom: 12 }}>
+                    <strong>{rows.length}</strong> row(s) — <strong style={{ color: "var(--success)" }}>{valid.length} ready to import</strong>{invalidCount ? <span style={{ color: "var(--danger)" }}>, {invalidCount} missing title/company (skipped)</span> : null}
+                  </div>
+                  <div className="krm-table-wrap" style={{ border: "1px solid var(--border)", borderRadius: "var(--radius-md)", overflow: "hidden", marginBottom: 6 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "1.6fr 1.2fr 0.9fr", padding: "8px 14px", fontSize: "var(--text-xs)", fontWeight: 700, textTransform: "uppercase", color: "var(--text-faint)", background: "var(--surface-page)" }}>
+                      <span>Title</span><span>Company</span><span>Type</span>
+                    </div>
+                    {valid.slice(0, 6).map(function (r, idx) {
+                      return (
+                        <div key={idx} style={{ display: "grid", gridTemplateColumns: "1.6fr 1.2fr 0.9fr", padding: "8px 14px", fontSize: "var(--text-sm)", borderTop: "1px solid var(--border-subtle)", color: "var(--text-body)" }}>
+                          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.title}</span>
+                          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--text-muted)" }}>{r.company}</span>
+                          <span style={{ color: "var(--text-muted)" }}>{(r.job_type || "full_time")}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {valid.length > 6 && <div style={{ fontSize: "var(--text-xs)", color: "var(--text-faint)", marginBottom: 4 }}>…and {valid.length - 6} more</div>}
+                </div>
+              )}
+            </div>
+          )}
+
+          {result && !result.error && (
+            <div>
+              <div style={{ padding: "12px 16px", background: "var(--success-subtle)", color: "var(--success)", borderRadius: "var(--radius-md)", fontWeight: 700, fontSize: "var(--text-sm)", marginBottom: 12 }}>
+                Imported {result.created} job(s){result.skipped ? ", " + result.skipped + " skipped" : ""}{result.failed ? ", " + result.failed + " failed" : ""}.
+              </div>
+              {(result.results || []).filter(function (r) { return r.status !== "created"; }).length > 0 && (
+                <div style={{ maxHeight: 220, overflow: "auto", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", padding: "8px 12px" }}>
+                  {(result.results || []).filter(function (r) { return r.status !== "created"; }).slice(0, 40).map(function (r, idx) {
+                    return <div key={idx} style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", padding: "3px 0" }}>
+                      <span style={Object.assign({}, badge, r.status === "skipped" ? { background: "var(--surface-page)", color: "var(--text-muted)" } : { background: "var(--danger-subtle, #fdecec)", color: "var(--danger)" })}>row {r.row} · {r.status}</span> {r.message}
+                    </div>;
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+          {result && result.error && <div style={{ padding: "10px 14px", background: "var(--danger-subtle, #fdecec)", color: "var(--danger)", borderRadius: "var(--radius-md)", fontSize: "var(--text-sm)", fontWeight: 600 }}>{result.error}</div>}
+
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 22 }}>
+            <Button variant="secondary" onClick={close}>{result ? "Close" : "Cancel"}</Button>
+            {!result && <Button variant="primary" disabled={!valid.length || busy} onClick={submit}>{busy ? "Importing…" : ("Import " + valid.length + " job" + (valid.length === 1 ? "" : "s"))}</Button>}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Admin posts a job on behalf of an employer — publishes immediately for the chosen company.
   function PostJobModal({ open, onClose, onPosted }) {
     const BLANK = { company_id: "", title: "", category_id: "", location_id: "", job_type: "full_time", experience_level: "", salary_min: "", salary_max: "", salary_currency: "USD", salary_period: "month", is_remote: false, working_days: "", working_time: "", map_location: "", description: "", requirements: "", benefits: "" };
@@ -426,6 +580,7 @@
   function Approvals() {
     const [jobs, setJobs] = React.useState([]);
     const [postOpen, setPostOpen] = React.useState(false);
+    const [bulkOpen, setBulkOpen] = React.useState(false);
     const [counts, setCounts] = React.useState({ published: 0, rejected: 0, all: 0 });
     const [loading, setLoading] = React.useState(true);
     const [tab, setTab] = React.useState("published");
@@ -487,9 +642,13 @@
               Jobs are published directly by employers. You can also post a job on behalf of an employer, or take down inappropriate listings.
             </p>
           </div>
-          <Button variant="primary" iconLeft={I("plus", 16)} onClick={function () { setPostOpen(true); }} style={{ flexShrink: 0, whiteSpace: "nowrap" }}>Post a job</Button>
+          <div style={{ display: "flex", gap: 10, flexShrink: 0 }}>
+            <Button variant="secondary" iconLeft={I("upload", 16)} onClick={function () { setBulkOpen(true); }} style={{ whiteSpace: "nowrap" }}>Bulk import</Button>
+            <Button variant="primary" iconLeft={I("plus", 16)} onClick={function () { setPostOpen(true); }} style={{ whiteSpace: "nowrap" }}>Post a job</Button>
+          </div>
         </div>
         <PostJobModal open={postOpen} onClose={function () { setPostOpen(false); }} onPosted={function () { setPostOpen(false); flashMsg("Job published on behalf of the employer."); setTab("published"); setPage(1); loadJobs("published", 1); }} />
+        <BulkImportModal open={bulkOpen} onClose={function () { setBulkOpen(false); }} onDone={function (res) { flashMsg("Imported " + res.created + " job(s)."); setTab("published"); setPage(1); loadJobs("published", 1); }} />
         <Tabs value={tab} onChange={(v) => { setPage(1); setTab(v); }} tabs={[
           { value: "published", label: "Live jobs", count: counts.published },
           { value: "rejected", label: "Taken down", count: counts.rejected },
