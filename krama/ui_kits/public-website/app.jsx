@@ -28,10 +28,21 @@ function App() {
     // Community deep link (?thread=N) opens that discussion (used by digest emails).
     const deepThreadId = params.get("thread");
     if (deepThreadId) { setForumThreadId(deepThreadId); setPage("community"); }
+    // Clean-URL deep links: /companies/{id} and /jobs/{slug} — the same pages Laravel
+    // server-renders for crawlers. A company opens immediately; a job is resolved from the
+    // loaded catalogue once init() finishes (the public job API only accepts numeric ids).
+    const _mCo = window.location.pathname.match(/\/companies\/(\d+)$/);
+    const _mJobSlug = window.location.pathname.match(/\/jobs\/([^\/]+)$/);
+    if (_mCo) { setCompanyId(Number(_mCo[1])); setPage("company"); }
     const ctrl = new AbortController();
     setTimeout(() => ctrl.abort(), 8000);
     Promise.allSettled([
-      api.init(),
+      api.init().then(() => {
+        if (_mJobSlug && !deepJobId) {
+          const j = (window.KRAMA_DATA && window.KRAMA_DATA.jobs || []).find((x) => x.slug === _mJobSlug[1]);
+          if (j) openJob(j); else setPage("jobs");
+        }
+      }),
       api.fetchMe().then((u) => { if (u) setUser(u); }),
       deepJobId
         ? fetch((/^(localhost|127\.0\.0\.1|::1|192\.168\.|10\.)/.test(window.location.hostname) ? 'http://127.0.0.1:8000/api' : (window.location.protocol + '//' + window.location.host + '/api')) + "/jobs/" + encodeURIComponent(deepJobId), { signal: ctrl.signal })
@@ -47,6 +58,37 @@ function App() {
             .catch(() => { setPage("jobs"); })
         : Promise.resolve(),
     ]).finally(() => setReady(true));
+  }, []);
+
+  // Keep the address bar in sync with the current view: job detail → /jobs/{slug},
+  // company → /companies/{id}, everything else → /. Only on the live clean-URL host
+  // (skipped in local dev where the SPA is served from its own folder). Pushes only
+  // when the path actually changes, so browser back/forward (popstate) doesn't loop.
+  React.useEffect(() => {
+    if (!ready) return;
+    const cur = window.location.pathname;
+    if (cur.indexOf("/ui_kits/public-website/") !== -1) return; // local dev — leave URLs alone
+    let desired = "/";
+    if (page === "detail" && job && job.slug && !job.external) desired = "/jobs/" + job.slug;
+    else if (page === "company" && companyId != null && String(companyId).indexOf("ext-") !== 0) desired = "/companies/" + companyId;
+    if (desired !== cur) { try { window.history.pushState({ krama: true }, "", desired); } catch (e) {} }
+  }, [ready, page, job, companyId]);
+
+  // Browser back/forward → restore the view from the URL.
+  React.useEffect(() => {
+    const onPop = () => {
+      const path = window.location.pathname;
+      const mCo = path.match(/\/companies\/(\d+)$/);
+      const mJob = path.match(/\/jobs\/([^\/]+)$/);
+      if (mCo) { setCompanyId(Number(mCo[1])); setJob(null); setPage("company"); }
+      else if (mJob) {
+        const j = (window.KRAMA_DATA && window.KRAMA_DATA.jobs || []).find((x) => x.slug === mJob[1]);
+        if (j) { setJob(j); setPage("detail"); } else { setPage("jobs"); }
+      } else { setJob(null); setPage("home"); }
+      window.scrollTo(0, 0);
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
   }, []);
 
   const toggleSave = (id) => {
