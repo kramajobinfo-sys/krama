@@ -448,6 +448,33 @@
     const recent = jobs.slice(0, 6);
     return (
       <div className="krm-page-pad" style={{ padding: 28, display: "flex", flexDirection: "column", gap: 24 }}>
+        {!loading && jobs.length === 0 && (
+          <Card padding={0} style={{ overflow: "hidden", border: "1px solid var(--brand)" }}>
+            <div style={{ padding: "18px 24px", background: "var(--brand-subtle, rgba(12,126,107,0.07))", borderBottom: "1px solid var(--border-subtle)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ color: "var(--brand)", display: "inline-flex" }}>{I("rocket", 22)}</span>
+                <h2 style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: "var(--text-strong)", margin: 0 }}>Welcome — let’s get your first job live</h2>
+              </div>
+              <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", margin: "6px 0 0 32px" }}>Your dashboard is empty because you haven’t posted yet. Three quick ways to fill it:</p>
+            </div>
+            {[
+              { icon: "pen-line", title: "Post a job", body: "Write it yourself — or click “Draft with AI” to generate the description, requirements & benefits from just a job title.", cta: "Post a job", nav: "jobs" },
+              { icon: "rss", title: "Import in bulk", body: "Connect your careers page or ATS feed (Greenhouse, Lever, or RSS) to import all your open roles as drafts to review and publish.", cta: "Connect a feed", nav: "jobs" },
+              { icon: "building-2", title: "Complete your company profile", body: "A logo, description and culture help candidates trust and choose you.", cta: "Edit profile", nav: "company" },
+            ].map(function (s, i) {
+              return (
+                <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 14, padding: "16px 24px", borderBottom: i < 2 ? "1px solid var(--border-subtle)" : "none" }}>
+                  <span style={{ flexShrink: 0, width: 36, height: 36, borderRadius: "var(--radius-md)", background: "var(--surface-sunken, var(--surface-page))", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--brand)" }}>{I(s.icon, 18)}</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 700, color: "var(--text-strong)", fontSize: "var(--text-sm)" }}>{s.title}</div>
+                    <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginTop: 2, lineHeight: 1.5 }}>{s.body}</div>
+                  </div>
+                  <Button variant={i === 0 ? "primary" : "secondary"} size="sm" onClick={() => onNav(s.nav)} style={{ flexShrink: 0 }}>{s.cta}</Button>
+                </div>
+              );
+            })}
+          </Card>
+        )}
         <div className="krm-stats-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16 }}>
           <StatCard label="Active jobs" value={loading ? "—" : String(active)} tone="brand" icon={I("briefcase", 22)} />
           <StatCard label="Pending approval" value={loading ? "—" : String(pending)} tone="warning" icon={I("clock", 22)} />
