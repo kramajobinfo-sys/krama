@@ -650,7 +650,11 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         color: "var(--text-muted)",
         fontWeight: 500
       }
-    }, followCount)), /*#__PURE__*/React.createElement(SocialIcons, {
+    }, followCount)), window.KramaShareButton && React.createElement(window.KramaShareButton, {
+      url: (window.location.origin || "https://kramajob.com") + "/companies/" + companyId,
+      title: name + " — Jobs & hiring on Krama",
+      compact: false
+    }), /*#__PURE__*/React.createElement(SocialIcons, {
       links: social
     }))), /*#__PURE__*/React.createElement("div", {
       className: "krm-co-tabs",

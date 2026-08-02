@@ -237,6 +237,9 @@
                       {j.location && <React.Fragment><span>·</span><span>{j.location}</span></React.Fragment>}
                     </div>
                   </div>
+                  <div style={{ flexShrink: 0 }}>
+                    {window.KramaShareButton && React.createElement(window.KramaShareButton, { url: (window.location.origin || "https://kramajob.com") + (j.slug ? "/jobs/" + j.slug : "/?job=" + j.id), title: j.title + (j.company ? " at " + j.company : ""), compact: true })}
+                  </div>
                 </div>
 
                 {/* Meta bar */}

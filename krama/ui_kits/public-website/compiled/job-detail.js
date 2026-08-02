@@ -723,7 +723,15 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         color: "var(--brand)",
         display: "inline-flex"
       }
-    }, I("badge-check", 16)), j.location && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("span", null, "\xB7"), /*#__PURE__*/React.createElement("span", null, j.location))))), /*#__PURE__*/React.createElement("div", {
+    }, I("badge-check", 16)), j.location && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("span", null, "\xB7"), /*#__PURE__*/React.createElement("span", null, j.location)))), /*#__PURE__*/React.createElement("div", {
+      style: {
+        flexShrink: 0
+      }
+    }, window.KramaShareButton && React.createElement(window.KramaShareButton, {
+      url: (window.location.origin || "https://kramajob.com") + (j.slug ? "/jobs/" + j.slug : "/?job=" + j.id),
+      title: j.title + (j.company ? " at " + j.company : ""),
+      compact: true
+    }))), /*#__PURE__*/React.createElement("div", {
       className: "krm-jd-meta",
       style: {
         display: "grid",

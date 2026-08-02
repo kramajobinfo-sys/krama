@@ -237,6 +237,7 @@
                   {following ? "Following" : "Follow"}
                   {followCount > 0 && <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", fontWeight: 500 }}>{followCount}</span>}
                 </button>
+                {window.KramaShareButton && React.createElement(window.KramaShareButton, { url: (window.location.origin || "https://kramajob.com") + "/companies/" + companyId, title: name + " — Jobs & hiring on Krama", compact: false })}
                 <SocialIcons links={social} />
               </div>
             </div>

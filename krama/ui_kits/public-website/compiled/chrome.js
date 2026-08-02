@@ -777,8 +777,196 @@
       }
     }, /*#__PURE__*/React.createElement("span", null, "\xA9 2026 Krama Job. ", t("All rights reserved."))));
   }
+
+  // Share a job/company to other platforms. Uses the native share sheet on mobile,
+  // else a popover (copy link + Facebook / Telegram / LinkedIn / X). The URL should be
+  // the canonical server-rendered page (/jobs/{slug}, /companies/{id}) so the shared
+  // link shows a rich preview card.
+  function ShareButton({
+    url,
+    title,
+    compact
+  }) {
+    const [open, setOpen] = React.useState(false);
+    const [copied, setCopied] = React.useState(false);
+    const ref = React.useRef(null);
+    React.useEffect(function () {
+      function onDoc(e) {
+        if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+      }
+      if (open) document.addEventListener("mousedown", onDoc);
+      return function () {
+        document.removeEventListener("mousedown", onDoc);
+      };
+    }, [open]);
+    const enc = encodeURIComponent(url);
+    const encT = encodeURIComponent(title || "Krama");
+    const links = [{
+      k: "Facebook",
+      href: "https://www.facebook.com/sharer/sharer.php?u=" + enc
+    }, {
+      k: "Telegram",
+      href: "https://t.me/share/url?url=" + enc + "&text=" + encT
+    }, {
+      k: "LinkedIn",
+      href: "https://www.linkedin.com/sharing/share-offsite/?url=" + enc
+    }, {
+      k: "X (Twitter)",
+      href: "https://twitter.com/intent/tweet?url=" + enc + "&text=" + encT
+    }];
+    const copy = function () {
+      const done = function () {
+        setCopied(true);
+        setTimeout(function () {
+          setCopied(false);
+        }, 1800);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url).then(done).catch(function () {});
+      } else {
+        try {
+          var t = document.createElement("textarea");
+          t.value = url;
+          document.body.appendChild(t);
+          t.select();
+          document.execCommand("copy");
+          document.body.removeChild(t);
+          done();
+        } catch (e) {}
+      }
+    };
+    const onMain = function () {
+      if (navigator.share) {
+        navigator.share({
+          title: title || "Krama",
+          url: url
+        }).catch(function () {});
+        return;
+      }
+      setOpen(function (o) {
+        return !o;
+      });
+    };
+    const icon = /*#__PURE__*/React.createElement("svg", {
+      width: "16",
+      height: "16",
+      viewBox: "0 0 24 24",
+      fill: "none",
+      stroke: "currentColor",
+      strokeWidth: "2",
+      strokeLinecap: "round",
+      strokeLinejoin: "round",
+      "aria-hidden": "true"
+    }, /*#__PURE__*/React.createElement("circle", {
+      cx: "18",
+      cy: "5",
+      r: "3"
+    }), /*#__PURE__*/React.createElement("circle", {
+      cx: "6",
+      cy: "12",
+      r: "3"
+    }), /*#__PURE__*/React.createElement("circle", {
+      cx: "18",
+      cy: "19",
+      r: "3"
+    }), /*#__PURE__*/React.createElement("line", {
+      x1: "8.59",
+      y1: "13.51",
+      x2: "15.42",
+      y2: "17.49"
+    }), /*#__PURE__*/React.createElement("line", {
+      x1: "15.41",
+      y1: "6.51",
+      x2: "8.59",
+      y2: "10.49"
+    }));
+    const item = {
+      display: "block",
+      width: "100%",
+      textAlign: "left",
+      padding: "9px 14px",
+      border: "none",
+      background: "transparent",
+      cursor: "pointer",
+      fontFamily: "var(--font-sans)",
+      fontSize: "var(--text-sm)",
+      color: "var(--text-body)",
+      textDecoration: "none",
+      boxSizing: "border-box"
+    };
+    return /*#__PURE__*/React.createElement("div", {
+      ref: ref,
+      style: {
+        position: "relative",
+        display: "inline-block"
+      }
+    }, /*#__PURE__*/React.createElement("button", {
+      onClick: onMain,
+      "aria-label": "Share",
+      title: "Share",
+      style: {
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 7,
+        padding: compact ? "9px 12px" : "10px 16px",
+        border: "1px solid var(--border)",
+        borderRadius: "var(--radius-md)",
+        background: "var(--surface-card)",
+        color: "var(--text-body)",
+        cursor: "pointer",
+        fontFamily: "var(--font-sans)",
+        fontWeight: 600,
+        fontSize: "var(--text-sm)",
+        whiteSpace: "nowrap"
+      }
+    }, icon, !compact && /*#__PURE__*/React.createElement("span", null, "Share")), open && /*#__PURE__*/React.createElement("div", {
+      style: {
+        position: "absolute",
+        right: 0,
+        top: "calc(100% + 6px)",
+        zIndex: 60,
+        minWidth: 190,
+        background: "var(--surface-card)",
+        border: "1px solid var(--border)",
+        borderRadius: "var(--radius-md)",
+        boxShadow: "0 10px 30px rgba(0,0,0,0.14)",
+        overflow: "hidden",
+        padding: "4px 0"
+      }
+    }, /*#__PURE__*/React.createElement("button", {
+      onClick: copy,
+      style: Object.assign({}, item, {
+        fontWeight: 600,
+        color: copied ? "var(--brand)" : "var(--text-strong)"
+      })
+    }, copied ? "✓ Link copied" : "Copy link"), /*#__PURE__*/React.createElement("div", {
+      style: {
+        height: 1,
+        background: "var(--border)",
+        margin: "4px 0"
+      }
+    }), links.map(function (l) {
+      return /*#__PURE__*/React.createElement("a", {
+        key: l.k,
+        href: l.href,
+        target: "_blank",
+        rel: "noopener noreferrer",
+        onClick: function () {
+          setOpen(false);
+        },
+        style: item,
+        onMouseEnter: function (e) {
+          e.currentTarget.style.background = "var(--surface-page)";
+        },
+        onMouseLeave: function (e) {
+          e.currentTarget.style.background = "transparent";
+        }
+      }, l.k);
+    })));
+  }
   Object.assign(window, {
     KramaHeader: Header,
-    KramaFooter: Footer
+    KramaFooter: Footer,
+    KramaShareButton: ShareButton
   });
 })();
