@@ -346,6 +346,27 @@ class JobController extends Controller
         return response()->json(['created' => $created, 'skipped' => $skipped, 'failed' => $failed, 'results' => $results]);
     }
 
+    // POST /api/admin/jobs/ai-draft — draft a job description/requirements/benefits from a title.
+    public function aiDraft(Request $request)
+    {
+        $this->requirePermission('approve_jobs');
+
+        $data = $request->validate([
+            'title'            => 'required|string|max:190',
+            'company'          => 'nullable|string|max:190',
+            'job_type'         => 'nullable|string|max:40',
+            'experience_level' => 'nullable|string|max:40',
+            'location'         => 'nullable|string|max:120',
+            'notes'            => 'nullable|string|max:2000',
+        ]);
+
+        try {
+            return response()->json(\App\Services\JobDraftService::draft($data));
+        } catch (\Throwable $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+    }
+
     /** Normalize a loose CSV enum value ("Full-time" → "full_time"); fall back to $default. */
     private function normEnum($v, array $allowed, $default, array $aliases = [])
     {

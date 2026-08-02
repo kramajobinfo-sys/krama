@@ -489,10 +489,30 @@
     const [busy, setBusy] = React.useState(false);
     const [err, setErr] = React.useState("");
     const set = (k, v) => setForm(function (f) { return Object.assign({}, f, { [k]: v }); });
+    const [drafting, setDrafting] = React.useState(false);
+    const [draftMsg, setDraftMsg] = React.useState("");
+
+    const draftWithAI = function () {
+      if (!form.title.trim()) { setErr("Enter a job title first, then draft with AI."); return; }
+      setDrafting(true); setErr(""); setDraftMsg("");
+      var co = companies.find(function (c) { return String(c.id) === String(form.company_id); });
+      var lc = locs.find(function (l) { return String(l.id) === String(form.location_id); });
+      adm.aiDraftJob({
+        title: form.title.trim(),
+        company: co ? co.name : "",
+        job_type: form.job_type,
+        experience_level: form.experience_level,
+        location: lc ? lc.name : "",
+      }).then(function (d) {
+        setDrafting(false);
+        setForm(function (f) { return Object.assign({}, f, { description: d.description || f.description, requirements: d.requirements || f.requirements, benefits: d.benefits || f.benefits }); });
+        setDraftMsg("Draft added below — review and edit before posting.");
+      }).catch(function (e) { setDrafting(false); setErr((e && e.message) || "AI draft failed."); });
+    };
 
     React.useEffect(function () {
       if (!open) return;
-      setForm(BLANK); setNewCat(""); setErr(""); setBusy(false);
+      setForm(BLANK); setNewCat(""); setErr(""); setBusy(false); setDraftMsg("");
       adm.fetchCompanies("approved", 1, 500).then(function (d) { setCompanies((d && d.data) || d || []); }).catch(function () {});
       adm.fetchCategories().then(function (d) { setCats((d && d.data) || d || []); }).catch(function () {});
       adm.fetchLocations().then(function (d) { setLocs((d && d.data) || d || []); }).catch(function () {});
@@ -562,6 +582,11 @@
               <Switch checked={form.is_remote} onChange={function (v) { set("is_remote", typeof v === "boolean" ? v : !form.is_remote); }} />
               <span style={{ fontSize: "var(--text-sm)", color: "var(--text-body)" }}>Remote position</span>
             </label>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap", padding: "8px 0 2px", borderTop: "1px solid var(--border-subtle)" }}>
+              <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 5 }}>{I("sparkles", 13)} Draft the description, requirements &amp; benefits from the title.</span>
+              <Button variant="secondary" size="sm" iconLeft={I("sparkles", 15)} disabled={drafting || !form.title.trim()} onClick={draftWithAI}>{drafting ? "Drafting…" : "Draft with AI"}</Button>
+            </div>
+            {draftMsg && <div style={{ padding: "7px 12px", background: "var(--success-subtle)", color: "var(--success)", borderRadius: "var(--radius-md)", fontSize: "var(--text-xs)", fontWeight: 600 }}>{draftMsg}</div>}
             <Textarea label="Description" value={form.description} onChange={function (e) { set("description", e.target.value); }} rows={4} placeholder="Role overview…" />
             <Textarea label="Requirements" value={form.requirements} onChange={function (e) { set("requirements", e.target.value); }} rows={3} />
             <Textarea label="Benefits" value={form.benefits} onChange={function (e) { set("benefits", e.target.value); }} rows={2} />

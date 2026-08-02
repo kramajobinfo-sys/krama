@@ -359,6 +359,7 @@ Route::middleware(['auth:api', 'permission:site_settings'])->group(function () {
     Route::get('admin/jobs',                 [JobController::class, 'adminIndex']);
     Route::post('admin/jobs',                [JobController::class, 'adminStore']);
     Route::post('admin/jobs/bulk-import',    [JobController::class, 'adminBulkImport']);
+    Route::post('admin/jobs/ai-draft',       [JobController::class, 'aiDraft']);
     Route::patch('jobs/{id}/approve',        [JobController::class, 'approve']);
     Route::patch('jobs/{id}/reject',         [JobController::class, 'reject']);
     Route::patch('admin/jobs/{id}/feature',  [JobController::class, 'toggleFeatured']);

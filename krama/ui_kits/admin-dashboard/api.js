@@ -199,6 +199,7 @@
     // Post a job on behalf of an employer (publishes immediately for the chosen company).
     adminCreateJob: function (data) { return req("POST", "/admin/jobs", data); },
     adminBulkImportJobs: function (rows) { return req("POST", "/admin/jobs/bulk-import", { rows: rows }); },
+    aiDraftJob: function (data) { return req("POST", "/admin/jobs/ai-draft", data); },
 
     // Experience levels
     fetchExperienceLevels: function () { return req("GET", "/admin/experience-levels"); },
