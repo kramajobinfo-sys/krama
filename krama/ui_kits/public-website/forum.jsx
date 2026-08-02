@@ -537,7 +537,7 @@
                 <button key={c.id} onClick={() => openCategory(c)} style={{ display: "flex", gap: 12, textAlign: "left", padding: 16, background: "var(--surface-card)", border: "1px solid var(--border)", borderRadius: "var(--radius-lg)", cursor: "pointer" }}>
                   <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 42, height: 42, borderRadius: "var(--radius-md)", background: ct.bg, color: ct.fg, flexShrink: 0 }}>{I(c.icon || "messages-square", 20)}</span>
                   <div style={{ minWidth: 0 }}>
-                    <div style={{ fontWeight: 700, color: "var(--text-strong)" }}>{c.name}</div>
+                    <div style={{ fontWeight: 700, color: "var(--text-strong)", fontSize: "var(--text-md)" }}>{c.name}</div>
                     <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{c.description}</div>
                     <div style={{ fontSize: "var(--text-xs)", color: "var(--text-faint)", marginTop: 6 }}>{c.threads_count || 0} {(c.threads_count === 1 ? TR("thread") : TR("threads"))}</div>
                   </div>

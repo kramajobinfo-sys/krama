@@ -585,11 +585,11 @@
             <Select label="Company *" value={form.company_id} onChange={function (e) { set("company_id", e.target.value); }}
               options={[{ value: "", label: "— Select a company —" }].concat(companies.map(function (c) { return { value: String(c.id), label: c.name }; }))} />
             <Input label="Job title *" value={form.title} onChange={function (e) { set("title", e.target.value); }} placeholder="e.g. Senior Software Engineer" />
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+            <div className="krm-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
               <Select label="Job type *" value={form.job_type} onChange={function (e) { set("job_type", e.target.value); }} options={JOB_TYPES} />
               <Select label="Experience level" value={form.experience_level} onChange={function (e) { set("experience_level", e.target.value); }} options={EXP} />
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+            <div className="krm-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
               <Select label="Category" value={form.category_id} onChange={function (e) { set("category_id", e.target.value); }}
                 options={[{ value: "", label: "—" }].concat(cats.map(function (c) { return { value: String(c.id), label: c.name }; })).concat([{ value: "__new__", label: "+ Add a new category…" }])} />
               <Select label="Location" value={form.location_id} onChange={function (e) { set("location_id", e.target.value); }}
@@ -606,7 +606,7 @@
               <Input label="Salary max" type="number" value={form.salary_max} onChange={function (e) { set("salary_max", e.target.value); }} />
               <Select label="Per" value={form.salary_period} onChange={function (e) { set("salary_period", e.target.value); }} options={PERIODS} />
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+            <div className="krm-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
               <Input label="Working days" value={form.working_days} onChange={function (e) { set("working_days", e.target.value); }} placeholder="e.g. Monday to Friday" />
               <Input label="Working time" value={form.working_time} onChange={function (e) { set("working_time", e.target.value); }} placeholder="e.g. 8:00 AM – 5:00 PM" />
             </div>
@@ -2101,7 +2101,7 @@
             <div style={{ display: "grid", gap: 12 }}>
               <Input label="Name" value={editing.name} onChange={(e) => setEditing(Object.assign({}, editing, { name: e.target.value }))} />
               <Input label="Description" value={editing.description || ""} onChange={(e) => setEditing(Object.assign({}, editing, { description: e.target.value }))} />
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div className="krm-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 <Input label="Icon (lucide name)" value={editing.icon || ""} onChange={(e) => setEditing(Object.assign({}, editing, { icon: e.target.value }))} />
                 <div>
                   <label style={{ display: "block", fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-strong)", marginBottom: 6 }}>Colour</label>
@@ -3312,7 +3312,7 @@
                 <span style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-strong)" }}>Show background image only</span>
                 <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>Hides the title, message &amp; button.</span>
               </label>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+              <div className="krm-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
                 <Input label="Button label" value={d.cta} onChange={(e) => set("cta", e.target.value)} />
                 <Select label="Icon" value={d.icon} onChange={(e) => set("icon", e.target.value)} options={ICON_OPTS} />
               </div>
@@ -3416,7 +3416,7 @@
                   <span style={{ color: "var(--text-muted)", display: "inline-flex" }}>{I("calendar-clock", 16)}</span>
                   <span style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-strong)" }}>Scheduling window</span>
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                <div className="krm-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
                   <Input label="Start date" type="date" value={d.start} onChange={(e) => set("start", e.target.value)} />
                   <Input label="End date" type="date" value={d.end} onChange={(e) => set("end", e.target.value)} />
                 </div>
@@ -3753,7 +3753,7 @@
                 {b.customFg && <button onClick={() => setBanner(key, "customFg", "")} title="Reset to theme default" style={{ height: 28, padding: "0 8px", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", background: "var(--surface-card)", color: "var(--text-muted)", fontFamily: "var(--font-sans)", fontSize: 11, cursor: "pointer" }}>Reset</button>}
               </div>
               {(b.theme === "custom" || b.theme === "transparent") && (
-                <div style={{ marginTop: 8, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                <div className="krm-form-grid" style={{ marginTop: 8, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                   {b.theme === "custom" && (
                     <div>
                       <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginBottom: 4 }}>Background</div>
@@ -3823,7 +3823,7 @@
           <div style={{ display: "grid", gap: 14 }}>
             <Input label="Heading" value={h.heading != null ? h.heading : defaultHeading} onChange={(e) => setBanner(key, "heading", e.target.value)} />
             <Textarea label="Subtitle" rows={2} value={h.sub || ""} onChange={(e) => setBanner(key, "sub", e.target.value)} />
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div className="krm-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <Select label="Heading size" value={h.headingSize || ""} onChange={(e) => setBanner(key, "headingSize", e.target.value)}
                 options={[{ value: "", label: "Default" }, { value: "sm", label: "Small" }, { value: "md", label: "Medium" }, { value: "lg", label: "Large" }, { value: "xl", label: "Extra large" }]} />
               <Select label="Subtitle size" value={h.subSize || ""} onChange={(e) => setBanner(key, "subSize", e.target.value)}
@@ -4031,7 +4031,7 @@
                       <Input label="Title" value={slideForm.title} onChange={(e) => setSlideForm((f) => ({ ...f, title: e.target.value }))} placeholder="Find work that fits your life" />
                       <Select label="Title font size (desktop)" value={slideForm.titleSize || ""} onChange={(e) => setSlideForm((f) => ({ ...f, titleSize: e.target.value }))} options={[{ value: "", label: "Default" }, { value: "32px", label: "Small" }, { value: "42px", label: "Medium" }, { value: "56px", label: "Large" }, { value: "68px", label: "Extra large" }]} />
                       <Textarea label="Subtitle" rows={2} value={slideForm.subtitle} onChange={(e) => setSlideForm((f) => ({ ...f, subtitle: e.target.value }))} placeholder="Short description under the title" />
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                      <div className="krm-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                         <Input label="CTA button label" value={slideForm.ctaLabel} onChange={(e) => setSlideForm((f) => ({ ...f, ctaLabel: e.target.value }))} placeholder="Browse jobs" />
                         <Input label="CTA URL (blank = Browse jobs)" value={slideForm.ctaUrl} onChange={(e) => setSlideForm((f) => ({ ...f, ctaUrl: e.target.value }))} placeholder="https://…" iconLeft={I("link", 14)} />
                       </div>
@@ -4048,7 +4048,7 @@
                           ))}
                         </div>
                         {(slideForm.theme === "custom" || slideForm.theme === "transparent") && (
-                          <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                          <div className="krm-form-grid" style={{ marginTop: 10, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                             {slideForm.theme === "custom" && (
                               <div>
                                 <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginBottom: 4 }}>Background</div>
@@ -4187,7 +4187,7 @@
             <div style={{ display: "grid", gap: 14 }}>
               <Input label="Heading" value={cmh.heading || "Connect with the Krama community"} onChange={(e) => setBanner("communityHero", "heading", e.target.value)} />
               <Textarea label="Subtitle" rows={2} value={cmh.sub || ""} onChange={(e) => setBanner("communityHero", "sub", e.target.value)} />
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div className="krm-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 <Select label="Heading size" value={cmh.headingSize || ""} onChange={(e) => setBanner("communityHero", "headingSize", e.target.value)} options={[{ value: "", label: "Default" }, { value: "sm", label: "Small" }, { value: "md", label: "Medium" }, { value: "lg", label: "Large" }, { value: "xl", label: "Extra large" }]} />
                 <Select label="Subtitle size" value={cmh.subSize || ""} onChange={(e) => setBanner("communityHero", "subSize", e.target.value)} options={[{ value: "", label: "Default" }, { value: "sm", label: "Small" }, { value: "md", label: "Medium" }, { value: "lg", label: "Large" }]} />
               </div>
@@ -4267,7 +4267,7 @@
             <div style={{ display: "grid", gap: 14 }}>
               <Input label="Heading" value={eh.heading || "Hire the right people, faster."} onChange={(e) => setBanner("employersHero", "heading", e.target.value)} />
               <Textarea label="Subtitle" rows={2} value={eh.sub || ""} onChange={(e) => setBanner("employersHero", "sub", e.target.value)} />
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div className="krm-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 <Select label="Heading size" value={eh.headingSize || ""} onChange={(e) => setBanner("employersHero", "headingSize", e.target.value)} options={[{ value: "", label: "Default" }, { value: "sm", label: "Small" }, { value: "md", label: "Medium" }, { value: "lg", label: "Large" }, { value: "xl", label: "Extra large" }]} />
                 <Select label="Subtitle size" value={eh.subSize || ""} onChange={(e) => setBanner("employersHero", "subSize", e.target.value)} options={[{ value: "", label: "Default" }, { value: "sm", label: "Small" }, { value: "md", label: "Medium" }, { value: "lg", label: "Large" }]} />
               </div>
@@ -4439,7 +4439,7 @@
             <div style={{ display: "grid", gap: 14 }}>
               <Input label="Heading" value={fh.heading || "Find your next opportunity"} onChange={(e) => setBanner("findJobsHero", "heading", e.target.value)} />
               <Textarea label="Subtitle" rows={2} value={fh.sub || ""} onChange={(e) => setBanner("findJobsHero", "sub", e.target.value)} />
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div className="krm-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 <Select label="Heading size" value={fh.headingSize || ""} onChange={(e) => setBanner("findJobsHero", "headingSize", e.target.value)} options={[{ value: "", label: "Default" }, { value: "sm", label: "Small" }, { value: "md", label: "Medium" }, { value: "lg", label: "Large" }, { value: "xl", label: "Extra large" }]} />
                 <Select label="Subtitle size" value={fh.subSize || ""} onChange={(e) => setBanner("findJobsHero", "subSize", e.target.value)} options={[{ value: "", label: "Default" }, { value: "sm", label: "Small" }, { value: "md", label: "Medium" }, { value: "lg", label: "Large" }]} />
               </div>
@@ -4650,7 +4650,7 @@
             <div style={{ display: "grid", gap: 14 }}>
               <Input label="Heading" value={ch.heading || "Verified companies hiring now"} onChange={(e) => setBanner("companiesHero", "heading", e.target.value)} />
               <Textarea label="Subtitle" rows={2} value={ch.sub || ""} onChange={(e) => setBanner("companiesHero", "sub", e.target.value)} />
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div className="krm-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 <Select label="Heading size" value={ch.headingSize || ""} onChange={(e) => setBanner("companiesHero", "headingSize", e.target.value)} options={[{ value: "", label: "Default" }, { value: "sm", label: "Small" }, { value: "md", label: "Medium" }, { value: "lg", label: "Large" }, { value: "xl", label: "Extra large" }]} />
                 <Select label="Subtitle size" value={ch.subSize || ""} onChange={(e) => setBanner("companiesHero", "subSize", e.target.value)} options={[{ value: "", label: "Default" }, { value: "sm", label: "Small" }, { value: "md", label: "Medium" }, { value: "lg", label: "Large" }]} />
               </div>
@@ -4853,7 +4853,7 @@
             <div style={{ display: "grid", gap: 14 }}>
               <Input label="Heading" value={jh.heading || "Find the role that fits you"} onChange={(e) => setBanner("jobDetailHero", "heading", e.target.value)} />
               <Textarea label="Subtitle" rows={2} value={jh.sub || ""} onChange={(e) => setBanner("jobDetailHero", "sub", e.target.value)} />
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div className="krm-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 <Select label="Heading size" value={jh.headingSize || ""} onChange={(e) => setBanner("jobDetailHero", "headingSize", e.target.value)} options={[{ value: "", label: "Default" }, { value: "sm", label: "Small" }, { value: "md", label: "Medium" }, { value: "lg", label: "Large" }, { value: "xl", label: "Extra large" }]} />
                 <Select label="Subtitle size" value={jh.subSize || ""} onChange={(e) => setBanner("jobDetailHero", "subSize", e.target.value)} options={[{ value: "", label: "Default" }, { value: "sm", label: "Small" }, { value: "md", label: "Medium" }, { value: "lg", label: "Large" }]} />
               </div>
@@ -6612,7 +6612,7 @@
               <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                 <Input label="Name" value={modal.data.name} onChange={(e) => setF("name", e.target.value)} placeholder="e.g. Bongthom Jobs" />
                 <Input label="Feed URL" value={modal.data.url} onChange={(e) => setF("url", e.target.value)} placeholder="https://example.com/jobs.rss" />
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                <div className="krm-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
                   <Select label="Content type" value={modal.data.kind} onChange={(e) => setF("kind", e.target.value)} options={KIND_OPTS} />
                   <Select label="Feed format" value={modal.data.format} onChange={(e) => setF("format", e.target.value)} options={FMT_OPTS} />
                 </div>
@@ -7069,7 +7069,7 @@
               {fieldRow("Gateway", sel("driver", [["twilio", "Twilio"], ["http", "Generic HTTP gateway"]]))}
             </div>
             {s.driver === "twilio" && (
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+              <div className="krm-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
                 {fieldRow("Account SID", inp("twilio_sid", "text", "ACxxxxxxxx"))}
                 {fieldRow("Auth token", inp("twilio_token", "password", "••••••••"))}
                 {fieldRow("Sender number", inp("twilio_from", "text", "+1..."), "Your Twilio phone number or messaging sender ID.")}
@@ -7387,7 +7387,7 @@
           {/* SMTP server */}
           <Card padding={24}>
             <div style={{ fontWeight: 600, fontSize: 14, color: "var(--text)", marginBottom: 18 }}>SMTP Server</div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 160px 160px", gap: 14, marginBottom: 14 }}>
+            <div className="krm-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 160px 160px", gap: 14, marginBottom: 14 }}>
               {fieldRow("Host", inp("host", "text", "smtp.gmail.com"))}
               {fieldRow("Port", inp("port", "number", "587"))}
               {fieldRow("Encryption",
@@ -7398,7 +7398,7 @@
                 </select>
               )}
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+            <div className="krm-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
               {fieldRow("Username", inp("username", "text", "you@example.com"))}
               {fieldRow("Password", inp("password", "password", "••••••••"))}
             </div>
@@ -7407,7 +7407,7 @@
           {/* From address */}
           <Card padding={24}>
             <div style={{ fontWeight: 600, fontSize: 14, color: "var(--text)", marginBottom: 18 }}>Sender Identity</div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+            <div className="krm-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
               {fieldRow("From address", inp("from_address", "email", "noreply@yourdomain.com"))}
               {fieldRow("From name", inp("from_name", "text", "Krama Jobs"))}
             </div>

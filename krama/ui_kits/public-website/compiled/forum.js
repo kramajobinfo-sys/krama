@@ -1526,7 +1526,8 @@
       }, /*#__PURE__*/React.createElement("div", {
         style: {
           fontWeight: 700,
-          color: "var(--text-strong)"
+          color: "var(--text-strong)",
+          fontSize: "var(--text-md)"
         }
       }, c.name), /*#__PURE__*/React.createElement("div", {
         style: {
