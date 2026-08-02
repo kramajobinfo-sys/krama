@@ -478,6 +478,36 @@
     );
   }
 
+  // Lightweight rich-text editor (contentEditable) — sets content on mount, so callers
+  // remount it via a `key` when the value changes programmatically (form reset / AI draft).
+  function RichEditor({ label, value, onChange, placeholder, rows }) {
+    const ref = React.useRef(null);
+    React.useEffect(function () { if (ref.current) ref.current.innerHTML = value || ""; }, []);
+    const exec = function (cmd) { if (ref.current) ref.current.focus(); document.execCommand(cmd, false, null); };
+    const tb = { border: "1px solid var(--border)", background: "var(--surface-page)", borderRadius: "var(--radius-sm)", cursor: "pointer", padding: "3px 9px", fontSize: "var(--text-xs)", fontFamily: "var(--font-sans)", color: "var(--text-body)", lineHeight: 1.5, display: "inline-flex", alignItems: "center" };
+    const sep = <span style={{ display: "inline-block", width: 1, alignSelf: "stretch", background: "var(--border)", margin: "2px 2px" }} />;
+    return (
+      <div>
+        {label && <div style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-strong)", marginBottom: 6 }}>{label}</div>}
+        <div style={{ border: "1px solid var(--border)", borderRadius: "var(--radius-md)", overflow: "hidden" }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 4, padding: "6px 10px", background: "var(--surface-page)", borderBottom: "1px solid var(--border)" }}>
+            <button type="button" onMouseDown={function (e) { e.preventDefault(); exec("bold"); }} style={tb} title="Bold"><strong>B</strong></button>
+            <button type="button" onMouseDown={function (e) { e.preventDefault(); exec("italic"); }} style={tb} title="Italic"><em>I</em></button>
+            <button type="button" onMouseDown={function (e) { e.preventDefault(); exec("underline"); }} style={tb} title="Underline"><span style={{ textDecoration: "underline" }}>U</span></button>
+            {sep}
+            <button type="button" onMouseDown={function (e) { e.preventDefault(); exec("insertUnorderedList"); }} style={tb} title="Bullet list">• Bullet list</button>
+            <button type="button" onMouseDown={function (e) { e.preventDefault(); exec("insertOrderedList"); }} style={tb} title="Numbered list">1. Numbered</button>
+            {sep}
+            <button type="button" onMouseDown={function (e) { e.preventDefault(); exec("removeFormat"); }} style={tb} title="Clear formatting">Clear format</button>
+          </div>
+          <div ref={ref} contentEditable className="krama-rich-body" data-placeholder={placeholder || "Type here…"} suppressContentEditableWarning
+            onInput={function () { onChange && onChange(ref.current ? ref.current.innerHTML : ""); }}
+            style={{ padding: "10px 12px", minHeight: (rows || 3) * 26, outline: "none", fontSize: "var(--text-sm)", color: "var(--text-body)", lineHeight: 1.65, background: "var(--surface-card)" }} />
+        </div>
+      </div>
+    );
+  }
+
   // Admin posts a job on behalf of an employer — publishes immediately for the chosen company.
   function PostJobModal({ open, onClose, onPosted }) {
     const BLANK = { company_id: "", title: "", category_id: "", location_id: "", job_type: "full_time", experience_level: "", salary_min: "", salary_max: "", salary_currency: "USD", salary_period: "month", is_remote: false, working_days: "", working_time: "", map_location: "", description: "", requirements: "", benefits: "" };
@@ -491,6 +521,7 @@
     const set = (k, v) => setForm(function (f) { return Object.assign({}, f, { [k]: v }); });
     const [drafting, setDrafting] = React.useState(false);
     const [draftMsg, setDraftMsg] = React.useState("");
+    const [resetKey, setResetKey] = React.useState(0); // remounts the RichEditors on reset / AI draft
 
     const draftWithAI = function () {
       if (!form.title.trim()) { setErr("Enter a job title first, then draft with AI."); return; }
@@ -506,13 +537,14 @@
       }).then(function (d) {
         setDrafting(false);
         setForm(function (f) { return Object.assign({}, f, { description: d.description || f.description, requirements: d.requirements || f.requirements, benefits: d.benefits || f.benefits }); });
+        setResetKey(function (k) { return k + 1; }); // remount the RichEditors so they show the drafted content
         setDraftMsg("Draft added below — review and edit before posting.");
       }).catch(function (e) { setDrafting(false); setErr((e && e.message) || "AI draft failed."); });
     };
 
     React.useEffect(function () {
       if (!open) return;
-      setForm(BLANK); setNewCat(""); setErr(""); setBusy(false); setDraftMsg("");
+      setForm(BLANK); setNewCat(""); setErr(""); setBusy(false); setDraftMsg(""); setResetKey(function (k) { return k + 1; });
       adm.fetchCompanies("approved", 1, 500).then(function (d) { setCompanies((d && d.data) || d || []); }).catch(function () {});
       adm.fetchCategories().then(function (d) { setCats((d && d.data) || d || []); }).catch(function () {});
       adm.fetchLocations().then(function (d) { setLocs((d && d.data) || d || []); }).catch(function () {});
@@ -587,9 +619,9 @@
               <Button variant="secondary" size="sm" iconLeft={I("sparkles", 15)} disabled={drafting || !form.title.trim()} onClick={draftWithAI}>{drafting ? "Drafting…" : "Draft with AI"}</Button>
             </div>
             {draftMsg && <div style={{ padding: "7px 12px", background: "var(--success-subtle)", color: "var(--success)", borderRadius: "var(--radius-md)", fontSize: "var(--text-xs)", fontWeight: 600 }}>{draftMsg}</div>}
-            <Textarea label="Description" value={form.description} onChange={function (e) { set("description", e.target.value); }} rows={4} placeholder="Role overview…" />
-            <Textarea label="Requirements" value={form.requirements} onChange={function (e) { set("requirements", e.target.value); }} rows={3} />
-            <Textarea label="Benefits" value={form.benefits} onChange={function (e) { set("benefits", e.target.value); }} rows={2} />
+            <RichEditor key={"d" + resetKey} label="Description" rows={4} value={form.description} onChange={function (v) { set("description", v); }} placeholder="Role overview…" />
+            <RichEditor key={"r" + resetKey} label="Requirements" rows={3} value={form.requirements} onChange={function (v) { set("requirements", v); }} placeholder="Skills, qualifications, experience…" />
+            <RichEditor key={"b" + resetKey} label="Benefits" rows={2} value={form.benefits} onChange={function (v) { set("benefits", v); }} placeholder="Perks, insurance, bonuses…" />
             {err && <div style={{ padding: "8px 12px", background: "var(--danger-subtle)", color: "var(--danger)", borderRadius: "var(--radius-md)", fontSize: "var(--text-sm)" }}>{err}</div>}
             <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 6 }}>{I("info", 13)} Publishes immediately for the selected company (admin override — no plan/quota check).</div>
           </div>
