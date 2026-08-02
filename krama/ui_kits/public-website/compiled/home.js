@@ -345,8 +345,8 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       }),
       title: c.name,
       style: {
-        width: 104,
-        height: 76,
+        width: 100,
+        height: 100,
         flexShrink: 0,
         border: "1px solid var(--border)",
         borderRadius: "var(--radius-lg)",
@@ -354,10 +354,9 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         boxShadow: "var(--shadow-xs)",
         cursor: "pointer",
         display: "flex",
-        flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        gap: 6,
+        padding: 12,
         transition: "box-shadow var(--dur-base) var(--ease-standard), transform var(--dur-base) var(--ease-standard), border-color var(--dur-base)"
       },
       onMouseEnter: e => {
@@ -374,19 +373,8 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       src: c.logo,
       name: c.name,
       square: true,
-      size: 36
-    }), /*#__PURE__*/React.createElement("span", {
-      className: "krm-top-name",
-      style: {
-        fontSize: "var(--text-2xs)",
-        fontWeight: 600,
-        color: "var(--text-muted)",
-        maxWidth: 92,
-        whiteSpace: "nowrap",
-        overflow: "hidden",
-        textOverflow: "ellipsis"
-      }
-    }, c.name));
+      size: 76
+    }));
     return /*#__PURE__*/React.createElement("section", {
       style: {
         background: "var(--surface-card)",

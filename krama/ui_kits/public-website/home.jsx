@@ -114,15 +114,14 @@
     const dur = Math.max(18, list.length * 3.5); // seconds
     const Tile = (c, i) => (
       <button key={i} onClick={() => onNav("jobs", { company: c.name })} title={c.name} style={{
-        width: 104, height: 76, flexShrink: 0, border: "1px solid var(--border)", borderRadius: "var(--radius-lg)",
+        width: 100, height: 100, flexShrink: 0, border: "1px solid var(--border)", borderRadius: "var(--radius-lg)",
         background: "var(--surface-card)", boxShadow: "var(--shadow-xs)", cursor: "pointer",
-        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6,
+        display: "flex", alignItems: "center", justifyContent: "center", padding: 12,
         transition: "box-shadow var(--dur-base) var(--ease-standard), transform var(--dur-base) var(--ease-standard), border-color var(--dur-base)",
       }}
         onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "var(--shadow-md)"; e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.borderColor = "var(--border-strong)"; }}
         onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "var(--shadow-xs)"; e.currentTarget.style.transform = "none"; e.currentTarget.style.borderColor = "var(--border)"; }}>
-        <Avatar src={c.logo} name={c.name} square size={36} />
-        <span className="krm-top-name" style={{ fontSize: "var(--text-2xs)", fontWeight: 600, color: "var(--text-muted)", maxWidth: 92, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.name}</span>
+        <Avatar src={c.logo} name={c.name} square size={76} />
       </button>
     );
     return (

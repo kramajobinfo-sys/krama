@@ -234,15 +234,18 @@
     gap: 10px !important;
   }
 
-  /* ── Top employers — keep the running marquee, size so ~4 tiles show ──── */
+  /* ── Top employers — keep the running marquee, size so ~5 tiles show ──── */
   .krm-top-inner { padding: 24px 16px !important; }
-  .krm-marquee-track { gap: 10px !important; }
+  .krm-marquee-track { gap: 8px !important; }
   .krm-marquee-track > button {
-    width: 76px !important;
-    height: 70px !important;
+    width: 60px !important;
+    height: 60px !important;
+    padding: 0 !important;
   }
-  /* Names are too long in the narrow tiles — show logo only on mobile */
-  .krm-top-name { display: none !important; }
+  .krm-marquee-track > button > span {
+    width: 46px !important;
+    height: 46px !important;
+  }
 
   /* ── Info pages (For Employers / Pricing / About / Contact) — 1 col ──── */
   .krm-info-grid { grid-template-columns: 1fr !important; }
