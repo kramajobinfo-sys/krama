@@ -255,6 +255,29 @@
     verifyCompany: function (id) { return req("PATCH", "/admin/companies/" + id + "/verify"); },
     // Admin creates a company shell (assign an employer to it later via addCompanyMember).
     createCompany: function (data) { return req("POST", "/admin/companies", data); },
+    fetchCompanyDetail: function (id) { return req("GET", "/admin/companies/" + id); },
+    updateCompany: function (id, data) { return req("PUT", "/admin/companies/" + id, data); },
+    // Gallery
+    uploadCompanyGalleryPhoto: function (id, file) {
+      var fd = new FormData(); fd.append("photo", file);
+      return fetch(BASE + "/admin/companies/" + id + "/gallery", { method: "POST", headers: { Authorization: "Bearer " + getToken() }, body: fd })
+        .then(function (r) { return r.json().then(function (d) { if (!r.ok) throw new Error(d.message || "Upload failed"); return d.photo || d; }); });
+    },
+    updateCompanyGalleryCaption: function (id, photoId, caption) { return req("PATCH", "/admin/companies/" + id + "/gallery/" + photoId, { caption: caption }); },
+    deleteCompanyGalleryPhoto: function (id, photoId) { return req("DELETE", "/admin/companies/" + id + "/gallery/" + photoId); },
+    uploadCompanyAboutImage: function (id, file) {
+      var fd = new FormData(); fd.append("image", file);
+      return fetch(BASE + "/admin/companies/" + id + "/about-image", { method: "POST", headers: { Authorization: "Bearer " + getToken() }, body: fd })
+        .then(function (r) { return r.json().then(function (d) { if (!r.ok) throw new Error(d.message || "Upload failed"); return d.company || d; }); });
+    },
+    // Awards
+    createCompanyAward: function (id, data) { return req("POST", "/admin/companies/" + id + "/awards", data); },
+    uploadCompanyAwardImage: function (id, awardId, file) {
+      var fd = new FormData(); fd.append("image", file);
+      return fetch(BASE + "/admin/companies/" + id + "/awards/" + awardId + "/image", { method: "POST", headers: { Authorization: "Bearer " + getToken() }, body: fd })
+        .then(function (r) { return r.json().then(function (d) { if (!r.ok) throw new Error(d.message || "Upload failed"); return d.award || d; }); });
+    },
+    deleteCompanyAward: function (id, awardId) { return req("DELETE", "/admin/companies/" + id + "/awards/" + awardId); },
     // Company access / team: assign users with a role (company_admin = full control).
     companyMembers: function (id) { return req("GET", "/admin/companies/" + id + "/members"); },
     addCompanyMember: function (id, data) { return req("POST", "/admin/companies/" + id + "/members", data); },

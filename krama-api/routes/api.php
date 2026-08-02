@@ -353,12 +353,21 @@ Route::middleware(['auth:api', 'permission:site_settings'])->group(function () {
     // Admin: company moderation
     Route::get('admin/companies',               [CompanyController::class, 'adminIndex']);
     Route::post('admin/companies',              [CompanyController::class, 'adminStore']);
+    Route::get('admin/companies/{id}',           [CompanyController::class, 'adminShow'])->where('id', '[0-9]+');
     Route::patch('admin/companies/{id}/approve', [CompanyController::class, 'approve']);
     Route::patch('admin/companies/{id}/reject',  [CompanyController::class, 'reject']);
     Route::patch('admin/companies/{id}/suspend', [CompanyController::class, 'suspend']);
     Route::patch('admin/companies/{id}/verify',  [CompanyController::class, 'verify']);
+    Route::put('admin/companies/{id}',               [CompanyController::class, 'adminUpdate']);
     Route::post('admin/companies/{id}/logo',         [CompanyController::class, 'adminUploadLogo'])->middleware('throttle:20,1');
     Route::post('admin/companies/{id}/cover-banner', [CompanyController::class, 'adminUploadCoverBanner'])->middleware('throttle:20,1');
+    Route::post('admin/companies/{id}/about-image',  [CompanyController::class, 'adminUploadAboutImage'])->middleware('throttle:20,1');
+    Route::post('admin/companies/{id}/gallery',                 [CompanyController::class, 'adminUploadGalleryPhoto'])->middleware('throttle:20,1');
+    Route::patch('admin/companies/{id}/gallery/{photoId}',      [CompanyController::class, 'adminUpdateGalleryPhoto']);
+    Route::delete('admin/companies/{id}/gallery/{photoId}',     [CompanyController::class, 'adminDeleteGalleryPhoto']);
+    Route::post('admin/companies/{id}/awards',                  [CompanyController::class, 'adminStoreAward']);
+    Route::delete('admin/companies/{id}/awards/{awardId}',      [CompanyController::class, 'adminDeleteAward']);
+    Route::post('admin/companies/{id}/awards/{awardId}/image',  [CompanyController::class, 'adminUploadAwardImage'])->middleware('throttle:20,1');
     // Company access / team (assign users with a role: company_admin = full control)
     Route::get('admin/companies/{id}/members',              [CompanyController::class, 'adminMembers']);
     Route::post('admin/companies/{id}/members',             [CompanyController::class, 'adminAddMember'])->middleware('throttle:20,1');

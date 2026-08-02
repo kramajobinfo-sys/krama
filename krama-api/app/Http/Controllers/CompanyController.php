@@ -467,6 +467,16 @@ class CompanyController extends Controller
         return response()->json($q->paginate($perPage));
     }
 
+    // GET /api/admin/companies/{id} — full company detail (any status), incl. gallery/awards
+    public function adminShow(Request $request, $id)
+    {
+        $this->requirePermission('approve_companies');
+
+        $company = Company::with(['location:id,name', 'gallery', 'awards', 'owner:id,name,email'])->findOrFail($id);
+
+        return response()->json($company);
+    }
+
     // PATCH /api/admin/companies/{id}/approve
     public function approve(Request $request, $id)
     {
@@ -536,7 +546,17 @@ class CompanyController extends Controller
             'address'         => 'nullable|string|max:255',
             'location_id'     => 'nullable|exists:locations,id',
             'logo_url'        => ['nullable', 'url', 'max:255', 'regex:/^https?:\/\//'],
-            'description'     => 'nullable|string|max:10000',
+            'description'       => 'nullable|string|max:10000',
+            'social_links'      => 'nullable|array',
+            'cover_banner_url'  => 'nullable|string|max:255',
+            'company_size'      => 'nullable|in:1-10,11-50,51-200,201-500,500+',
+            'telegram_chat_id'  => 'nullable|string|max:64',
+            'vat_tin'           => 'nullable|string|max:50',
+            'vat_legal_name'    => 'nullable|string|max:190',
+            'vat_address'       => 'nullable|string|max:255',
+            'culture_values'    => 'nullable|string|max:5000',
+            'benefits_tags'     => 'nullable|array',
+            'benefits_tags.*'   => 'string|max:50',
             'status'          => 'nullable|in:pending,approved',
         ]);
 
@@ -546,9 +566,11 @@ class CompanyController extends Controller
             return response()->json(['message' => 'A company named “' . $data['name'] . '” already exists.'], 422);
         }
 
-        // Same sanitize-on-write rule as store()/update() — the description is rendered raw.
-        if (array_key_exists('description', $data)) {
-            $data['description'] = HtmlSanitizer::clean($data['description']);
+        // Same sanitize-on-write rule as store()/update() — description + culture/values render raw.
+        foreach (['description', 'culture_values'] as $richField) {
+            if (array_key_exists($richField, $data)) {
+                $data[$richField] = HtmlSanitizer::clean($data[$richField]);
+            }
         }
 
         $status = $data['status'] ?? 'approved';
@@ -557,6 +579,15 @@ class CompanyController extends Controller
         $company = new Company($data);
         $company->user_id = $request->user()->id; // placeholder owner; reassign via members
         $company->status  = $status;
+        // Sanitize social links the same way as update() — keep only known platforms.
+        if ($request->has('social_links')) {
+            $links = [];
+            foreach (['facebook', 'linkedin', 'twitter', 'instagram'] as $k) {
+                $v = trim((string) $request->input("social_links.$k", ''));
+                if ($v !== '') { $links[$k] = mb_substr($v, 0, 255); }
+            }
+            $company->social_links = $links ?: null;
+        }
         $company->save();
 
         $this->auditLog('company.admin_created', [
@@ -566,6 +597,183 @@ class CompanyController extends Controller
         ]);
 
         return response()->json($company->load('location:id,name'), 201);
+    }
+
+    // PUT /api/admin/companies/{id} — admin edits any company's full profile fields
+    // (no admin equivalent existed before; admin previously could only change status
+    // or swap the logo/cover-banner, never edit name/industry/description/etc.).
+    public function adminUpdate(Request $request, $id)
+    {
+        $this->requirePermission('approve_companies');
+
+        $company = Company::findOrFail($id);
+
+        $data = $request->validate([
+            'name'            => 'sometimes|string|max:190',
+            'registration_no' => 'nullable|string|max:80',
+            'industry'        => 'nullable|string|max:120',
+            'website'         => ['nullable', 'url', 'max:190', 'regex:/^https?:\/\//'],
+            'address'         => 'nullable|string|max:255',
+            'location_id'     => 'nullable|exists:locations,id',
+            'logo_url'        => ['nullable', 'url', 'max:255', 'regex:/^https?:\/\//'],
+            'description'       => 'nullable|string|max:10000',
+            'social_links'      => 'nullable|array',
+            'cover_banner_url'  => 'nullable|string|max:255',
+            'company_size'      => 'nullable|in:1-10,11-50,51-200,201-500,500+',
+            'telegram_chat_id'  => 'nullable|string|max:64',
+            'vat_tin'           => 'nullable|string|max:50',
+            'vat_legal_name'    => 'nullable|string|max:190',
+            'vat_address'       => 'nullable|string|max:255',
+            'culture_values'    => 'nullable|string|max:5000',
+            'benefits_tags'     => 'nullable|array',
+            'benefits_tags.*'   => 'string|max:50',
+        ]);
+
+        foreach (['description', 'culture_values'] as $richField) {
+            if (array_key_exists($richField, $data)) {
+                $data[$richField] = HtmlSanitizer::clean($data[$richField]);
+            }
+        }
+
+        $company->fill($data);
+        if ($request->has('social_links')) {
+            $links = [];
+            foreach (['facebook', 'linkedin', 'twitter', 'instagram'] as $k) {
+                $v = trim((string) $request->input("social_links.$k", ''));
+                if ($v !== '') { $links[$k] = mb_substr($v, 0, 255); }
+            }
+            $company->social_links = $links ?: null;
+        }
+        $company->save();
+
+        $this->auditLog('company.admin_updated', [
+            'company_id'   => $company->id,
+            'company_name' => $company->name,
+        ]);
+
+        return response()->json($company->load('location:id,name', 'gallery', 'awards'));
+    }
+
+    // POST /api/admin/companies/{id}/about-image — admin uploads the About feature image
+    public function adminUploadAboutImage(Request $request, $id)
+    {
+        $this->requirePermission('approve_companies');
+
+        $company = Company::findOrFail($id);
+        $request->validate(['image' => 'required|image|max:10240']);
+
+        $company->about_image_url = $this->storeImage($request->file('image'), 'about', 'about_' . $company->id, 1400);
+        $company->save();
+
+        return response()->json(['company' => $company->fresh()->load('location:id,name', 'gallery', 'awards')]);
+    }
+
+    // POST /api/admin/companies/{id}/gallery — admin uploads a gallery photo
+    public function adminUploadGalleryPhoto(Request $request, $id)
+    {
+        $this->requirePermission('approve_companies');
+
+        $company = Company::findOrFail($id);
+
+        if ($company->gallery()->count() >= 30) {
+            return response()->json(['message' => 'Gallery limit reached (30 photos).'], 422);
+        }
+
+        $request->validate([
+            'photo'   => 'required|image|max:10240',
+            'caption' => 'nullable|string|max:255',
+        ]);
+
+        $url = $this->storeImage($request->file('photo'), 'gallery', 'gallery_' . $company->id, 1200);
+
+        $photo = CompanyPhoto::create([
+            'company_id' => $company->id,
+            'url'        => $url,
+            'caption'    => $request->input('caption'),
+            'sort_order' => (int) $company->gallery()->max('sort_order') + 1,
+        ]);
+
+        return response()->json(['photo' => $photo], 201);
+    }
+
+    // PATCH /api/admin/companies/{id}/gallery/{photoId} — admin edits a photo's caption
+    public function adminUpdateGalleryPhoto(Request $request, $id, $photoId)
+    {
+        $this->requirePermission('approve_companies');
+
+        $company = Company::findOrFail($id);
+        $photo   = $company->gallery()->findOrFail($photoId);
+
+        $data = $request->validate(['caption' => 'nullable|string|max:255']);
+        $photo->update(['caption' => $data['caption'] ?? null]);
+
+        return response()->json(['photo' => $photo]);
+    }
+
+    // DELETE /api/admin/companies/{id}/gallery/{photoId}
+    public function adminDeleteGalleryPhoto(Request $request, $id, $photoId)
+    {
+        $this->requirePermission('approve_companies');
+
+        $company = Company::findOrFail($id);
+        $photo   = $company->gallery()->findOrFail($photoId);
+
+        $path = storage_path('app/public/gallery/' . basename(parse_url($photo->url, PHP_URL_PATH)));
+        if (is_file($path)) { @unlink($path); }
+
+        $photo->delete();
+
+        return response()->json(['message' => 'Photo removed.']);
+    }
+
+    // POST /api/admin/companies/{id}/awards — admin adds an award
+    public function adminStoreAward(Request $request, $id)
+    {
+        $this->requirePermission('approve_companies');
+
+        $company = Company::findOrFail($id);
+
+        $data = $request->validate([
+            'title'       => 'required|string|max:190',
+            'year'        => 'nullable|string|max:8',
+            'description' => 'nullable|string|max:500',
+        ]);
+
+        $award = CompanyAward::create([
+            'company_id'  => $company->id,
+            'title'       => $data['title'],
+            'year'        => $data['year'] ?? null,
+            'description' => $data['description'] ?? null,
+            'sort_order'  => (int) $company->awards()->max('sort_order') + 1,
+        ]);
+
+        return response()->json($award, 201);
+    }
+
+    // DELETE /api/admin/companies/{id}/awards/{awardId}
+    public function adminDeleteAward(Request $request, $id, $awardId)
+    {
+        $this->requirePermission('approve_companies');
+
+        $company = Company::findOrFail($id);
+        $company->awards()->findOrFail($awardId)->delete();
+
+        return response()->json(['message' => 'Award removed.']);
+    }
+
+    // POST /api/admin/companies/{id}/awards/{awardId}/image
+    public function adminUploadAwardImage(Request $request, $id, $awardId)
+    {
+        $this->requirePermission('approve_companies');
+
+        $company = Company::findOrFail($id);
+        $award   = $company->awards()->findOrFail($awardId);
+
+        $request->validate(['image' => 'required|image|max:10240']);
+        $award->image_url = $this->storeImage($request->file('image'), 'awards', 'award_' . $company->id, 1000);
+        $award->save();
+
+        return response()->json($award);
     }
 
     // ── Admin: company access / team management ───────────────────────────────

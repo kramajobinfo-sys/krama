@@ -914,48 +914,350 @@
     );
   }
 
-  // Admin creates a company on an employer's behalf; assign the employer afterward via
-  // the Access button (CompanyAccessModal) — they then manage it from their dashboard.
-  function CreateCompanyModal({ onClose, onCreated }) {
-    const BLANK = { name: "", industry: "", website: "", address: "", registration_no: "", description: "", status: "approved" };
-    const [f, setF] = React.useState(BLANK);
+  // Admin creates a company on an employer's behalf (or edits an existing one) with the
+  // same full field set + image uploads the employer gets on their own CompanyProfile
+  // screen (About/Gallery/Awards). Logo/banner/about-image/gallery/awards all require an
+  // existing company id, so a brand-new company saves its text fields first, then unlocks
+  // the rest in place — no separate "create" vs "edit" screen. Assign an employer to a
+  // newly created company afterward via Access (CompanyAccessModal).
+  function CompanyEditorModal({ company, onClose, onSaved }) {
+    const [id, setId] = React.useState(company ? company.id : null);
+    const [tab, setTab] = React.useState("about");
+    const sl0 = (company && company.social_links) || {};
+    const [form, setForm] = React.useState({
+      name: (company && company.name) || "", registration_no: (company && company.registration_no) || "",
+      industry: (company && company.industry) || "", website: (company && company.website) || "",
+      address: (company && company.address) || "", description: (company && company.description) || "",
+      logo_url: (company && company.logo_url) || "",
+      facebook_url: sl0.facebook || "", linkedin_url: sl0.linkedin || "", twitter_url: sl0.twitter || "", instagram_url: sl0.instagram || "",
+      company_size: (company && company.company_size) || "", culture_values: (company && company.culture_values) || "",
+      benefits_tags: Array.isArray(company && company.benefits_tags) ? company.benefits_tags : [],
+      vat_tin: (company && company.vat_tin) || "", vat_legal_name: (company && company.vat_legal_name) || "", vat_address: (company && company.vat_address) || "",
+      status: (company && company.status) || "approved",
+    });
+    const [aboutImageUrl, setAboutImageUrl] = React.useState((company && company.about_image_url) || "");
+    const [coverBannerUrl, setCoverBannerUrl] = React.useState((company && company.cover_banner_url) || "");
+    const [gallery, setGallery] = React.useState(Array.isArray(company && company.gallery) ? company.gallery : []);
+    const [awards, setAwards] = React.useState(Array.isArray(company && company.awards) ? company.awards : []);
+    const [awardForm, setAwardForm] = React.useState({ title: "", year: String(new Date().getFullYear()), description: "" });
+
     const [saving, setSaving] = React.useState(false);
+    const [logoUploading, setLogoUploading] = React.useState(false);
+    const [coverUploading, setCoverUploading] = React.useState(false);
+    const [aboutUploading, setAboutUploading] = React.useState(false);
+    const [galleryUploading, setGalleryUploading] = React.useState(false);
+    const [awardSaving, setAwardSaving] = React.useState(false);
+    const [awardUploadingId, setAwardUploadingId] = React.useState(null);
+    const [msg, setMsg] = React.useState("");
     const [err, setErr] = React.useState("");
-    const set = (k, v) => setF(function (x) { return Object.assign({}, x, { [k]: v }); });
-    const submit = () => {
-      if (!f.name.trim()) { setErr("Company name is required."); return; }
-      setSaving(true); setErr("");
-      var payload = { name: f.name.trim(), status: f.status };
-      ["industry", "address", "registration_no", "description"].forEach(function (k) { if (f[k] && f[k].trim()) payload[k] = f[k].trim(); });
-      if (f.website && f.website.trim()) {
-        var w = f.website.trim();
-        payload.website = /^https?:\/\//i.test(w) ? w : "https://" + w; // API requires an http(s) URL
+
+    const logoInputRef = React.useRef(null);
+    const coverInputRef = React.useRef(null);
+    const aboutInputRef = React.useRef(null);
+    const galleryInputRef = React.useRef(null);
+
+    const set = (k, v) => setForm(function (f) { return Object.assign({}, f, { [k]: v }); });
+    const flash = (m, isErr) => { if (isErr) { setErr(m); setTimeout(() => setErr(""), 4000); } else { setMsg(m); setTimeout(() => setMsg(""), 3000); } };
+    const normalizeWebsite = (w) => { w = (w || "").trim(); return w && !/^https?:\/\//i.test(w) ? "https://" + w : w; };
+
+    const save = () => {
+      if (!form.name.trim()) { setErr("Company name is required."); return; }
+      setSaving(true); setErr(""); setMsg("");
+      var payload = {
+        name: form.name.trim(), registration_no: form.registration_no, industry: form.industry,
+        website: normalizeWebsite(form.website), address: form.address, description: form.description,
+        social_links: { facebook: form.facebook_url, linkedin: form.linkedin_url, twitter: form.twitter_url, instagram: form.instagram_url },
+        company_size: form.company_size || null, culture_values: form.culture_values || null,
+        benefits_tags: form.benefits_tags && form.benefits_tags.length ? form.benefits_tags : null,
+        vat_tin: form.vat_tin || null, vat_legal_name: form.vat_legal_name || null, vat_address: form.vat_address || null,
+      };
+      if (!id) {
+        payload.status = form.status;
+        adm.createCompany(payload)
+          .then(function (c) { setSaving(false); setId(c.id); flash("Company created — add a logo, banner, gallery, or awards below."); onSaved && onSaved(c, true); })
+          .catch(function (e) { setSaving(false); flash((e && e.message) || "Failed to create company.", true); });
+      } else {
+        adm.updateCompany(id, payload)
+          .then(function (updated) { setSaving(false); flash("Profile saved."); onSaved && onSaved(updated, false); })
+          .catch(function (e) { setSaving(false); flash((e && e.message) || "Save failed.", true); });
       }
-      adm.createCompany(payload)
-        .then(function (c) { setSaving(false); onCreated(c); onClose(); })
-        .catch(function (e) { setSaving(false); setErr((e && e.message) || "Failed to create company."); });
     };
+
+    const handleLogoChange = (e) => {
+      var file = e.target.files && e.target.files[0];
+      if (!file || !id) return;
+      setLogoUploading(true); setErr(""); setMsg("");
+      compressImage(file, 400, 0.82).then(function (compressed) { return adm.uploadCompanyLogo(id, compressed); })
+        .then(function (updated) { setLogoUploading(false); set("logo_url", updated.logo_url || ""); onSaved && onSaved(updated, false); flash("Logo updated."); })
+        .catch(function (e) { setLogoUploading(false); flash((e && e.message) || "Logo upload failed.", true); });
+      e.target.value = "";
+    };
+
+    const handleCoverBannerChange = (e) => {
+      var file = e.target.files && e.target.files[0];
+      if (!file || !id) return;
+      setCoverUploading(true); setErr(""); setMsg("");
+      compressImage(file, 1600, 0.85).then(function (compressed) { return adm.uploadCompanyCoverBanner(id, compressed); })
+        .then(function (updated) { setCoverUploading(false); setCoverBannerUrl(updated.cover_banner_url || ""); onSaved && onSaved(updated, false); flash("Cover banner updated."); })
+        .catch(function (e) { setCoverUploading(false); flash((e && e.message) || "Upload failed.", true); });
+      e.target.value = "";
+    };
+
+    const handleAboutImageChange = (e) => {
+      var file = e.target.files && e.target.files[0];
+      if (!file || !id) return;
+      setAboutUploading(true); setErr(""); setMsg("");
+      compressImage(file, 1400, 0.85).then(function (compressed) { return adm.uploadCompanyAboutImage(id, compressed); })
+        .then(function (updated) { setAboutUploading(false); setAboutImageUrl(updated.about_image_url || ""); onSaved && onSaved(updated, false); flash("About image updated."); })
+        .catch(function (e) { setAboutUploading(false); flash((e && e.message) || "Upload failed.", true); });
+      e.target.value = "";
+    };
+
+    const handleGalleryUpload = (e) => {
+      var files = e.target.files;
+      if (!files || !files.length || !id) return;
+      setGalleryUploading(true);
+      Promise.all(Array.from(files).map(function (file) {
+        return compressImage(file, 1200, 0.85).then(function (compressed) { return adm.uploadCompanyGalleryPhoto(id, compressed); });
+      })).then(function (results) {
+        setGallery(function (g) { return g.concat(results); });
+        setGalleryUploading(false); flash("Photo(s) uploaded.");
+      }).catch(function (ex) { setGalleryUploading(false); flash((ex && ex.message) || "Upload failed.", true); });
+      e.target.value = "";
+    };
+
+    const deleteGalleryPhoto = (photoId) => {
+      adm.deleteCompanyGalleryPhoto(id, photoId)
+        .then(function () { setGallery(function (g) { return g.filter(function (p) { return p.id !== photoId; }); }); flash("Photo removed."); })
+        .catch(function (ex) { flash((ex && ex.message) || "Failed to remove.", true); });
+    };
+
+    const saveCaption = (photoId, caption) => {
+      adm.updateCompanyGalleryCaption(id, photoId, caption)
+        .then(function () { setGallery(function (g) { return g.map(function (p) { return p.id === photoId ? Object.assign({}, p, { caption: caption }) : p; }); }); })
+        .catch(function (ex) { flash((ex && ex.message) || "Failed to save caption.", true); });
+    };
+
+    const toggleBenefitTag = (tag) => {
+      setForm(function (f) {
+        var tags = f.benefits_tags || [];
+        var idx = tags.indexOf(tag);
+        return Object.assign({}, f, { benefits_tags: idx >= 0 ? tags.filter(function (t) { return t !== tag; }) : tags.concat([tag]) });
+      });
+    };
+
+    const saveAward = () => {
+      if (!awardForm.title.trim() || !id) return;
+      setAwardSaving(true);
+      adm.createCompanyAward(id, { title: awardForm.title, year: awardForm.year, description: awardForm.description })
+        .then(function (a) { setAwards(function (arr) { return arr.concat([a]); }); setAwardForm({ title: "", year: String(new Date().getFullYear()), description: "" }); setAwardSaving(false); flash("Award added."); })
+        .catch(function (ex) { setAwardSaving(false); flash((ex && ex.message) || "Failed to save award.", true); });
+    };
+
+    const deleteAward = (awardId) => {
+      adm.deleteCompanyAward(id, awardId)
+        .then(function () { setAwards(function (arr) { return arr.filter(function (a) { return a.id !== awardId; }); }); flash("Award removed."); })
+        .catch(function (ex) { flash((ex && ex.message) || "Failed to remove.", true); });
+    };
+
+    const handleAwardImageChange = (awardId, e) => {
+      var file = e.target.files && e.target.files[0];
+      if (!file) return;
+      setAwardUploadingId(awardId);
+      compressImage(file, 1000, 0.85).then(function (compressed) { return adm.uploadCompanyAwardImage(id, awardId, compressed); })
+        .then(function (updated) { setAwardUploadingId(null); setAwards(function (arr) { return arr.map(function (a) { return a.id === awardId ? Object.assign({}, a, { image_url: updated.image_url || "" }) : a; }); }); flash("Certificate uploaded."); })
+        .catch(function (ex) { setAwardUploadingId(null); flash((ex && ex.message) || "Upload failed.", true); });
+      e.target.value = "";
+    };
+
+    const TABS = [
+      { value: "about", label: "About" },
+      { value: "gallery", label: "Gallery", count: gallery.length || undefined },
+      { value: "awards", label: "Awards", count: awards.length || undefined },
+    ];
+    const locked = !id; // gallery/awards/most images need an existing company id
+
     return (
       <div style={{ position: "fixed", inset: 0, zIndex: 200, background: "var(--surface-overlay)", display: "flex", justifyContent: "flex-end", animation: "krmfade var(--dur-base) var(--ease-out)" }}>
-        <div style={{ width: 520, maxWidth: "94vw", height: "100%", background: "var(--surface-card)", boxShadow: "var(--shadow-xl)", display: "flex", flexDirection: "column", animation: "krmslide var(--dur-base) var(--ease-out)" }}>
+        <div style={{ width: 640, maxWidth: "96vw", height: "100%", background: "var(--surface-card)", boxShadow: "var(--shadow-xl)", display: "flex", flexDirection: "column", animation: "krmslide var(--dur-base) var(--ease-out)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "20px 24px", borderBottom: "1px solid var(--border)" }}>
-            <div style={{ flex: 1, fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "var(--text-lg)", color: "var(--text-strong)" }}>Create company</div>
+            <div style={{ position: "relative", flexShrink: 0 }}>
+              <Avatar src={form.logo_url || undefined} name={form.name || "Company"} square size={44} />
+              {!locked && (
+                <button onClick={() => logoInputRef.current && logoInputRef.current.click()} disabled={logoUploading}
+                  style={{ position: "absolute", bottom: -3, right: -3, width: 18, height: 18, borderRadius: "50%", border: "2px solid var(--surface-card)", background: "var(--brand)", color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}>
+                  {logoUploading ? <span style={{ fontSize: 8 }}>…</span> : I("camera", 9)}
+                </button>
+              )}
+              <input ref={logoInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleLogoChange} />
+            </div>
+            <div style={{ flex: 1, fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "var(--text-lg)", color: "var(--text-strong)" }}>{id ? "Edit company" : "Create company"}</div>
             <IconButton aria-label="Close" onClick={onClose}>{I("x", 18)}</IconButton>
           </div>
+
+          <div className="krm-tabs-scroll" style={{ padding: "14px 24px 0" }}>
+            <Tabs value={tab} onChange={setTab} tabs={TABS} />
+          </div>
+
           <div style={{ flex: 1, overflowY: "auto", padding: 24, display: "flex", flexDirection: "column", gap: 16 }}>
-            <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", lineHeight: 1.5 }}>Create a company on an employer's behalf. After saving, use <strong>Access</strong> on its row to assign an employer (full control) — they'll manage it from their own dashboard.</div>
-            <Input label="Company name *" value={f.name} onChange={(e) => set("name", e.target.value)} placeholder="e.g. ACME Cambodia" />
-            <Input label="Industry" value={f.industry} onChange={(e) => set("industry", e.target.value)} placeholder="e.g. Financial services" />
-            <Input label="Website" value={f.website} onChange={(e) => set("website", e.target.value)} placeholder="example.com" />
-            <Input label="Address" value={f.address} onChange={(e) => set("address", e.target.value)} />
-            <Input label="Registration no." value={f.registration_no} onChange={(e) => set("registration_no", e.target.value)} />
-            <Textarea label="Description" value={f.description} onChange={(e) => set("description", e.target.value)} rows={4} placeholder="Optional — the employer can fill this in later." />
-            <Select label="Status" value={f.status} onChange={(e) => set("status", e.target.value)} options={[{ value: "approved", label: "Approved (visible in the public directory)" }, { value: "pending", label: "Pending (hidden until ready)" }]} />
-            {err && <div style={{ color: "var(--danger)", fontSize: "var(--text-sm)", fontWeight: 600 }}>{err}</div>}
+            {err && <div style={{ padding: "10px 14px", background: "var(--danger-subtle)", color: "var(--danger)", borderRadius: "var(--radius-md)", fontSize: "var(--text-sm)" }}>{err}</div>}
+            {msg && <div style={{ padding: "10px 14px", background: "var(--success-subtle)", color: "var(--success)", borderRadius: "var(--radius-md)", fontSize: "var(--text-sm)", fontWeight: 600 }}>{msg}</div>}
+
+            {tab === "about" && (
+              <React.Fragment>
+                {!id && <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", lineHeight: 1.5 }}>Save the basic details first — the logo, cover banner, gallery, and awards unlock right after. Use <strong>Access</strong> on the company's row afterward to assign an employer (full control).</div>}
+                <Input label="Company name *" value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="e.g. ACME Cambodia" />
+                <Input label="Industry" value={form.industry} onChange={(e) => set("industry", e.target.value)} placeholder="e.g. Financial services" />
+                <Input label="Website" value={form.website} onChange={(e) => set("website", e.target.value)} placeholder="example.com" iconLeft={I("globe", 16)} />
+                <Input label="Address" value={form.address} onChange={(e) => set("address", e.target.value)} iconLeft={I("map-pin", 16)} />
+                <Input label="Registration no." value={form.registration_no} onChange={(e) => set("registration_no", e.target.value)} />
+                {!id && <Select label="Status" value={form.status} onChange={(e) => set("status", e.target.value)} options={[{ value: "approved", label: "Approved (visible in the public directory)" }, { value: "pending", label: "Pending (hidden until ready)" }]} />}
+
+                <div style={{ padding: "16px 18px", borderRadius: "var(--radius-md)", border: "1px solid var(--border)", background: "var(--surface-sunken)" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-strong)", marginBottom: 4 }}>{I("receipt", 15)} Tax / VAT details <span style={{ fontWeight: 500, color: "var(--text-faint)" }}>— optional</span></div>
+                  <Input label="VAT TIN" value={form.vat_tin} onChange={(e) => set("vat_tin", e.target.value)} placeholder="e.g. K001-901234567" />
+                  <div style={{ marginTop: 12 }}><Input label="Legal name (on invoice)" value={form.vat_legal_name} onChange={(e) => set("vat_legal_name", e.target.value)} placeholder="Registered company name" /></div>
+                  <div style={{ marginTop: 12 }}><Input label="Billing address (on invoice)" value={form.vat_address} onChange={(e) => set("vat_address", e.target.value)} placeholder="Registered address" /></div>
+                </div>
+
+                <RichEditor label="About the company" rows={5} value={form.description} onChange={(v) => set("description", v)} placeholder="Tell candidates about the company, culture, and mission…" />
+
+                <div>
+                  <div style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-strong)", marginBottom: 4 }}>Cover banner</div>
+                  <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginBottom: 8 }}>{locked ? "Save the company first to unlock image uploads." : "Wide banner shown at the top of the company profile page. Recommended: 1600×360px."}</div>
+                  <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
+                    <div style={{ flex: 1, height: 90, borderRadius: "var(--radius-md)", border: "1px dashed var(--border-strong)", background: "var(--surface-sunken)", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      {coverBannerUrl ? <img src={coverBannerUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span style={{ color: "var(--text-faint)" }}>{I("panorama", 26)}</span>}
+                    </div>
+                    <div style={{ flexShrink: 0 }}>
+                      <Button variant="secondary" size="sm" disabled={locked || coverUploading} onClick={() => coverInputRef.current && coverInputRef.current.click()}>{coverUploading ? "Uploading…" : (coverBannerUrl ? "Change banner" : "Upload banner")}</Button>
+                      <input ref={coverInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleCoverBannerChange} />
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <div style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-strong)", marginBottom: 8 }}>About image</div>
+                  <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
+                    <div style={{ width: 160, height: 100, borderRadius: "var(--radius-md)", border: "1px dashed var(--border-strong)", background: "var(--surface-sunken)", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      {aboutImageUrl ? <img src={aboutImageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span style={{ color: "var(--text-faint)" }}>{I("image", 24)}</span>}
+                    </div>
+                    <div>
+                      <Button variant="secondary" size="sm" disabled={locked || aboutUploading} onClick={() => aboutInputRef.current && aboutInputRef.current.click()}>{aboutUploading ? "Uploading…" : (aboutImageUrl ? "Change image" : "Upload image")}</Button>
+                      <input ref={aboutInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleAboutImageChange} />
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <div style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-strong)", marginBottom: 12 }}>Social media</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                    <Input label="Facebook" value={form.facebook_url} onChange={(e) => set("facebook_url", e.target.value)} iconLeft={I("facebook", 16)} placeholder="https://facebook.com/yourpage" />
+                    <Input label="LinkedIn" value={form.linkedin_url} onChange={(e) => set("linkedin_url", e.target.value)} iconLeft={I("linkedin", 16)} placeholder="https://linkedin.com/company/yourpage" />
+                    <Input label="Twitter / X" value={form.twitter_url} onChange={(e) => set("twitter_url", e.target.value)} iconLeft={I("twitter", 16)} placeholder="https://x.com/yourhandle" />
+                    <Input label="Instagram" value={form.instagram_url} onChange={(e) => set("instagram_url", e.target.value)} iconLeft={I("instagram", 16)} placeholder="https://instagram.com/yourpage" />
+                  </div>
+                </div>
+
+                <Select label="Company size" value={form.company_size} onChange={(e) => set("company_size", e.target.value)} options={[{ value: "", label: "Not specified" }, { value: "1-10", label: "1–10 employees" }, { value: "11-50", label: "11–50 employees" }, { value: "51-200", label: "51–200 employees" }, { value: "201-500", label: "201–500 employees" }, { value: "500+", label: "500+ employees" }]} />
+
+                <RichEditor label="Culture & values" rows={3} value={form.culture_values} onChange={(v) => set("culture_values", v)} placeholder="Describe the company culture, mission, and what makes the workplace special…" />
+
+                <div>
+                  <div style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-strong)", marginBottom: 8 }}>Employee benefits</div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                    {["Health insurance", "Remote work", "Flexible hours", "Learning budget", "Annual bonus", "Stock options", "Gym membership", "Meals provided", "Transportation", "Paid leave", "Pension plan", "International travel"].map(function (tag) {
+                      var active = (form.benefits_tags || []).indexOf(tag) >= 0;
+                      return (
+                        <button key={tag} onClick={() => toggleBenefitTag(tag)} style={{ padding: "5px 12px", borderRadius: 20, border: "1px solid " + (active ? "var(--teal-500)" : "var(--border)"), background: active ? "var(--teal-subtle)" : "transparent", color: active ? "var(--teal-600)" : "var(--text-muted)", fontSize: "var(--text-sm)", cursor: "pointer", fontWeight: active ? 600 : 400, transition: "all .15s" }}>
+                          {active && I("check", 12, { style: { marginRight: 4 } })}{tag}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </React.Fragment>
+            )}
+
+            {tab === "gallery" && (
+              locked ? <div style={{ padding: "28px 0", textAlign: "center", color: "var(--text-muted)", fontSize: "var(--text-sm)" }}>Save the company on the About tab first to unlock the gallery.</div> : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                  <Button variant="primary" iconLeft={I("image-plus", 16)} disabled={galleryUploading} onClick={() => galleryInputRef.current && galleryInputRef.current.click()}>
+                    {galleryUploading ? "Uploading…" : "Upload photos"}
+                  </Button>
+                  <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>JPG, PNG up to 10 MB each. Multiple files allowed.</span>
+                  <input ref={galleryInputRef} type="file" accept="image/*" multiple style={{ display: "none" }} onChange={handleGalleryUpload} />
+                </div>
+                {gallery.length === 0 && (
+                  <div style={{ padding: "28px 0", textAlign: "center", color: "var(--text-muted)", fontSize: "var(--text-sm)" }}>No photos yet.</div>
+                )}
+                {gallery.length > 0 && (
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 12 }}>
+                    {gallery.map(function (photo) {
+                      return (
+                        <div key={photo.id} style={{ border: "1px solid var(--border)", borderRadius: "var(--radius-md)", overflow: "hidden", background: "var(--surface-card)" }}>
+                          <div style={{ position: "relative", aspectRatio: "4/3", background: "var(--surface-sunken)" }}>
+                            <img src={photo.url || photo.photo_url || photo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                            <button onClick={() => deleteGalleryPhoto(photo.id)} title="Remove" style={{ position: "absolute", top: 6, right: 6, width: 26, height: 26, borderRadius: "50%", background: "rgba(0,0,0,0.55)", border: "none", color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>{I("x", 13)}</button>
+                          </div>
+                          <input defaultValue={photo.caption || ""} onBlur={(e) => { if ((e.target.value || "") !== (photo.caption || "")) saveCaption(photo.id, e.target.value); }} placeholder="Add a caption…" style={{ width: "100%", border: "none", borderTop: "1px solid var(--border-subtle)", outline: "none", padding: "8px 10px", fontFamily: "var(--font-sans)", fontSize: "var(--text-xs)", color: "var(--text-body)", background: "transparent", boxSizing: "border-box" }} />
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+              )
+            )}
+
+            {tab === "awards" && (
+              locked ? <div style={{ padding: "28px 0", textAlign: "center", color: "var(--text-muted)", fontSize: "var(--text-sm)" }}>Save the company on the About tab first to unlock awards.</div> : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <Card padding={18}>
+                  <div style={{ fontWeight: 700, color: "var(--text-strong)", marginBottom: 12, fontSize: "var(--text-base)" }}>Add award or recognition</div>
+                  <Input label="Award title" value={awardForm.title} onChange={(e) => setAwardForm(function (f) { return Object.assign({}, f, { title: e.target.value }); })} placeholder="e.g. Best Employer of the Year" />
+                  <div style={{ marginTop: 12 }}><Input label="Year" type="number" value={awardForm.year} onChange={(e) => setAwardForm(function (f) { return Object.assign({}, f, { year: e.target.value }); })} placeholder="2024" /></div>
+                  <div style={{ marginTop: 12 }}><Textarea label="Description (optional)" rows={2} value={awardForm.description} onChange={(e) => setAwardForm(function (f) { return Object.assign({}, f, { description: e.target.value }); })} placeholder="Awarded by…" /></div>
+                  <div style={{ marginTop: 12 }}>
+                    <Button variant="primary" iconLeft={I("plus", 16)} disabled={awardSaving || !awardForm.title.trim()} onClick={saveAward}>{awardSaving ? "Saving…" : "Add award"}</Button>
+                  </div>
+                </Card>
+                {awards.length === 0 && (
+                  <div style={{ padding: "12px 0", textAlign: "center", color: "var(--text-muted)", fontSize: "var(--text-sm)" }}>No awards yet.</div>
+                )}
+                {awards.length > 0 && awards.map(function (a) {
+                  return (
+                    <Card key={a.id} padding={16}>
+                      <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
+                        <label title="Upload certificate" style={{ position: "relative", flexShrink: 0, width: 52, height: 52, borderRadius: "var(--radius-md)", overflow: "hidden", cursor: awardUploadingId === a.id ? "wait" : "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", background: a.image_url ? "var(--surface-sunken)" : "var(--warning-subtle, #fef3c7)", color: "var(--warning, #b45309)", border: "1px solid var(--border)" }}>
+                          {awardUploadingId === a.id
+                            ? <span style={{ fontSize: 11, color: "var(--text-muted)" }}>…</span>
+                            : a.image_url
+                              ? <img src={a.image_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                              : I("trophy", 18)}
+                          <input type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => handleAwardImageChange(a.id, e)} />
+                        </label>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontWeight: 700, color: "var(--text-strong)", fontSize: "var(--text-sm)" }}>{a.title}</div>
+                          {a.year && <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: 2 }}>{a.year}</div>}
+                          {a.description && <div style={{ fontSize: "var(--text-sm)", color: "var(--text-body)", marginTop: 6, lineHeight: 1.5 }}>{a.description}</div>}
+                        </div>
+                        <button onClick={() => deleteAward(a.id)} title="Remove" style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--text-muted)", display: "inline-flex", padding: 4, borderRadius: "var(--radius-sm)" }}>{I("trash-2", 15)}</button>
+                      </div>
+                    </Card>
+                  );
+                })}
+              </div>
+              )
+            )}
           </div>
-          <div style={{ padding: "16px 24px", borderTop: "1px solid var(--border)" }}>
-            <Button variant="primary" block disabled={saving} onClick={submit}>{saving ? "Creating…" : "Create company"}</Button>
-          </div>
+
+          {tab === "about" && (
+            <div style={{ padding: "16px 24px", borderTop: "1px solid var(--border)" }}>
+              <Button variant="primary" block disabled={saving} onClick={save}>{saving ? "Saving…" : (id ? "Save changes" : "Create company")}</Button>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -964,7 +1266,8 @@
   function CompaniesMgmt() {
     const [tab, setTab] = React.useState("pending");
     const [accessCompany, setAccessCompany] = React.useState(null);
-    const [createOpen, setCreateOpen] = React.useState(false);
+    const [editorTarget, setEditorTarget] = React.useState(null); // null closed, "new", or a full company detail object
+    const [editorLoading, setEditorLoading] = React.useState(false);
     const [companies, setCompanies] = React.useState([]);
     const [counts, setCounts] = React.useState({ pending: 0, approved: 0, suspended: 0 });
     const [loading, setLoading] = React.useState(true);
@@ -1001,11 +1304,25 @@
 
     const flashMsg = (msg) => { setActionMsg(msg); setTimeout(() => setActionMsg(""), 4000); };
 
-    const onCreated = (c) => {
-      var st = c.status === "approved" ? "approved" : "pending";
-      flashMsg("Company “" + c.name + "” created. Use Access on its row to assign an employer.");
-      setCounts(function (p) { return Object.assign({}, p, { [st]: (p[st] || 0) + 1 }); });
-      setTab(st); setPage(1); loadCompanies(st, 1);
+    // Fired by CompanyEditorModal on every save (create AND every subsequent field/image
+    // save) — isNew is only true for the very first save of a brand-new company.
+    const onEditorSaved = (c, isNew) => {
+      setEditorTarget(c); // keep the modal in sync (id now set, fresh urls, etc.)
+      if (isNew) {
+        var st = c.status === "approved" ? "approved" : "pending";
+        flashMsg("Company “" + c.name + "” created. Use Access on its row to assign an employer.");
+        setCounts(function (p) { return Object.assign({}, p, { [st]: (p[st] || 0) + 1 }); });
+        setTab(st); setPage(1); loadCompanies(st, 1);
+      } else {
+        setCompanies(function (arr) { return arr.map(function (x) { return x.id === c.id ? Object.assign({}, x, c) : x; }); });
+      }
+    };
+
+    const openEdit = (row) => {
+      setEditorLoading(true);
+      adm.fetchCompanyDetail(row.id)
+        .then(function (full) { setEditorLoading(false); setEditorTarget(full); })
+        .catch(function (e) { setEditorLoading(false); flashMsg("Error: " + (e && e.message)); });
     };
 
     const doAction = (fn, msg) => {
@@ -1038,7 +1355,7 @@
 
     return (
       <div className="krm-page-pad" style={{ padding: 28 }}>
-        <ScreenHead title="Company management" sub="Approve, reject, or suspend employer companies — or create one on an employer's behalf." action={<Button variant="primary" iconLeft={I("plus", 16)} onClick={() => setCreateOpen(true)}>Create company</Button>} />
+        <ScreenHead title="Company management" sub="Approve, reject, or suspend employer companies — or create one on an employer's behalf." action={<Button variant="primary" iconLeft={I("plus", 16)} onClick={() => setEditorTarget("new")}>Create company</Button>} />
         <Tabs value={tab} onChange={(v) => { setPage(1); setTab(v); }} tabs={[{ value: "pending", label: "Pending", count: counts.pending }, { value: "approved", label: "Approved", count: counts.approved }, { value: "suspended", label: "Suspended", count: counts.suspended }]} style={{ marginBottom: 18 }} />
         {actionMsg && <div style={{ padding: "10px 14px", background: "var(--success-subtle)", color: "var(--success)", borderRadius: "var(--radius-md)", marginBottom: 14, fontWeight: 600, fontSize: "var(--text-sm)" }}>{actionMsg}</div>}
         <div className="krm-table-wrap"><Card padding={0}>
@@ -1066,6 +1383,7 @@
                   {I(coverBusy === c.id ? "loader" : "image", 13)} Cover
                   <input type="file" accept="image/*" disabled={coverBusy === c.id} onChange={(e) => { onCoverPick(c, e.target.files[0]); e.target.value = ""; }} style={{ display: "none" }} />
                 </label>
+                <Button variant="secondary" size="sm" iconLeft={I(editorLoading ? "loader" : "pencil", 13)} disabled={editorLoading} onClick={() => openEdit(c)}>Edit</Button>
                 <Button variant="secondary" size="sm" iconLeft={I("users", 13)} onClick={() => setAccessCompany(c)}>Access</Button>
                 {c.status === "pending" && (
                   <React.Fragment>
@@ -1089,7 +1407,7 @@
           )}
         </Card></div>
         {accessCompany && <CompanyAccessModal company={accessCompany} onClose={() => setAccessCompany(null)} onFlash={flashMsg} />}
-        {createOpen && <CreateCompanyModal onClose={() => setCreateOpen(false)} onCreated={onCreated} />}
+        {editorTarget && <CompanyEditorModal company={editorTarget === "new" ? null : editorTarget} onClose={() => setEditorTarget(null)} onSaved={onEditorSaved} />}
       </div>
     );
   }
