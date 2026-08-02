@@ -346,11 +346,22 @@ class JobController extends Controller
         return response()->json(['created' => $created, 'skipped' => $skipped, 'failed' => $failed, 'results' => $results]);
     }
 
-    // POST /api/admin/jobs/ai-draft — draft a job description/requirements/benefits from a title.
+    // POST /api/admin/jobs/ai-draft — admin drafts a job description/requirements/benefits from a title.
     public function aiDraft(Request $request)
     {
         $this->requirePermission('approve_jobs');
+        return $this->runAiDraft($request);
+    }
 
+    // POST /api/jobs/ai-draft — employer drafts their own job posting from a title.
+    public function employerAiDraft(Request $request)
+    {
+        $this->requirePermission('post_jobs');
+        return $this->runAiDraft($request);
+    }
+
+    private function runAiDraft(Request $request)
+    {
         $data = $request->validate([
             'title'            => 'required|string|max:190',
             'company'          => 'nullable|string|max:190',

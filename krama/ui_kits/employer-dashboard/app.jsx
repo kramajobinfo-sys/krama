@@ -496,17 +496,37 @@
     const [saving, setSaving] = React.useState(false);
     const [resetKey, setResetKey] = React.useState(0);
     const [socialUploading, setSocialUploading] = React.useState(false);
+    const [drafting, setDrafting] = React.useState(false);
+    const [draftMsg, setDraftMsg] = React.useState("");
     React.useEffect(function () {
       if (!open) return;
       setForm(job && (mode === "edit" || mode === "clone") ? jobToForm(job, mode === "clone") : BLANK);
       setResetKey(function(k) { return k + 1; });
-      setError(""); setSaving(false);
+      setError(""); setSaving(false); setDraftMsg("");
       emp.fetchCategories().then(setCats).catch(function () {});
       emp.fetchLocations().then(setLocs).catch(function () {});
       emp.fetchExperienceLevels().then(setExpLevels).catch(function () {});
     }, [open]);
     if (!open) return null;
     const set = (k, v) => setForm((f) => Object.assign({}, f, { [k]: v }));
+    const draftWithAI = function () {
+      if (!form.title.trim()) { setError("Enter a job title first, then draft with AI."); return; }
+      setDrafting(true); setError(""); setDraftMsg("");
+      var lc = locs.find(function (l) { return String(l.id) === String(form.location_id); });
+      var companyName = (user && (user.company_name || (user.company && user.company.name))) || "";
+      emp.aiDraftJob({
+        title: form.title.trim(),
+        company: companyName,
+        job_type: form.job_type,
+        experience_level: form.experience_level,
+        location: lc ? lc.name : "",
+      }).then(function (d) {
+        setDrafting(false);
+        setForm(function (f) { return Object.assign({}, f, { description: d.description || f.description, requirements: d.requirements || f.requirements, benefits: d.benefits || f.benefits }); });
+        setResetKey(function (k) { return k + 1; }); // remount RichEditors so they show the drafted content
+        setDraftMsg("Draft added below — review and edit before posting.");
+      }).catch(function (e) { setDrafting(false); setError((e && e.message) || "AI draft failed."); });
+    };
     const onSocialImage = (e) => {
       var file = e.target.files && e.target.files[0]; e.target.value = "";
       if (!file) return;
@@ -642,6 +662,11 @@
                 </div>
               </div>
             )}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap", paddingTop: 6, borderTop: "1px solid var(--border-subtle)" }}>
+              <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 5 }}>{I("sparkles", 13)} Let AI draft the description, requirements &amp; benefits from your title.</span>
+              <Button variant="secondary" size="sm" iconLeft={I("sparkles", 15)} disabled={drafting || !form.title.trim()} onClick={draftWithAI}>{drafting ? "Drafting…" : "Draft with AI"}</Button>
+            </div>
+            {draftMsg && <div style={{ padding: "7px 12px", background: "var(--success-subtle)", color: "var(--success)", borderRadius: "var(--radius-md)", fontSize: "var(--text-xs)", fontWeight: 600 }}>{draftMsg}</div>}
             <RichEditor key={"d" + resetKey} label="Description" rows={4} value={form.description} onChange={(v) => set("description", v)} placeholder="Describe the role and what the team does…" />
             <RichEditor key={"r" + resetKey} label="Requirements" rows={3} value={form.requirements} onChange={(v) => set("requirements", v)} placeholder="Skills, qualifications, experience…" />
             <RichEditor key={"b" + resetKey} label="Benefits" rows={3} value={form.benefits} onChange={(v) => set("benefits", v)} placeholder="Perks, insurance, bonuses…" />

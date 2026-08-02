@@ -196,6 +196,7 @@ Route::middleware('auth:api')->group(function () {
     Route::get('employer/jobs',              [JobController::class, 'myJobs']);
     Route::post('employer/upload/image',     [UploadController::class, 'employerImage'])->middleware('throttle:20,1');
     Route::post('jobs',                      [JobController::class, 'store'])->middleware('throttle:30,1');
+    Route::post('jobs/ai-draft',             [JobController::class, 'employerAiDraft'])->middleware('throttle:20,1');
     Route::put('jobs/{id}',                  [JobController::class, 'update']);
     Route::delete('jobs/{id}',               [JobController::class, 'destroy']);
     Route::patch('jobs/{id}/submit',         [JobController::class, 'submit']);

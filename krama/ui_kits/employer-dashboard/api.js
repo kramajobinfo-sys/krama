@@ -154,6 +154,7 @@
         .then(function (r) { return r.json().then(function (d) { if (!r.ok) throw new Error(d.message || "Upload failed"); return d.url; }); });
     },
     createJob: function (data) { return req("POST", "/jobs", data); },
+    aiDraftJob: function (data) { return req("POST", "/jobs/ai-draft", data); },
     updateJob: function (id, data) { return req("PUT", "/jobs/" + id, data); },
     deleteJob: function (id) { return req("DELETE", "/jobs/" + id); },
     submitJob: function (id, subscriptionId) { return req("PATCH", "/jobs/" + id + "/submit", subscriptionId ? { subscription_id: subscriptionId } : undefined); },
