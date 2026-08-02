@@ -4,7 +4,7 @@
 <link rel="stylesheet" href="../../styles.css">
 <link rel="icon" type="image/png" href="../../assets/favicon.png">
 <link rel="apple-touch-icon" href="../../assets/apple-touch-icon.png">
-<link rel="stylesheet" href="mobile.css?v=3">
+<link rel="stylesheet" href="mobile.css?v=6">
 <script src="../../vendor/react.production.min.js?v=1"></script>
 <script src="../../vendor/react-dom.production.min.js?v=1"></script>
 <script src="../../vendor/babel.min.js?v=1"></script>
@@ -20,7 +20,7 @@
 <script>
 // Fetch, compile, and execute app.jsx manually — bypasses Babel's DOMContentLoaded
 // auto-processing which can silently fail in certain environments.
-fetch('app.jsx?v=197').then(function(r){ return r.text(); }).then(function(src){
+fetch('app.jsx?v=201').then(function(r){ return r.text(); }).then(function(src){
   var compiled = Babel.transform(src, { presets: ['react'] }).code;
   var s = document.createElement('script');
   s.text = compiled;

@@ -72,13 +72,65 @@
     gap: 10px !important;
   }
 
+  /* Page header (title + action button(s)) — stack instead of squeezing the
+     action off the edge of the screen (it was getting clipped, unreachable). */
+  .krm-screenhead {
+    flex-wrap: wrap !important;
+    align-items: flex-start !important;
+  }
+  .krm-screenhead-action {
+    width: 100% !important;
+    flex-wrap: wrap !important;
+  }
+  /* A lone action button (the common case) reads better full-width; a group of
+     several (e.g. Bulk import + Post a job) keeps its own natural sizing and
+     just wraps to a second line if it doesn't fit. */
+  .krm-screenhead-action > button:only-child,
+  .krm-screenhead-action > a:only-child {
+    width: 100% !important;
+  }
+
   /* Data tables — horizontal scroll */
   .krm-table-wrap {
     overflow-x: auto !important;
     -webkit-overflow-scrolling: touch !important;
   }
-  /* Wrapped tables keep a min width so they scroll horizontally instead of crushing */
-  .krm-table-wrap > * { min-width: 720px !important; }
+  /* Wrapped tables keep a min width so they scroll horizontally instead of crushing
+     columns into each other (header labels were overlapping at 720px). */
+  .krm-table-wrap > * { min-width: 860px !important; }
+  /* Header labels: truncate instead of wrapping/overflowing into the next column
+     (nowrap alone still visually collided — a span with no width limit spills
+     past its grid cell since grid tracks don't clip inline content by default). */
+  .krm-table-wrap [style*="text-transform: uppercase"] > span {
+    display: inline-block !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    vertical-align: bottom;
+  }
+
+  /* Tab bars (Pending/Approved/Suspended, Live jobs/Taken down/All jobs, Plans/
+     Subscriptions/…, Users/Roles/Locations/…, Homepage's 8-way section picker,
+     etc.) overflow a phone with no way to reach the clipped tabs — the row's
+     overflow was "visible", so the excess just spilled off-screen unreachably.
+     Wrapping a tab row in .krm-tabs-scroll makes it swipe horizontally instead. */
+  .krm-tabs-scroll {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none;
+    margin: 0 -2px;
+  }
+  .krm-tabs-scroll::-webkit-scrollbar { display: none; }
+  .krm-tabs-scroll > div {
+    flex-wrap: nowrap !important;
+    min-width: max-content !important;
+  }
+  .krm-tabs-scroll > div > button,
+  .krm-tabs-scroll > button {
+    flex: 0 0 auto !important;
+  }
 
   /* Single-column card grids */
   .krm-card-grid {

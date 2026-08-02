@@ -692,25 +692,25 @@
 
     return (
       <div className="krm-page-pad" style={{ padding: 28 }}>
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 16 }}>
+        <div className="krm-screenhead" style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 16 }}>
           <div>
             <h2 style={{ fontSize: "var(--text-xl)", fontWeight: 700, color: "var(--text-strong)", margin: 0 }}>Job management</h2>
             <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginTop: 4 }}>
               Jobs are published directly by employers. You can also post a job on behalf of an employer, or take down inappropriate listings.
             </p>
           </div>
-          <div style={{ display: "flex", gap: 10, flexShrink: 0 }}>
+          <div className="krm-screenhead-action" style={{ display: "flex", gap: 10, flexShrink: 0 }}>
             <Button variant="secondary" iconLeft={I("upload", 16)} onClick={function () { setBulkOpen(true); }} style={{ whiteSpace: "nowrap" }}>Bulk import</Button>
             <Button variant="primary" iconLeft={I("plus", 16)} onClick={function () { setPostOpen(true); }} style={{ whiteSpace: "nowrap" }}>Post a job</Button>
           </div>
         </div>
         <PostJobModal open={postOpen} onClose={function () { setPostOpen(false); }} onPosted={function () { setPostOpen(false); flashMsg("Job published on behalf of the employer."); setTab("published"); setPage(1); loadJobs("published", 1); }} />
         <BulkImportModal open={bulkOpen} onClose={function () { setBulkOpen(false); }} onDone={function (res) { flashMsg("Imported " + res.created + " job(s)."); setTab("published"); setPage(1); loadJobs("published", 1); }} />
-        <Tabs value={tab} onChange={(v) => { setPage(1); setTab(v); }} tabs={[
+        <div className="krm-tabs-scroll"><Tabs value={tab} onChange={(v) => { setPage(1); setTab(v); }} tabs={[
           { value: "published", label: "Live jobs", count: counts.published },
           { value: "rejected", label: "Taken down", count: counts.rejected },
           { value: "all", label: "All jobs", count: counts.all },
-        ]} style={{ marginBottom: 20 }} />
+        ]} style={{ marginBottom: 20 }} /></div>
 
         {actionMsg && <div style={{ padding: "10px 14px", background: "var(--success-subtle)", color: "var(--success)", borderRadius: "var(--radius-md)", marginBottom: 14, fontWeight: 600, fontSize: "var(--text-sm)" }}>{actionMsg}</div>}
 
@@ -792,12 +792,12 @@
 
   function ScreenHead({ title, sub, action }) {
     return (
-      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 18 }}>
+      <div className="krm-screenhead" style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 12, marginBottom: 18 }}>
         <div>
           <h2 style={{ fontSize: "var(--text-xl)", fontWeight: 700, color: "var(--text-strong)" }}>{title}</h2>
           {sub && <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginTop: 4 }}>{sub}</div>}
         </div>
-        {action}
+        {action && <div className="krm-screenhead-action" style={{ flexShrink: 0 }}>{action}</div>}
       </div>
     );
   }
@@ -1356,16 +1356,16 @@
     return (
       <div className="krm-page-pad" style={{ padding: 28 }}>
         <ScreenHead title="Company management" sub="Approve, reject, or suspend employer companies — or create one on an employer's behalf." action={<Button variant="primary" iconLeft={I("plus", 16)} onClick={() => setEditorTarget("new")}>Create company</Button>} />
-        <Tabs value={tab} onChange={(v) => { setPage(1); setTab(v); }} tabs={[{ value: "pending", label: "Pending", count: counts.pending }, { value: "approved", label: "Approved", count: counts.approved }, { value: "suspended", label: "Suspended", count: counts.suspended }]} style={{ marginBottom: 18 }} />
+        <div className="krm-tabs-scroll"><Tabs value={tab} onChange={(v) => { setPage(1); setTab(v); }} tabs={[{ value: "pending", label: "Pending", count: counts.pending }, { value: "approved", label: "Approved", count: counts.approved }, { value: "suspended", label: "Suspended", count: counts.suspended }]} style={{ marginBottom: 18 }} /></div>
         {actionMsg && <div style={{ padding: "10px 14px", background: "var(--success-subtle)", color: "var(--success)", borderRadius: "var(--radius-md)", marginBottom: 14, fontWeight: 600, fontSize: "var(--text-sm)" }}>{actionMsg}</div>}
         <div className="krm-table-wrap"><Card padding={0}>
-          <div style={{ display: "grid", gridTemplateColumns: "2fr 1.3fr 1.1fr 0.6fr 0.9fr 340px", padding: "12px 20px", fontSize: "var(--text-xs)", fontWeight: 700, letterSpacing: ".04em", textTransform: "uppercase", color: "var(--text-faint)", borderBottom: "1px solid var(--border)" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "2fr 1.15fr 1fr 0.6fr 0.9fr 380px", padding: "12px 20px", fontSize: "var(--text-xs)", fontWeight: 700, letterSpacing: ".04em", textTransform: "uppercase", color: "var(--text-faint)", borderBottom: "1px solid var(--border)" }}>
             <span>Company</span><span>Industry</span><span>Reg. number</span><span>Jobs</span><span>Status</span><span style={{ textAlign: "right" }}>Actions</span>
           </div>
           {loading && <div style={{ padding: "28px 20px", color: "var(--text-muted)", fontSize: "var(--text-sm)", textAlign: "center" }}>Loading…</div>}
           {!loading && companies.length === 0 && <div style={{ padding: "28px 20px", color: "var(--text-muted)", fontSize: "var(--text-sm)", textAlign: "center" }}>No companies in this tab.</div>}
           {!loading && companies.map((c, i) => (
-            <div key={c.id} style={{ display: "grid", gridTemplateColumns: "2fr 1.3fr 1.1fr 0.6fr 0.9fr 340px", alignItems: "center", padding: "14px 20px", borderBottom: i < companies.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>
+            <div key={c.id} style={{ display: "grid", gridTemplateColumns: "2fr 1.15fr 1fr 0.6fr 0.9fr 380px", alignItems: "center", padding: "14px 20px", borderBottom: i < companies.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <label title="Upload / change logo" style={{ position: "relative", cursor: logoBusy === c.id ? "wait" : "pointer", flexShrink: 0, display: "inline-flex" }}>
                   <Avatar src={c.logo_url || undefined} name={c.name} square size={34} />
@@ -1379,11 +1379,11 @@
               <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-sm)", color: "var(--text-body)" }}>{c.jobs_count || 0}</span>
               <span><StatusBadge status={c.status} /></span>
               <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", alignItems: "center", flexWrap: "wrap" }}>
-                <label title={(c.cover_banner_url ? "Replace cover banner" : "Upload cover banner") + " — recommended 1600 × 220px (top band of the company profile page)"} style={{ display: "inline-flex", alignItems: "center", gap: 5, height: 30, padding: "0 10px", borderRadius: "var(--radius-sm)", cursor: coverBusy === c.id ? "wait" : "pointer", border: "1px solid " + (c.cover_banner_url ? "var(--brand)" : "var(--border-strong)"), background: c.cover_banner_url ? "var(--brand-subtle)" : "var(--surface-card)", color: c.cover_banner_url ? "var(--text-brand)" : "var(--text-muted)", fontFamily: "var(--font-sans)", fontSize: "var(--text-xs)", fontWeight: 700, flexShrink: 0 }}>
-                  {I(coverBusy === c.id ? "loader" : "image", 13)} Cover
+                <label title={(c.cover_banner_url ? "Replace cover banner" : "Upload cover banner") + " — recommended 1600 × 220px (top band of the company profile page)"} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 32, height: 32, flexShrink: 0, borderRadius: "var(--radius-sm)", cursor: coverBusy === c.id ? "wait" : "pointer", border: "1px solid " + (c.cover_banner_url ? "var(--brand)" : "var(--border-strong)"), background: c.cover_banner_url ? "var(--brand-subtle)" : "var(--surface-card)", color: c.cover_banner_url ? "var(--text-brand)" : "var(--text-muted)" }}>
+                  {I(coverBusy === c.id ? "loader" : "image", 14)}
                   <input type="file" accept="image/*" disabled={coverBusy === c.id} onChange={(e) => { onCoverPick(c, e.target.files[0]); e.target.value = ""; }} style={{ display: "none" }} />
                 </label>
-                <Button variant="secondary" size="sm" iconLeft={I(editorLoading ? "loader" : "pencil", 13)} disabled={editorLoading} onClick={() => openEdit(c)}>Edit</Button>
+                <IconButton variant="secondary" size="sm" aria-label="Edit company" title="Edit company" disabled={editorLoading} onClick={() => openEdit(c)}>{I(editorLoading ? "loader" : "pencil", 14)}</IconButton>
                 <Button variant="secondary" size="sm" iconLeft={I("users", 13)} onClick={() => setAccessCompany(c)}>Access</Button>
                 {c.status === "pending" && (
                   <React.Fragment>
@@ -1887,7 +1887,7 @@
     return (
       <div className="krm-page-pad" style={{ padding: 28 }}>
         <ScreenHead title="Community forum" sub="Moderate discussions, handle reports, and manage categories." />
-        <Tabs value={tab} onChange={setTab} tabs={[{ value: "reports", label: "Reports" }, { value: "threads", label: "Threads" }, { value: "categories", label: "Categories" }]} style={{ marginBottom: 20 }} />
+        <div className="krm-tabs-scroll"><Tabs value={tab} onChange={setTab} tabs={[{ value: "reports", label: "Reports" }, { value: "threads", label: "Threads" }, { value: "categories", label: "Categories" }]} style={{ marginBottom: 20 }} /></div>
         {tab === "reports" && <ForumReportsTab />}
         {tab === "threads" && <ForumThreadsTab />}
         {tab === "categories" && <ForumCategoriesTab />}
@@ -3072,7 +3072,7 @@
     return (
       <div className="krm-page-pad" style={{ padding: 28 }}>
         <ScreenHead title="User management" sub="Every user across the platform in one place. Assign roles and fine-tune permissions." />
-        <Tabs value={tab} onChange={setTab} tabs={[{ value: "users", label: "Users", count: users.length }, { value: "roles", label: "Roles & permissions", count: 4 }, { value: "locations", label: "Locations" }, { value: "experience", label: "Experience levels" }, { value: "categories", label: "Categories" }]} style={{ marginBottom: 20 }} />
+        <div className="krm-tabs-scroll"><Tabs value={tab} onChange={setTab} tabs={[{ value: "users", label: "Users", count: users.length }, { value: "roles", label: "Roles & permissions", count: 4 }, { value: "locations", label: "Locations" }, { value: "experience", label: "Experience levels" }, { value: "categories", label: "Categories" }]} style={{ marginBottom: 20 }} /></div>
 
         {tab === "users" && (
           <React.Fragment>
@@ -3900,7 +3900,7 @@
           </div>
         ) : null}
 
-        <Tabs value={hpTab} onChange={setHpTab} tabs={[{ value: "home", label: "Home page" }, { value: "findjobs", label: "Find Jobs" }, { value: "jobdetail", label: "Job Detail" }, { value: "companies", label: "Companies" }, { value: "members", label: "Employers" }, { value: "community", label: "Community" }, { value: "explore", label: "Explore" }, { value: "pages", label: "Pages" }]} style={{ marginBottom: 20 }} />
+        <div className="krm-tabs-scroll"><Tabs value={hpTab} onChange={setHpTab} tabs={[{ value: "home", label: "Home page" }, { value: "findjobs", label: "Find Jobs" }, { value: "jobdetail", label: "Job Detail" }, { value: "companies", label: "Companies" }, { value: "members", label: "Employers" }, { value: "community", label: "Community" }, { value: "explore", label: "Explore" }, { value: "pages", label: "Pages" }]} style={{ marginBottom: 20 }} /></div>
 
         {hpTab === "pages" && <React.Fragment>
           <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", margin: "0 0 4px" }}>Hero banners for the static info pages. Each is a large 1600 × 360 banner, the same as the other page heroes. Leave a heading blank to use the page default.</p>
@@ -6021,9 +6021,9 @@
     return (
       <div className="krm-page-pad" style={{ padding: 28, maxWidth: 1100 }}>
         <ScreenHead title="Payments" sub="Manage plans and employer subscriptions." />
-        <div style={{ display: "flex", gap: 4, marginBottom: 24, borderBottom: "1px solid var(--border)", paddingBottom: 0 }}>
+        <div className="krm-tabs-scroll" style={{ display: "flex", gap: 4, marginBottom: 24, borderBottom: "1px solid var(--border)", paddingBottom: 0 }}>
           {TABS.map((t) => (
-            <button key={t.id} onClick={() => setTab(t.id)} style={{ display: "flex", alignItems: "center", gap: 7, padding: "10px 18px", border: "none", background: "transparent", cursor: "pointer", fontFamily: "var(--font-sans)", fontWeight: 600, fontSize: "var(--text-sm)", color: tab === t.id ? "var(--text-brand)" : "var(--text-muted)", borderBottom: "2px solid " + (tab === t.id ? "var(--brand)" : "transparent"), marginBottom: -1 }}>
+            <button key={t.id} onClick={() => setTab(t.id)} style={{ display: "flex", alignItems: "center", gap: 7, padding: "10px 18px", border: "none", background: "transparent", cursor: "pointer", fontFamily: "var(--font-sans)", fontWeight: 600, fontSize: "var(--text-sm)", color: tab === t.id ? "var(--text-brand)" : "var(--text-muted)", borderBottom: "2px solid " + (tab === t.id ? "var(--brand)" : "transparent"), marginBottom: -1, flex: "0 0 auto" }}>
               {I(t.icon, 15)} {t.label}
             </button>
           ))}
@@ -6305,12 +6305,12 @@
       <div className="krm-page-pad" style={{ padding: 28, maxWidth: 1000 }}>
         <ScreenHead title="Company reviews" sub="Moderate reviews before they appear on company profiles." />
 
-        <Tabs value={status} onChange={function(v) { setStatus(v); setPage(1); }} tabs={[
+        <div className="krm-tabs-scroll"><Tabs value={status} onChange={function(v) { setStatus(v); setPage(1); }} tabs={[
           { value: "pending",  label: "Pending" },
           { value: "approved", label: "Approved" },
           { value: "rejected", label: "Rejected" },
           { value: "all",      label: "All" },
-        ]} style={{ marginBottom: 20 }} />
+        ]} style={{ marginBottom: 20 }} /></div>
 
         {msg && <div style={{ padding: "10px 14px", background: "var(--success-subtle)", color: "var(--success)", borderRadius: "var(--radius-md)", marginBottom: 14, fontWeight: 600, fontSize: "var(--text-sm)" }}>{msg}</div>}
 
