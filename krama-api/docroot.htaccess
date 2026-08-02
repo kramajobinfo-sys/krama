@@ -15,7 +15,7 @@
     # server-renders the same page with OG cards + JobPosting/Organization JSON-LD.
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{HTTP_USER_AGENT} !(facebookexternalhit|Facebot|Twitterbot|LinkedInBot|Slackbot|TelegramBot|WhatsApp|Googlebot|Google-InspectionTool|GoogleOther|AdsBot-Google|bingbot|DuckDuckBot|Applebot|Discordbot|Pinterest|redditbot|Embedly|SkypeUriPreview|vkShare|W3C_Validator|Baiduspider|YandexBot|SemrushBot|AhrefsBot|ia_archiver) [NC]
-    RewriteRule ^(jobs/[^/]+|companies/[0-9]+)$ krama/ui_kits/public-website/index.html [L]
+    RewriteRule ^(jobs/[^/]+|companies/[0-9]+|privacy|terms)$ krama/ui_kits/public-website/index.html [L]
 
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_FILENAME} !-f

@@ -1151,8 +1151,11 @@
     const Section = ({
       n,
       h,
-      children
-    }) => /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
+      children,
+      id
+    }) => /*#__PURE__*/React.createElement("div", {
+      id: id
+    }, /*#__PURE__*/React.createElement("h3", {
       style: {
         fontSize: "var(--text-lg)",
         fontWeight: 700,
@@ -1195,7 +1198,8 @@
       items: ["We request only basic profile information (name, email address, and profile picture) needed to create or sign you into your Krama account.", "We use this information solely to authenticate you and populate your Krama profile. We do not post to your Facebook account and we do not access your friends list.", "You can disconnect Krama from Facebook at any time in your Facebook settings under “Settings → Apps and Websites”."]
     })), /*#__PURE__*/React.createElement(Section, {
       n: 5,
-      h: "Data Deletion"
+      h: "Data Deletion",
+      id: "data-deletion"
     }, /*#__PURE__*/React.createElement(P, null, "You can request deletion of your account and associated personal data at any time:"), /*#__PURE__*/React.createElement(List, {
       items: ["From your Krama profile settings, or", "By emailing info@kramajob.com with the subject “Data deletion request”."]
     }), /*#__PURE__*/React.createElement(P, null, "Once we verify your request, we will delete your personal data within 30 days, except information we are required to retain for legal, accounting, or fraud-prevention purposes.")), /*#__PURE__*/React.createElement(Section, {
@@ -1288,8 +1292,11 @@
     const Section = ({
       n,
       h,
-      children
-    }) => /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
+      children,
+      id
+    }) => /*#__PURE__*/React.createElement("div", {
+      id: id
+    }, /*#__PURE__*/React.createElement("h3", {
       style: {
         fontSize: "var(--text-lg)",
         fontWeight: 700,

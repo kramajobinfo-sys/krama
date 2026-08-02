@@ -435,8 +435,8 @@
         {items.map((it, i) => <li key={i} style={{ fontSize: "var(--text-base)", color: "var(--text-body)", lineHeight: 1.6 }}>{it}</li>)}
       </ul>
     );
-    const Section = ({ n, h, children }) => (
-      <div>
+    const Section = ({ n, h, children, id }) => (
+      <div id={id}>
         <h3 style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: "var(--text-strong)", marginBottom: 8 }}>{n}. {h}</h3>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>{children}</div>
       </div>
@@ -496,7 +496,7 @@
           ]} />
         </Section>
 
-        <Section n={5} h="Data Deletion">
+        <Section n={5} h="Data Deletion" id="data-deletion">
           <P>You can request deletion of your account and associated personal data at any time:</P>
           <List items={[
             "From your Krama profile settings, or",
@@ -586,8 +586,8 @@
         {items.map((it, i) => <li key={i} style={{ fontSize: "var(--text-base)", color: "var(--text-body)", lineHeight: 1.6 }}>{it}</li>)}
       </ul>
     );
-    const Section = ({ n, h, children }) => (
-      <div>
+    const Section = ({ n, h, children, id }) => (
+      <div id={id}>
         <h3 style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: "var(--text-strong)", marginBottom: 8 }}>{n}. {h}</h3>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>{children}</div>
       </div>

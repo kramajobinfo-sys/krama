@@ -37,9 +37,12 @@ function App() {
     // loaded catalogue once init() finishes (the public job API only accepts numeric ids).
     const _mCo = window.location.pathname.match(/\/companies\/(\d+)$/);
     const _mJobSlug = window.location.pathname.match(/\/jobs\/([^\/]+)$/);
+    const _mInfo = window.location.pathname.match(/\/(privacy|terms)$/);
     if (_mCo) {
       setCompanyId(Number(_mCo[1]));
       setPage("company");
+    } else if (_mInfo) {
+      setPage(_mInfo[1]);
     }
     const ctrl = new AbortController();
     setTimeout(() => ctrl.abort(), 8000);
@@ -79,7 +82,7 @@ function App() {
     const cur = window.location.pathname;
     if (cur.indexOf("/ui_kits/public-website/") !== -1) return; // local dev — leave URLs alone
     let desired = "/";
-    if (page === "detail" && job && job.slug && !job.external) desired = "/jobs/" + job.slug;else if (page === "company" && companyId != null && String(companyId).indexOf("ext-") !== 0) desired = "/companies/" + companyId;
+    if (page === "detail" && job && job.slug && !job.external) desired = "/jobs/" + job.slug;else if (page === "company" && companyId != null && String(companyId).indexOf("ext-") !== 0) desired = "/companies/" + companyId;else if (page === "privacy" || page === "terms") desired = "/" + page;
     if (desired !== cur) {
       try {
         window.history.pushState({
@@ -95,6 +98,7 @@ function App() {
       const path = window.location.pathname;
       const mCo = path.match(/\/companies\/(\d+)$/);
       const mJob = path.match(/\/jobs\/([^\/]+)$/);
+      const mInfo = path.match(/\/(privacy|terms)$/);
       if (mCo) {
         setCompanyId(Number(mCo[1]));
         setJob(null);
@@ -107,6 +111,9 @@ function App() {
         } else {
           setPage("jobs");
         }
+      } else if (mInfo) {
+        setJob(null);
+        setPage(mInfo[1]);
       } else {
         setJob(null);
         setPage("home");
