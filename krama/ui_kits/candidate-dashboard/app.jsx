@@ -138,7 +138,64 @@
   }
 
   // ── Sidebar ────────────────────────────────────────────────────────────────
-  function Sidebar({ page, onNav, user, badges, open, onClose, onLogout }) {
+  // Profile-completion score from the candidate's account + résumé. Each item is equal-weight;
+  // name+email are always present (set at signup) so a brand-new profile starts around ~18%.
+  function profileCompletion(user, resume) {
+    if (!user) return null;
+    var r = resume || {};
+    var d = r.data || {};
+    var items = [
+      { key: "name",       label: "Full name",             done: !!(user.name && String(user.name).trim()),   page: "profile" },
+      { key: "email",      label: "Email address",         done: !!user.email,                                 page: "profile" },
+      { key: "phone",      label: "Phone number",          done: !!(user.phone && String(user.phone).trim()),  page: "profile" },
+      { key: "photo",      label: "Profile photo",         done: !!user.avatar_url,                            page: "profile" },
+      { key: "about",      label: "About you",             done: !!(user.bio && String(user.bio).trim()),      page: "profile" },
+      { key: "headline",   label: "Professional headline", done: !!(r.headline && String(r.headline).trim()),  page: "resume" },
+      { key: "summary",    label: "Career summary",        done: !!(r.summary && String(r.summary).trim()),    page: "resume" },
+      { key: "experience", label: "Work experience",       done: (d.experience || []).length > 0,              page: "resume" },
+      { key: "education",  label: "Education",             done: (d.education || []).length > 0,               page: "resume" },
+      { key: "skills",     label: "Skills",                done: (d.skills || []).length > 0,                  page: "resume" },
+      { key: "cv",         label: "Upload your CV",        done: !!(r.has_cv || r.download_url),               page: "resume" },
+    ];
+    var done = items.filter(function (it) { return it.done; }).length;
+    return {
+      percent: Math.round((done / items.length) * 100),
+      done: done, total: items.length, items: items,
+      missing: items.filter(function (it) { return !it.done; }),
+    };
+  }
+
+  // Actionable completion card for the dashboard — hidden once the profile is 100% complete.
+  function ProfileCompletionCard({ completion, onNav }) {
+    if (!completion || completion.percent >= 100) return null;
+    var pct = completion.percent;
+    return (
+      <Card>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+          <span style={{ color: "var(--brand)", display: "inline-flex" }}>{I("badge-check", 18)}</span>
+          <span style={{ fontWeight: 700, color: "var(--text-strong)" }}>Complete your profile</span>
+          <span style={{ marginLeft: "auto", fontFamily: "var(--font-display)", fontWeight: 800, fontSize: "var(--text-lg)", color: "var(--brand)" }}>{pct}%</span>
+        </div>
+        <div style={{ height: 8, background: "var(--border-subtle)", borderRadius: 99, overflow: "hidden" }}>
+          <div style={{ height: "100%", width: pct + "%", background: "var(--brand)", borderRadius: 99, transition: "width .3s ease" }} />
+        </div>
+        <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginTop: 10 }}>
+          A complete profile gets far more employer views. {completion.missing.length} step{completion.missing.length === 1 ? "" : "s"} left:
+        </div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
+          {completion.missing.map(function (m) {
+            return (
+              <button key={m.key} onClick={function () { onNav(m.page); }} style={{ display: "inline-flex", alignItems: "center", gap: 6, border: "1px solid var(--border-strong)", background: "var(--surface-card)", color: "var(--text-body)", borderRadius: 99, padding: "6px 12px", fontSize: "var(--text-sm)", fontFamily: "var(--font-sans)", fontWeight: 500, cursor: "pointer" }}>
+                {I("plus", 13)} {m.label}
+              </button>
+            );
+          })}
+        </div>
+      </Card>
+    );
+  }
+
+  function Sidebar({ page, onNav, user, badges, open, onClose, onLogout, completion }) {
     const NAV = [
       { id: "dashboard",    label: "Dashboard",       icon: "layout-dashboard" },
       { id: "applications", label: "My applications", icon: "send",      badge: badges.applications },
@@ -156,6 +213,19 @@
           <img src={window.getKramaLogo("../../assets/krama-icon.png")} height="36" alt="KRAMA" />
           <span style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: "var(--text-lg)", letterSpacing: ".08em", color: "var(--text-strong)" }}>{window.KRAMA_BRAND_NAME || "KRAMA"}</span>
         </a>
+        {completion && (
+          <button onClick={function(){ onNav((completion.percent < 100 && completion.missing[0] && completion.missing[0].page) || "profile"); onClose && onClose(); }}
+            title={completion.percent >= 100 ? "Profile complete" : "Complete your profile"}
+            style={{ textAlign: "left", border: "none", background: "transparent", cursor: "pointer", margin: "0 8px 14px", padding: 0, display: "block" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "var(--text-xs)", marginBottom: 5 }}>
+              <span style={{ color: "var(--text-muted)", fontWeight: 600 }}>{completion.percent >= 100 ? "Profile complete" : "Profile strength"}</span>
+              <span style={{ color: completion.percent >= 100 ? "var(--success)" : "var(--brand)", fontWeight: 800 }}>{completion.percent}%</span>
+            </div>
+            <div style={{ height: 6, background: "var(--border-subtle)", borderRadius: 99, overflow: "hidden" }}>
+              <div style={{ height: "100%", width: completion.percent + "%", background: completion.percent >= 100 ? "var(--success)" : "var(--brand)", borderRadius: 99, transition: "width .3s ease" }} />
+            </div>
+          </button>
+        )}
         <nav style={{ display: "flex", flexDirection: "column", gap: 3 }}>
           {NAV.map(function (n) {
             var active = page === n.id;
@@ -310,7 +380,7 @@
   ];
 
   // ── Overview ───────────────────────────────────────────────────────────────
-  function Overview({ user, onNav, onOpenApplications }) {
+  function Overview({ user, onNav, onOpenApplications, completion }) {
     var [stats, setStats] = React.useState({ applied: 0, saved: 0, interviews: 0 });
     var [stageCounts, setStageCounts] = React.useState({ applied: 0, reviewed: 0, shortlisted: 0, interview: 0, offered: 0 });
     var [recentApps, setRecentApps] = React.useState([]);
@@ -348,6 +418,7 @@
 
     return (
       <div className="krm-page-pad" style={{ padding: 28, display: "flex", flexDirection: "column", gap: 24 }}>
+        <ProfileCompletionCard completion={completion} onNav={onNav} />
         <div className="krm-stats-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16 }}>
           <StatLink onClick={function(){ onOpenApplications(); }} title="View my applications">
             <StatCard label="Applied jobs" value={String(stats.applied)} tone="brand" icon={I("send", 22)} />
@@ -840,7 +911,7 @@
   }
 
   // ── Resume Builder ─────────────────────────────────────────────────────────
-  function ResumeBuilder() {
+  function ResumeBuilder({ onResumeSaved }) {
     var EMPTY_RESUME = { headline: "", summary: "", data: { education: [], experience: [], skills: [], certifications: [] } };
     var [resume, setResume] = React.useState(EMPTY_RESUME);
     var [loading, setLoading] = React.useState(true);
@@ -872,6 +943,7 @@
       var cleanData = Object.assign({}, resume.data, { experience: (resume.data.experience || []).map(function (it) { var c = Object.assign({}, it); delete c._k; return c; }) });
       cand.saveResume({ headline: resume.headline, summary: resume.summary, data: cleanData }).then(function(r) {
         setSaved(true); setBusy(false);
+        onResumeSaved && onResumeSaved();
       }).catch(function(err){ alert(err.message || "Save failed."); setBusy(false); });
     }
 
@@ -882,6 +954,7 @@
       cand.uploadCv(file).then(function(r) {
         setResume(function(rv){ return Object.assign({}, rv, { has_cv: !!(r.download_url) }); });
         setUploading(false);
+        onResumeSaved && onResumeSaved();
       }).catch(function(err){ alert(err.message || "Upload failed."); setUploading(false); });
     }
 
@@ -1505,6 +1578,7 @@
     var [page, setPage] = React.useState("dashboard");
     var [authUser, setAuthUser] = React.useState(null);
     var [authLoading, setAuthLoading] = React.useState(true);
+    var [resume, setResume] = React.useState(null);   // for the profile-completion meter
     var [badges, setBadges] = React.useState({ applications: 0, saved: 0, messages: 0 });
     var [sidebarOpen, setSidebarOpen] = React.useState(false);
     // Which tab the Applications page opens on (set by the dashboard "Interviews" stat).
@@ -1528,6 +1602,13 @@
         setBadges(function(b) { return Object.assign({}, b, { applications: r[0].total || 0, saved: r[1].total || 0 }); });
       }).catch(function(){});
     }, [authUser]);
+
+    // Résumé drives half of the profile-completion meter; (re)load it and expose a reloader
+    // so the meter stays live after the candidate edits their résumé.
+    function reloadResume() { cand.fetchResume().then(setResume).catch(function(){}); }
+    React.useEffect(function() { if (authUser) reloadResume(); }, [authUser]);
+
+    var completion = profileCompletion(authUser, resume);
 
     // Poll unread message count every 15s
     React.useEffect(function() {
@@ -1563,18 +1644,18 @@
     return (
       <div style={{ display: "flex", minHeight: "100vh", background: "var(--surface-page)" }}>
         {sidebarOpen && <div className="krm-sidebar-backdrop open" onClick={function(){ setSidebarOpen(false); }} />}
-        <Sidebar page={page} onNav={navTo} user={authUser} badges={badges} open={sidebarOpen} onClose={function(){ setSidebarOpen(false); }} onLogout={handleLogout} />
+        <Sidebar page={page} onNav={navTo} user={authUser} badges={badges} open={sidebarOpen} onClose={function(){ setSidebarOpen(false); }} onLogout={handleLogout} completion={completion} />
         <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
           <Topbar title={titles[page]} user={authUser} onLogout={handleLogout} onMenu={function(){ setSidebarOpen(function(o){ return !o; }); }} onNav={navTo} />
           <div style={{ flex: 1, overflowY: "auto" }}>
-            {page === "dashboard"    && <Overview user={authUser} onNav={navTo} onOpenApplications={goApplications} />}
+            {page === "dashboard"    && <Overview user={authUser} onNav={navTo} onOpenApplications={goApplications} completion={completion} />}
             {page === "applications" && <Applications initialTab={appsInitialTab} onBadgeChange={function(n){ setBadges(function(b){ return Object.assign({}, b, { applications: n }); }); }} onGoToMessages={function(){ setPage("messages"); }} />}
             {page === "saved"        && <SavedJobs onBadgeChange={function(n){ setBadges(function(b){ return Object.assign({}, b, { saved: n }); }); }} />}
             {page === "recommended"  && <Recommended />}
             {page === "following"    && <Following />}
             {page === "alerts"       && <JobAlerts />}
             {page === "messages"     && <Messages user={authUser} />}
-            {page === "resume"       && <ResumeBuilder />}
+            {page === "resume"       && <ResumeBuilder onResumeSaved={reloadResume} />}
             {page === "profile"      && <Profile user={authUser} onUserUpdate={function(u){ setAuthUser(u); }} />}
           </div>
         </div>
