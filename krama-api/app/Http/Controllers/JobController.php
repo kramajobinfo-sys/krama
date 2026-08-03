@@ -220,6 +220,11 @@ class JobController extends Controller
             'by_admin'   => $request->user()->id,
         ]);
 
+        // This path publishes immediately, so it owes the same post-publish fan-out as every
+        // other publish route (submit / approve / companyApprove): social share + job-alert
+        // and follower emails. It was missing, so admin-posted jobs silently never shared.
+        $this->notifyNewlyPublished($job);
+
         return response()->json($job->load(['company:id,name', 'category:id,name', 'location:id,name']), 201);
     }
 
