@@ -406,7 +406,19 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     }).filter(Boolean) : [];
     const cultureValues = parseTags(c.culture_values);
     const benefitsTags = parseTags(c.benefits_tags);
-    const jobs = companyJobs !== null ? companyJobs.map(j => window.KRAMA_API.normaliseJob(j)) : (D.jobs || []).filter(j => String(j.companyId) === String(companyId) || j.company === name);
+
+    // GET /companies/{id} returns its jobs without the `company` relation (it would just
+    // repeat this same parent on every row), so normaliseJob() derives no company name or
+    // logo and the cards fell back to a "?" avatar. Backfill from the company we already
+    // have on this page — every job here belongs to it by definition.
+    const jobs = companyJobs !== null ? companyJobs.map(j => {
+      const n = window.KRAMA_API.normaliseJob(j);
+      return Object.assign(n, {
+        company: n.company || name,
+        companyId: n.companyId != null ? n.companyId : companyId,
+        logo: n.logo || logo
+      });
+    }) : (D.jobs || []).filter(j => String(j.companyId) === String(companyId) || j.company === name);
     const jobCount = jobs.length;
     const reviewCount = revData ? revData.stats && revData.stats.count : null;
     const _tabAbout = {
