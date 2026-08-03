@@ -1519,10 +1519,12 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       justifyContent: "center"
     });
     return /*#__PURE__*/React.createElement("div", {
+      className: "krm-pagination",
       style: {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
+        flexWrap: "wrap",
         gap: 8,
         marginTop: 24
       }

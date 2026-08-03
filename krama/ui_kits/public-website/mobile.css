@@ -392,12 +392,17 @@
     display: block !important;
   }
 
-  /* Jobs layout — single column, sidebar hidden by default */
+  /* Jobs layout — single column, sidebar hidden by default.
+     minmax(0,1fr) not 1fr: a bare `1fr` track is minmax(auto,1fr), so it can't
+     shrink below the content's min-content width — one wide child (the
+     pagination row) stretched the track to 472px and pushed the whole page
+     into horizontal scroll. minmax(0,…) + min-width:0 lets it shrink. */
   .krm-jobs-layout {
-    grid-template-columns: 1fr !important;
+    grid-template-columns: minmax(0, 1fr) !important;
     padding: 16px !important;
     gap: 0 !important;
   }
+  .krm-jobs-layout > main { min-width: 0 !important; }
   .krm-jobs-sidebar {
     display: none !important;
     margin-bottom: 16px !important;

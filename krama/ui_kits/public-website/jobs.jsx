@@ -572,7 +572,7 @@
                     ))}
                   </div>}
               {pages > 1 ? (
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 28 }}>
+                <div className="krm-pagination" style={{ display: "flex", alignItems: "center", justifyContent: "center", flexWrap: "wrap", gap: 8, marginTop: 28 }}>
                   <button onClick={() => setPage(Math.max(0, pageSafe - 1))} disabled={pageSafe === 0} aria-label={TR("Previous")} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 40, height: 40, borderRadius: "var(--radius-md)", border: "1px solid var(--border-strong)", background: "var(--surface-card)", cursor: pageSafe === 0 ? "not-allowed" : "pointer", color: pageSafe === 0 ? "var(--text-faint)" : "var(--text-body)" }}>{I("chevron-left", 18)}</button>
                   {Array.from({ length: pages }).map((_, i) => (
                     <button key={i} onClick={() => setPage(i)} style={{ minWidth: 40, height: 40, padding: "0 12px", borderRadius: "var(--radius-md)", cursor: "pointer", border: "1px solid " + (i === pageSafe ? "var(--brand)" : "var(--border-strong)"), background: i === pageSafe ? "var(--brand)" : "var(--surface-card)", color: i === pageSafe ? "var(--on-brand)" : "var(--text-body)", fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)", fontWeight: 700 }}>{i + 1}</button>
@@ -711,7 +711,7 @@
                 ? <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>{pageResults.map((c) => <CompanyDetailRow key={c.name} c={c} onNav={onNav} />)}</div>
                 : <div className="krm-company-grid" style={{ display: "grid", gridTemplateColumns: hasSide ? "1fr 1fr" : "repeat(3,1fr)", gap: 16 }}>{pageResults.map((c) => <CompanyCard key={c.name} {...c} onClick={() => onNav("company", { companyId: c.id })} />)}</div>}
               {pages > 1 ? (
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 28 }}>
+                <div className="krm-pagination" style={{ display: "flex", alignItems: "center", justifyContent: "center", flexWrap: "wrap", gap: 8, marginTop: 28 }}>
                   <button onClick={() => setPage(Math.max(0, pageSafe - 1))} disabled={pageSafe === 0} aria-label={TR("Previous")} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 40, height: 40, borderRadius: "var(--radius-md)", border: "1px solid var(--border-strong)", background: "var(--surface-card)", cursor: pageSafe === 0 ? "not-allowed" : "pointer", color: pageSafe === 0 ? "var(--text-faint)" : "var(--text-body)" }}>{I("chevron-left", 18)}</button>
                   {Array.from({ length: pages }).map((_, i) => (
                     <button key={i} onClick={() => setPage(i)} style={{ minWidth: 40, height: 40, padding: "0 12px", borderRadius: "var(--radius-md)", cursor: "pointer", border: "1px solid " + (i === pageSafe ? "var(--brand)" : "var(--border-strong)"), background: i === pageSafe ? "var(--brand)" : "var(--surface-card)", color: i === pageSafe ? "var(--on-brand)" : "var(--text-body)", fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)", fontWeight: 700 }}>{i + 1}</button>

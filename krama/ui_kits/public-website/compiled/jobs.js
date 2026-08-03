@@ -1808,10 +1808,12 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       onSave: () => toggleSave(j.id),
       onClick: () => onOpenJob(j)
     })))), pages > 1 ? /*#__PURE__*/React.createElement("div", {
+      className: "krm-pagination",
       style: {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
+        flexWrap: "wrap",
         gap: 8,
         marginTop: 28
       }
@@ -2246,10 +2248,12 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         companyId: c.id
       })
     })))), pages > 1 ? /*#__PURE__*/React.createElement("div", {
+      className: "krm-pagination",
       style: {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
+        flexWrap: "wrap",
         gap: 8,
         marginTop: 28
       }

@@ -515,7 +515,7 @@
     if (pages <= 1) return null;
     const btn = (active, disabled) => ({ minWidth: 38, height: 38, padding: "0 12px", borderRadius: "var(--radius-md)", cursor: disabled ? "not-allowed" : "pointer", border: "1px solid " + (active ? "var(--brand)" : "var(--border-strong)"), background: active ? "var(--brand)" : "var(--surface-card)", color: active ? "var(--on-brand, #fff)" : (disabled ? "var(--text-faint)" : "var(--text-body)"), fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)", fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center" });
     return (
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 24 }}>
+      <div className="krm-pagination" style={{ display: "flex", alignItems: "center", justifyContent: "center", flexWrap: "wrap", gap: 8, marginTop: 24 }}>
         <button onClick={() => onPage(Math.max(0, page - 1))} disabled={page === 0} style={btn(false, page === 0)}>{I("chevron-left", 18)}</button>
         {Array.from({ length: pages }).map((_, i) => (
           <button key={i} onClick={() => onPage(i)} style={btn(i === page, false)}>{i + 1}</button>
