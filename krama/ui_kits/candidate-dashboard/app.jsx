@@ -166,14 +166,15 @@
   }
 
   // Actionable completion card for the dashboard — hidden once the profile is 100% complete.
-  function ProfileCompletionCard({ completion, onNav }) {
+  function ProfileCompletionCard({ completion, onNav, onStartWizard }) {
     if (!completion || completion.percent >= 100) return null;
     var pct = completion.percent;
     return (
       <Card>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
           <span style={{ color: "var(--brand)", display: "inline-flex" }}>{I("badge-check", 18)}</span>
           <span style={{ fontWeight: 700, color: "var(--text-strong)" }}>Complete your profile</span>
+          {onStartWizard && <Button variant="ghost" size="sm" iconLeft={I("wand-sparkles", 14)} onClick={onStartWizard}>Guided setup</Button>}
           <span style={{ marginLeft: "auto", fontFamily: "var(--font-display)", fontWeight: 800, fontSize: "var(--text-lg)", color: "var(--brand)" }}>{pct}%</span>
         </div>
         <div style={{ height: 8, background: "var(--border-subtle)", borderRadius: 99, overflow: "hidden" }}>
@@ -380,7 +381,7 @@
   ];
 
   // ── Overview ───────────────────────────────────────────────────────────────
-  function Overview({ user, onNav, onOpenApplications, completion }) {
+  function Overview({ user, onNav, onOpenApplications, completion, onStartWizard }) {
     var [stats, setStats] = React.useState({ applied: 0, saved: 0, interviews: 0 });
     var [stageCounts, setStageCounts] = React.useState({ applied: 0, reviewed: 0, shortlisted: 0, interview: 0, offered: 0 });
     var [recentApps, setRecentApps] = React.useState([]);
@@ -418,7 +419,7 @@
 
     return (
       <div className="krm-page-pad" style={{ padding: 28, display: "flex", flexDirection: "column", gap: 24 }}>
-        <ProfileCompletionCard completion={completion} onNav={onNav} />
+        <ProfileCompletionCard completion={completion} onNav={onNav} onStartWizard={onStartWizard} />
         <div className="krm-stats-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16 }}>
           <StatLink onClick={function(){ onOpenApplications(); }} title="View my applications">
             <StatCard label="Applied jobs" value={String(stats.applied)} tone="brand" icon={I("send", 22)} />
@@ -1574,11 +1575,150 @@
   }
 
   // ── App ────────────────────────────────────────────────────────────────────
+  // ── Onboarding wizard ──────────────────────────────────────────────────────
+  // Guided 3-step setup for new candidates (Jobs you want → Upload CV → Work experience).
+  // Reuses existing endpoints only (createAlert / uploadCv / saveResume). Auto-shown once for
+  // an empty profile; also launchable from the dashboard completion card.
+  function OnboardingWizard({ user, resume, onClose, onDone }) {
+    var STEPS = ["Jobs you want", "Upload CV", "Work experience"];
+    var JOB_TYPES = [{ v: "full_time", l: "Full time" }, { v: "part_time", l: "Part time" }, { v: "contract", l: "Contract" }, { v: "internship", l: "Internship" }];
+    var [step, setStep] = React.useState(0);
+    var [cats, setCats] = React.useState([]);
+    var [locs, setLocs] = React.useState([]);
+    var [prefs, setPrefs] = React.useState({ keyword: "", category_id: "", location_id: "", job_type: "" });
+    var [cvName, setCvName] = React.useState((resume && (resume.has_cv || resume.download_url)) ? "CV already on file" : "");
+    var [uploading, setUploading] = React.useState(false);
+    var [exp, setExp] = React.useState({ role: "", org: "", years: "" });
+    var [saving, setSaving] = React.useState(false);
+    var [err, setErr] = React.useState("");
+    var cvRef = React.useRef(null);
+
+    React.useEffect(function () {
+      var base = /^(localhost|127\.0\.0\.1|::1|192\.168\.|10\.)/.test(window.location.hostname) ? "http://127.0.0.1:8000/api" : (window.location.protocol + "//" + window.location.host + "/api");
+      Promise.all([fetch(base + "/categories").then(function (r) { return r.json(); }), fetch(base + "/locations").then(function (r) { return r.json(); })])
+        .then(function (res) { setCats(res[0] || []); setLocs(res[1] || []); }).catch(function () {});
+    }, []);
+
+    function setP(k, v) { setPrefs(function (p) { var o = Object.assign({}, p); o[k] = v; return o; }); }
+    function setE(k, v) { setExp(function (e) { var o = Object.assign({}, e); o[k] = v; return o; }); }
+
+    function onCv(e) {
+      var f = e.target.files && e.target.files[0]; if (!f) return;
+      setUploading(true); setErr("");
+      cand.uploadCv(f).then(function () { setCvName(f.name); setUploading(false); })
+        .catch(function (er) { setErr((er && er.message) || "Upload failed."); setUploading(false); });
+    }
+
+    function finish() {
+      setSaving(true); setErr("");
+      var tasks = [];
+      var p = {};
+      if (prefs.keyword.trim()) p.keyword = prefs.keyword.trim();
+      if (prefs.category_id) p.category_id = parseInt(prefs.category_id);
+      if (prefs.location_id) p.location_id = parseInt(prefs.location_id);
+      if (prefs.job_type) p.job_type = prefs.job_type;
+      if (Object.keys(p).length) tasks.push(cand.createAlert(p).catch(function () {}));
+      if (exp.role.trim() || exp.org.trim()) {
+        var d = Object.assign({ education: [], experience: [], skills: [], certifications: [] }, (resume && resume.data) || {});
+        d.experience = (d.experience || []).concat({ role: exp.role.trim(), org: exp.org.trim(), years: exp.years.trim(), note: "" });
+        tasks.push(cand.saveResume({ headline: (resume && resume.headline) || "", summary: (resume && resume.summary) || "", data: d }).catch(function () {}));
+      }
+      Promise.all(tasks).then(function () { setSaving(false); onDone(); }).catch(function () { setSaving(false); onDone(); });
+    }
+
+    function next() { if (step < STEPS.length - 1) setStep(step + 1); else finish(); }
+
+    var selStyle = { width: "100%", padding: "10px 12px", border: "1px solid var(--border-strong)", borderRadius: "var(--radius-md)", fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)", background: "var(--surface-card)", color: "var(--text-body)" };
+    var pct = Math.round(((step + 1) / STEPS.length) * 100);
+    var last = step === STEPS.length - 1;
+
+    return (
+      <div style={{ position: "fixed", inset: 0, zIndex: 300, background: "var(--surface-overlay, rgba(0,0,0,0.5))", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+        <div onClick={function (e) { e.stopPropagation(); }} style={{ width: "100%", maxWidth: 520, maxHeight: "92vh", overflowY: "auto", background: "var(--surface-card)", borderRadius: "var(--radius-xl)", boxShadow: "var(--shadow-xl)" }}>
+          <div style={{ padding: "20px 24px 0", display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
+            <div>
+              <div style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: "var(--text-xl)", color: "var(--text-strong)" }}>Set up your profile</div>
+              <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginTop: 2 }}>Step {step + 1} of {STEPS.length} · {STEPS[step]}</div>
+            </div>
+            <button onClick={onClose} aria-label="Close" style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--text-muted)", display: "inline-flex" }}>{I("x", 20)}</button>
+          </div>
+          <div style={{ padding: "14px 24px 0" }}>
+            <div style={{ height: 6, background: "var(--border-subtle)", borderRadius: 99, overflow: "hidden" }}>
+              <div style={{ height: "100%", width: pct + "%", background: "var(--brand)", borderRadius: 99, transition: "width .3s ease" }} />
+            </div>
+          </div>
+
+          <div style={{ padding: "20px 24px", display: "flex", flexDirection: "column", gap: 14 }}>
+            {step === 0 && (
+              <React.Fragment>
+                <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>Tell us what you're looking for — we'll email you matching jobs.</div>
+                <Input label="Job title you want" placeholder="e.g. IT Manager, Accountant" value={prefs.keyword} onChange={function (e) { setP("keyword", e.target.value); }} />
+                <div>
+                  <label style={{ display: "block", fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-body)", marginBottom: 6 }}>Field / category</label>
+                  <select value={prefs.category_id} onChange={function (e) { setP("category_id", e.target.value); }} style={selStyle}>
+                    <option value="">Any field</option>
+                    {cats.map(function (c) { return <option key={c.id} value={c.id}>{c.name}</option>; })}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-body)", marginBottom: 6 }}>Location</label>
+                  <select value={prefs.location_id} onChange={function (e) { setP("location_id", e.target.value); }} style={selStyle}>
+                    <option value="">Any location</option>
+                    {locs.map(function (l) { return <option key={l.id} value={l.id}>{l.name}</option>; })}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-body)", marginBottom: 6 }}>Employment type</label>
+                  <select value={prefs.job_type} onChange={function (e) { setP("job_type", e.target.value); }} style={selStyle}>
+                    <option value="">Any type</option>
+                    {JOB_TYPES.map(function (t) { return <option key={t.v} value={t.v}>{t.l}</option>; })}
+                  </select>
+                </div>
+              </React.Fragment>
+            )}
+            {step === 1 && (
+              <React.Fragment>
+                <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>Upload your CV so you can apply to jobs in one click.</div>
+                <div style={{ border: "1.5px dashed var(--border-strong)", borderRadius: "var(--radius-lg)", padding: "28px 20px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+                  <span style={{ color: cvName ? "var(--success)" : "var(--text-faint)" }}>{I(cvName ? "circle-check-big" : "cloud-upload", 34)}</span>
+                  {cvName
+                    ? <div style={{ fontWeight: 700, color: "var(--text-strong)" }}>{cvName}</div>
+                    : <div style={{ fontWeight: 700, color: "var(--text-strong)" }}>Upload your CV file</div>}
+                  <input ref={cvRef} type="file" accept=".pdf,.doc,.docx" onChange={onCv} style={{ display: "none" }} />
+                  <Button variant="primary" disabled={uploading} onClick={function () { cvRef.current && cvRef.current.click(); }}>{uploading ? "Uploading…" : cvName ? "Choose a different file" : "Browse files"}</Button>
+                  <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>.pdf, .doc or .docx · up to 5 MB</div>
+                </div>
+              </React.Fragment>
+            )}
+            {step === 2 && (
+              <React.Fragment>
+                <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>Add your most recent role — employers see this on your profile.</div>
+                <Input label="Position" placeholder="e.g. HR Manager, Accountant" value={exp.role} onChange={function (e) { setE("role", e.target.value); }} />
+                <Input label="Company name" placeholder="e.g. ABA Bank" value={exp.org} onChange={function (e) { setE("org", e.target.value); }} />
+                <Input label="Years" placeholder="e.g. 2021 – Present" value={exp.years} onChange={function (e) { setE("years", e.target.value); }} />
+                <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>You can add more roles later in the Résumé builder.</div>
+              </React.Fragment>
+            )}
+            {err && <div style={{ padding: "9px 12px", background: "var(--danger-subtle)", color: "var(--danger)", borderRadius: "var(--radius-md)", fontSize: "var(--text-sm)" }}>{err}</div>}
+          </div>
+
+          <div style={{ padding: "0 24px 20px", display: "flex", alignItems: "center", gap: 10 }}>
+            {step > 0 && <Button variant="ghost" onClick={function () { setStep(step - 1); }}>Back</Button>}
+            <button onClick={next} style={{ marginLeft: "auto", border: "none", background: "transparent", color: "var(--text-muted)", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)", fontWeight: 600, padding: "8px 4px" }}>Skip this step</button>
+            <Button variant="primary" disabled={saving} onClick={next}>{saving ? "Saving…" : last ? "Finish setup" : "Continue"}</Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   function App() {
     var [page, setPage] = React.useState("dashboard");
     var [authUser, setAuthUser] = React.useState(null);
     var [authLoading, setAuthLoading] = React.useState(true);
     var [resume, setResume] = React.useState(null);   // for the profile-completion meter
+    var [showOnboarding, setShowOnboarding] = React.useState(false);
+    var onboardCheckedRef = React.useRef(false);
     var [badges, setBadges] = React.useState({ applications: 0, saved: 0, messages: 0 });
     var [sidebarOpen, setSidebarOpen] = React.useState(false);
     // Which tab the Applications page opens on (set by the dashboard "Interviews" stat).
@@ -1607,6 +1747,19 @@
     // so the meter stays live after the candidate edits their résumé.
     function reloadResume() { cand.fetchResume().then(setResume).catch(function(){}); }
     React.useEffect(function() { if (authUser) reloadResume(); }, [authUser]);
+
+    // Auto-open the onboarding wizard ONCE for a brand-new (empty) profile that hasn't been
+    // through / dismissed setup. Runs after the résumé loads so the "is empty" check is real.
+    React.useEffect(function() {
+      if (onboardCheckedRef.current || !authUser || resume === null) return;
+      onboardCheckedRef.current = true;
+      var d = resume.data || {};
+      var isNew = !((d.experience || []).length) && !(resume.has_cv || resume.download_url) && !(resume.headline && String(resume.headline).trim());
+      if (isNew && !localStorage.getItem("krama_cand_onboarded")) setShowOnboarding(true);
+    }, [authUser, resume]);
+
+    function dismissOnboarding() { try { localStorage.setItem("krama_cand_onboarded", "1"); } catch (e) {} setShowOnboarding(false); }
+    function finishOnboarding() { dismissOnboarding(); reloadResume(); }
 
     var completion = profileCompletion(authUser, resume);
 
@@ -1644,11 +1797,12 @@
     return (
       <div style={{ display: "flex", minHeight: "100vh", background: "var(--surface-page)" }}>
         {sidebarOpen && <div className="krm-sidebar-backdrop open" onClick={function(){ setSidebarOpen(false); }} />}
+        {showOnboarding && <OnboardingWizard user={authUser} resume={resume} onClose={dismissOnboarding} onDone={finishOnboarding} />}
         <Sidebar page={page} onNav={navTo} user={authUser} badges={badges} open={sidebarOpen} onClose={function(){ setSidebarOpen(false); }} onLogout={handleLogout} completion={completion} />
         <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
           <Topbar title={titles[page]} user={authUser} onLogout={handleLogout} onMenu={function(){ setSidebarOpen(function(o){ return !o; }); }} onNav={navTo} />
           <div style={{ flex: 1, overflowY: "auto" }}>
-            {page === "dashboard"    && <Overview user={authUser} onNav={navTo} onOpenApplications={goApplications} completion={completion} />}
+            {page === "dashboard"    && <Overview user={authUser} onNav={navTo} onOpenApplications={goApplications} completion={completion} onStartWizard={function(){ setShowOnboarding(true); }} />}
             {page === "applications" && <Applications initialTab={appsInitialTab} onBadgeChange={function(n){ setBadges(function(b){ return Object.assign({}, b, { applications: n }); }); }} onGoToMessages={function(){ setPage("messages"); }} />}
             {page === "saved"        && <SavedJobs onBadgeChange={function(n){ setBadges(function(b){ return Object.assign({}, b, { saved: n }); }); }} />}
             {page === "recommended"  && <Recommended />}
