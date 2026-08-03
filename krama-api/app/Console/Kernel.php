@@ -27,7 +27,12 @@ class Kernel extends ConsoleKernel
             \App\Models\CompanyJobFeed::where('enabled', true)->get()->each(function ($feed) {
                 try { \App\Services\CompanyJobFeedService::sync($feed); } catch (\Throwable $e) {}
             });
-        })->everySixHours()->withoutOverlapping()->name('company-feeds-sync');
+        // NOTE: name() MUST precede withoutOverlapping() on a closure task — a CallbackEvent
+        // builds its mutex from the name, so calling withoutOverlapping() first throws
+        // "A scheduled event name is required to prevent overlapping." That exception is
+        // raised while BUILDING the schedule, so it killed schedule:run outright and every
+        // scheduled task on the server stopped silently (see git history for the incident).
+        })->name('company-feeds-sync')->everySixHours()->withoutOverlapping();
         $schedule->command('queue:prune-failed', ['--hours' => 168])->weekly();
 
         // Drain the queue every minute (shared-host pattern: no long-running worker daemon).
