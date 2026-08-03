@@ -81,7 +81,9 @@ class NotifyJobPublished implements ShouldQueue
 
         MailConfig::applyFromDb();
 
-        $jobUrl       = config('app.url') . '/jobs/' . $job->id;
+        // Canonical slug URL — /jobs/{id} 404s for crawlers and the SPA resolves by slug,
+        // so the id form produced a dead "View job" link in these emails.
+        $jobUrl       = SocialPostService::jobUrl($job);
         $locationName = $job->location->name ?? '';
         $jobType      = $job->job_type ?? 'full_time';
         $companyName  = $job->company->name ?? '';
@@ -133,7 +135,8 @@ class NotifyJobPublished implements ShouldQueue
 
         MailConfig::applyFromDb();
 
-        $jobUrl = config('app.url') . '/jobs/' . $job->id;
+        // Canonical slug URL — see the note in the follower-email path above.
+        $jobUrl = SocialPostService::jobUrl($job);
         $locationName = $job->location->name ?? '';
         $jobType = $job->job_type ?? 'full_time';
         $companyName = $job->company->name ?? '';

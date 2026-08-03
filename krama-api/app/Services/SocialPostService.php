@@ -104,7 +104,16 @@ class SocialPostService
 
     public static function jobUrl(Job $job): string
     {
-        // FRONTEND_URL is the public index.html; the SPA reads ?job=<id> as a deep link.
+        // Canonical shareable URL — the same one the SEO layer publishes in the canonical
+        // tag, sitemap and JSON-LD. The docroot .htaccess dynamic-rendering rule serves it
+        // as the SPA for humans and the crawlable Blade page (OG card + JobPosting) for
+        // bots, so shared links unfurl with a rich preview.
+        // NOTE: must be the SLUG, not the id — /jobs/{id} 404s for crawlers.
+        if (! empty($job->slug)) {
+            return url('/jobs/' . $job->slug);
+        }
+
+        // Legacy fallback for any job without a slug: FRONTEND_URL?job=<id> deep link.
         $base = rtrim(config('app.frontend_url', 'http://localhost/krama'), '/');
         return $base . '?job=' . $job->id;
     }
