@@ -109,7 +109,9 @@ class SeoController extends Controller
             ->where('slug', $slug)->where('status', 'published')->first();
         abort_if(! $job, 404);
 
-        $key = 'og:job:' . $job->id . ':' . optional($job->updated_at)->timestamp;
+        // Include the company's timestamp so the card refreshes when the employer changes their
+        // logo (the card now draws it), not only when the job itself is edited.
+        $key = 'og:job:' . $job->id . ':' . optional($job->updated_at)->timestamp . ':c' . optional(optional($job->company)->updated_at)->timestamp;
         $png = Cache::get($key);
         if (! $png) {
             $png = app(OgImageService::class)->job($job, $job->company);

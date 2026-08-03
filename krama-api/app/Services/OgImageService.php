@@ -38,6 +38,7 @@ class OgImageService
             'title'  => $job->title,
             'sub'    => $sub,
             'meta'   => $meta ? implode('     ·     ', $meta) : null,
+            'logo'   => $this->loadLogo($company ? $company->logo_url : null),
         ]);
     }
 
@@ -50,6 +51,7 @@ class OgImageService
             'title'  => $company->name,
             'sub'    => $jobCount > 0 ? ($jobCount . ' open position' . ($jobCount === 1 ? '' : 's')) : 'Company profile',
             'meta'   => $meta ? implode('     ·     ', $meta) : null,
+            'logo'   => $this->loadLogo($company->logo_url ?? null),
         ]);
     }
 
@@ -64,11 +66,18 @@ class OgImageService
         // Diagonal Banyan-Teal gradient
         $this->diagonalGradient($im, ['#0B6557', '#0C413A', '#04221E']);
 
-        // Faint hero logo mark, right side (watermark)
-        $this->logoMark($im, 812, 150, 6.0, 0.08);
+        // Right-side art: the employer's own logo on a clean white tile when we have it,
+        // otherwise a faint Krama watermark. With a logo tile the text column is narrowed
+        // so the two never collide.
+        $logo    = ($o['logo'] ?? null) instanceof \GdImage ? $o['logo'] : null;
+        if ($logo) {
+            $this->companyLogoTile($im, $logo); // frees $logo
+        } else {
+            $this->watermark($im, 812, 150, 6.0, 0.08);
+        }
 
         $x = 80;
-        $maxW = 1000;
+        $maxW = $logo ? 760 : 1000;
 
         // Saffron accent bar
         $this->roundRect($im, $x, 86, 60, 7, 3, $this->color($im, self::SAFFRON));
@@ -150,6 +159,91 @@ class OgImageService
             $sq($p[0], $p[1], $saff);
         }
         $sq(18.5, 21.5, $teal);
+    }
+
+    /**
+     * Load an employer logo into a GD image, or null. Only reads logos stored on OUR public
+     * disk (the normal uploaded case, /storage/…) — remote/external logo URLs are skipped so
+     * the render never blocks on a network fetch; those fall back to the Krama watermark.
+     */
+    private function loadLogo(?string $url): ?\GdImage
+    {
+        if (! $url || ! str_contains($url, '/storage/')) return null;
+        try {
+            $rel  = substr($url, strpos($url, '/storage/') + strlen('/storage/'));
+            $path = \Illuminate\Support\Facades\Storage::disk('public')->path($rel);
+            if (! is_file($path)) return null;
+            $bytes = @file_get_contents($path);
+            if ($bytes === false) return null;
+            $img = @imagecreatefromstring($bytes);   // handles jpg/png/gif/webp
+            return $img ?: null;
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
+    /** Draw the employer logo on a clean white rounded tile on the right (contain-fit). Frees $logo. */
+    private function companyLogoTile($im, \GdImage $logo): void
+    {
+        $tile = 258; $tx = 872; $ty = 186; $rad = 30; $pad = 22;
+        // Soft shadow, then the white tile.
+        $this->roundRect($im, $tx + 4, $ty + 8, $tile, $tile, $rad, $this->color($im, '#04221E', 0.28));
+        $this->roundRect($im, $tx, $ty, $tile, $tile, $rad, $this->color($im, self::WHITE));
+
+        $inner = $tile - $pad * 2;
+        $lw = imagesx($logo); $lh = imagesy($logo);
+        if ($lw > 0 && $lh > 0) {
+            $scale = min($inner / $lw, $inner / $lh);
+            $dw = max(1, (int) round($lw * $scale));
+            $dh = max(1, (int) round($lh * $scale));
+            $dx = $tx + (int) round(($tile - $dw) / 2);
+            $dy = $ty + (int) round(($tile - $dh) / 2);
+            imagecopyresampled($im, $logo, $dx, $dy, 0, 0, $dw, $dh, $lw, $lh);
+        }
+        imagedestroy($logo);
+    }
+
+    /**
+     * Faint Krama logo watermark. Rendered on its own opaque layer first, then composited at
+     * $op — so the mark's internal overlapping shapes don't stack alpha into a garbled blob
+     * (the bug when drawing them directly at partial opacity).
+     */
+    private function watermark($im, float $ox, float $oy, float $s, float $op): void
+    {
+        $side = (int) ceil(48 * $s);
+        $layer = imagecreatetruecolor($side, $side);
+        imagesavealpha($layer, true);
+        imagealphablending($layer, false);
+        imagefill($layer, 0, 0, imagecolorallocatealpha($layer, 0, 0, 0, 127)); // transparent
+        imagealphablending($layer, true);
+        $this->logoMark($layer, 0, 0, $s, 1.0); // opaque on the layer — no stacking
+        $this->compositeAt($im, $layer, (int) round($ox), (int) round($oy), $op);
+        imagedestroy($layer);
+    }
+
+    /** Alpha-aware composite of $src onto $dst at global opacity $op (transparent src pixels skipped). */
+    private function compositeAt($dst, $src, int $ox, int $oy, float $op): void
+    {
+        $w = imagesx($src); $h = imagesy($src);
+        $dw = imagesx($dst); $dh = imagesy($dst);
+        for ($y = 0; $y < $h; $y++) {
+            $dy = $oy + $y;
+            if ($dy < 0 || $dy >= $dh) continue;
+            for ($x = 0; $x < $w; $x++) {
+                $dx = $ox + $x;
+                if ($dx < 0 || $dx >= $dw) continue;
+                $c = imagecolorat($src, $x, $y);
+                $a = ($c >> 24) & 0x7F;            // 0 = opaque, 127 = transparent
+                if ($a >= 127) continue;
+                $f = (1 - $a / 127) * $op;         // effective opacity of this pixel
+                if ($f <= 0) continue;
+                $d  = imagecolorat($dst, $dx, $dy);
+                $nr = (int) round((($d >> 16) & 0xFF) + ((($c >> 16) & 0xFF) - (($d >> 16) & 0xFF)) * $f);
+                $ng = (int) round((($d >> 8) & 0xFF)  + ((($c >> 8) & 0xFF)  - (($d >> 8) & 0xFF)) * $f);
+                $nb = (int) round((($d) & 0xFF)       + ((($c) & 0xFF)       - (($d) & 0xFF)) * $f);
+                imagesetpixel($dst, $dx, $dy, ($nr << 16) | ($ng << 8) | $nb);
+            }
+        }
     }
 
     private function roundRect($im, float $x, float $y, float $w, float $h, float $r, int $color): void
