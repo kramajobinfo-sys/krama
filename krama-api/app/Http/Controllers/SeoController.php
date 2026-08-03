@@ -111,7 +111,9 @@ class SeoController extends Controller
 
         // Include the company's timestamp so the card refreshes when the employer changes their
         // logo (the card now draws it), not only when the job itself is edited.
-        $key = 'og:job:' . $job->id . ':' . optional($job->updated_at)->timestamp . ':c' . optional(optional($job->company)->updated_at)->timestamp;
+        // The ':v2' tag is the card-design version — bump it whenever OgImageService's rendering
+        // changes so old cached PNGs are bypassed without a manual cache flush.
+        $key = 'og:job:v2:' . $job->id . ':' . optional($job->updated_at)->timestamp . ':c' . optional(optional($job->company)->updated_at)->timestamp;
         $png = Cache::get($key);
         if (! $png) {
             $png = app(OgImageService::class)->job($job, $job->company);
@@ -128,7 +130,7 @@ class SeoController extends Controller
         abort_if(! $company, 404);
 
         $count = Job::where('company_id', $company->id)->where('status', 'published')->count();
-        $key = 'og:company:' . $company->id . ':' . optional($company->updated_at)->timestamp . ':' . $count;
+        $key = 'og:company:v2:' . $company->id . ':' . optional($company->updated_at)->timestamp . ':' . $count;
         $png = Cache::get($key);
         if (! $png) {
             $png = app(OgImageService::class)->company($company, $count);

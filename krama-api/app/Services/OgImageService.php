@@ -80,18 +80,27 @@ class OgImageService
         $maxW = $logo ? 760 : 1000;
 
         // Saffron accent bar
-        $this->roundRect($im, $x, 86, 60, 7, 3, $this->color($im, self::SAFFRON));
+        $this->roundRect($im, $x, 82, 60, 7, 3, $this->color($im, self::SAFFRON));
 
-        // Brand lockup: small mark + wordmark
-        $this->logoMark($im, $x, 112, 1.25, 1.0);
-        $this->text($im, 'bold', 30, $x + 78, 150, self::WHITE, 'krama');
+        // Brand lockup: the real Krama icon + wordmark (falls back to the drawn mark).
+        $icon = $this->brandIcon();
+        if ($icon) {
+            $this->drawImageContain($im, $icon, $x, 100, 74, 74);
+            $this->text($im, 'bold', 30, $x + 90, 150, self::WHITE, 'krama');
+            imagedestroy($icon);
+        } else {
+            $this->logoMark($im, $x, 112, 1.25, 1.0);
+            $this->text($im, 'bold', 30, $x + 78, 150, self::WHITE, 'krama');
+        }
 
         // Auto-fit the title, then vertically centre the whole text block within
         // a fixed band [210, 500] so nothing ever collides with the URL pill.
-        [$size, $lines] = $this->fitTitle($o['title'], $maxW, 3);
+        // With a logo tile the column is narrower — cap the title at 2 lines so long titles
+        // shrink to fit instead of wrapping to 3 lines and crowding the URL pill.
+        [$size, $lines] = $this->fitTitle($o['title'], $maxW, $logo ? 2 : 3);
         $lineH = (int) round($size * 1.16);
 
-        $kickH  = ! empty($o['kicker']) ? 32 : 0;
+        $kickH  = ! empty($o['kicker']) ? 44 : 0;
         $titleH = count($lines) * $lineH;
         $subH   = ! empty($o['sub'])  ? 44 : 0;
         $metaH  = ! empty($o['meta']) ? 34 : 0;
@@ -180,6 +189,32 @@ class OgImageService
         } catch (\Throwable $e) {
             return null;
         }
+    }
+
+    /** The real Krama brand icon (woven-krama app icon), loaded from bundled resources. Null if missing. */
+    private function brandIcon(): ?\GdImage
+    {
+        try {
+            $p = resource_path('og/krama-icon.png');
+            if (! is_file($p)) return null;
+            $img = @imagecreatefrompng($p);
+            return $img ?: null;
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
+    /** Draw $src scaled to fit (contain) inside the box (bx,by,bw,bh), centred, preserving alpha. */
+    private function drawImageContain($dst, \GdImage $src, int $bx, int $by, int $bw, int $bh): void
+    {
+        $sw = imagesx($src); $sh = imagesy($src);
+        if ($sw <= 0 || $sh <= 0) return;
+        $scale = min($bw / $sw, $bh / $sh);
+        $dw = max(1, (int) round($sw * $scale));
+        $dh = max(1, (int) round($sh * $scale));
+        $dx = $bx + (int) round(($bw - $dw) / 2);
+        $dy = $by + (int) round(($bh - $dh) / 2);
+        imagecopyresampled($dst, $src, $dx, $dy, 0, 0, $dw, $dh, $sw, $sh);
     }
 
     /** Draw the employer logo on a clean white rounded tile on the right (contain-fit). Frees $logo. */
