@@ -4,11 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\Company;
 use App\Support\HtmlSanitizer;
+use App\Models\Application;
 use App\Models\CompanyAward;
 use App\Models\CompanyPhoto;
+use App\Models\Job;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
@@ -774,6 +777,64 @@ class CompanyController extends Controller
         $award->save();
 
         return response()->json($award);
+    }
+
+    // DELETE /api/admin/companies/{id} — permanent, and deliberately narrow.
+    //
+    // Blocked once the company is real, because nothing in the schema would protect it:
+    // jobs.company_id and applications.job_id are plain indexed columns with no foreign
+    // keys, so a delete would neither cascade nor be rejected — it would just leave
+    // orphaned jobs and applications pointing at a row that no longer exists.
+    //
+    //   1. assigned to an employer (owner is a real employer account, or any member is
+    //      linked via users.company_id) — it is now someone else's company, not a shell
+    //   2. it has any jobs, or any applications against those jobs
+    //
+    // So this only ever removes an admin-created shell that was never handed over. The
+    // company's own sub-records (gallery / awards / followers / reviews) are safe to drop
+    // with it and are cleaned up here.
+    public function adminDestroy(Request $request, $id)
+    {
+        $this->requirePermission('approve_companies');
+
+        $company = Company::findOrFail($id);
+
+        // 1 — handed over to an employer?
+        $members = User::where('company_id', $company->id)->count();
+        $owner   = $company->user_id ? User::find($company->user_id) : null;
+        $ownerIsEmployer = $owner && optional($owner->role)->slug === 'employer';
+
+        if ($members > 0 || $ownerIsEmployer) {
+            return response()->json([
+                'message' => 'This company is already assigned to an employer and cannot be deleted. '
+                    . 'Remove its people under Access first, or suspend the company instead.',
+            ], 422);
+        }
+
+        // 2 — real content attached?
+        $jobIds = Job::where('company_id', $company->id)->pluck('id');
+        if ($jobIds->isNotEmpty()) {
+            $applications = Application::whereIn('job_id', $jobIds)->count();
+
+            return response()->json([
+                'message' => 'This company has ' . $jobIds->count() . ' job' . ($jobIds->count() === 1 ? '' : 's')
+                    . ($applications > 0 ? ' and ' . $applications . ' application' . ($applications === 1 ? '' : 's') : '')
+                    . ' and cannot be deleted. Delete its jobs first, or suspend the company instead.',
+            ], 422);
+        }
+
+        // Safe to remove: drop the records that only exist because of this company.
+        $company->gallery()->delete();
+        $company->awards()->delete();
+        DB::table('company_followers')->where('company_id', $company->id)->delete();
+        DB::table('company_reviews')->where('company_id', $company->id)->delete();
+
+        $snapshot = ['company_id' => $company->id, 'company_name' => $company->name];
+        $company->delete();
+
+        $this->auditLog('company.admin_deleted', $snapshot + ['by_admin' => $request->user()->id]);
+
+        return response()->json(['message' => 'Company deleted.']);
     }
 
     // ── Admin: company access / team management ───────────────────────────────

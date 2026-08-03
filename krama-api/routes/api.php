@@ -359,6 +359,7 @@ Route::middleware(['auth:api', 'permission:site_settings'])->group(function () {
     Route::patch('admin/companies/{id}/suspend', [CompanyController::class, 'suspend']);
     Route::patch('admin/companies/{id}/verify',  [CompanyController::class, 'verify']);
     Route::put('admin/companies/{id}',               [CompanyController::class, 'adminUpdate']);
+    Route::delete('admin/companies/{id}',            [CompanyController::class, 'adminDestroy'])->where('id', '[0-9]+');
     Route::post('admin/companies/{id}/logo',         [CompanyController::class, 'adminUploadLogo'])->middleware('throttle:20,1');
     Route::post('admin/companies/{id}/cover-banner', [CompanyController::class, 'adminUploadCoverBanner'])->middleware('throttle:20,1');
     Route::post('admin/companies/{id}/about-image',  [CompanyController::class, 'adminUploadAboutImage'])->middleware('throttle:20,1');
@@ -379,6 +380,10 @@ Route::middleware(['auth:api', 'permission:site_settings'])->group(function () {
     Route::post('admin/jobs',                [JobController::class, 'adminStore']);
     Route::post('admin/jobs/bulk-import',    [JobController::class, 'adminBulkImport']);
     Route::post('admin/jobs/ai-draft',       [JobController::class, 'aiDraft']);
+    // Admin edit/delete for jobs posted on an employer's behalf (fix mistakes in place).
+    // Declared after the literal-segment routes above so they can't be shadowed.
+    Route::put('admin/jobs/{id}',            [JobController::class, 'adminUpdate'])->where('id', '[0-9]+');
+    Route::delete('admin/jobs/{id}',         [JobController::class, 'adminDestroy'])->where('id', '[0-9]+');
     Route::patch('jobs/{id}/approve',        [JobController::class, 'approve']);
     Route::patch('jobs/{id}/reject',         [JobController::class, 'reject']);
     Route::patch('admin/jobs/{id}/feature',  [JobController::class, 'toggleFeatured']);

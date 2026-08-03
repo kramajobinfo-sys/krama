@@ -198,6 +198,10 @@
     toggleJobFeatured: function (id) { return req("PATCH", "/admin/jobs/" + id + "/feature"); },
     // Post a job on behalf of an employer (publishes immediately for the chosen company).
     adminCreateJob: function (data) { return req("POST", "/admin/jobs", data); },
+    // Edit / remove a job posted on an employer's behalf. Delete is refused by the API
+    // once the job has applicants (422) — take it down instead.
+    adminUpdateJob: function (id, data) { return req("PUT", "/admin/jobs/" + id, data); },
+    adminDeleteJob: function (id) { return req("DELETE", "/admin/jobs/" + id); },
     adminBulkImportJobs: function (rows) { return req("POST", "/admin/jobs/bulk-import", { rows: rows }); },
     aiDraftJob: function (data) { return req("POST", "/admin/jobs/ai-draft", data); },
 
@@ -257,6 +261,9 @@
     createCompany: function (data) { return req("POST", "/admin/companies", data); },
     fetchCompanyDetail: function (id) { return req("GET", "/admin/companies/" + id); },
     updateCompany: function (id, data) { return req("PUT", "/admin/companies/" + id, data); },
+    // Refused by the API (422) once the company is assigned to an employer or has jobs —
+    // only an unassigned, empty admin-created shell can be removed.
+    deleteCompany: function (id) { return req("DELETE", "/admin/companies/" + id); },
     // Gallery
     uploadCompanyGalleryPhoto: function (id, file) {
       var fd = new FormData(); fd.append("photo", file);

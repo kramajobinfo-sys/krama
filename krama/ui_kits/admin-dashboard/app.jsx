@@ -509,8 +509,33 @@
   }
 
   // Admin posts a job on behalf of an employer — publishes immediately for the chosen company.
-  function PostJobModal({ open, onClose, onPosted }) {
+  // Doubles as the edit form: pass `job` to load an existing posting and PUT instead of
+  // POST. Admins post on an employer's behalf, so they need to correct their own mistakes
+  // (including on a live listing) without hunting down the employer.
+  function PostJobModal({ open, onClose, onPosted, job }) {
+    const isEdit = !!(job && job.id);
     const BLANK = { company_id: "", title: "", category_id: "", location_id: "", job_type: "full_time", experience_level: "", salary_min: "", salary_max: "", salary_currency: "USD", salary_period: "month", is_remote: false, working_days: "", working_time: "", map_location: "", description: "", requirements: "", benefits: "" };
+    const fromJob = function (j) {
+      return {
+        company_id: j.company_id != null ? String(j.company_id) : "",
+        title: j.title || "",
+        category_id: j.category_id != null ? String(j.category_id) : "",
+        location_id: j.location_id != null ? String(j.location_id) : "",
+        job_type: j.job_type || "full_time",
+        experience_level: j.experience_level || "",
+        salary_min: j.salary_min != null ? String(j.salary_min) : "",
+        salary_max: j.salary_max != null ? String(j.salary_max) : "",
+        salary_currency: j.salary_currency || "USD",
+        salary_period: j.salary_period || "month",
+        is_remote: !!j.is_remote,
+        working_days: j.working_days || "",
+        working_time: j.working_time || "",
+        map_location: j.map_location || "",
+        description: j.description || "",
+        requirements: j.requirements || "",
+        benefits: j.benefits || "",
+      };
+    };
     const [form, setForm] = React.useState(BLANK);
     const [newCat, setNewCat] = React.useState("");
     const [companies, setCompanies] = React.useState([]);
@@ -544,11 +569,11 @@
 
     React.useEffect(function () {
       if (!open) return;
-      setForm(BLANK); setNewCat(""); setErr(""); setBusy(false); setDraftMsg(""); setResetKey(function (k) { return k + 1; });
+      setForm(isEdit ? fromJob(job) : BLANK); setNewCat(""); setErr(""); setBusy(false); setDraftMsg(""); setResetKey(function (k) { return k + 1; });
       adm.fetchCompanies("approved", 1, 500).then(function (d) { setCompanies((d && d.data) || d || []); }).catch(function () {});
       adm.fetchCategories().then(function (d) { setCats((d && d.data) || d || []); }).catch(function () {});
       adm.fetchLocations().then(function (d) { setLocs((d && d.data) || d || []); }).catch(function () {});
-    }, [open]);
+    }, [open, isEdit ? job.id : null]);
 
     if (!open) return null;
 
@@ -565,9 +590,10 @@
         location_id: form.location_id ? Number(form.location_id) : null,
         experience_level: form.experience_level || null,
       });
-      adm.adminCreateJob(payload)
-        .then(function () { setBusy(false); onPosted && onPosted(); })
-        .catch(function (e) { setBusy(false); setErr((e && e.message) || "Failed to post the job."); });
+      var call = isEdit ? adm.adminUpdateJob(job.id, payload) : adm.adminCreateJob(payload);
+      call
+        .then(function () { setBusy(false); onPosted && onPosted(isEdit); })
+        .catch(function (e) { setBusy(false); setErr((e && e.message) || (isEdit ? "Failed to save changes." : "Failed to post the job.")); });
     };
 
     const JOB_TYPES = [{ value: "full_time", label: "Full time" }, { value: "part_time", label: "Part time" }, { value: "contract", label: "Contract" }, { value: "internship", label: "Internship" }, { value: "temporary", label: "Temporary" }];
@@ -578,7 +604,7 @@
       <div style={{ position: "fixed", inset: 0, zIndex: 400, background: "var(--surface-overlay, rgba(0,0,0,0.5))", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "40px 16px", overflowY: "auto" }}>
         <div style={{ width: "100%", maxWidth: 640, background: "var(--surface-card)", borderRadius: "var(--radius-xl)", boxShadow: "var(--shadow-xl)", overflow: "hidden" }}>
           <div style={{ padding: "18px 22px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: 12 }}>
-            <div style={{ flex: 1, fontWeight: 700, fontSize: "var(--text-md)", color: "var(--text-strong)" }}>Post a job on behalf of an employer</div>
+            <div style={{ flex: 1, fontWeight: 700, fontSize: "var(--text-md)", color: "var(--text-strong)" }}>{isEdit ? "Edit job" : "Post a job on behalf of an employer"}</div>
             <IconButton aria-label="Close" onClick={onClose}>{I("x", 18)}</IconButton>
           </div>
           <div style={{ padding: "20px 22px", display: "flex", flexDirection: "column", gap: 14, maxHeight: "68vh", overflowY: "auto" }}>
@@ -623,11 +649,11 @@
             <RichEditor key={"r" + resetKey} label="Requirements" rows={3} value={form.requirements} onChange={function (v) { set("requirements", v); }} placeholder="Skills, qualifications, experience…" />
             <RichEditor key={"b" + resetKey} label="Benefits" rows={2} value={form.benefits} onChange={function (v) { set("benefits", v); }} placeholder="Perks, insurance, bonuses…" />
             {err && <div style={{ padding: "8px 12px", background: "var(--danger-subtle)", color: "var(--danger)", borderRadius: "var(--radius-md)", fontSize: "var(--text-sm)" }}>{err}</div>}
-            <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 6 }}>{I("info", 13)} Publishes immediately for the selected company (admin override — no plan/quota check).</div>
+            <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 6 }}>{I("info", 13)} {isEdit ? "Changes go live immediately. The public URL (slug) is kept as-is so existing links, shares and search results keep working." : "Publishes immediately for the selected company (admin override — no plan/quota check)."}</div>
           </div>
           <div style={{ display: "flex", gap: 10, padding: "14px 22px", borderTop: "1px solid var(--border)", justifyContent: "flex-end" }}>
             <Button variant="secondary" onClick={onClose} disabled={busy}>Cancel</Button>
-            <Button variant="primary" onClick={submit} disabled={busy}>{busy ? "Publishing…" : "Publish job"}</Button>
+            <Button variant="primary" onClick={submit} disabled={busy}>{busy ? (isEdit ? "Saving…" : "Publishing…") : (isEdit ? "Save changes" : "Publish job")}</Button>
           </div>
         </div>
       </div>
@@ -643,6 +669,9 @@
     const [tab, setTab] = React.useState("published");
     const [actionMsg, setActionMsg] = React.useState("");
     const [rejectModal, setRejectModal] = React.useState(null);
+    const [editJob, setEditJob] = React.useState(null);       // job being edited (PostJobModal in edit mode)
+    const [deleteJob, setDeleteJob] = React.useState(null);   // job pending delete confirmation
+    const [deleteBusy, setDeleteBusy] = React.useState({});
     const [rejectReason, setRejectReason] = React.useState("");
     const [featureBusy, setFeatureBusy] = React.useState({});
     const [page, setPage] = React.useState(1);
@@ -679,6 +708,20 @@
       adm.rejectJob(id, reason).then(function () { flashMsg("Job taken down."); loadJobs(tab, page); setRejectModal(null); setRejectReason(""); }).catch(function (e) { flashMsg("Error: " + (e && e.message)); });
     };
 
+    // Permanent. The API refuses (422) once the job has applicants and says so — surface
+    // that message rather than a generic error, since "take it down instead" is the fix.
+    const doDeleteJob = (j) => {
+      setDeleteBusy(function (m) { return Object.assign({}, m, { [j.id]: true }); });
+      adm.adminDeleteJob(j.id)
+        .then(function () {
+          flashMsg("Job “" + j.title + "” deleted.");
+          setDeleteJob(null);
+          loadJobs(tab, page);
+        })
+        .catch(function (e) { flashMsg("Error: " + ((e && e.message) || "Delete failed.")); })
+        .then(function () { setDeleteBusy(function (m) { var n = Object.assign({}, m); delete n[j.id]; return n; }); });
+    };
+
     const toggleFeatured = (j) => {
       setFeatureBusy(function(b) { return Object.assign({}, b, { [j.id]: true }); });
       adm.toggleJobFeatured(j.id).then(function(d) {
@@ -706,6 +749,9 @@
         </div>
         <PostJobModal open={postOpen} onClose={function () { setPostOpen(false); }} onPosted={function () { setPostOpen(false); flashMsg("Job published on behalf of the employer."); setTab("published"); setPage(1); loadJobs("published", 1); }} />
         <BulkImportModal open={bulkOpen} onClose={function () { setBulkOpen(false); }} onDone={function (res) { flashMsg("Imported " + res.created + " job(s)."); setTab("published"); setPage(1); loadJobs("published", 1); }} />
+        {/* Same form in edit mode — reloads the current tab in place so the row updates. */}
+        <PostJobModal open={!!editJob} job={editJob} onClose={function () { setEditJob(null); }}
+          onPosted={function () { setEditJob(null); flashMsg("Job updated."); loadJobs(tab, page); }} />
         <div className="krm-tabs-scroll"><Tabs value={tab} onChange={(v) => { setPage(1); setTab(v); }} tabs={[
           { value: "published", label: "Live jobs", count: counts.published },
           { value: "rejected", label: "Taken down", count: counts.rejected },
@@ -755,6 +801,9 @@
                   {j.status === "published" && (
                     <Button variant="secondary" size="sm" onClick={() => { setRejectModal(j); setRejectReason(""); }}>Take down</Button>
                   )}
+                  <IconButton variant="secondary" size="sm" aria-label="Edit job" title="Edit job" onClick={() => setEditJob(j)}>{I("pencil", 14)}</IconButton>
+                  <IconButton variant="secondary" size="sm" aria-label="Delete job" title="Delete job" disabled={!!deleteBusy[j.id]} onClick={() => setDeleteJob(j)}
+                    style={{ color: "var(--danger)", borderColor: "var(--danger-border, var(--border-strong))" }}>{I(deleteBusy[j.id] ? "loader" : "trash-2", 14)}</IconButton>
                 </div>
               </div>
             );
@@ -782,6 +831,31 @@
               <div style={{ display: "flex", gap: 10, padding: "14px 22px", borderTop: "1px solid var(--border)" }}>
                 <Button variant="ghost" onClick={() => setRejectModal(null)} style={{ flex: 1 }}>Cancel</Button>
                 <Button variant="primary" style={{ background: "var(--danger)", flex: 1 }} disabled={!rejectReason.trim()} onClick={() => takeDown(rejectModal.id, rejectReason)}>Take down</Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Delete confirmation — permanent, so spell out the consequences. */}
+        {deleteJob && (
+          <div onClick={() => setDeleteJob(null)} style={{ position: "fixed", inset: 0, zIndex: 300, background: "var(--surface-overlay)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+            <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", maxWidth: 440, background: "var(--surface-card)", borderRadius: "var(--radius-xl)", boxShadow: "var(--shadow-xl)", overflow: "hidden" }}>
+              <div style={{ padding: "18px 22px", borderBottom: "1px solid var(--border)", fontWeight: 700, fontSize: "var(--text-md)", color: "var(--text-strong)", display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ color: "var(--danger)", display: "inline-flex" }}>{I("triangle-alert", 18)}</span> Delete this job?
+              </div>
+              <div style={{ padding: "18px 22px", fontSize: "var(--text-sm)", color: "var(--text-body)", lineHeight: 1.6 }}>
+                <div style={{ fontWeight: 700, color: "var(--text-strong)", marginBottom: 6 }}>{deleteJob.title}</div>
+                <div style={{ color: "var(--text-muted)" }}>
+                  This is <strong>permanent</strong> — there is no undo.
+                  {deleteJob.status === "published" && " The job is live, so its public page will start returning 404 and it will drop out of the sitemap."}
+                  {" If candidates have already applied, the delete is refused — take the job down instead so their applications are kept."}
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: 10, padding: "14px 22px", borderTop: "1px solid var(--border)" }}>
+                <Button variant="ghost" onClick={() => setDeleteJob(null)} style={{ flex: 1 }}>Cancel</Button>
+                <Button variant="primary" style={{ background: "var(--danger)", flex: 1 }} disabled={!!deleteBusy[deleteJob.id]} onClick={() => doDeleteJob(deleteJob)}>
+                  {deleteBusy[deleteJob.id] ? "Deleting…" : "Delete permanently"}
+                </Button>
               </div>
             </div>
           </div>
@@ -1268,6 +1342,8 @@
     const [accessCompany, setAccessCompany] = React.useState(null);
     const [editorTarget, setEditorTarget] = React.useState(null); // null closed, "new", or a full company detail object
     const [editorLoading, setEditorLoading] = React.useState(false);
+    const [delCompany, setDelCompany] = React.useState(null); // company pending delete confirmation
+    const [delBusy, setDelBusy] = React.useState({});
     const [companies, setCompanies] = React.useState([]);
     const [counts, setCounts] = React.useState({ pending: 0, approved: 0, suspended: 0 });
     const [loading, setLoading] = React.useState(true);
@@ -1316,6 +1392,21 @@
       } else {
         setCompanies(function (arr) { return arr.map(function (x) { return x.id === c.id ? Object.assign({}, x, c) : x; }); });
       }
+    };
+
+    // Permanent. The API refuses (422) when the company is already assigned to an employer
+    // or still has jobs, and explains which — surface that message verbatim.
+    const doDeleteCompany = (c) => {
+      setDelBusy(function (m) { return Object.assign({}, m, { [c.id]: true }); });
+      adm.deleteCompany(c.id)
+        .then(function () {
+          flashMsg("Company “" + c.name + "” deleted.");
+          setDelCompany(null);
+          setCounts(function (p) { var k = c.status === "approved" ? "approved" : (c.status === "suspended" ? "suspended" : "pending"); return Object.assign({}, p, { [k]: Math.max(0, (p[k] || 0) - 1) }); });
+          loadCompanies(tab, page);
+        })
+        .catch(function (e) { flashMsg("Error: " + ((e && e.message) || "Delete failed.")); })
+        .then(function () { setDelBusy(function (m) { var n = Object.assign({}, m); delete n[c.id]; return n; }); });
     };
 
     const openEdit = (row) => {
@@ -1384,6 +1475,8 @@
                   <input type="file" accept="image/*" disabled={coverBusy === c.id} onChange={(e) => { onCoverPick(c, e.target.files[0]); e.target.value = ""; }} style={{ display: "none" }} />
                 </label>
                 <IconButton variant="secondary" size="sm" aria-label="Edit company" title="Edit company" disabled={editorLoading} onClick={() => openEdit(c)}>{I(editorLoading ? "loader" : "pencil", 14)}</IconButton>
+                <IconButton variant="secondary" size="sm" aria-label="Delete company" title="Delete company" disabled={!!delBusy[c.id]} onClick={() => setDelCompany(c)}
+                  style={{ color: "var(--danger)", borderColor: "var(--danger-border, var(--border-strong))" }}>{I(delBusy[c.id] ? "loader" : "trash-2", 14)}</IconButton>
                 <Button variant="secondary" size="sm" iconLeft={I("users", 13)} onClick={() => setAccessCompany(c)}>Access</Button>
                 {c.status === "pending" && (
                   <React.Fragment>
@@ -1408,6 +1501,34 @@
         </Card></div>
         {accessCompany && <CompanyAccessModal company={accessCompany} onClose={() => setAccessCompany(null)} onFlash={flashMsg} />}
         {editorTarget && <CompanyEditorModal company={editorTarget === "new" ? null : editorTarget} onClose={() => setEditorTarget(null)} onSaved={onEditorSaved} />}
+
+        {/* Delete confirmation — the API enforces the real guards; this states them upfront. */}
+        {delCompany && (
+          <div onClick={() => setDelCompany(null)} style={{ position: "fixed", inset: 0, zIndex: 300, background: "var(--surface-overlay)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+            <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", maxWidth: 460, background: "var(--surface-card)", borderRadius: "var(--radius-xl)", boxShadow: "var(--shadow-xl)", overflow: "hidden" }}>
+              <div style={{ padding: "18px 22px", borderBottom: "1px solid var(--border)", fontWeight: 700, fontSize: "var(--text-md)", color: "var(--text-strong)", display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ color: "var(--danger)", display: "inline-flex" }}>{I("triangle-alert", 18)}</span> Delete this company?
+              </div>
+              <div style={{ padding: "18px 22px", fontSize: "var(--text-sm)", color: "var(--text-body)", lineHeight: 1.6 }}>
+                <div style={{ fontWeight: 700, color: "var(--text-strong)", marginBottom: 6 }}>{delCompany.name}</div>
+                <div style={{ color: "var(--text-muted)" }}>
+                  This is <strong>permanent</strong> and also removes its gallery, awards, followers and reviews.
+                </div>
+                <div style={{ marginTop: 12, padding: "10px 12px", borderRadius: "var(--radius-md)", background: "var(--surface-sunken)", color: "var(--text-muted)", fontSize: "var(--text-xs)", lineHeight: 1.6 }}>
+                  Only an unassigned, empty company can be deleted. If it has already been
+                  <strong> assigned to an employer</strong> or still has <strong>jobs</strong>, the delete
+                  is refused — suspend it instead.
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: 10, padding: "14px 22px", borderTop: "1px solid var(--border)" }}>
+                <Button variant="ghost" onClick={() => setDelCompany(null)} style={{ flex: 1 }}>Cancel</Button>
+                <Button variant="primary" style={{ background: "var(--danger)", flex: 1 }} disabled={!!delBusy[delCompany.id]} onClick={() => doDeleteCompany(delCompany)}>
+                  {delBusy[delCompany.id] ? "Deleting…" : "Delete permanently"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }

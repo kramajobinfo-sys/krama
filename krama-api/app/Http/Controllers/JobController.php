@@ -228,6 +228,92 @@ class JobController extends Controller
         return response()->json($job->load(['company:id,name', 'category:id,name', 'location:id,name']), 201);
     }
 
+    // PUT /api/admin/jobs/{id} — admin edits any job, in any status. Unlike the employer
+    // update() (draft/pending/rejected only) an admin can correct a live listing in place,
+    // which is the point: they post on an employer's behalf and need to fix mistakes.
+    public function adminUpdate(Request $request, $id)
+    {
+        $this->requirePermission('approve_jobs');
+
+        $job = Job::findOrFail($id);
+
+        $data = $request->validate([
+            'company_id'       => 'sometimes|exists:companies,id',
+            'title'            => 'sometimes|string|max:190',
+            'category_id'      => 'nullable|exists:categories,id',
+            'location_id'      => 'nullable|exists:locations,id',
+            'job_type'         => 'sometimes|in:full_time,part_time,contract,internship,temporary',
+            'experience_level' => 'nullable|in:entry,junior,mid,senior,lead,executive,manager',
+            'salary_min'       => 'nullable|numeric|min:0',
+            'salary_max'       => 'nullable|numeric|min:0',
+            'salary_currency'  => 'nullable|string|max:8',
+            'salary_period'    => 'nullable|in:hour,day,month,year',
+            'is_remote'        => 'boolean',
+            'working_days'     => 'nullable|string|max:80',
+            'working_time'     => 'nullable|string|max:80',
+            'map_location'     => 'nullable|string|max:500',
+            'share_social'     => 'boolean',
+            'social_image'     => 'nullable|string|max:500',
+            'description'      => 'nullable|string|max:20000',
+            'requirements'     => 'nullable|string|max:10000',
+            'benefits'         => 'nullable|string|max:5000',
+            'expires_at'       => 'nullable|date',
+        ]);
+
+        // Re-slug on a title change, but never for a published job: the slug IS the public
+        // URL (/jobs/{slug}) that is already in the sitemap, indexed by Google and shared to
+        // social, so changing it would 404 every existing link.
+        if (array_key_exists('title', $data) && $data['title'] !== $job->title && $job->status !== 'published') {
+            $data['slug'] = Job::generateSlug($data['title']);
+        }
+
+        // Same sanitize-on-write rule as the other job writers — these render raw.
+        foreach (['description', 'requirements', 'benefits'] as $field) {
+            if (array_key_exists($field, $data)) {
+                $data[$field] = HtmlSanitizer::clean($data[$field]);
+            }
+        }
+
+        $job->fill($data)->save();
+
+        $this->auditLog('job.admin_updated', [
+            'job_id'   => $job->id,
+            'by_admin' => $request->user()->id,
+            'fields'   => array_keys($data),
+        ]);
+
+        return response()->json($job->fresh()->load(['company:id,name', 'category:id,name', 'location:id,name']));
+    }
+
+    // DELETE /api/admin/jobs/{id} — permanent. Blocked once candidates have applied: those
+    // applications are the candidates' own records and deleting the job would orphan them
+    // (applications.job_id has no FK, so nothing would clean up or stop it). Admins should
+    // take a live job down instead, which keeps the applicant history intact.
+    public function adminDestroy(Request $request, $id)
+    {
+        $this->requirePermission('approve_jobs');
+
+        $job = Job::findOrFail($id);
+
+        $applications = \App\Models\Application::where('job_id', $job->id)->count();
+        if ($applications > 0) {
+            return response()->json([
+                'message' => 'This job has ' . $applications . ' application' . ($applications === 1 ? '' : 's')
+                    . ' and cannot be deleted — take it down instead so the applicant history is kept.',
+            ], 422);
+        }
+
+        // Clean up the rows that only exist because of this job (no FK cascade on either).
+        DB::table('saved_jobs')->where('job_id', $job->id)->delete();
+
+        $snapshot = ['job_id' => $job->id, 'job_title' => $job->title, 'company_id' => $job->company_id];
+        $job->delete();
+
+        $this->auditLog('job.admin_deleted', $snapshot + ['by_admin' => $request->user()->id]);
+
+        return response()->json(['message' => 'Job deleted.']);
+    }
+
     // POST /api/admin/jobs/bulk-import — admin seeds many jobs at once from parsed CSV rows.
     // Rows are resolved by NAME (company/category/location auto-resolve or create), validated
     // per-row, published immediately. Partial success: valid rows are created, bad rows reported.
