@@ -297,11 +297,13 @@ class SettingController extends Controller
         }
         $this->auditLog('settings.updated', ['group' => $group, 'keys' => $written]);
 
-        // Return the full updated group
+        // Return the full updated group — through appendSetting() so the save response
+        // matches the read endpoints: credentials come back blank with a `{key}_set`
+        // flag instead of being echoed into the browser.
         $rows = Setting::where('group', $group)->get();
         $out  = [];
         foreach ($rows as $row) {
-            $out[$row->key] = $this->castValue($row->value);
+            $out = self::appendSetting($out, $row);
         }
 
         return response()->json($out);

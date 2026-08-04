@@ -7024,12 +7024,14 @@
             telegram_enabled: !!d.telegram_enabled, telegram_channel: d.telegram_channel || "",
             facebook_enabled: !!d.facebook_enabled, facebook_page_id: d.facebook_page_id || "", facebook_page_token: d.facebook_page_token || "",
             linkedin_enabled: !!d.linkedin_enabled, linkedin_token: d.linkedin_token || "", linkedin_author_urn: d.linkedin_author_urn || "",
+            // Tokens themselves are never sent to the browser — only these flags say one is stored.
+            facebook_page_token_set: !!d.facebook_page_token_set, linkedin_token_set: !!d.linkedin_token_set,
           }));
         }
       }).catch(function () {});
     }, []);
 
-    const anyConfigured = (s.telegram_enabled && s.telegram_channel) || (s.facebook_enabled && s.facebook_page_id && s.facebook_page_token) || (s.linkedin_enabled && s.linkedin_token && s.linkedin_author_urn);
+    const anyConfigured = (s.telegram_enabled && s.telegram_channel) || (s.facebook_enabled && s.facebook_page_id && (s.facebook_page_token || s.facebook_page_token_set)) || (s.linkedin_enabled && (s.linkedin_token || s.linkedin_token_set) && s.linkedin_author_urn);
     const connected = s.enabled && anyConfigured;
     const set = (k, v) => { setS(p => ({ ...p, [k]: v })); setSaved(false); setResults(null); };
 
@@ -7102,13 +7104,13 @@
           {platformCard("facebook", "Facebook Page", "facebook",
             <React.Fragment>
               {fieldRow("Page ID", inp("facebook_page_id", "text", "1234567890"))}
-              {fieldRow("Page access token", inp("facebook_page_token", "password", "EAAB..."))}
+              {fieldRow("Page access token", inp("facebook_page_token", "password", s.facebook_page_token_set ? "•••••••• saved — leave blank to keep" : "EAAB..."))}
             </React.Fragment>,
             "Needs a Meta app with the pages_manage_posts permission and a long-lived Page access token.")}
 
           {platformCard("linkedin", "LinkedIn", "linkedin",
             <React.Fragment>
-              {fieldRow("Access token", inp("linkedin_token", "password", "AQV..."))}
+              {fieldRow("Access token", inp("linkedin_token", "password", s.linkedin_token_set ? "•••••••• saved — leave blank to keep" : "AQV..."))}
               {fieldRow("Author URN", inp("linkedin_author_urn", "text", "urn:li:organization:12345"), "Your Company Page (urn:li:organization:ID) or member (urn:li:person:ID) URN.")}
             </React.Fragment>,
             "Requires an approved LinkedIn app with posting access (w_organization_social / w_member_social).")}
@@ -7149,6 +7151,8 @@
             driver:          d.driver || "twilio",
             twilio_sid:      d.twilio_sid || "",
             twilio_token:    d.twilio_token || "",
+            // The token itself is never sent to the browser — only this flag says one is stored.
+            twilio_token_set: !!d.twilio_token_set,
             twilio_from:     d.twilio_from || "",
             http_url:        d.http_url || "",
             http_method:     d.http_method || "GET",
@@ -7161,7 +7165,7 @@
       }).catch(function () {});
     }, []);
 
-    const connected = s.enabled && (s.driver === "twilio" ? (s.twilio_sid && s.twilio_token && s.twilio_from) : !!s.http_url);
+    const connected = s.enabled && (s.driver === "twilio" ? (s.twilio_sid && (s.twilio_token || s.twilio_token_set) && s.twilio_from) : !!s.http_url);
     const set = (k, v) => { setS(p => ({ ...p, [k]: v })); setSaved(false); setTestResult(null); };
 
     const save = () => {
@@ -7230,7 +7234,7 @@
             {s.driver === "twilio" && (
               <div className="krm-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
                 {fieldRow("Account SID", inp("twilio_sid", "text", "ACxxxxxxxx"))}
-                {fieldRow("Auth token", inp("twilio_token", "password", "••••••••"))}
+                {fieldRow("Auth token", inp("twilio_token", "password", s.twilio_token_set ? "•••••••• saved — leave blank to keep" : "••••••••"))}
                 {fieldRow("Sender number", inp("twilio_from", "text", "+1..."), "Your Twilio phone number or messaging sender ID.")}
               </div>
             )}
@@ -7291,6 +7295,8 @@
           setS({
             enabled:   !!d.enabled,
             bot_token: d.bot_token || "",
+            // The token itself is never sent to the browser — only this flag says one is stored.
+            bot_token_set: !!d.bot_token_set,
             chat_id:   d.chat_id != null ? String(d.chat_id) : "",
           });
           setBotUsername(d.bot_username || "");
@@ -7306,7 +7312,7 @@
         .finally(function () { setActivating(false); });
     };
 
-    const connected = s.enabled && s.bot_token && s.chat_id;
+    const connected = s.enabled && (s.bot_token || s.bot_token_set) && s.chat_id;
     const set = (k, v) => { setS(p => ({ ...p, [k]: v })); setSaved(false); setTestResult(null); };
 
     const save = () => {
@@ -7377,7 +7383,7 @@
           <Card padding={24}>
             <div style={{ fontWeight: 600, fontSize: 14, color: "var(--text)", marginBottom: 18 }}>Bot connection</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-              {fieldRow("Bot token", inp("bot_token", "password", "123456:ABC-DEF…"), "From @BotFather when you created the bot. Stored securely on the server, never exposed to the public site.")}
+              {fieldRow("Bot token", inp("bot_token", "password", s.bot_token_set ? "•••••••• saved — leave blank to keep" : "123456:ABC-DEF…"), "From @BotFather when you created the bot. Stored securely on the server, never exposed to the public site.")}
               {fieldRow("Chat ID", inp("chat_id", "text", "e.g. 123456789 or -1001234567890"),
                 "Your personal chat, or a group/channel the bot is in. Tip: send any message to your bot, then open https://api.telegram.org/bot<token>/getUpdates and copy \"chat\":{\"id\": … }.")}
             </div>
