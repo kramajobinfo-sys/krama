@@ -37,22 +37,76 @@
 <link rel="stylesheet" href="../../styles.css">
 <link rel="icon" type="image/png" href="../../assets/favicon.png">
 <link rel="apple-touch-icon" href="../../assets/apple-touch-icon.png">
-<script src="../../vendor/react.production.min.js?v=1"></script>
-<script src="../../vendor/react-dom.production.min.js?v=1"></script>
+<!-- All `defer` so none of them block the first paint. Deferred scripts still execute in
+     document order and are guaranteed to finish before DOMContentLoaded, which is what the
+     boot code at the end of <body> waits for. -->
+<script defer src="../../vendor/react.production.min.js?v=1"></script>
+<script defer src="../../vendor/react-dom.production.min.js?v=1"></script>
 <!-- babel.min.js removed: JSX is precompiled to compiled/*.js at build time (node krama/build-jsx.js). -->
-<script src="../../_ds_bundle.js?v=3"></script>
-<script src="../../brand.js?v=3"></script>
+<script defer src="../../_ds_bundle.js?v=3"></script>
+<script defer src="../../brand.js?v=3"></script>
 <script>window.KramaPublicApp = null; window.KramaHeader = null; window.KramaFooter = null;</script>
-<script src="../../vendor/lucide.min.js?v=1"></script>
-<script src="data.js?v=2"></script>
-<script src="i18n.js?v=16"></script>
-<script src="api.js?v=27"></script>
-<link rel="stylesheet" href="mobile.css?v=74">
+<script defer src="../../vendor/lucide.min.js?v=1"></script>
+<script defer src="data.js?v=2"></script>
+<script defer src="i18n.js?v=16"></script>
+<script defer src="api.js?v=27"></script>
+<link rel="stylesheet" href="mobile.css?v=75">
 <style>html,body{margin:0;background:var(--surface-page)}</style>
 </head>
 <body>
-<div id="root"></div>
+<!-- First-paint skeleton. #root is otherwise empty until React mounts, which can't happen
+     until the vendor scripts, the compiled app files AND the first API responses have all
+     arrived — several round trips. Until then the visitor saw a blank white page. These
+     placeholders use literal colours (no CSS custom properties) so they render without
+     waiting on styles.css and its @imported token files. mount() removes this before the
+     first React commit. -->
+<style>
+@keyframes krmSkPulse { 0%,100% { opacity: 1 } 50% { opacity: .45 } }
+.krm-sk { animation: krmSkPulse 1.4s ease-in-out infinite; background: #E5E3DD; border-radius: 8px }
+#krm-skeleton { font-family: system-ui, -apple-system, "Segoe UI", sans-serif }
+#krm-skeleton .krm-sk-bar { display: flex; align-items: center; gap: 14px; padding: 14px 20px;
+  background: #fff; border-bottom: 1px solid #E5E3DD }
+#krm-skeleton .krm-sk-wrap { max-width: 1180px; margin: 0 auto; padding: 28px 20px }
+#krm-skeleton .krm-sk-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; margin-top: 26px }
+#krm-skeleton .krm-sk-card { background: #fff; border: 1px solid #E5E3DD; border-radius: 12px; padding: 18px }
+</style>
+<div id="root"><div id="krm-skeleton" aria-busy="true" aria-label="Loading Krama">
+  <div class="krm-sk-bar">
+    <div class="krm-sk" style="width:36px;height:36px;border-radius:9px"></div>
+    <div class="krm-sk" style="width:92px;height:16px"></div>
+    <div style="flex:1"></div>
+    <div class="krm-sk" style="width:64px;height:14px"></div>
+    <div class="krm-sk" style="width:64px;height:14px"></div>
+    <div class="krm-sk" style="width:34px;height:34px;border-radius:50%"></div>
+  </div>
+  <div class="krm-sk-wrap">
+    <div class="krm-sk" style="width:min(62%,520px);height:34px"></div>
+    <div class="krm-sk" style="width:min(44%,380px);height:18px;margin-top:14px"></div>
+    <div class="krm-sk" style="width:100%;max-width:720px;height:52px;margin-top:24px;border-radius:26px"></div>
+    <div class="krm-sk-cards">
+      <div class="krm-sk-card"><div class="krm-sk" style="width:46px;height:46px;border-radius:10px"></div>
+        <div class="krm-sk" style="width:78%;height:15px;margin-top:14px"></div>
+        <div class="krm-sk" style="width:52%;height:12px;margin-top:9px"></div></div>
+      <div class="krm-sk-card"><div class="krm-sk" style="width:46px;height:46px;border-radius:10px"></div>
+        <div class="krm-sk" style="width:70%;height:15px;margin-top:14px"></div>
+        <div class="krm-sk" style="width:58%;height:12px;margin-top:9px"></div></div>
+      <div class="krm-sk-card"><div class="krm-sk" style="width:46px;height:46px;border-radius:10px"></div>
+        <div class="krm-sk" style="width:82%;height:15px;margin-top:14px"></div>
+        <div class="krm-sk" style="width:48%;height:12px;margin-top:9px"></div></div>
+      <div class="krm-sk-card"><div class="krm-sk" style="width:46px;height:46px;border-radius:10px"></div>
+        <div class="krm-sk" style="width:64%;height:15px;margin-top:14px"></div>
+        <div class="krm-sk" style="width:56%;height:12px;margin-top:9px"></div></div>
+    </div>
+  </div>
+</div></div>
 <script>
+// Runs a callback once the deferred vendor scripts have executed. Deferred scripts are
+// guaranteed to run before DOMContentLoaded, so React/ReactDOM/the DS bundle are all
+// defined by the time these callbacks fire.
+window.__kramaReady = function (fn) {
+  if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', fn); }
+  else { fn(); }
+};
 var JSX_FILES = ['chrome.jsx','home.jsx','jobs.jsx','job-detail.jsx','company-detail.jsx','auth.jsx','apply.jsx','pages.jsx','forum.jsx','chat.jsx','app.jsx'];
 var JSX_V = 259;
 function showLoadError(msg) {
@@ -69,13 +123,17 @@ var JSX_BASE = (function(){
 // Fetch all in parallel, compile+execute in order
 // JSX is precompiled to compiled/*.js at build time — fetch those and run them
 // directly (no in-browser Babel). Same execute-in-order, shared-global model.
-Promise.all(JSX_FILES.map(function(file) {
+// Start the downloads NOW, in parallel with the deferred vendor scripts, but only
+// EXECUTE them once those have run (they reference React and the design-system bundle).
+var jsxSources = Promise.all(JSX_FILES.map(function(file) {
   var compiledFile = 'compiled/' + file.replace(/\.jsx$/, '.js');
   return fetch(JSX_BASE + compiledFile + '?v=' + JSX_V).then(function(r){
     if (!r.ok) throw new Error('HTTP ' + r.status + ' fetching ' + compiledFile);
     return r.text();
   });
-})).then(function(sources) {
+}));
+
+window.__kramaReady(function(){ jsxSources.then(function(sources) {
   var errors = [];
   sources.forEach(function(src, i) {
     try {
@@ -91,9 +149,13 @@ Promise.all(JSX_FILES.map(function(file) {
 }).catch(function(e){
   console.error('Failed to fetch JSX files:', e);
   showLoadError('Network error loading JSX files:\n' + (e && e.message || e));
-});
+}); });
 </script>
 <script>
+// Wrapped in __kramaReady because `class ErrBoundary extends React.Component` is evaluated
+// as soon as this script runs — with the vendor scripts now deferred, React isn't defined
+// during parsing, so this must wait until they've executed.
+window.__kramaReady(function(){
 class ErrBoundary extends React.Component {
   constructor(p){ super(p); this.state={err:null,info:null}; }
   static getDerivedStateFromError(err){ return {err:err}; }
@@ -114,10 +176,16 @@ class ErrBoundary extends React.Component {
 }
 function mount(){
   if(!window.KramaPublicApp||!window.KramaDesignSystem_1a6f65){return setTimeout(mount,40);}
-  ReactDOM.createRoot(document.getElementById("root")).render(
+  var root=document.getElementById("root");
+  // Drop the first-paint skeleton explicitly rather than relying on createRoot to clear
+  // the container, so the handoff is deterministic.
+  var sk=document.getElementById("krm-skeleton");
+  if(sk&&sk.parentNode){sk.parentNode.removeChild(sk);}
+  ReactDOM.createRoot(root).render(
     React.createElement(ErrBoundary,null,React.createElement(window.KramaPublicApp))
   );
 }
 mount();
+});
 </script>
 </body></html>
