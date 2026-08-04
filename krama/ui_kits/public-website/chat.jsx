@@ -22,7 +22,10 @@
   // The launcher now lives in the site header (chrome.jsx) while the chat panel is
   // still mounted from app.jsx, so the two sit in different React trees. This tiny
   // store keeps open/enabled in sync between them without a shared parent.
-  const chatStore = { open: false, enabled: true, launcherLabel: "Chat with us" };
+  // `enabled` starts null = "not known yet". The launcher stays hidden until the
+  // settings fetch resolves, so a site with chat switched off doesn't flash an icon
+  // into the header and then reflow it away on every page load.
+  const chatStore = { open: false, enabled: null, launcherLabel: "Chat with us" };
   const chatSubs = new Set();
   function chatEmit() { chatSubs.forEach(function (f) { f(); }); }
   function chatSet(patch) { Object.assign(chatStore, patch); chatEmit(); }
@@ -93,6 +96,9 @@
             // Mirror into the store so the header launcher hides when an admin
             // disables chat, and picks up the configured launcher label.
             chatSet({ enabled: !!newCfg.enabled, launcherLabel: newCfg.launcher || CHAT_DEFAULTS.launcher });
+          } else {
+            // No settings row yet — fall back to the built-in default (shown).
+            chatSet({ enabled: CHAT_DEFAULTS.enabled });
             setMsgs(function(prev) {
               if (prev.length === 1 && prev[0].from === 'bot' && prev[0].text === CHAT_DEFAULTS.welcome) {
                 return [{ from: 'bot', text: newCfg.welcome }];
@@ -101,7 +107,9 @@
             });
           }
         })
-        .catch(function() {});
+        // Settings unreachable — degrade to the built-in default rather than
+        // hiding the assistant outright.
+        .catch(function() { chatSet({ enabled: CHAT_DEFAULTS.enabled }); });
     }, []);
     React.useEffect(() => { if (window.lucide) window.lucide.createIcons(); });
     React.useEffect(() => { if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight; }, [msgs, open, busy]);
@@ -188,7 +196,7 @@
   // placeholder) so it survives re-renders without needing createIcons().
   function ChatLauncher() {
     const store = useChatStore();
-    if (!store.enabled) return null;
+    if (store.enabled !== true) return null;   // null = still resolving, false = admin-disabled
     const label = TR(store.launcherLabel || "Chat with us");
     return (
       <button
