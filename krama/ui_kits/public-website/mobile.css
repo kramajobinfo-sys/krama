@@ -107,7 +107,13 @@
   .krm-chat-panel {
     width: auto !important;
     max-width: none !important;
+    /* 100vh on a phone is the EXPANDED viewport: it ignores the browser's URL bar and
+       the on-screen keyboard, so the composer row ends up underneath them and the panel
+       looks like it doesn't fit the screen. dvh tracks the viewport that is actually
+       visible and shrinks when the keyboard opens. The vh line stays FIRST as the
+       fallback for browsers without dvh (iOS < 15.4, Chrome < 108). */
     height: calc(100vh - 148px) !important;
+    height: calc(100dvh - 148px) !important;
     max-height: none !important;
   }
 
