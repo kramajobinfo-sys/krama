@@ -333,9 +333,9 @@
   function Home({ onNav, onOpenJob, saved, toggleSave }) {
     const [hs, setHs] = React.useState(loadHomeSettings);
     React.useEffect(function() {
-      var apiBase = (/^(localhost|127\.0\.0\.1|::1|192\.168\.|10\.)/.test(window.location.hostname) ? 'http://127.0.0.1:8000/api' : (window.location.protocol + '//' + window.location.host + '/api'));
-      fetch(apiBase + '/settings/home_content', { cache: 'no-cache' })
-        .then(function(r) { return r.ok ? r.json() : null; })
+      // Shared promise, already in flight from api.js init() — see window.KRAMA_SETTINGS.
+      // Doing our own fetch here meant an extra round trip after everything else settled.
+      window.KRAMA_SETTINGS('home_content')
         .then(function(d) {
           if (d && d.data) {
             try {

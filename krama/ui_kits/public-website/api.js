@@ -276,35 +276,71 @@
     });
   }
 
+  // ── Shared public-settings fetcher ───────────────────────────────────────
+  // Components used to fetch /settings/<group> from their own useEffect, which only runs
+  // after init() has resolved and the tree has mounted — so those requests started a full
+  // round trip AFTER everything else had finished. init() now warms them here, and the
+  // components read the same promise instead of issuing a second, later request.
+  // Deduped per page load: these are admin config values, and the admin UI already tells
+  // the operator to reload the public site for changes to appear.
+  var settingsCache = {};
+  function publicSettings(group) {
+    if (!settingsCache[group]) {
+      settingsCache[group] = get("/settings/" + group).catch(function () { return null; });
+    }
+    return settingsCache[group];
+  }
+  window.KRAMA_SETTINGS = publicSettings;
+
   // ── Bootstrap — fetch all public data, populate KRAMA_DATA in place ──────
   function init() {
     var D = window.KRAMA_DATA;
 
-    var jobs = getAllPages("/jobs", 100).then(function (list) {
-      var normalised = list.map(normaliseJob);
-      D.jobs = normalised;
-      // Attach logos
-      var L = window.KRAMA_LOGOS || {};
-      normalised.forEach(function (j) { if (!j.logo && L[j.company]) j.logo = L[j.company]; });
-    }).catch(function () { /* keep static fallback */ }).then(function () {
-      // Blend aggregated external jobs (best-effort — a failure never breaks the site)
-      return get("/external-jobs").then(function (list) {
-        var ext = (list || []).map(normaliseExternalJob);
-        if (ext.length) D.jobs = (D.jobs || []).concat(ext);
-      }).catch(function () {});
-    });
+    // Warm the settings the first screen needs, in parallel with everything below.
+    publicSettings("home_content");
+    publicSettings("chat");
 
-    var companies = getAllPages("/companies", 100).then(function (list) {
-      var normalised = list.map(normaliseCompany);
-      D.companies = normalised;
-      var L = window.KRAMA_LOGOS || {};
-      normalised.forEach(function (c) { if (!c.logo && L[c.name]) c.logo = L[c.name]; });
-    }).catch(function () {}).then(function () {
-      return get("/external-companies").then(function (list) {
-        var ext = (list || []).map(normaliseExternalCompany);
-        if (ext.length) D.companies = (D.companies || []).concat(ext);
-      }).catch(function () {});
-    });
+    // The external feeds used to be CHAINED behind the main lists with .then(), which cost
+    // a whole extra round trip before first render even though the endpoints are
+    // independent. Fire both at once and merge when they settle. The merge has to happen
+    // in one place: assigning D.jobs from the main list would otherwise wipe external rows
+    // if external happened to resolve first.
+    // A main-list failure keeps the static fallback (main -> null); external is
+    // best-effort and its failure never breaks the site (-> []).
+    var jobsMain = getAllPages("/jobs", 100)
+      .then(function (list) { return list.map(normaliseJob); })
+      .catch(function () { return null; });
+    var jobsExt = get("/external-jobs")
+      .then(function (list) { return (list || []).map(normaliseExternalJob); })
+      .catch(function () { return []; });
+
+    var jobs = Promise.all([jobsMain, jobsExt]).then(function (r) {
+      var main = r[0], ext = r[1];
+      if (main) {
+        // Attach logos
+        var L = window.KRAMA_LOGOS || {};
+        main.forEach(function (j) { if (!j.logo && L[j.company]) j.logo = L[j.company]; });
+        D.jobs = main;
+      }
+      if (ext.length) D.jobs = (D.jobs || []).concat(ext);
+    }).catch(function () {});
+
+    var companiesMain = getAllPages("/companies", 100)
+      .then(function (list) { return list.map(normaliseCompany); })
+      .catch(function () { return null; });
+    var companiesExt = get("/external-companies")
+      .then(function (list) { return (list || []).map(normaliseExternalCompany); })
+      .catch(function () { return []; });
+
+    var companies = Promise.all([companiesMain, companiesExt]).then(function (r) {
+      var main = r[0], ext = r[1];
+      if (main) {
+        var L = window.KRAMA_LOGOS || {};
+        main.forEach(function (c) { if (!c.logo && L[c.name]) c.logo = L[c.name]; });
+        D.companies = main;
+      }
+      if (ext.length) D.companies = (D.companies || []).concat(ext);
+    }).catch(function () {});
 
     var banners = get("/banners").then(function (r) {
       D.banners = (r || []).map(normaliseBanner);

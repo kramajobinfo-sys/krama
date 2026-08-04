@@ -128,12 +128,8 @@
     }]);
     const scrollRef = React.useRef(null);
     React.useEffect(function () {
-      var apiBase = /^(localhost|127\.0\.0\.1|::1|192\.168\.|10\.)/.test(window.location.hostname) ? 'http://127.0.0.1:8000/api' : window.location.protocol + '//' + window.location.host + '/api';
-      fetch(apiBase + '/settings/chat', {
-        cache: 'no-cache'
-      }).then(function (r) {
-        return r.ok ? r.json() : null;
-      }).then(function (d) {
+      // Shared promise, already in flight from api.js init() — see window.KRAMA_SETTINGS.
+      window.KRAMA_SETTINGS('chat').then(function (d) {
         if (d && Object.keys(d).length) {
           var newCfg = Object.assign({}, CHAT_DEFAULTS, d);
           setCfg(newCfg);
