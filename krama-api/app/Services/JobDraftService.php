@@ -102,9 +102,14 @@ class JobDraftService
                 'contents'           => [['role' => 'user', 'parts' => [['text' => $user]]]],
                 'generationConfig'   => [
                     'temperature'      => 0.4,
-                    'maxOutputTokens'  => 1500,
+                    // No thinkingConfig — the `-latest` aliases now resolve to Gemini 3, which
+                    // rejects thinkingBudget 0 with HTTP 400. See CvMatchService::scoreGeminiBatch().
+                    // Because thinking can't be switched off, its tokens come out of THIS budget
+                    // (~1000 thought tokens for a draft, vs ~300 of actual output), so the old
+                    // 1500 left almost no headroom — overrun truncates the JSON and surfaces as
+                    // "The AI response could not be read".
+                    'maxOutputTokens'  => 4096,
                     'responseMimeType' => 'application/json',
-                    'thinkingConfig'   => ['thinkingBudget' => 0],
                 ],
             ]);
 

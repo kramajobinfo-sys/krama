@@ -123,12 +123,18 @@ class CvMatchService
                 'contents'           => [['role' => 'user', 'parts' => [['text' => self::aiUserPrompt($ref, $candidates)]]]],
                 'generationConfig'   => [
                     'temperature'      => 0,
-                    'maxOutputTokens'  => 2048,
+                    // responseMimeType alone keeps reasoning text out of the output, so the
+                    // reply is a bare JSON array.
+                    //
+                    // Do NOT add thinkingConfig/thinkingBudget here. The `-latest` aliases now
+                    // resolve to Gemini 3 models, which REQUIRE thinking and reject a budget of
+                    // 0 with HTTP 400 INVALID_ARGUMENT. That silently broke AI matching when
+                    // Google re-pointed the alias — it worked while it meant Gemini 2.5.
+                    //
+                    // Thinking tokens come out of this budget too, and one request scores every
+                    // candidate, so keep it generous: a truncated array loses candidates.
+                    'maxOutputTokens'  => 8192,
                     'responseMimeType' => 'application/json',
-                    // gemini-flash-latest resolves to a reasoning model; disabling "thinking"
-                    // keeps scoring fast, deterministic, and free of reasoning text leaking
-                    // into the JSON output.
-                    'thinkingConfig'   => ['thinkingBudget' => 0],
                 ],
             ]);
 
