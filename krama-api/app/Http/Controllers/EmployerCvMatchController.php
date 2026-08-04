@@ -16,6 +16,10 @@ use Illuminate\Support\Str;
 
 class EmployerCvMatchController extends Controller
 {
+    // Most candidates sent to the AI in a single scoring request — matches the cap that
+    // `compare` mode already enforces through validation. See aiPool().
+    private const AI_BATCH_MAX = 20;
+
     // GET /api/employer/cv-match/candidates — this employer's applicants that have résumés.
     public function candidates(Request $request)
     {
@@ -129,20 +133,49 @@ class EmployerCvMatchController extends Controller
             if ($apiKey === '') {
                 return response()->json(['message' => 'AI matching is not configured yet. Ask an admin to add an AI key, or use the standard compare.'], 422);
             }
+            // One request scores the whole batch, so bound it — see aiPool().
+            $pool = $this->aiPool($ref, $candidates);
+
             try {
-                $ai = CvMatchService::scoreAiProvider($provider, $ref, $candidates, $apiKey, $model);
+                $ai = CvMatchService::scoreAiProvider($provider, $ref, $pool, $apiKey, $model);
             } catch (\Throwable $e) {
                 // Without this the failure is invisible: the employer sees a generic 502 and
                 // nothing reaches storage/logs, so a dead key looks like a flaky network.
                 Log::warning('CV match (' . $provider . ') failed: ' . $e->getMessage(), [
                     'company_id' => $company->id,
                     'model'      => $model,
-                    'candidates' => $candidates->count(),
+                    'candidates' => $pool->count(),
                 ]);
                 return response()->json(['message' => 'AI matching is temporarily unavailable. Please try again — you were not charged.'], 502);
             }
-            $results = $candidates->map(function ($c) use ($ai) {
-                $m = $ai[$c->id] ?? ['score' => 0, 'breakdown' => ['matched_skills' => [], 'missing_skills' => [], 'reason' => '']];
+
+            // Keep only rows that name a candidate we actually asked about.
+            $scored = array_intersect_key($ai, $pool->keyBy('id')->all());
+
+            // A 2xx response whose body we can't use — truncated JSON, a safety block, or
+            // ids that match nothing — must NOT be billed. Falling through would score every
+            // candidate 0 and still charge full price, and persist that as an "AI" run the
+            // employer can re-open from their history.
+            if (! $scored) {
+                Log::warning('CV match (' . $provider . ') returned no usable scores — treating as a failure, not charging.', [
+                    'company_id' => $company->id,
+                    'model'      => $model,
+                    'candidates' => $pool->count(),
+                    'rows_back'  => count($ai),
+                ]);
+                return response()->json(['message' => 'AI matching is temporarily unavailable. Please try again — you were not charged.'], 502);
+            }
+
+            // Partial coverage still bills (most candidates did get a real score), but say so.
+            if (count($scored) < $pool->count()) {
+                Log::warning('CV match (' . $provider . ') scored only ' . count($scored) . ' of ' . $pool->count() . ' candidates.', [
+                    'company_id' => $company->id,
+                    'model'      => $model,
+                ]);
+            }
+
+            $results = $pool->map(function ($c) use ($scored) {
+                $m = $scored[$c->id] ?? ['score' => 0, 'breakdown' => ['matched_skills' => [], 'missing_skills' => [], 'reason' => '']];
                 return $this->rowFrom($c, $m['score'], $m['breakdown']);
             });
         } else {
@@ -231,6 +264,29 @@ class EmployerCvMatchController extends Controller
     }
 
     // ---- helpers -------------------------------------------------------------
+
+    /**
+     * Candidates to send to the AI in one request.
+     *
+     * `compare` mode is already capped at 20 by validation, but `suggest` pulls the whole
+     * applicant pool (up to 200 résumés) into a single prompt. That overruns the output
+     * budget — more so now that Gemini spends part of it on thinking — and a truncated
+     * JSON array silently drops candidates. So when the pool is too big, pre-rank it with
+     * the free local matcher and hand the AI only the strongest: `suggest` returns a short
+     * top-N anyway, and a deterministic pre-filter is a far better bound than truncation
+     * at an arbitrary point.
+     */
+    private function aiPool(Resume $ref, $candidates)
+    {
+        if ($candidates->count() <= self::AI_BATCH_MAX) {
+            return $candidates;
+        }
+
+        return $candidates
+            ->sortByDesc(fn ($c) => CvMatchService::score($ref, $c)['score'])
+            ->take(self::AI_BATCH_MAX)
+            ->values();
+    }
 
     private function company($user): Company
     {
