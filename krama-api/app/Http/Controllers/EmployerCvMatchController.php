@@ -10,6 +10,7 @@ use App\Models\Resume;
 use App\Models\Setting;
 use App\Services\CvMatchService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class EmployerCvMatchController extends Controller
@@ -140,7 +141,14 @@ class EmployerCvMatchController extends Controller
             }
             try {
                 $ai = CvMatchService::scoreAiProvider($provider, $ref, $candidates, $apiKey, $model);
-            } catch (\Exception $e) {
+            } catch (\Throwable $e) {
+                // Without this the failure is invisible: the employer sees a generic 502 and
+                // nothing reaches storage/logs, so a dead key looks like a flaky network.
+                Log::warning('CV match (' . $provider . ') failed: ' . $e->getMessage(), [
+                    'company_id' => $company->id,
+                    'model'      => $model,
+                    'candidates' => $candidates->count(),
+                ]);
                 return response()->json(['message' => 'AI matching is temporarily unavailable. Please try again — you were not charged.'], 502);
             }
             $results = $candidates->map(function ($c) use ($ai) {

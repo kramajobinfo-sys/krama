@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Setting;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Drafts a job posting (description / requirements / benefits) from a title + light
@@ -83,6 +84,7 @@ class JobDraftService
             ]);
 
         if (! $resp->successful()) {
+            Log::warning('Job draft (claude ' . $model . ') API error: ' . $resp->status() . ' ' . $resp->body());
             throw new \RuntimeException('The AI service returned an error (' . $resp->status() . '). Check the API key and try again.');
         }
 
@@ -99,9 +101,13 @@ class JobDraftService
         $model = $model ?: 'gemini-2.0-flash';
         $url   = 'https://generativelanguage.googleapis.com/v1beta/models/' . rawurlencode($model) . ':generateContent';
 
-        $resp = Http::withHeaders(['content-type' => 'application/json'])
+        // Key in the x-goog-api-key header, never the query string — see ChatController::callGemini().
+        $resp = Http::withHeaders([
+                'x-goog-api-key' => $apiKey,
+                'content-type'   => 'application/json',
+            ])
             ->timeout(60)
-            ->post($url . '?key=' . urlencode($apiKey), [
+            ->post($url, [
                 'system_instruction' => ['parts' => [['text' => $system]]],
                 'contents'           => [['role' => 'user', 'parts' => [['text' => $user]]]],
                 'generationConfig'   => [
@@ -113,6 +119,9 @@ class JobDraftService
             ]);
 
         if (! $resp->successful()) {
+            // JobController surfaces getMessage() to the employer, so keep the thrown text
+            // user-facing and log the provider's actual reason for whoever has to debug it.
+            Log::warning('Job draft (gemini ' . $model . ') API error: ' . $resp->status() . ' ' . $resp->body());
             throw new \RuntimeException('The AI service returned an error (' . $resp->status() . '). Check the API key and try again.');
         }
 

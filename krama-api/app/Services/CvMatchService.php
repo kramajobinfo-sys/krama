@@ -70,6 +70,8 @@ class CvMatchService
      */
     public static function scoreAiBatch(Resume $ref, $candidates, string $apiKey, string $model): array
     {
+        $model = $model ?: 'claude-haiku-4-5';
+
         $resp = Http::withHeaders([
                 'x-api-key'         => $apiKey,
                 'anthropic-version' => '2023-06-01',
@@ -77,14 +79,14 @@ class CvMatchService
             ])
             ->timeout(60)
             ->post('https://api.anthropic.com/v1/messages', [
-                'model'      => $model ?: 'claude-haiku-4-5',
+                'model'      => $model,
                 'max_tokens' => 2048,
                 'system'     => self::aiSystemPrompt(),
                 'messages'   => [['role' => 'user', 'content' => self::aiUserPrompt($ref, $candidates)]],
             ]);
 
         if (! $resp->successful()) {
-            throw new \RuntimeException('AI matching request failed (' . $resp->status() . ').');
+            throw new \RuntimeException('AI matching request failed (claude ' . $model . ', HTTP ' . $resp->status() . '): ' . self::briefBody($resp->body()));
         }
 
         $text = '';
@@ -101,15 +103,22 @@ class CvMatchService
     /**
      * AI (Google Gemini) scoring for a batch of candidates in a single request.
      * Uses the free-tier-friendly generateContent endpoint with JSON output.
+     *
+     * The key goes in the x-goog-api-key header, never the query string, so it can't
+     * leak into access logs, proxy traces, or a cURL error message (which quotes the
+     * full request URL) — same rule as ChatController::callGemini().
      */
     public static function scoreGeminiBatch(Resume $ref, $candidates, string $apiKey, string $model): array
     {
         $model = $model ?: 'gemini-flash-latest';
         $url   = 'https://generativelanguage.googleapis.com/v1beta/models/' . rawurlencode($model) . ':generateContent';
 
-        $resp = Http::withHeaders(['content-type' => 'application/json'])
+        $resp = Http::withHeaders([
+                'x-goog-api-key' => $apiKey,
+                'content-type'   => 'application/json',
+            ])
             ->timeout(60)
-            ->post($url . '?key=' . urlencode($apiKey), [
+            ->post($url, [
                 'system_instruction' => ['parts' => [['text' => self::aiSystemPrompt()]]],
                 'contents'           => [['role' => 'user', 'parts' => [['text' => self::aiUserPrompt($ref, $candidates)]]]],
                 'generationConfig'   => [
@@ -124,7 +133,7 @@ class CvMatchService
             ]);
 
         if (! $resp->successful()) {
-            throw new \RuntimeException('AI matching request failed (' . $resp->status() . ').');
+            throw new \RuntimeException('AI matching request failed (gemini ' . $model . ', HTTP ' . $resp->status() . '): ' . self::briefBody($resp->body()));
         }
 
         $text = '';
@@ -135,6 +144,13 @@ class CvMatchService
         }
 
         return self::normalizeAiRows(self::extractJsonArray($text));
+    }
+
+    // One-line, length-capped error body for the log — provider errors carry the useful
+    // detail (quota metric, PERMISSION_DENIED reason) in the response JSON.
+    private static function briefBody(string $body): string
+    {
+        return mb_substr(trim(preg_replace('/\s+/', ' ', $body) ?? ''), 0, 400);
     }
 
     // Shared system prompt for any AI provider.
