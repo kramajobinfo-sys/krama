@@ -5045,7 +5045,11 @@
   }
 
   // ===== Chat agent settings (drives the public website chat widget) =====
-  const CHAT_DEFAULTS = { enabled: true, botName: "Krama Assistant", welcome: "Hi! I'm Krama's assistant 👋 Ask me about jobs, applications, or your account.", endpoint: "", apiKey: "", model: "claude-haiku-4-5", system_prompt: "", launcher: "Chat with us" };
+  const CHAT_DEFAULTS = { enabled: true, botName: "Krama Assistant", welcome: "Hi! I'm Krama's assistant 👋 Ask me about jobs, applications, or your account.", endpoint: "", provider: "gemini", apiKey: "", model: "claude-haiku-4-5", gemini_api_key: "", gemini_model: "gemini-2.0-flash", system_prompt: "", launcher: "Chat with us", daily_request_limit: 2000, daily_token_limit: 500000 };
+  const CHAT_PROVIDERS = [
+    { value: "gemini", label: "Google Gemini Flash — free tier" },
+    { value: "anthropic", label: "Anthropic Claude — paid" },
+  ];
 
   function ChatAgentSettings() {
     const [c, setC] = React.useState(CHAT_DEFAULTS);
@@ -5062,7 +5066,12 @@
         .then(function() { setSaved(true); })
         .catch(function(e) { alert('Save failed: ' + (e && e.message ? e.message : 'Unknown error')); });
     };
-    const connected = !!c.apiKey;
+    // Secrets come back blanked from the API with a companion `{key}_set` boolean, so a
+    // stored key only shows as connected via that flag (or a value typed just now).
+    const isGemini = (c.provider || "gemini") === "gemini";
+    const connected = isGemini
+      ? !!(c.gemini_api_key || c.gemini_api_key_set)
+      : !!(c.apiKey || c.apiKey_set);
 
     return (
       <div className="krm-page-pad" style={{ padding: 28, maxWidth: 1100 }}>
@@ -5082,7 +5091,7 @@
                 <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 36, height: 36, borderRadius: "var(--radius-md)", background: "var(--brand-subtle)", color: "var(--brand)" }}>{I("bot", 18)}</span>
                 <h3 style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: "var(--text-strong)" }}>Show chat on public site</h3>
               </div>
-              <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginTop: 8 }}>The floating chat launcher in the bottom-left of every public page.</p>
+              <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginTop: 8 }}>The chat icon in the header of every public page, just before the language switcher.</p>
             </div>
             <Switch checked={c.enabled} onChange={(v) => set("enabled", v)} />
           </div>
@@ -5098,23 +5107,52 @@
         <Card padding={24}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
             <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 36, height: 36, borderRadius: "var(--radius-md)", background: "var(--info-subtle)", color: "var(--info)" }}>{I("sparkles", 18)}</span>
-            <h3 style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: "var(--text-strong)" }}>AI connection (Claude)</h3>
+            <h3 style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: "var(--text-strong)" }}>AI connection</h3>
             <Badge tone={connected ? "success" : "neutral"} style={{ marginLeft: "auto" }}>{connected ? "Live" : "Demo mode"}</Badge>
           </div>
           <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", margin: "0 0 18px" }}>
-            The assistant is powered by Anthropic&rsquo;s Claude. Paste your Anthropic API key to enable live answers. Krama calls Claude <strong>server-side</strong> — your key is never sent to visitors&rsquo; browsers. Leave the key blank to use the built-in demo replies.
+            Choose which AI answers visitors. Krama calls it <strong>server-side</strong> — your key is never sent to visitors&rsquo; browsers. Leave the key blank to use the built-in demo replies. Each provider stores its own key, so you can switch back and forth without re-pasting.
           </p>
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <div className="krm-form-grid" style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 16 }}>
-              <div style={{ position: "relative" }}>
-                <Input label="Anthropic API key" type={showKey ? "text" : "password"} placeholder="sk-ant-…" value={c.apiKey} onChange={(e) => set("apiKey", e.target.value)} />
-                <button onClick={() => setShowKey(!showKey)} style={{ position: "absolute", right: 10, top: 36, border: "none", background: "transparent", color: "var(--text-muted)", cursor: "pointer", display: "inline-flex" }} aria-label="Toggle key visibility">{I(showKey ? "eye-off" : "eye", 16)}</button>
+            <Select label="AI provider" value={c.provider || "gemini"} onChange={(e) => set("provider", e.target.value)} options={CHAT_PROVIDERS} />
+
+            {isGemini ? (
+              <div className="krm-form-grid" style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 16 }}>
+                <div style={{ position: "relative" }}>
+                  <Input label="Google AI API key" type={showKey ? "text" : "password"}
+                    placeholder={c.gemini_api_key_set ? "Saved — type a new key to replace" : "AIza…"}
+                    value={c.gemini_api_key} onChange={(e) => set("gemini_api_key", e.target.value)} />
+                  <button onClick={() => setShowKey(!showKey)} style={{ position: "absolute", right: 10, top: 36, border: "none", background: "transparent", color: "var(--text-muted)", cursor: "pointer", display: "inline-flex" }} aria-label="Toggle key visibility">{I(showKey ? "eye-off" : "eye", 16)}</button>
+                </div>
+                <Input label="Model" placeholder="gemini-2.0-flash" value={c.gemini_model} onChange={(e) => set("gemini_model", e.target.value)} />
               </div>
-              <Input label="Model" placeholder="claude-haiku-4-5" value={c.model} onChange={(e) => set("model", e.target.value)} />
-            </div>
+            ) : (
+              <div className="krm-form-grid" style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 16 }}>
+                <div style={{ position: "relative" }}>
+                  <Input label="Anthropic API key" type={showKey ? "text" : "password"}
+                    placeholder={c.apiKey_set ? "Saved — type a new key to replace" : "sk-ant-…"}
+                    value={c.apiKey} onChange={(e) => set("apiKey", e.target.value)} />
+                  <button onClick={() => setShowKey(!showKey)} style={{ position: "absolute", right: 10, top: 36, border: "none", background: "transparent", color: "var(--text-muted)", cursor: "pointer", display: "inline-flex" }} aria-label="Toggle key visibility">{I(showKey ? "eye-off" : "eye", 16)}</button>
+                </div>
+                <Input label="Model" placeholder="claude-haiku-4-5" value={c.model} onChange={(e) => set("model", e.target.value)} />
+              </div>
+            )}
+
             <Textarea label="System prompt / instructions (optional)" rows={4} placeholder="e.g. Always answer in a warm, professional tone. Mention that candidates can apply with one click…" value={c.system_prompt} onChange={(e) => set("system_prompt", e.target.value)} />
-            <div style={{ fontSize: "var(--text-xs)", color: "var(--text-faint)", display: "flex", alignItems: "center", gap: 6 }}>
-              {I("shield", 13)} Key and instructions are stored in the database and used server-side only. Default model is Claude Haiku 4.5 (fast and low-cost).
+
+            <div className="krm-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+              <Input label="Daily request limit" type="number" min="0" placeholder="2000" value={c.daily_request_limit} onChange={(e) => set("daily_request_limit", e.target.value)}
+                hint="Whole-site cap per day. Beyond it, visitors get the canned reply." />
+              <Input label="Daily token limit" type="number" min="0" placeholder="500000" value={c.daily_token_limit} onChange={(e) => set("daily_token_limit", e.target.value)}
+                hint="Input + output tokens per day. This is the real spend ceiling on a paid provider." />
+            </div>
+            <div style={{ fontSize: "var(--text-xs)", color: "var(--text-faint)", display: "flex", alignItems: "flex-start", gap: 6 }}>
+              {I("shield", 13)}
+              <span>
+                {isGemini
+                  ? <>Keys and instructions are stored in the database and used server-side only. Gemini Flash has a free tier with per-minute and per-day rate limits — when they&rsquo;re hit, visitors get the canned reply. Get a key at <strong>aistudio.google.com</strong>. Note: Google&rsquo;s free tier may use submitted content to improve their products, so avoid routing sensitive applicant data through it.</>
+                  : <>Keys and instructions are stored in the database and used server-side only. Claude Haiku 4.5 is paid (about $1 per million input tokens, $5 per million output) with no rate-limit cliff. Get a key at <strong>console.anthropic.com</strong>.</>}
+              </span>
             </div>
           </div>
         </Card>

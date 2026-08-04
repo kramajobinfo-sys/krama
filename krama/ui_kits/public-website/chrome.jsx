@@ -174,6 +174,7 @@
 
           {/* Desktop right actions */}
           <div className="krm-header-right" style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
+            {window.KramaChatLauncher ? <window.KramaChatLauncher /> : null}
             <LangToggle />
             {user
               ? <UserMenu user={user} onLogout={onLogout} onNav={onNav} />
@@ -184,6 +185,7 @@
 
           {/* Language toggle + Account — mobile only, shown in header bar */}
           <div className="krm-mobile-lang" style={{ marginLeft: "auto", display: "none", alignItems: "center", gap: 10, flexShrink: 0 }}>
+            {window.KramaChatLauncher ? <window.KramaChatLauncher /> : null}
             <LangToggle />
             <button onClick={() => { if (user) { setMenuOpen(o => !o); } else { navTo("login"); } }} aria-label={t("Account")} style={{
               display: "inline-flex", alignItems: "center", justifyContent: "center",

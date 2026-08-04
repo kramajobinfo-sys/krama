@@ -97,8 +97,19 @@
   }
   /* Keep page content clear of the fixed bar */
   body { padding-bottom: 60px; }
-  /* Lift the chat launcher above the bottom nav */
-  .krm-chat-fab { bottom: 74px !important; }
+  /* Chat panel — launched from the header icon, so it hangs from under the
+     header and spans the viewport, stopping short of the bottom nav. */
+  .krm-chat-dock {
+    right: 8px !important;
+    left: 8px !important;
+    top: 70px !important;
+  }
+  .krm-chat-panel {
+    width: auto !important;
+    max-width: none !important;
+    height: calc(100vh - 148px) !important;
+    max-height: none !important;
+  }
 
   /* ── Auth page titles — scale down to fit narrow screens ─────────────── */
   .krm-auth-title {

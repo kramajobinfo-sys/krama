@@ -364,7 +364,7 @@
         gap: 12,
         flexShrink: 0
       }
-    }, /*#__PURE__*/React.createElement(LangToggle, null), user ? /*#__PURE__*/React.createElement(UserMenu, {
+    }, window.KramaChatLauncher ? /*#__PURE__*/React.createElement(window.KramaChatLauncher, null) : null, /*#__PURE__*/React.createElement(LangToggle, null), user ? /*#__PURE__*/React.createElement(UserMenu, {
       user: user,
       onLogout: onLogout,
       onNav: onNav
@@ -396,7 +396,7 @@
         gap: 10,
         flexShrink: 0
       }
-    }, /*#__PURE__*/React.createElement(LangToggle, null), /*#__PURE__*/React.createElement("button", {
+    }, window.KramaChatLauncher ? /*#__PURE__*/React.createElement(window.KramaChatLauncher, null) : null, /*#__PURE__*/React.createElement(LangToggle, null), /*#__PURE__*/React.createElement("button", {
       onClick: () => {
         if (user) {
           setMenuOpen(o => !o);

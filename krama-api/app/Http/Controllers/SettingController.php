@@ -15,14 +15,23 @@ class SettingController extends Controller
     // This whitelist prevents arbitrary key creation via the API.
     private const SCHEMA = [
         'chat' => [
-            'enabled'       => 'boolean',
-            'botName'       => 'string|max:80',
-            'launcher'      => 'string|max:80',
-            'welcome'       => 'string|max:500',
-            'endpoint'      => 'nullable|url|max:255',
-            'apiKey'        => 'nullable|string|max:255',
-            'model'         => 'nullable|string|max:80',
-            'system_prompt' => 'nullable|string|max:5000',
+            'enabled'        => 'boolean',
+            'botName'        => 'string|max:80',
+            'launcher'       => 'string|max:80',
+            'welcome'        => 'string|max:500',
+            'endpoint'       => 'nullable|url|max:255',
+            // Which LLM answers visitors. `gemini` uses Google's free Flash tier;
+            // `anthropic` uses Claude (paid). Each provider keeps its own key/model so
+            // switching back and forth never discards the other one's credentials.
+            'provider'       => 'nullable|string|in:gemini,anthropic',
+            'apiKey'         => 'nullable|string|max:255',   // Anthropic
+            'model'          => 'nullable|string|max:80',    // Anthropic
+            'gemini_api_key' => 'nullable|string|max:255',
+            'gemini_model'   => 'nullable|string|max:80',
+            'system_prompt'  => 'nullable|string|max:5000',
+            // Global daily spend guards enforced by ChatController (fails closed).
+            'daily_request_limit' => 'nullable|integer|min:0|max:1000000',
+            'daily_token_limit'   => 'nullable|integer|min:0|max:100000000',
         ],
         'payment' => [
             'khqr_enabled'      => 'boolean',

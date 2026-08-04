@@ -29,6 +29,40 @@
     return s;
   };
 
+  // The launcher now lives in the site header (chrome.jsx) while the chat panel is
+  // still mounted from app.jsx, so the two sit in different React trees. This tiny
+  // store keeps open/enabled in sync between them without a shared parent.
+  const chatStore = {
+    open: false,
+    enabled: true,
+    launcherLabel: "Chat with us"
+  };
+  const chatSubs = new Set();
+  function chatEmit() {
+    chatSubs.forEach(function (f) {
+      f();
+    });
+  }
+  function chatSet(patch) {
+    Object.assign(chatStore, patch);
+    chatEmit();
+  }
+  function useChatStore() {
+    const [, bump] = React.useState(0);
+    React.useEffect(function () {
+      const f = function () {
+        bump(function (n) {
+          return n + 1;
+        });
+      };
+      chatSubs.add(f);
+      return function () {
+        chatSubs.delete(f);
+      };
+    }, []);
+    return chatStore;
+  }
+
   // Admin-configured chat settings (Admin Console → Chat agent), persisted to localStorage.
   const CHAT_DEFAULTS = {
     enabled: true,
@@ -78,7 +112,11 @@
     onNav
   }) {
     const [cfg, setCfg] = React.useState(CHAT_DEFAULTS);
-    const [open, setOpen] = React.useState(false);
+    const store = useChatStore();
+    const open = store.open;
+    const setOpen = v => chatSet({
+      open: !!v
+    });
     const [input, setInput] = React.useState("");
     const [busy, setBusy] = React.useState(false);
     const [msgs, setMsgs] = React.useState([{
@@ -96,6 +134,12 @@
         if (d && Object.keys(d).length) {
           var newCfg = Object.assign({}, CHAT_DEFAULTS, d);
           setCfg(newCfg);
+          // Mirror into the store so the header launcher hides when an admin
+          // disables chat, and picks up the configured launcher label.
+          chatSet({
+            enabled: !!newCfg.enabled,
+            launcherLabel: newCfg.launcher || CHAT_DEFAULTS.launcher
+          });
           setMsgs(function (prev) {
             if (prev.length === 1 && prev[0].from === 'bot' && prev[0].text === CHAT_DEFAULTS.welcome) {
               return [{
@@ -151,20 +195,21 @@
     };
     const quick = ["How do I apply?", "Show remote jobs", "Salary info"];
     return /*#__PURE__*/React.createElement("div", {
-      className: "krm-chat-fab",
+      className: "krm-chat-dock",
       style: {
         position: "fixed",
-        left: 24,
-        bottom: 24,
+        right: 20,
+        top: 76,
         zIndex: 300,
         fontFamily: "var(--font-sans)"
       }
     }, open ? /*#__PURE__*/React.createElement("div", {
+      className: "krm-chat-panel",
       style: {
         width: 360,
-        maxWidth: "calc(100vw - 48px)",
+        maxWidth: "calc(100vw - 40px)",
         height: 520,
-        maxHeight: "calc(100vh - 120px)",
+        maxHeight: "calc(100vh - 100px)",
         background: "var(--surface-card)",
         borderRadius: "var(--radius-xl)",
         boxShadow: "var(--shadow-xl)",
@@ -353,34 +398,53 @@
         alignItems: "center",
         justifyContent: "center"
       }
-    }, I("send", 17)))) : /*#__PURE__*/React.createElement("button", {
-      onClick: () => setOpen(true),
-      "aria-label": "Open chat",
-      style: {
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 10,
-        height: 56,
-        padding: "0 22px 0 18px",
-        borderRadius: "var(--radius-pill)",
-        border: "none",
-        background: "var(--brand)",
-        color: "#fff",
-        cursor: "pointer",
-        boxShadow: "var(--shadow-lg)",
-        fontFamily: "var(--font-sans)",
-        fontWeight: 700,
-        fontSize: "var(--text-base)",
-        animation: "krmChatIn var(--dur-base) var(--ease-out)"
-      }
-    }, /*#__PURE__*/React.createElement("span", {
-      style: {
-        display: "inline-flex"
-      }
-    }, I("message-circle", 22)), TR(cfg.launcher)), /*#__PURE__*/React.createElement("style", null, `
-          @keyframes krmChatIn { from { opacity: 0; transform: translateY(12px) scale(0.96); } to { opacity: 1; transform: none; } }
+    }, I("send", 17)))) : null, /*#__PURE__*/React.createElement("style", null, `
+          @keyframes krmChatIn { from { opacity: 0; transform: translateY(-10px) scale(0.97); } to { opacity: 1; transform: none; } }
           @keyframes krmDot { 0%,60%,100% { opacity: 0.25; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-3px); } }
         `));
   }
+
+  // Header launcher — rendered by chrome.jsx immediately before the language
+  // toggle on both desktop and mobile. Uses an inline SVG (not the lucide <i>
+  // placeholder) so it survives re-renders without needing createIcons().
+  function ChatLauncher() {
+    const store = useChatStore();
+    if (!store.enabled) return null;
+    const label = TR(store.launcherLabel || "Chat with us");
+    return /*#__PURE__*/React.createElement("button", {
+      onClick: () => chatSet({
+        open: !store.open
+      }),
+      "aria-label": label,
+      "aria-expanded": store.open,
+      title: label,
+      style: {
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: 34,
+        height: 34,
+        padding: 0,
+        flexShrink: 0,
+        border: "1px solid var(--border)",
+        borderRadius: "var(--radius-pill)",
+        background: store.open ? "var(--brand-subtle)" : "transparent",
+        color: store.open ? "var(--text-brand)" : "var(--text-muted)",
+        cursor: "pointer"
+      }
+    }, /*#__PURE__*/React.createElement("svg", {
+      width: "18",
+      height: "18",
+      viewBox: "0 0 24 24",
+      fill: "none",
+      stroke: "currentColor",
+      strokeWidth: "2",
+      strokeLinecap: "round",
+      strokeLinejoin: "round"
+    }, /*#__PURE__*/React.createElement("path", {
+      d: "M7.9 20A9 9 0 1 0 4 16.1L2 22Z"
+    })));
+  }
   window.KramaChatAgent = ChatAgent;
+  window.KramaChatLauncher = ChatLauncher;
 })();
