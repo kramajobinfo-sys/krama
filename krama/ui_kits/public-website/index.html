@@ -1,15 +1,30 @@
 <!-- @dsCard group="Public website" viewport="1280x780" name="Public website" subtitle="Home · job search · job detail — interactive" -->
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- Clean-URL support. On kramajob.com this page is served at "/" via an Apache internal
+     rewrite, but its assets live under /krama/ui_kits/public-website/, so every relative
+     URL — CSS/JS assets, the JSX fetch (uses document.baseURI) and the ../<dashboard>/
+     cross-app links — has to resolve against that folder.
+
+     This MUST be a real <base> tag, and it must sit before the first asset reference. It
+     used to be injected with document.write(), which was too late: the browser's preload
+     scanner runs ahead of the parser and had already queued every <script src> resolved
+     against "/", so production fetched all 10 head assets twice — once as a 404 against
+     the wrong path, then again correctly. That wasted ~65KB and 10 round trips on the
+     critical path of every uncached load. document.write() cannot cancel speculative
+     fetches that have already been issued; a static tag prevents them entirely. -->
+<base href="/krama/ui_kits/public-website/">
 <script>
-/* Production clean-URL support: on kramajob.com this page is served at "/" via an
-   Apache internal rewrite, but its assets live under /krama/ui_kits/public-website/.
-   If we're served from anywhere OTHER than that real folder, inject a <base> so every
-   relative URL — CSS/JS assets, the JSX fetch (uses document.baseURI), and the
-   ../<dashboard>/ cross-app links — resolves against the real folder. Local dev serves
-   this file from its own folder, so the guard is false and nothing is injected. */
+/* The production path is the default above. When the file is served from its real folder
+   instead (local dev, or any other prefix), retarget the base at that folder. Derived from
+   the full href rather than pathname so it also works over file://. The preload scanner may
+   already have fired a few wrong URLs in that case, but those environments are local and a
+   handful of 404s there costs nothing — production, where it matters, is now clean. */
 (function(){
-  if (location.pathname.indexOf('/ui_kits/public-website/') === -1) {
-    document.write('<base href="/krama/ui_kits/public-website/">');
+  var marker = '/ui_kits/public-website/';
+  var i = location.href.indexOf(marker);
+  if (i !== -1) {
+    var base = document.querySelector('base');
+    if (base) { base.setAttribute('href', location.href.slice(0, i + marker.length)); }
   }
 })();
 </script>
