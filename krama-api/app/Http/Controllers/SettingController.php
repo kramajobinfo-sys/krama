@@ -14,15 +14,26 @@ class SettingController extends Controller
     // Allowed groups and their keys with simple validation rules.
     // This whitelist prevents arbitrary key creation via the API.
     private const SCHEMA = [
+        // The ONE place AI credentials are configured. Every AI feature (chat agent,
+        // CV match, AI job-draft) resolves through App\Services\AiConfig, so a key
+        // pasted here reaches all of them. Each provider keeps its own key/model so
+        // switching back and forth never discards the other one's credentials.
+        'ai' => [
+            'provider'       => 'nullable|in:gemini,claude',
+            'gemini_api_key' => 'nullable|string|max:255',
+            'gemini_model'   => 'nullable|string|max:80',
+            'claude_api_key' => 'nullable|string|max:255',
+            'claude_model'   => 'nullable|string|max:80',
+        ],
         'chat' => [
             'enabled'        => 'boolean',
             'botName'        => 'string|max:80',
             'launcher'       => 'string|max:80',
             'welcome'        => 'string|max:500',
             'endpoint'       => 'nullable|url|max:255',
-            // Which LLM answers visitors. `gemini` uses Google's free Flash tier;
-            // `anthropic` uses Claude (paid). Each provider keeps its own key/model so
-            // switching back and forth never discards the other one's credentials.
+            // DEPRECATED — moved to the shared `ai` group above. Still accepted and read
+            // as a fallback so existing installs keep working, but the admin UI no longer
+            // writes them; having two copies of the same key is what let them drift apart.
             'provider'       => 'nullable|string|in:gemini,anthropic',
             'apiKey'         => 'nullable|string|max:255',   // Anthropic
             'model'          => 'nullable|string|max:80',    // Anthropic
@@ -105,6 +116,7 @@ class SettingController extends Controller
             'currency'           => 'string|max:3',
             'cost_deterministic' => 'integer|min:0|max:1000',
             'cost_ai'            => 'integer|min:0|max:1000',
+            // DEPRECATED — moved to the shared `ai` group. See the note on `chat` above.
             'ai_provider'        => 'nullable|in:claude,gemini',
             'claude_api_key'     => 'nullable|string|max:255',
             'claude_model'       => 'nullable|string|max:80',

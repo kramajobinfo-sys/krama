@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Setting;
+use App\Services\AiConfig;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -10,14 +11,9 @@ use Illuminate\Support\Facades\Log;
 
 class ChatController extends Controller
 {
-    // Fallback models when an admin hasn't pinned one. Gemini Flash has a free tier;
-    // Claude Haiku is paid but has no rate-limit cliff — see the provider switch below.
-    private const DEFAULT_GEMINI_MODEL    = 'gemini-2.0-flash';
-    private const DEFAULT_ANTHROPIC_MODEL = 'claude-haiku-4-5';
-
     // POST /api/chat — public support-assistant proxy to the configured LLM
-    // (Google Gemini or Anthropic Claude, selected by the `provider` chat setting).
-    // The API key lives server-side (chat settings) and never reaches the browser.
+    // (Google Gemini or Anthropic Claude, selected in Settings → AI provider).
+    // The API key lives server-side (see AiConfig) and never reaches the browser.
     public function send(Request $request)
     {
         $data = $request->validate([
@@ -31,21 +27,11 @@ class ChatController extends Controller
 
         $enabled = ! empty($cfg['enabled']) && $cfg['enabled'] !== '0';
 
-        // Resolve the provider. Default is Gemini (free tier), but if the selected
-        // provider has no key while the other one does, fall back to the configured
-        // one — so changing the default (or deploying before a Gemini key is pasted)
-        // never silently drops a working assistant into canned-reply mode.
-        $geminiKey = trim($cfg['gemini_api_key'] ?? '');
-        $claudeKey = trim($cfg['apiKey'] ?? '');
-        $provider  = strtolower(trim($cfg['provider'] ?? '')) ?: 'gemini';
-
-        if ($provider === 'gemini' && $geminiKey === '' && $claudeKey !== '') {
-            $provider = 'anthropic';
-        } elseif ($provider === 'anthropic' && $claudeKey === '' && $geminiKey !== '') {
-            $provider = 'gemini';
-        }
-
-        $apiKey = $provider === 'gemini' ? $geminiKey : $claudeKey;
+        // Provider + credentials come from the one shared place (Settings → AI provider),
+        // so a key rotated there reaches the chat agent, CV match and AI job-draft at once.
+        // AiConfig also handles falling back to whichever provider actually has a key, so
+        // deploying before a key is pasted never silently drops us into canned-reply mode.
+        ['provider' => $provider, 'apiKey' => $apiKey, 'model' => $model] = AiConfig::resolve();
 
         // Graceful fallback when the assistant isn't configured yet.
         if (! $enabled || $apiKey === '') {
@@ -72,10 +58,6 @@ class ChatController extends Controller
                 'rate_limited' => true,
             ]);
         }
-
-        $model = $provider === 'gemini'
-            ? (trim($cfg['gemini_model'] ?? '') ?: self::DEFAULT_GEMINI_MODEL)
-            : (trim($cfg['model'] ?? '') ?: self::DEFAULT_ANTHROPIC_MODEL);
 
         // Build the system prompt: a Krama-aware base plus any admin-provided instructions.
         $base = "You are the Krama assistant, a helpful support agent for Krama — an online job board and recruitment platform in Cambodia. "

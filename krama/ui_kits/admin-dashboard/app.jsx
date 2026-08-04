@@ -124,6 +124,11 @@
     );
   }
 
+  // There is no router — App owns the current page in state. This lets a nested settings
+  // card send the admin to another page (e.g. "configure the AI key over there").
+  // App registers its setter on mount.
+  const ADMIN_NAV = { go: function () {} };
+
   const NAV = [
     { id: "dashboard", label: "Dashboard", icon: "layout-dashboard" },
     { id: "companies", label: "Companies", icon: "building-2" },
@@ -135,6 +140,7 @@
     { id: "homepage", label: "Homepage", icon: "layout-template" },
     { id: "seo", label: "SEO", icon: "search" },
     { id: "feeds", label: "Feeds", icon: "rss" },
+    { id: "ai", label: "AI provider", icon: "sparkles" },
     { id: "chat", label: "Chat agent", icon: "bot" },
     { id: "social", label: "Social login", icon: "share-2" },
     { id: "email", label: "Email", icon: "mail" },
@@ -5045,33 +5051,122 @@
   }
 
   // ===== Chat agent settings (drives the public website chat widget) =====
-  const CHAT_DEFAULTS = { enabled: true, botName: "Krama Assistant", welcome: "Hi! I'm Krama's assistant 👋 Ask me about jobs, applications, or your account.", endpoint: "", provider: "gemini", apiKey: "", model: "claude-haiku-4-5", gemini_api_key: "", gemini_model: "gemini-2.0-flash", system_prompt: "", launcher: "Chat with us", daily_request_limit: 2000, daily_token_limit: 500000 };
-  const CHAT_PROVIDERS = [
-    { value: "gemini", label: "Google Gemini Flash — free tier" },
-    { value: "anthropic", label: "Anthropic Claude — paid" },
+  // ── AI provider (shared) ───────────────────────────────────────────────────
+  // One place for the AI credentials. The chat agent, CV match and the AI job-draft
+  // all resolve through here (App\Services\AiConfig), so a key pasted once reaches
+  // every AI feature — previously each feature stored its own copy and they drifted.
+  const AI_DEFAULTS = { provider: "gemini", gemini_api_key: "", gemini_model: "gemini-2.0-flash", claude_api_key: "", claude_model: "claude-haiku-4-5" };
+  const AI_PROVIDERS = [
+    ["gemini", "Google Gemini", "aistudio.google.com/apikey", "AIza… or AQ.…"],
+    ["claude", "Anthropic Claude", "console.anthropic.com", "sk-ant-…"],
   ];
+
+  function AiProviderSettings() {
+    const [a, setA] = React.useState(AI_DEFAULTS);
+    const [saved, setSaved] = React.useState(false);
+    const [showKey, setShowKey] = React.useState(false);
+    React.useEffect(function () {
+      window.KRAMA_ADMIN_API.fetchSettings('ai')
+        .then(function (d) { if (d && Object.keys(d).length) setA(Object.assign({}, AI_DEFAULTS, d)); })
+        .catch(function () {});
+    }, []);
+    const set = function (k, v) { setA(function (x) { return Object.assign({}, x, { [k]: v }); }); setSaved(false); };
+    const save = function () {
+      window.KRAMA_ADMIN_API.updateSettings('ai', a)
+        .then(function () { setSaved(true); })
+        .catch(function (e) { alert('Save failed: ' + (e && e.message ? e.message : 'Unknown error')); });
+    };
+
+    const provider = a.provider || "gemini";
+    const meta = AI_PROVIDERS.filter(function (p) { return p[0] === provider; })[0] || AI_PROVIDERS[0];
+    const keyField = provider === "gemini" ? "gemini_api_key" : "claude_api_key";
+    const modelField = provider === "gemini" ? "gemini_model" : "claude_model";
+    // Secrets come back blanked with a companion `{key}_set` boolean, so a stored key
+    // only shows as connected via that flag (or a value typed just now).
+    const connected = !!(a[keyField] || a[keyField + "_set"]);
+
+    return (
+      <div className="krm-page-pad" style={{ padding: 28, maxWidth: 1100 }}>
+        <ScreenHead title="AI provider" sub="One set of AI credentials, shared by every AI feature on Krama."
+          action={<Button variant="primary" iconLeft={I("check", 16)} onClick={save}>Save changes</Button>} />
+
+        {saved ? (
+          <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", background: "var(--success-subtle)", border: "1px solid var(--success-border)", borderRadius: "var(--radius-md)", color: "var(--success)", fontWeight: 600, fontSize: "var(--text-sm)", marginBottom: 18 }}>
+            {I("circle-check-big", 16)} Saved — this key now applies to the chat agent, CV match and AI job drafting.
+          </div>
+        ) : null}
+
+        <Card padding={24}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+            <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 36, height: 36, borderRadius: "var(--radius-md)", background: "var(--info-subtle)", color: "var(--info)" }}>{I("sparkles", 18)}</span>
+            <h3 style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: "var(--text-strong)" }}>AI connection</h3>
+            <Badge tone={connected ? "success" : "neutral"} style={{ marginLeft: "auto" }}>{connected ? "Live" : "Not configured"}</Badge>
+          </div>
+          <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", margin: "0 0 18px" }}>
+            Used by the <strong>chat agent</strong>, <strong>CV match</strong> (AI compare) and <strong>AI job drafting</strong>. Krama calls the provider <strong>server-side</strong> — your key is never sent to visitors&rsquo; browsers. Each provider keeps its own key, so you can switch back and forth without re-pasting.
+          </p>
+
+          <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+            {AI_PROVIDERS.map(function (p) {
+              const on = provider === p[0];
+              return (
+                <button key={p[0]} onClick={function () { set("provider", p[0]); }} style={{ flex: 1, padding: "10px 12px", borderRadius: "var(--radius-md)", cursor: "pointer", border: "1px solid " + (on ? "var(--brand)" : "var(--border-strong)"), background: on ? "var(--brand-subtle)" : "var(--surface-card)", color: on ? "var(--text-brand)" : "var(--text-body)", fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)", fontWeight: 700 }}>{p[1]}</button>
+              );
+            })}
+          </div>
+
+          <div className="krm-form-grid" style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 16 }}>
+            <div style={{ position: "relative" }}>
+              <Input label={meta[1] + " API key"} type={showKey ? "text" : "password"}
+                placeholder={a[keyField + "_set"] ? "Saved — type a new key to replace" : meta[3]}
+                value={a[keyField] || ""} onChange={function (e) { set(keyField, e.target.value); }} />
+              <button onClick={function () { setShowKey(!showKey); }} style={{ position: "absolute", right: 10, top: 36, border: "none", background: "transparent", color: "var(--text-muted)", cursor: "pointer", display: "inline-flex" }} aria-label="Toggle key visibility">{I(showKey ? "eye-off" : "eye", 16)}</button>
+            </div>
+            <Input label="Model" placeholder={provider === "gemini" ? "gemini-2.0-flash" : "claude-haiku-4-5"}
+              value={a[modelField] || ""} onChange={function (e) { set(modelField, e.target.value); }} />
+          </div>
+          <p style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", margin: "10px 0 0" }}>
+            Get a key at <strong>{meta[2]}</strong>. If the selected provider has no key but the other one does, Krama uses the one that is configured.
+          </p>
+        </Card>
+      </div>
+    );
+  }
+
+  // Chat-specific presentation + budget settings only. The provider/key/model moved to
+  // the shared `ai` group, so this form no longer reads or writes credentials.
+  const CHAT_DEFAULTS = { enabled: true, botName: "Krama Assistant", welcome: "Hi! I'm Krama's assistant 👋 Ask me about jobs, applications, or your account.", endpoint: "", system_prompt: "", launcher: "Chat with us", daily_request_limit: 2000, daily_token_limit: 500000 };
 
   function ChatAgentSettings() {
     const [c, setC] = React.useState(CHAT_DEFAULTS);
     const [saved, setSaved] = React.useState(false);
-    const [showKey, setShowKey] = React.useState(false);
+    // Credentials live in the shared `ai` group now — read it (but never write it) so the
+    // Live / Demo badge below reflects the key that will actually be used.
+    const [ai, setAi] = React.useState(null);
     React.useEffect(function() {
       window.KRAMA_ADMIN_API.fetchSettings('chat')
         .then(function(d) { if (d && Object.keys(d).length) setC(Object.assign({}, CHAT_DEFAULTS, d)); })
         .catch(function() {});
+      window.KRAMA_ADMIN_API.fetchSettings('ai')
+        .then(function(d) { setAi(d || {}); })
+        .catch(function() {});
     }, []);
     const set = (k, v) => { setC((x) => ({ ...x, [k]: v })); setSaved(false); };
     const save = () => {
-      window.KRAMA_ADMIN_API.updateSettings('chat', c)
+      // Send only the fields this form owns. The fetched settings still carry the
+      // deprecated credential keys; echoing them back would keep the old duplicate
+      // copies alive, which is exactly what this consolidation removes.
+      var payload = {};
+      Object.keys(CHAT_DEFAULTS).forEach(function (k) { payload[k] = c[k]; });
+      window.KRAMA_ADMIN_API.updateSettings('chat', payload)
         .then(function() { setSaved(true); })
         .catch(function(e) { alert('Save failed: ' + (e && e.message ? e.message : 'Unknown error')); });
     };
     // Secrets come back blanked from the API with a companion `{key}_set` boolean, so a
-    // stored key only shows as connected via that flag (or a value typed just now).
-    const isGemini = (c.provider || "gemini") === "gemini";
-    const connected = isGemini
-      ? !!(c.gemini_api_key || c.gemini_api_key_set)
-      : !!(c.apiKey || c.apiKey_set);
+    // stored key only shows as connected via that flag.
+    const aiProvider = (ai && ai.provider) || "gemini";
+    const aiKeyField = aiProvider === "gemini" ? "gemini_api_key" : "claude_api_key";
+    const connected = !!(ai && (ai[aiKeyField] || ai[aiKeyField + "_set"]));
 
     return (
       <div className="krm-page-pad" style={{ padding: 28, maxWidth: 1100 }}>
@@ -5111,32 +5206,17 @@
             <Badge tone={connected ? "success" : "neutral"} style={{ marginLeft: "auto" }}>{connected ? "Live" : "Demo mode"}</Badge>
           </div>
           <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", margin: "0 0 18px" }}>
-            Choose which AI answers visitors. Krama calls it <strong>server-side</strong> — your key is never sent to visitors&rsquo; browsers. Leave the key blank to use the built-in demo replies. Each provider stores its own key, so you can switch back and forth without re-pasting.
+            The assistant uses the shared AI credentials, so the key is only ever typed in one place. Krama calls the provider <strong>server-side</strong> — your key is never sent to visitors&rsquo; browsers. With no key configured, visitors get the built-in demo replies.
           </p>
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <Select label="AI provider" value={c.provider || "gemini"} onChange={(e) => set("provider", e.target.value)} options={CHAT_PROVIDERS} />
-
-            {isGemini ? (
-              <div className="krm-form-grid" style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 16 }}>
-                <div style={{ position: "relative" }}>
-                  <Input label="Google AI API key" type={showKey ? "text" : "password"}
-                    placeholder={c.gemini_api_key_set ? "Saved — type a new key to replace" : "AIza…"}
-                    value={c.gemini_api_key} onChange={(e) => set("gemini_api_key", e.target.value)} />
-                  <button onClick={() => setShowKey(!showKey)} style={{ position: "absolute", right: 10, top: 36, border: "none", background: "transparent", color: "var(--text-muted)", cursor: "pointer", display: "inline-flex" }} aria-label="Toggle key visibility">{I(showKey ? "eye-off" : "eye", 16)}</button>
-                </div>
-                <Input label="Model" placeholder="gemini-2.0-flash" value={c.gemini_model} onChange={(e) => set("gemini_model", e.target.value)} />
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, padding: "14px 16px", borderRadius: "var(--radius-md)", background: "var(--surface-subtle)", border: "1px solid var(--border-subtle)" }}>
+              <div style={{ fontSize: "var(--text-sm)", color: "var(--text-body)" }}>
+                {connected
+                  ? <span>Using <strong>{aiProvider === "gemini" ? "Google Gemini" : "Anthropic Claude"}</strong> from the shared AI settings.</span>
+                  : <span>No AI key configured yet — the assistant is replying in demo mode.</span>}
               </div>
-            ) : (
-              <div className="krm-form-grid" style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 16 }}>
-                <div style={{ position: "relative" }}>
-                  <Input label="Anthropic API key" type={showKey ? "text" : "password"}
-                    placeholder={c.apiKey_set ? "Saved — type a new key to replace" : "sk-ant-…"}
-                    value={c.apiKey} onChange={(e) => set("apiKey", e.target.value)} />
-                  <button onClick={() => setShowKey(!showKey)} style={{ position: "absolute", right: 10, top: 36, border: "none", background: "transparent", color: "var(--text-muted)", cursor: "pointer", display: "inline-flex" }} aria-label="Toggle key visibility">{I(showKey ? "eye-off" : "eye", 16)}</button>
-                </div>
-                <Input label="Model" placeholder="claude-haiku-4-5" value={c.model} onChange={(e) => set("model", e.target.value)} />
-              </div>
-            )}
+              <Button variant="secondary" iconLeft={I("sparkles", 15)} onClick={function () { ADMIN_NAV.go("ai"); }}>AI provider settings</Button>
+            </div>
 
             <Textarea label="System prompt / instructions (optional)" rows={4} placeholder="e.g. Always answer in a warm, professional tone. Mention that candidates can apply with one click…" value={c.system_prompt} onChange={(e) => set("system_prompt", e.target.value)} />
 
@@ -5149,9 +5229,9 @@
             <div style={{ fontSize: "var(--text-xs)", color: "var(--text-faint)", display: "flex", alignItems: "flex-start", gap: 6 }}>
               {I("shield", 13)}
               <span>
-                {isGemini
-                  ? <>Keys and instructions are stored in the database and used server-side only. Gemini Flash has a free tier with per-minute and per-day rate limits — when they&rsquo;re hit, visitors get the canned reply. Get a key at <strong>aistudio.google.com</strong>. Note: Google&rsquo;s free tier may use submitted content to improve their products, so avoid routing sensitive applicant data through it.</>
-                  : <>Keys and instructions are stored in the database and used server-side only. Claude Haiku 4.5 is paid (about $1 per million input tokens, $5 per million output) with no rate-limit cliff. Get a key at <strong>console.anthropic.com</strong>.</>}
+                {aiProvider === "gemini"
+                  ? <>Instructions are stored in the database and used server-side only. Gemini Flash&rsquo;s free tier has per-minute and per-day rate limits — when they&rsquo;re hit, visitors get the canned reply. Note: Google&rsquo;s free tier may use submitted content to improve their products, so avoid routing sensitive applicant data through it.</>
+                  : <>Instructions are stored in the database and used server-side only. Claude Haiku 4.5 is paid (about $1 per million input tokens, $5 per million output) with no rate-limit cliff.</>}
               </span>
             </div>
           </div>
@@ -5913,9 +5993,11 @@
     const [vat, setVat] = React.useState(VAT_DEFAULTS);
     const [vatSaved, setVatSaved] = React.useState(false);
     const [nbcRate, setNbcRate] = React.useState(null);
-    const CVM_DEFAULTS = { enabled: true, pack_size: 20, pack_price: 10, currency: "USD", cost_deterministic: 1, cost_ai: 3, ai_provider: "claude", claude_api_key: "", claude_model: "", gemini_api_key: "", gemini_model: "gemini-flash-latest" };
+    // Pricing only — the AI credentials moved to the shared `ai` group (see AiProviderSettings).
+    const CVM_DEFAULTS = { enabled: true, pack_size: 20, pack_price: 10, currency: "USD", cost_deterministic: 1, cost_ai: 3 };
     const [cvm, setCvm] = React.useState(CVM_DEFAULTS);
     const [cvmSaved, setCvmSaved] = React.useState(false);
+    const [cvmAi, setCvmAi] = React.useState(null);   // read-only view of the shared AI settings
     React.useEffect(function() {
       window.KRAMA_ADMIN_API.fetchSettings('payment_config')
         .then(function(d) {
@@ -5927,6 +6009,9 @@
         .catch(function() {});
       window.KRAMA_ADMIN_API.fetchSettings('cv_match')
         .then(function(d) { if (d && Object.keys(d).length) { setCvm(Object.assign({}, CVM_DEFAULTS, d)); } })
+        .catch(function() {});
+      window.KRAMA_ADMIN_API.fetchSettings('ai')
+        .then(function(d) { setCvmAi(d || {}); })
         .catch(function() {});
       window.KRAMA_ADMIN_API.fetchSettings('tax')
         .then(function(d) { if (d) { setVat({ vat_enabled: !!Number(d.vat_enabled), vat_rate: (d.vat_rate != null && d.vat_rate !== "") ? String(d.vat_rate) : "10", supplier_legal_name: d.supplier_legal_name || "", supplier_legal_name_kh: d.supplier_legal_name_kh || "", supplier_vat_tin: d.supplier_vat_tin || "", supplier_address: d.supplier_address || "", exchange_rate_khr: (d.exchange_rate_khr != null && d.exchange_rate_khr !== "") ? String(d.exchange_rate_khr) : "4100" }); } })
@@ -5940,11 +6025,19 @@
         .catch(function(e) { alert('Save failed: ' + (e && e.message ? e.message : 'Unknown error')); });
     };
     const saveCvm = () => {
-      window.KRAMA_ADMIN_API.updateSettings('cv_match', cvm)
+      // Pricing fields only — see the note on CHAT_DEFAULTS about not echoing back the
+      // deprecated credential keys.
+      var cvmPayload = {};
+      Object.keys(CVM_DEFAULTS).forEach(function (k) { cvmPayload[k] = cvm[k]; });
+      window.KRAMA_ADMIN_API.updateSettings('cv_match', cvmPayload)
         .then(function() { setCvmSaved(true); setTimeout(function() { setCvmSaved(false); }, 3000); })
         .catch(function(e) { alert('Save failed: ' + (e && e.message ? e.message : 'Unknown error')); });
     };
     const setCvmField = (k, v) => setCvm(function (x) { return Object.assign({}, x, { [k]: v }); });
+    // Which shared provider/key the employer's "AI" compare will actually use.
+    const cvmAiProvider = (cvmAi && cvmAi.provider) || "gemini";
+    const cvmAiKeyField = cvmAiProvider === "gemini" ? "gemini_api_key" : "claude_api_key";
+    const cvmAiConnected = !!(cvmAi && (cvmAi[cvmAiKeyField] || cvmAi[cvmAiKeyField + "_set"]));
     const saveBakong = () => {
       window.KRAMA_ADMIN_API.updateSettings('payment', { bakong_token: bakongToken, merchant_city: bakongCity })
         .then(function() { setBakongSaved(true); setTimeout(function() { setBakongSaved(false); }, 3000); })
@@ -6092,36 +6185,15 @@
           </div>
           <div style={{ marginTop: 18, paddingTop: 16, borderTop: "1px solid var(--border-subtle)" }}>
             <div style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-strong)", marginBottom: 4 }}>AI comparison engine</div>
-            <p style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: 0, marginBottom: 10 }}>Which AI powers the employer's "AI" compare. The Standard (free) engine is unaffected.</p>
-            <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-              {[["claude", "Claude (Anthropic)"], ["gemini", "Gemini (Google · free tier)"]].map(function (opt) {
-                var on = (cvm.ai_provider || "claude") === opt[0];
-                return (
-                  <button key={opt[0]} onClick={function () { setCvmField("ai_provider", opt[0]); }} style={{ flex: 1, padding: "10px 12px", borderRadius: "var(--radius-md)", cursor: "pointer", border: "1px solid " + (on ? "var(--brand)" : "var(--border-strong)"), background: on ? "var(--brand-subtle)" : "var(--surface-card)", color: on ? "var(--text-brand)" : "var(--text-body)", fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)", fontWeight: 700 }}>{opt[1]}</button>
-                );
-              })}
+            <p style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: 0, marginBottom: 10 }}>The employer's "AI" compare uses the shared AI credentials. The Standard (free) engine is unaffected.</p>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, padding: "14px 16px", borderRadius: "var(--radius-md)", background: "var(--surface-subtle)", border: "1px solid var(--border-subtle)" }}>
+              <div style={{ fontSize: "var(--text-sm)", color: "var(--text-body)" }}>
+                {cvmAiConnected
+                  ? <span>Using <strong>{cvmAiProvider === "gemini" ? "Google Gemini" : "Anthropic Claude"}</strong> from the shared AI settings.</span>
+                  : <span>No AI key configured — employers choosing "AI" will get an error. Standard compare still works.</span>}
+              </div>
+              <Button variant="secondary" iconLeft={I("sparkles", 15)} onClick={function () { ADMIN_NAV.go("ai"); }}>AI provider settings</Button>
             </div>
-            {(cvm.ai_provider || "claude") === "gemini" ? (
-              <div className="krm-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                <div style={{ gridColumn: "1 / -1" }}>
-                  <Input label="Gemini API key" type="password" value={cvm.gemini_api_key || ""} onChange={function (e) { setCvmField("gemini_api_key", e.target.value); }} placeholder="AIza…" iconLeft={I("key", 16)} />
-                </div>
-                <Input label="Gemini model" value={cvm.gemini_model || ""} onChange={function (e) { setCvmField("gemini_model", e.target.value); }} placeholder="gemini-flash-latest" />
-                <div style={{ display: "flex", alignItems: "flex-end" }}>
-                  <p style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", margin: 0 }}>Get a free key from Google AI Studio (aistudio.google.com/apikey).</p>
-                </div>
-              </div>
-            ) : (
-              <div className="krm-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                <div style={{ gridColumn: "1 / -1" }}>
-                  <Input label="Claude API key" type="password" value={cvm.claude_api_key || ""} onChange={function (e) { setCvmField("claude_api_key", e.target.value); }} placeholder="sk-ant-…" iconLeft={I("key", 16)} />
-                </div>
-                <Input label="Claude model" value={cvm.claude_model || ""} onChange={function (e) { setCvmField("claude_model", e.target.value); }} placeholder="claude-haiku-4-5" />
-                <div style={{ display: "flex", alignItems: "flex-end" }}>
-                  <p style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", margin: 0 }}>Leave blank to reuse the key from the <strong>Chat agent</strong> tab. Get a key at console.anthropic.com.</p>
-                </div>
-              </div>
-            )}
           </div>
           <div style={{ marginTop: 16 }}><Button variant="primary" iconLeft={I("check", 16)} onClick={saveCvm}>Save CV Match pricing</Button></div>
         </Card>
@@ -6928,6 +7000,9 @@
     const [badges, setBadges] = React.useState({});
     const [sidebarOpen, setSidebarOpen] = React.useState(false);
 
+    // Let nested cards navigate (see ADMIN_NAV).
+    ADMIN_NAV.go = setPage;
+
     React.useEffect(() => {
       adm.fetchMe().then(function (u) { setAuthUser(u); setAuthLoading(false); }).catch(function () { setAuthLoading(false); });
     }, []);
@@ -6968,7 +7043,7 @@
 
     if (!authUser) return <AdminLogin onLogin={setAuthUser} />;
 
-    const titles = { dashboard: "Overview", jobs: "Job management", companies: "Company management", candidates: "Candidates", resumes: "Resume Builder", reviews: "Company reviews", forum: "Community forum", homepage: "Homepage content", seo: "SEO", feeds: "Feeds", chat: "Chat agent", social: "Social login", email: "Email settings", telegram: "Telegram notifications", sms: "SMS gateway", social_post: "Social posting", payments: "Payment settings", reports: "Reports", banners: "Promotional banner", brand: "Brand settings", settings: "Settings · Users & roles", profile: "My Profile" };
+    const titles = { dashboard: "Overview", jobs: "Job management", companies: "Company management", candidates: "Candidates", resumes: "Resume Builder", reviews: "Company reviews", forum: "Community forum", homepage: "Homepage content", seo: "SEO", feeds: "Feeds", ai: "AI provider", chat: "Chat agent", social: "Social login", email: "Email settings", telegram: "Telegram notifications", sms: "SMS gateway", social_post: "Social posting", payments: "Payment settings", reports: "Reports", banners: "Promotional banner", brand: "Brand settings", settings: "Settings · Users & roles", profile: "My Profile" };
     return (
       <div style={{ display: "flex", minHeight: "100vh", background: "var(--surface-page)" }}>
         {sidebarOpen && <div className="krm-sidebar-backdrop open" onClick={() => setSidebarOpen(false)} />}
@@ -6986,6 +7061,7 @@
           {page === "homepage" && <Homepage />}
           {page === "seo" && <SeoPanel />}
           {page === "feeds" && <FeedsPanel />}
+          {page === "ai" && <AiProviderSettings />}
           {page === "chat" && <ChatAgentSettings />}
           {page === "social" && <SocialLoginSettings />}
           {page === "email" && <EmailSettings />}

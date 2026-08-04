@@ -2,36 +2,26 @@
 
 namespace App\Services;
 
-use App\Models\Setting;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 /**
  * Drafts a job posting (description / requirements / benefits) from a title + light
- * context using the already-configured AI provider. Reuses the CV-Match / Chat-agent
- * AI settings and the same Messages/generateContent call shapes as CvMatchService —
- * no new keys or config. Returns HTML fragments (sanitized on write by the caller).
+ * context using the already-configured AI provider. Shares the one set of credentials
+ * resolved by AiConfig and the same Messages/generateContent call shapes as
+ * CvMatchService — no new keys or config. Returns HTML fragments (sanitized on write
+ * by the caller).
  */
 class JobDraftService
 {
     /** @return array{description:string,requirements:string,benefits:string} */
     public static function draft(array $in): array
     {
-        // Same provider/key/model resolution as EmployerCvMatchController.
-        $cvm = Setting::where('group', 'cv_match')->pluck('value', 'key')->toArray();
-        $provider = trim($cvm['ai_provider'] ?? '') === 'gemini' ? 'gemini' : 'claude';
-
-        if ($provider === 'gemini') {
-            $apiKey = trim($cvm['gemini_api_key'] ?? '');
-            $model  = trim($cvm['gemini_model'] ?? '') ?: 'gemini-2.0-flash';
-        } else {
-            $chat   = Setting::where('group', 'chat')->pluck('value', 'key')->toArray();
-            $apiKey = trim($cvm['claude_api_key'] ?? '') ?: trim($chat['apiKey'] ?? '');
-            $model  = trim($cvm['claude_model'] ?? '') ?: (trim($chat['model'] ?? '') ?: 'claude-haiku-4-5');
-        }
+        // Credentials live in one shared place (Settings → AI provider) — see AiConfig.
+        ['provider' => $provider, 'apiKey' => $apiKey, 'model' => $model] = AiConfig::resolve();
 
         if ($apiKey === '') {
-            throw new \RuntimeException('AI drafting is not configured yet. Add a Claude or Gemini API key under Settings → CV match (or Chat agent).');
+            throw new \RuntimeException('AI drafting is not configured yet. Add a Claude or Gemini API key under Settings → AI provider.');
         }
 
         $system = self::systemPrompt();

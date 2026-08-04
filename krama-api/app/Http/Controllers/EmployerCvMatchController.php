@@ -8,6 +8,7 @@ use App\Models\CvMatchRun;
 use App\Models\Payment;
 use App\Models\Resume;
 use App\Models\Setting;
+use App\Services\AiConfig;
 use App\Services\CvMatchService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -122,19 +123,8 @@ class EmployerCvMatchController extends Controller
 
         // Run the engine first — only charge credits if it succeeds.
         if ($data['engine'] === 'ai') {
-            $cvm      = Setting::where('group', 'cv_match')->pluck('value', 'key')->toArray();
-            $provider = trim($cvm['ai_provider'] ?? '') === 'gemini' ? 'gemini' : 'claude';
-
-            if ($provider === 'gemini') {
-                $apiKey = trim($cvm['gemini_api_key'] ?? '');
-                $model  = trim($cvm['gemini_model'] ?? '') ?: 'gemini-2.0-flash';
-            } else {
-                // Prefer a Claude key configured directly on the CV Match card;
-                // fall back to the Chat agent's key for backward compatibility.
-                $chat   = Setting::where('group', 'chat')->pluck('value', 'key')->toArray();
-                $apiKey = trim($cvm['claude_api_key'] ?? '') ?: trim($chat['apiKey'] ?? '');
-                $model  = trim($cvm['claude_model'] ?? '') ?: (trim($chat['model'] ?? '') ?: 'claude-haiku-4-5');
-            }
+            // Credentials live in one shared place (Settings → AI provider) — see AiConfig.
+            ['provider' => $provider, 'apiKey' => $apiKey, 'model' => $model] = AiConfig::resolve();
 
             if ($apiKey === '') {
                 return response()->json(['message' => 'AI matching is not configured yet. Ask an admin to add an AI key, or use the standard compare.'], 422);
