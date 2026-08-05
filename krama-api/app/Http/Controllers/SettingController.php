@@ -130,6 +130,10 @@ class SettingController extends Controller
             'enabled'          => 'boolean',
             'mode'             => 'nullable|in:telegram_link,in_app',
             'telegram_handle'  => 'nullable|string|max:64',   // defaults to telegram.bot_username
+            // Dedicated Topics-enabled supergroup for in-app support threads (one topic per
+            // user). Falls back to telegram.chat_id, which mixes support in with the
+            // automated job/application notifications — set this for `in_app` mode.
+            'telegram_group_id' => 'nullable|string|max:32',
             'hours'            => 'nullable|string|max:120',
             'note'             => 'nullable|string|max:300',
         ],

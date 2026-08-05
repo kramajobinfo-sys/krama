@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Setting;
 use App\Services\TelegramService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Support-chat configuration for the employer and candidate dashboards.
@@ -59,6 +61,169 @@ class SupportController extends Controller
             // Surfaced so the UI can explain the channel; not required to render.
             'telegram_ready' => TelegramService::isEnabled(),
         ]);
+    }
+
+    // GET /api/support/thread — this user's conversation, and marks agent replies as read.
+    public function thread(Request $request)
+    {
+        $user   = $request->user();
+        $thread = DB::table('support_threads')->where('user_id', $user->id)->first();
+
+        if (! $thread) {
+            return response()->json(['messages' => [], 'unread' => 0, 'status' => 'open']);
+        }
+
+        $messages = DB::table('support_messages')->where('thread_id', $thread->id)
+            ->orderBy('id')->limit(200)
+            ->get(['id', 'sender', 'body', 'agent_name', 'created_at']);
+
+        // Opening the thread clears the badge.
+        if ($thread->unread_for_user > 0) {
+            DB::table('support_threads')->where('id', $thread->id)->update(['unread_for_user' => 0]);
+        }
+
+        return response()->json([
+            'messages' => $messages,
+            'unread'   => 0,
+            'status'   => $thread->status,
+        ]);
+    }
+
+    // GET /api/support/unread — cheap poll for the nav badge.
+    public function unread(Request $request)
+    {
+        return response()->json(['count' => (int) DB::table('support_threads')
+            ->where('user_id', $request->user()->id)->value('unread_for_user')]);
+    }
+
+    // POST /api/support/message — store the user's message and relay it to the support group.
+    public function send(Request $request)
+    {
+        $data = $request->validate(['body' => 'required|string|max:4000']);
+        $user = $request->user();
+
+        $group = self::supportGroupId();
+        if ($group === '') {
+            return response()->json(['message' => 'Support chat is not configured yet.'], 422);
+        }
+
+        $thread = DB::table('support_threads')->where('user_id', $user->id)->first();
+        if (! $thread) {
+            $id = DB::table('support_threads')->insertGetId([
+                'user_id' => $user->id, 'status' => 'open',
+                'created_at' => now(), 'updated_at' => now(),
+            ]);
+            $thread = DB::table('support_threads')->find($id);
+        }
+
+        $token = TelegramService::botToken();
+
+        // One Telegram topic per user, created lazily on the first message.
+        if (! $thread->telegram_topic_id) {
+            $name  = mb_substr(($user->name ?: 'User') . ' #' . $user->id, 0, 120);
+            $topic = TelegramService::createForumTopic($token, $group, $name);
+            if (! $topic['ok']) {
+                Log::warning('Support: createForumTopic failed: ' . $topic['error'], [
+                    'user_id' => $user->id, 'group' => $group,
+                ]);
+                return response()->json([
+                    'message' => 'Support chat is temporarily unavailable. Please try again shortly.',
+                ], 502);
+            }
+            DB::table('support_threads')->where('id', $thread->id)
+                ->update(['telegram_topic_id' => $topic['topic_id'], 'updated_at' => now()]);
+            $thread->telegram_topic_id = $topic['topic_id'];
+
+            // Header post so whoever answers has the context without asking.
+            TelegramService::sendMessage($token, $group, self::threadHeader($user), null, $topic['topic_id']);
+        }
+
+        $sent = TelegramService::sendMessage($token, $group, e($data['body']), null, (int) $thread->telegram_topic_id);
+        if (! $sent['ok']) {
+            Log::warning('Support: relay to Telegram failed: ' . $sent['error'], ['user_id' => $user->id]);
+            return response()->json([
+                'message' => 'Couldn’t deliver that just now. Please try again.',
+            ], 502);
+        }
+
+        $msgId = DB::table('support_messages')->insertGetId([
+            'thread_id' => $thread->id, 'sender' => 'user', 'body' => $data['body'],
+            'telegram_message_id' => null,
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+        DB::table('support_threads')->where('id', $thread->id)
+            ->update(['last_user_at' => now(), 'status' => 'open', 'updated_at' => now()]);
+
+        return response()->json([
+            'message' => DB::table('support_messages')->find($msgId),
+        ], 201);
+    }
+
+    /**
+     * Called by the Telegram webhook for a message posted inside a support topic.
+     * Returns true when it was stored as an agent reply.
+     */
+    public static function ingestAgentReply(array $msg): bool
+    {
+        $topicId = (int) ($msg['message_thread_id'] ?? 0);
+        $text    = trim((string) ($msg['text'] ?? ''));
+        $msgId   = (int) ($msg['message_id'] ?? 0);
+        if (! $topicId || $text === '' || ! $msgId) {
+            return false;
+        }
+        // The bot's own relayed messages come back through the webhook too.
+        if (! empty($msg['from']['is_bot'])) {
+            return false;
+        }
+
+        $thread = DB::table('support_threads')->where('telegram_topic_id', $topicId)->first();
+        if (! $thread) {
+            return false;
+        }
+
+        // Telegram retries updates; the unique index makes this idempotent.
+        if (DB::table('support_messages')->where('telegram_message_id', $msgId)->exists()) {
+            return true;
+        }
+
+        $name = trim(($msg['from']['first_name'] ?? '') . ' ' . ($msg['from']['last_name'] ?? ''));
+
+        DB::table('support_messages')->insert([
+            'thread_id' => $thread->id, 'sender' => 'agent', 'body' => $text,
+            'agent_name' => mb_substr($name !== '' ? $name : 'Krama Support', 0, 80),
+            'telegram_message_id' => $msgId,
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+        DB::table('support_threads')->where('id', $thread->id)->update([
+            'last_agent_at'   => now(),
+            'unread_for_user' => DB::raw('unread_for_user + 1'),
+            'updated_at'      => now(),
+        ]);
+
+        return true;
+    }
+
+    /** Chat id of the dedicated support group (falls back to the notification chat). */
+    public static function supportGroupId(): string
+    {
+        $s = Setting::where('group', 'support')->pluck('value', 'key')->toArray();
+
+        return trim($s['telegram_group_id'] ?? '') ?: trim((string) Setting::where('group', 'telegram')
+            ->where('key', 'chat_id')->value('value'));
+    }
+
+    private static function threadHeader($user): string
+    {
+        $bits = ['🆘 <b>Support thread</b>'];
+        $bits[] = 'User: <b>' . e($user->name ?: 'Unknown') . '</b> (#' . $user->id . ')';
+        if ($user->email) $bits[] = 'Email: ' . e($user->email);
+        if (! empty($user->phone)) $bits[] = 'Phone: ' . e($user->phone);
+        $role = is_object($user->role ?? null) ? ($user->role->slug ?? '') : (string) ($user->role ?? '');
+        if ($role) $bits[] = 'Role: ' . e($role);
+        $bits[] = '';
+        $bits[] = '<i>Reply in this topic — your messages go straight to them in Krama.</i>';
+
+        return implode("\n", $bits);
     }
 
     /**

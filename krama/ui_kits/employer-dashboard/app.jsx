@@ -3280,6 +3280,88 @@
   }
 
 
+
+  // In-app support thread. Messages relay to a Telegram support group and agent replies come
+  // back through the webhook, so there is nothing to push to the browser — poll while the
+  // page is open (and only while the tab is visible, to avoid pointless background traffic).
+  function SupportThread() {
+    const [msgs, setMsgs] = React.useState(null);
+    const [body, setBody] = React.useState("");
+    const [sending, setSending] = React.useState(false);
+    const [err, setErr] = React.useState("");
+    const endRef = React.useRef(null);
+
+    const load = function () {
+      return emp.fetchSupportThread()
+        .then(function (d) { setMsgs((d && d.messages) || []); })
+        .catch(function () { /* keep whatever is on screen */ });
+    };
+
+    React.useEffect(function () {
+      load();
+      const t = setInterval(function () { if (!document.hidden) load(); }, 15000);
+      return function () { clearInterval(t); };
+    }, []);
+
+    React.useEffect(function () {
+      if (endRef.current && endRef.current.scrollIntoView) endRef.current.scrollIntoView({ block: "end" });
+    }, [msgs]);
+
+    const send = function () {
+      const text = body.trim();
+      if (!text || sending) return;
+      setSending(true); setErr("");
+      emp.sendSupportMessage(text)
+        .then(function () { setBody(""); return load(); })
+        .catch(function (e) { setErr((e && e.message) || "Couldn’t send that. Please try again."); })
+        .then(function () { setSending(false); });
+    };
+    const onKey = function (e) { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } };
+
+    return (
+      <React.Fragment>
+        <div style={{ border: "1px solid var(--border)", borderRadius: "var(--radius-md)", background: "var(--surface-page)", padding: 14, maxHeight: 380, overflowY: "auto", display: "flex", flexDirection: "column", gap: 10 }}>
+          {msgs === null ? (
+            <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>Loading…</div>
+          ) : msgs.length === 0 ? (
+            <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>
+              No messages yet — tell us what you need help with and we’ll reply here.
+            </div>
+          ) : msgs.map(function (m) {
+            const mine = m.sender === "user";
+            return (
+              <div key={m.id} style={{ display: "flex", justifyContent: mine ? "flex-end" : "flex-start" }}>
+                <div style={{ maxWidth: "78%", padding: "9px 13px", borderRadius: "var(--radius-md)",
+                  background: mine ? "var(--brand)" : "var(--surface-card)",
+                  color: mine ? "var(--on-brand)" : "var(--text-body)",
+                  border: mine ? "none" : "1px solid var(--border)", fontSize: "var(--text-sm)", whiteSpace: "pre-wrap" }}>
+                  {!mine && m.agent_name ? (
+                    <div style={{ fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-brand)", marginBottom: 3 }}>{m.agent_name}</div>
+                  ) : null}
+                  {m.body}
+                </div>
+              </div>
+            );
+          })}
+          <div ref={endRef} />
+        </div>
+
+        {err ? (
+          <div style={{ fontSize: "var(--text-xs)", color: "var(--danger)", marginTop: 8 }}>{err}</div>
+        ) : null}
+
+        <div style={{ display: "flex", gap: 10, alignItems: "flex-end", marginTop: 12 }}>
+          <textarea value={body} onChange={function (e) { setBody(e.target.value); }} onKeyDown={onKey}
+            rows={2} placeholder="Type your message…"
+            style={{ flex: 1, resize: "vertical", border: "1px solid var(--border-strong)", borderRadius: "var(--radius-md)", padding: "10px 12px", fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)", color: "var(--text-strong)", outline: "none", background: "var(--surface-card)" }} />
+          <Button variant="primary" onClick={send} disabled={!body.trim() || sending} iconLeft={I("send", 16)}>
+            {sending ? "Sending…" : "Send"}
+          </Button>
+        </div>
+      </React.Fragment>
+    );
+  }
+
   // ===== Help & support =====
   // The server decides HOW support is offered (see App\Http\Controllers\SupportController).
   // Today that is a Telegram deep link carrying a signed token so whoever answers knows who
@@ -3331,10 +3413,8 @@
               ) : null}
             </React.Fragment>
           ) : (
-            /* mode === "in_app" — the bridge is not built yet; never leave a dead end. */
-            <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>
-              In-app support chat is being set up. Please email us in the meantime.
-            </p>
+            /* mode === "in_app" — bridged to the Telegram support group. */
+            <SupportThread />
           )}
         </Card>
       </div>

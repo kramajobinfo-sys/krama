@@ -85,6 +85,17 @@ class TelegramController extends Controller
         $text   = is_array($msg) ? (string) ($msg['text'] ?? '') : '';
         $chatId = is_array($msg) ? ($msg['chat']['id'] ?? null) : null;
 
+        // A message inside a topic of the support group is an agent replying to a user —
+        // route it back into their in-app thread. Checked before the /start handling below
+        // because support traffic is group traffic, not a private bot conversation.
+        $supportGroup = SupportController::supportGroupId();
+        if (is_array($msg) && $supportGroup !== '' && (string) $chatId === $supportGroup
+            && ! empty($msg['message_thread_id'])) {
+            SupportController::ingestAgentReply($msg);
+
+            return response()->json(['ok' => true]);
+        }
+
         if ($chatId && preg_match('/^\/start\s+(\S+)/', $text, $m)) {
             $user = User::where('telegram_link_token', $m[1])->first();
             if ($user) {

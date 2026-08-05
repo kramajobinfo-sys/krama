@@ -163,6 +163,9 @@ var cand = (function () {
 
     // Support chat: the server decides the channel (Telegram link today, in-app later).
     fetchSupportConfig: function () { return req("GET", "/support/config"); },
+    fetchSupportThread: function () { return req("GET", "/support/thread"); },
+    fetchSupportUnread: function () { return req("GET", "/support/unread"); },
+    sendSupportMessage: function (body) { return req("POST", "/support/message", { body: body }); },
 
     token: token,
   };

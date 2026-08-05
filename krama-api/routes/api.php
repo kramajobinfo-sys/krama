@@ -171,8 +171,12 @@ Route::middleware('auth:api')->group(function () {
 
     // In-app notifications (candidate + employer)
     Route::get('notifications/unread',          [NotificationController::class, 'unreadCount']);
-    // How the dashboards should offer support (Telegram link today, in-app bridge later).
+    // Support chat. `config` says which channel to offer; the rest drive the in-app thread
+    // that bridges to a Telegram support group (agent replies arrive via telegram/webhook).
     Route::get('support/config',                 [\App\Http\Controllers\SupportController::class, 'config']);
+    Route::get('support/thread',                 [\App\Http\Controllers\SupportController::class, 'thread']);
+    Route::get('support/unread',                 [\App\Http\Controllers\SupportController::class, 'unread']);
+    Route::post('support/message',               [\App\Http\Controllers\SupportController::class, 'send'])->middleware('throttle:30,1');
 
     Route::get('notifications',                 [NotificationController::class, 'index']);
     Route::post('notifications/read-all',       [NotificationController::class, 'markAllRead']);

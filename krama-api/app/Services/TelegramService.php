@@ -36,8 +36,32 @@ class TelegramService
         return ! empty($c['enabled']) && (int) $c['enabled'] === 1;
     }
 
-    // Low-level send. Returns ['ok' => bool, 'error' => ?string]. Never throws.
-    public static function sendMessage(string $token, string $chatId, string $text, ?array $replyMarkup = null): array
+    /**
+     * Create a forum topic in a Topics-enabled supergroup.
+     * Returns ['ok' => bool, 'topic_id' => ?int, 'error' => ?string]. Never throws.
+     */
+    public static function createForumTopic(string $token, string $chatId, string $name): array
+    {
+        try {
+            $resp = Http::asForm()->timeout(10)->post(
+                'https://api.telegram.org/bot' . $token . '/createForumTopic',
+                ['chat_id' => $chatId, 'name' => mb_substr($name, 0, 128)]
+            );
+
+            if ($resp->successful() && $resp->json('ok') === true) {
+                return ['ok' => true, 'topic_id' => (int) $resp->json('result.message_thread_id'), 'error' => null];
+            }
+
+            return ['ok' => false, 'topic_id' => null,
+                    'error' => $resp->json('description') ?: ('HTTP ' . $resp->status())];
+        } catch (\Throwable $e) {
+            return ['ok' => false, 'topic_id' => null, 'error' => $e->getMessage()];
+        }
+    }
+
+    // Low-level send. Returns ['ok' => bool, 'message_id' => ?int, 'error' => ?string]. Never throws.
+    // $threadId targets a forum topic (message_thread_id) when the chat has Topics enabled.
+    public static function sendMessage(string $token, string $chatId, string $text, ?array $replyMarkup = null, ?int $threadId = null): array
     {
         try {
             $payload = [
@@ -46,6 +70,7 @@ class TelegramService
                 'parse_mode'               => 'HTML',
                 'disable_web_page_preview' => true,
             ];
+            if ($threadId) $payload['message_thread_id'] = $threadId;
             if ($replyMarkup) $payload['reply_markup'] = json_encode($replyMarkup);
             $resp = Http::asForm()->timeout(10)->post(
                 'https://api.telegram.org/bot' . $token . '/sendMessage',
@@ -53,12 +78,13 @@ class TelegramService
             );
 
             if ($resp->successful() && $resp->json('ok') === true) {
-                return ['ok' => true, 'error' => null];
+                return ['ok' => true, 'message_id' => (int) $resp->json('result.message_id'), 'error' => null];
             }
 
-            return ['ok' => false, 'error' => $resp->json('description') ?: ('HTTP ' . $resp->status())];
+            return ['ok' => false, 'message_id' => null,
+                    'error' => $resp->json('description') ?: ('HTTP ' . $resp->status())];
         } catch (\Throwable $e) {
-            return ['ok' => false, 'error' => $e->getMessage()];
+            return ['ok' => false, 'message_id' => null, 'error' => $e->getMessage()];
         }
     }
 
