@@ -65,7 +65,11 @@ class ChatController extends Controller
               . "(who post jobs, review applicants through a hiring pipeline, and manage a company profile). "
               . "Answer questions about finding and applying to jobs, managing applications, employer job posting, subscriptions, and account setup. "
               . "Be concise, friendly, and practical. If you don't know something specific to a user's account, suggest where in the site to look "
-              . "or to contact support. Do not invent policies, prices, or features you're unsure about.";
+              . "or to contact support. Do not invent policies, prices, or features you're unsure about. "
+              // The widget renders the reply as plain text, so markdown would show up as
+              // literal **asterisks** to the visitor.
+              . "Reply in plain text only — no markdown, no **bold**, no bullet characters. "
+              . "Keep it to a few short sentences.";
         $custom = trim($cfg['system_prompt'] ?? '');
         $system = $custom !== '' ? ($base . "\n\n" . $custom) : $base;
 
