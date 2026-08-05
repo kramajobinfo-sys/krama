@@ -206,10 +206,14 @@
     // assuming, and default to hidden — a failed lookup must not offer a method that
     // cannot work (the user would be told "code sent" and never receive one).
     const [phoneSignup, setPhoneSignup] = React.useState(false);
+    // Whether email sign-up asks for a code. Server-driven: it only requires one when it can
+    // actually deliver it, so if SMTP breaks this goes false and sign-up still works rather
+    // than demanding a code that will never arrive.
+    const [emailCode, setEmailCode] = React.useState(false);
     React.useEffect(function () {
       window.KRAMA_API.authMethods()
-        .then(function (m) { setPhoneSignup(!!(m && m.phone)); })
-        .catch(function () { setPhoneSignup(false); });
+        .then(function (m) { setPhoneSignup(!!(m && m.phone)); setEmailCode(!!(m && m.email_code)); })
+        .catch(function () { setPhoneSignup(false); setEmailCode(false); });
     }, []);
     const [name, setName] = React.useState("");
     const [email, setEmail] = React.useState("");
@@ -233,6 +237,14 @@
       }}>{label}</button>
     );
 
+    const sendEmailCode = () => {
+      if (!email) { setError(TR("Enter your email address.")); return; }
+      setError(""); setOtpBusy(true); setOtpNote("");
+      window.KRAMA_API.requestEmailCode(email)
+        .then(() => { setOtpBusy(false); setOtpSent(true); setOtpNote(TR("We sent a 6-digit code to your email.")); })
+        .catch((e) => { setOtpBusy(false); setError((e && e.message) || "Could not send code."); });
+    };
+
     const sendCode = () => {
       if (!phone) { setError(TR("Enter your phone number.")); return; }
       setError(""); setOtpBusy(true); setOtpNote("");
@@ -244,10 +256,13 @@
     const submit = () => {
       if (!agreed) { setError("Please agree to the Terms and Privacy Policy."); return; }
       if (mode === "phone" && !otpSent) { setError(TR("Request the code sent to your phone first.")); return; }
+      if (mode === "email" && emailCode && !otpSent) { setError(TR("Request the code sent to your email first.")); return; }
       setError(""); setLoading(true);
       var payload = mode === "phone"
         ? { name: name, phone: phone, otp: otp, password: password, role: role }
         : { name: name, email: email, password: password, role: role };
+      // The code verifies the address before the account is created, so it must go with it.
+      if (mode === "email" && emailCode) payload.otp = otp;
       window.KRAMA_API.register(payload)
         .then((user) => { setLoading(false); if (onLogin) onLogin(user); })
         .catch((e) => {
@@ -283,7 +298,21 @@
             </div>
           ) : null}
           {(mode === "email" || !phoneSignup) && (
-            <Input label={TR("Email")} type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+            emailCode ? (
+              <React.Fragment>
+                <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
+                  <div style={{ flex: 1 }}>
+                    <Input label={TR("Email")} type="email" placeholder="you@example.com" value={email}
+                      onChange={(e) => { setEmail(e.target.value); setOtpSent(false); setOtpNote(""); }} />
+                  </div>
+                  <Button variant="secondary" onClick={sendEmailCode} disabled={otpBusy || !email}>{otpBusy ? "…" : (otpSent ? TR("Resend") : TR("Send code"))}</Button>
+                </div>
+                {otpNote && <div style={{ fontSize: "var(--text-sm)", color: "var(--success)" }}>{otpNote}</div>}
+                {otpSent && <Input label={TR("Verification code")} type="text" placeholder="123456" value={otp} onChange={(e) => setOtp(e.target.value)} />}
+              </React.Fragment>
+            ) : (
+              <Input label={TR("Email")} type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+            )
           )}
           {mode === "phone" && phoneSignup && (
             <React.Fragment>

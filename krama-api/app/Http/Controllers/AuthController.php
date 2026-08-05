@@ -37,7 +37,79 @@ class AuthController extends Controller
         return response()->json([
             'email' => true,
             'phone' => \App\Services\SmsService::isEnabled(),
+            // Email sign-up asks for a code only when we can actually deliver one. If SMTP
+            // is down, requiring a code would block ALL registration — worse than letting
+            // people in unverified — so it degrades instead of locking the door.
+            'email_code' => \App\Helpers\MailConfig::isConfigured(),
         ]);
+    }
+
+    /**
+     * POST /api/auth/request-email-code — 6-digit code to verify an address at sign-up.
+     *
+     * Same verify-before-create shape as the phone flow: the account is not created until
+     * register() is called with a matching code, so a typo'd or fake address can never
+     * produce an account.
+     */
+    public function requestEmailCode(Request $request)
+    {
+        if (! \App\Helpers\MailConfig::isConfigured()) {
+            return response()->json([
+                'message' => 'Email verification is unavailable right now. Please try again later.',
+            ], 422);
+        }
+
+        $data  = $request->validate(['email' => 'required|email|max:190']);
+        $email = mb_strtolower(trim($data['email']));
+
+        // Already registered → log in instead. Same wording as the phone path.
+        if (User::where('email', $email)->exists()) {
+            return response()->json(['message' => 'This email is already registered. Please log in instead.'], 422);
+        }
+
+        // At most 5 codes per hour per address.
+        $rlKey = 'email-otp:' . $email;
+        if (RateLimiter::tooManyAttempts($rlKey, 5)) {
+            return response()->json(['message' => 'Too many code requests. Please try again later.'], 429);
+        }
+        RateLimiter::hit($rlKey, 3600);
+
+        $code = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+
+        \App\Models\OtpCode::where('email', $email)->where('purpose', 'register_email')->delete();
+        \App\Models\OtpCode::create([
+            'email'      => $email,
+            'code_hash'  => Hash::make($code),
+            'purpose'    => 'register_email',
+            'expires_at' => now()->addMinutes(15),
+            'attempts'   => 0,
+            'created_at' => now(),
+        ]);
+
+        \App\Helpers\MailConfig::applyFromDb();
+        try {
+            \Illuminate\Support\Facades\Mail::raw(
+                "Your Krama verification code is: $code\n\n"
+                . "It expires in 15 minutes. If you didn't request this, you can ignore this email.",
+                function ($m) use ($email) {
+                    $m->to($email)->subject('Your Krama verification code');
+                }
+            );
+        } catch (\Throwable $e) {
+            // Don't leave a code behind that the user can never receive.
+            \App\Models\OtpCode::where('email', $email)->where('purpose', 'register_email')->delete();
+            Log::warning('Email verification code send failed: ' . $e->getMessage(), ['email' => $email]);
+
+            return response()->json(['message' => 'Could not send the code. Please try again.'], 422);
+        }
+
+        // Local convenience only — never in production, where this would put a usable
+        // code in the log (the mistake the phone flow used to make).
+        if (! app()->environment('production')) {
+            Log::info("Email OTP for $email: $code (non-production log only)");
+        }
+
+        return response()->json(['message' => 'Verification code sent.', 'expires_in' => 900]);
     }
 
     public function requestOtp(Request $request)
@@ -114,6 +186,32 @@ class AuthController extends Controller
             return response()->json(['message' => 'Provide an email or a phone number.'], 422);
         }
 
+        // Email sign-up is verified with a code, same as phone — the account is only created
+        // once the code checks out, so an address nobody controls can't produce one.
+        // Only required when we can actually send a code; if SMTP is down this falls through
+        // to the old unverified behaviour rather than blocking registration entirely.
+        $emailVerifiedAt = null;
+        if ($email && \App\Helpers\MailConfig::isConfigured()) {
+            $row = \App\Models\OtpCode::where('email', $email)->where('purpose', 'register_email')
+                ->orderByDesc('id')->first();
+            $code = (string) ($data['otp'] ?? '');
+
+            if (! $row || now()->greaterThan($row->expires_at) || $row->attempts >= 5
+                || ! Hash::check($code, $row->code_hash)) {
+                if ($row) {
+                    $row->increment('attempts');
+                }
+
+                return response()->json([
+                    'message' => $row
+                        ? 'Invalid or expired verification code.'
+                        : 'Please request a verification code for your email first.',
+                ], 422);
+            }
+            $row->delete();
+            $emailVerifiedAt = now();
+        }
+
         // Phone registration must be verified with a valid, unexpired OTP.
         $phoneVerifiedAt = null;
         if ($phone) {
@@ -154,11 +252,14 @@ class AuthController extends Controller
         ]);
         $user->status            = 'active';
         $user->phone_verified_at = $phoneVerifiedAt;
+        $user->email_verified_at = $emailVerifiedAt;   // set when the code checked out above
         $user->created_at        = now();
         $user->updated_at        = now();
         $user->save();
 
-        if ($email) {
+        // Only fall back to the click-a-link email when the code path didn't already verify
+        // them — otherwise we'd ask a verified user to verify again.
+        if ($email && ! $emailVerifiedAt) {
             SendEmailVerificationJob::dispatch($user)->afterResponse(); // send AFTER the HTTP response so signup isn't blocked on SMTP
         }
 

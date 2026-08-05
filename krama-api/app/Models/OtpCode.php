@@ -9,7 +9,7 @@ class OtpCode extends Model
     protected $table = 'otp_codes';
     public $timestamps = false;
 
-    protected $fillable = ['phone', 'code_hash', 'purpose', 'expires_at', 'attempts', 'created_at'];
+    protected $fillable = ['phone', 'email', 'code_hash', 'purpose', 'expires_at', 'attempts', 'created_at'];
 
     protected $casts = [
         'expires_at' => 'datetime',
