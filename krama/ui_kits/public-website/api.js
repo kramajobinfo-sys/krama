@@ -390,6 +390,9 @@
   }
 
   // Request an SMS OTP for phone registration.
+  // Which sign-up methods are usable (phone needs an SMS gateway server-side).
+  function authMethods() { return get("/auth/methods"); }
+
   function requestOtp(phone) {
     return post("/auth/request-otp", { phone: phone });
   }
@@ -522,7 +525,7 @@
   }
 
   window.KRAMA_API  = {
-    init: init, login: login, register: register, requestOtp: requestOtp, logout: logout,
+    init: init, login: login, register: register, requestOtp: requestOtp, authMethods: authMethods, logout: logout,
     joinWaitlist: joinWaitlist,
     socialLogin: socialLogin,
     forgotPassword: forgotPassword, resetPassword: resetPassword,

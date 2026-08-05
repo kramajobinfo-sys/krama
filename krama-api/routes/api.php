@@ -31,6 +31,8 @@ Route::get('health', [HealthController::class, 'check']);
 // Public auth endpoints — strict rate limit (5 req/min per IP)
 Route::prefix('auth')->middleware('throttle:auth')->group(function () {
     Route::post('request-otp', [AuthController::class, 'requestOtp']);
+    // Which sign-up methods the sign-up form should offer (phone needs an SMS gateway).
+    Route::get('methods',      [AuthController::class, 'methods']);
     Route::post('register', [AuthController::class, 'register']);
     Route::post('login',    [AuthController::class, 'login']);
     Route::post('refresh',  [AuthController::class, 'refresh']);

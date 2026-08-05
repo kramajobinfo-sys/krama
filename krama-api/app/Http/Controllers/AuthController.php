@@ -24,8 +24,32 @@ use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
 class AuthController extends Controller
 {
     // POST /api/auth/request-otp — text a 6-digit code to a phone for registration.
+    /**
+     * GET /api/auth/methods — which sign-up methods are usable right now.
+     *
+     * Phone sign-up depends on an SMS gateway to deliver the verification code, so the
+     * sign-up form asks rather than assuming. Deriving it from the gateway rather than a
+     * separate toggle means the two can never disagree: configure SMS and phone sign-up
+     * returns by itself; switch SMS off and it disappears.
+     */
+    public function methods()
+    {
+        return response()->json([
+            'email' => true,
+            'phone' => \App\Services\SmsService::isEnabled(),
+        ]);
+    }
+
     public function requestOtp(Request $request)
     {
+        // No SMS gateway means the code can never reach the user, so refuse up front rather
+        // than issuing a code and claiming it was sent. Checked BEFORE any OTP row is created.
+        if (! \App\Services\SmsService::isEnabled()) {
+            return response()->json([
+                'message' => 'Phone sign-up is unavailable right now. Please sign up with your email address.',
+            ], 422);
+        }
+
         $data  = $request->validate(['phone' => 'required|string|max:20']);
         $phone = \App\Helpers\Phone::normalize($data['phone']);
         if (! \App\Helpers\Phone::isValid($phone)) {
@@ -57,14 +81,16 @@ class AuthController extends Controller
         ]);
 
         $text = 'Your Krama verification code is: ' . $code;
-        if (\App\Services\SmsService::isEnabled()) {
-            $res = \App\Services\SmsService::send($phone, $text);
-            if (! $res['ok']) {
-                return response()->json(['message' => 'Could not send SMS: ' . $res['error']], 422);
-            }
-        } else {
-            // Dev fallback: no SMS gateway configured — log the code so local testing works.
-            Log::info('OTP (SMS not configured) for ' . $phone . ': ' . $code);
+        $res  = \App\Services\SmsService::send($phone, $text);
+        if (! $res['ok']) {
+            return response()->json(['message' => 'Could not send SMS: ' . $res['error']], 422);
+        }
+
+        // Local convenience only. This used to run whenever SMS was unconfigured — including
+        // in production, where it wrote a usable registration code into the app log in plain
+        // text while telling the caller "Verification code sent."
+        if (! app()->environment('production')) {
+            Log::info('OTP for ' . $phone . ': ' . $code . ' (non-production log only)');
         }
 
         return response()->json(['message' => 'Verification code sent.', 'expires_in' => 300]);
@@ -91,6 +117,13 @@ class AuthController extends Controller
         // Phone registration must be verified with a valid, unexpired OTP.
         $phoneVerifiedAt = null;
         if ($phone) {
+            // Belt and braces: requestOtp already refuses without a gateway, but an attacker
+            // could POST here directly against a code issued before SMS was switched off.
+            if (! \App\Services\SmsService::isEnabled()) {
+                return response()->json([
+                    'message' => 'Phone sign-up is unavailable right now. Please sign up with your email address.',
+                ], 422);
+            }
             if (! \App\Helpers\Phone::isValid($phone)) {
                 return response()->json(['message' => 'Enter a valid phone number.'], 422);
             }

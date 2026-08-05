@@ -202,6 +202,15 @@
   function Register({ onNav, onLogin }) {
     const [role, setRole] = React.useState("candidate");
     const [mode, setMode] = React.useState("email"); // "email" | "phone"
+    // Phone sign-up needs an SMS gateway to deliver the code. Ask the server rather than
+    // assuming, and default to hidden — a failed lookup must not offer a method that
+    // cannot work (the user would be told "code sent" and never receive one).
+    const [phoneSignup, setPhoneSignup] = React.useState(false);
+    React.useEffect(function () {
+      window.KRAMA_API.authMethods()
+        .then(function (m) { setPhoneSignup(!!(m && m.phone)); })
+        .catch(function () { setPhoneSignup(false); });
+    }, []);
     const [name, setName] = React.useState("");
     const [email, setEmail] = React.useState("");
     const [phone, setPhone] = React.useState("");
@@ -267,14 +276,16 @@
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           {error && <div style={{ padding: "10px 14px", background: "var(--danger-subtle)", color: "var(--danger)", borderRadius: "var(--radius-md)", fontSize: "var(--text-sm)", fontWeight: 500 }}>{error}</div>}
           <Input label={role === "employer" ? TR("Contact name") : TR("Full name")} placeholder={TR("Sok Dara")} value={name} onChange={(e) => setName(e.target.value)} />
-          <div style={{ display: "flex", gap: 4, padding: 4, background: "var(--surface-sunken)", borderRadius: "var(--radius-md)" }}>
-            {seg("email", TR("Email"), mode, function (m) { setMode(m); setError(""); })}
-            {seg("phone", TR("Phone"), mode, function (m) { setMode(m); setError(""); })}
-          </div>
-          {mode === "email" && (
+          {phoneSignup ? (
+            <div style={{ display: "flex", gap: 4, padding: 4, background: "var(--surface-sunken)", borderRadius: "var(--radius-md)" }}>
+              {seg("email", TR("Email"), mode, function (m) { setMode(m); setError(""); })}
+              {seg("phone", TR("Phone"), mode, function (m) { setMode(m); setError(""); })}
+            </div>
+          ) : null}
+          {(mode === "email" || !phoneSignup) && (
             <Input label={TR("Email")} type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} />
           )}
-          {mode === "phone" && (
+          {mode === "phone" && phoneSignup && (
             <React.Fragment>
               <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
                 <div style={{ flex: 1 }}>
