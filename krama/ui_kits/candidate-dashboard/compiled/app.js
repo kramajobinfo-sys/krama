@@ -24,6 +24,106 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     Switch,
     Modal
   } = NS;
+
+  // ── i18n ────────────────────────────────────────────────────────────────────
+  // Khmer strings for the candidate dashboard, merged into the shared KRAMA_I18N dict
+  // (loaded from ../public-website/i18n.js). T("English source") → Khmer when km is active.
+  var CAND_KM = {
+    // Nav + shell
+    "Dashboard": "ផ្ទាំងគ្រប់គ្រង",
+    "My applications": "ពាក្យសុំការងាររបស់ខ្ញុំ",
+    "Saved jobs": "ការងារបានរក្សាទុក",
+    "Recommended": "បានណែនាំ",
+    "Following": "កំពុងតាមដាន",
+    "Job alerts": "ការជូនដំណឹងការងារ",
+    "Messages": "សារ",
+    "Résumé builder": "បង្កើតប្រវត្តិរូប",
+    "Profile": "ប្រវត្តិរូប",
+    "Help & support": "ជំនួយ",
+    "Profile strength": "កម្រិតប្រវត្តិរូប",
+    "Profile complete": "ប្រវត្តិរូបពេញលេញ",
+    "Sign out": "ចាកចេញ",
+    "Welcome back": "សូមស្វាគមន៍ត្រឡប់មកវិញ",
+    "Recommended for you": "បានណែនាំសម្រាប់អ្នក",
+    "Companies I follow": "ក្រុមហ៊ុនដែលខ្ញុំតាមដាន",
+    // Dashboard / overview
+    "Applied jobs": "ការងារបានដាក់ពាក្យ",
+    "Interviews": "ការសម្ភាសន៍",
+    "Application pipeline": "ដំណើរការពាក្យសុំ",
+    "Applied": "បានដាក់ពាក្យ",
+    "Reviewed": "បានពិនិត្យ",
+    "Shortlisted": "បានជ្រើសរើស",
+    "Interview": "សម្ភាសន៍",
+    "Offered": "បានផ្តល់ជូន",
+    "Recent applications": "ពាក្យសុំថ្មីៗ",
+    "View all": "មើលទាំងអស់",
+    "No applications yet. Start applying!": "មិនទាន់មានពាក្យសុំនៅឡើយ។ ចាប់ផ្តើមដាក់ពាក្យ!",
+    // Completion meter
+    "Complete your profile": "បំពេញប្រវត្តិរូបរបស់អ្នក",
+    "Guided setup": "ការណែនាំរៀបចំ",
+    "A complete profile gets far more employer views.": "ប្រវត្តិរូបពេញលេញទទួលបានការមើលពីនិយោជកកាន់តែច្រើន។",
+    "step left": "ជំហានទៀត",
+    "steps left": "ជំហានទៀត",
+    "Full name": "ឈ្មោះពេញ",
+    "Email address": "អាសយដ្ឋានអ៊ីមែល",
+    "Phone number": "លេខទូរស័ព្ទ",
+    "Profile photo": "រូបថតប្រវត្តិរូប",
+    "About you": "អំពីអ្នក",
+    "Professional headline": "ចំណងជើងវិជ្ជាជីវៈ",
+    "Career summary": "សេចក្តីសង្ខេបអាជីព",
+    "Work experience": "បទពិសោធន៍ការងារ",
+    "Education": "ការសិក្សា",
+    "Skills": "ជំនាញ",
+    "Upload your CV": "បង្ហោះ CV របស់អ្នក",
+    // Onboarding wizard
+    "Set up your profile": "រៀបចំប្រវត្តិរូបរបស់អ្នក",
+    "Jobs you want": "ការងារដែលអ្នកចង់បាន",
+    "Upload CV": "បង្ហោះ CV",
+    "Step": "ជំហាន",
+    "of": "ក្នុងចំណោម",
+    "Tell us what you're looking for — we'll email you matching jobs.": "ប្រាប់យើងពីអ្វីដែលអ្នកកំពុងស្វែងរក — យើងនឹងផ្ញើអ៊ីមែលការងារដែលត្រូវគ្នាទៅអ្នក។",
+    "Job title you want": "ចំណងជើងការងារដែលអ្នកចង់បាន",
+    "Field / category": "វិស័យ / ប្រភេទ",
+    "Any field": "វិស័យណាមួយ",
+    "Location": "ទីតាំង",
+    "Any location": "ទីតាំងណាមួយ",
+    "Employment type": "ប្រភេទការងារ",
+    "Any type": "ប្រភេទណាមួយ",
+    "Full time": "ពេញម៉ោង",
+    "Part time": "ក្រៅម៉ោង",
+    "Contract": "កិច្ចសន្យា",
+    "Internship": "កម្មសិក្សា",
+    "Upload your CV so you can apply to jobs in one click.": "បង្ហោះ CV របស់អ្នក ដើម្បីអាចដាក់ពាក្យការងារបានក្នុងមួយចុច។",
+    "Upload your CV file": "បង្ហោះឯកសារ CV របស់អ្នក",
+    "Browse files": "រកមើលឯកសារ",
+    "Choose a different file": "ជ្រើសរើសឯកសារផ្សេង",
+    "Add your most recent role — employers see this on your profile.": "បន្ថែមតួនាទីថ្មីបំផុតរបស់អ្នក — និយោជកឃើញវានៅលើប្រវត្តិរូបរបស់អ្នក។",
+    "Position": "មុខតំណែង",
+    "Company name": "ឈ្មោះក្រុមហ៊ុន",
+    "Years": "ឆ្នាំ",
+    "You can add more roles later in the Résumé builder.": "អ្នកអាចបន្ថែមតួនាទីច្រើនទៀតនៅពេលក្រោយ។",
+    "Back": "ថយក្រោយ",
+    "Skip this step": "រំលងជំហាននេះ",
+    "Continue": "បន្ត",
+    "Finish setup": "បញ្ចប់ការរៀបចំ",
+    "CV already on file": "មាន CV រួចហើយ",
+    // Common
+    "Loading…": "កំពុងផ្ទុក…",
+    "Saving…": "កំពុងរក្សាទុក…",
+    "Uploading…": "កំពុងបង្ហោះ…"
+  };
+  try {
+    if (window.KRAMA_I18N && window.KRAMA_I18N.km) {
+      Object.assign(window.KRAMA_I18N.km, CAND_KM);
+    } else {
+      window.KRAMA_I18N = {
+        km: CAND_KM
+      };
+    }
+  } catch (e) {}
+  var T = function (s) {
+    return typeof window.KRAMA_T === "function" ? window.KRAMA_T(s) : s;
+  };
   const LucideIcon = React.memo(function ({
     name,
     size
@@ -463,12 +563,12 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         fontWeight: 700,
         color: "var(--text-strong)"
       }
-    }, "Complete your profile"), onStartWizard && /*#__PURE__*/React.createElement(Button, {
+    }, T("Complete your profile")), onStartWizard && /*#__PURE__*/React.createElement(Button, {
       variant: "ghost",
       size: "sm",
       iconLeft: I("wand-sparkles", 14),
       onClick: onStartWizard
-    }, "Guided setup"), /*#__PURE__*/React.createElement("span", {
+    }, T("Guided setup")), /*#__PURE__*/React.createElement("span", {
       style: {
         marginLeft: "auto",
         fontFamily: "var(--font-display)",
@@ -497,7 +597,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         color: "var(--text-muted)",
         marginTop: 10
       }
-    }, "A complete profile gets far more employer views. ", completion.missing.length, " step", completion.missing.length === 1 ? "" : "s", " left:"), /*#__PURE__*/React.createElement("div", {
+    }, T("A complete profile gets far more employer views."), " ", completion.missing.length, " ", completion.missing.length === 1 ? T("step left") : T("steps left")), /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
         flexWrap: "wrap",
@@ -524,7 +624,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
           fontWeight: 500,
           cursor: "pointer"
         }
-      }, I("plus", 13), " ", m.label);
+      }, I("plus", 13), " ", T(m.label));
     })));
   }
   function Sidebar({
@@ -535,7 +635,9 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     open,
     onClose,
     onLogout,
-    completion
+    completion,
+    lang,
+    onLang
   }) {
     const NAV = [{
       id: "dashboard",
@@ -645,7 +747,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         color: "var(--text-muted)",
         fontWeight: 600
       }
-    }, completion.percent >= 100 ? "Profile complete" : "Profile strength"), /*#__PURE__*/React.createElement("span", {
+    }, completion.percent >= 100 ? T("Profile complete") : T("Profile strength")), /*#__PURE__*/React.createElement("span", {
       style: {
         color: completion.percent >= 100 ? "var(--success)" : "var(--brand)",
         fontWeight: 800
@@ -703,7 +805,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         style: {
           flex: 1
         }
-      }, n.label), n.badge > 0 && /*#__PURE__*/React.createElement(Badge, {
+      }, T(n.label)), n.badge > 0 && /*#__PURE__*/React.createElement(Badge, {
         tone: active ? "brand" : "neutral"
       }, n.badge));
     })), /*#__PURE__*/React.createElement("div", {
@@ -744,7 +846,39 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         overflow: "hidden",
         textOverflow: "ellipsis"
       }
-    }, user ? user.email : ""))), /*#__PURE__*/React.createElement("button", {
+    }, user ? user.email : ""))), onLang && /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        gap: 6,
+        padding: "6px 12px 8px"
+      }
+    }, [{
+      v: "en",
+      l: "EN"
+    }, {
+      v: "km",
+      l: "ខ្មែរ"
+    }].map(function (o) {
+      var on = (lang || "en") === o.v;
+      return /*#__PURE__*/React.createElement("button", {
+        key: o.v,
+        onClick: function () {
+          onLang(o.v);
+        },
+        style: {
+          flex: 1,
+          padding: "6px 8px",
+          borderRadius: "var(--radius-md)",
+          border: "1px solid " + (on ? "var(--brand)" : "var(--border)"),
+          background: on ? "var(--brand-subtle)" : "transparent",
+          color: on ? "var(--text-brand)" : "var(--text-muted)",
+          fontFamily: "var(--font-sans)",
+          fontSize: "var(--text-sm)",
+          fontWeight: 700,
+          cursor: "pointer"
+        }
+      }, o.l);
+    })), /*#__PURE__*/React.createElement("button", {
       onClick: onLogout,
       style: {
         display: "flex",
@@ -762,7 +896,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         color: "var(--danger)",
         textAlign: "left"
       }
-    }, I("log-out", 18), " Sign out")));
+    }, I("log-out", 18), " ", T("Sign out"))));
   }
 
   // ── Topbar ─────────────────────────────────────────────────────────────────
@@ -1313,7 +1447,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       },
       title: "View my applications"
     }, /*#__PURE__*/React.createElement(StatCard, {
-      label: "Applied jobs",
+      label: T("Applied jobs"),
       value: String(stats.applied),
       tone: "brand",
       icon: I("send", 22)
@@ -1323,7 +1457,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       },
       title: "View saved jobs"
     }, /*#__PURE__*/React.createElement(StatCard, {
-      label: "Saved jobs",
+      label: T("Saved jobs"),
       value: String(stats.saved),
       tone: "accent",
       icon: I("bookmark", 22)
@@ -1333,7 +1467,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       },
       title: "View interviews"
     }, /*#__PURE__*/React.createElement(StatCard, {
-      label: "Interviews",
+      label: T("Interviews"),
       value: String(stats.interviews),
       tone: "success",
       icon: I("calendar-check", 22)
@@ -1344,7 +1478,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         color: "var(--text-strong)",
         marginBottom: 16
       }
-    }, "Application pipeline"), /*#__PURE__*/React.createElement("div", {
+    }, T("Application pipeline")), /*#__PURE__*/React.createElement("div", {
       className: "krm-pipeline",
       style: {
         display: "grid",
@@ -1355,7 +1489,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       return /*#__PURE__*/React.createElement(PipelineTile, {
         key: s.key,
         count: stageCounts[s.key] || 0,
-        label: s.label,
+        label: T(s.label),
         onClick: function () {
           onOpenApplications(s.key);
         }
@@ -1376,21 +1510,21 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         fontWeight: 700,
         color: "var(--text-strong)"
       }
-    }, "Recent applications"), /*#__PURE__*/React.createElement(Button, {
+    }, T("Recent applications")), /*#__PURE__*/React.createElement(Button, {
       variant: "ghost",
       size: "sm",
       iconRight: I("arrow-right", 14),
       onClick: function () {
         onNav("applications");
       }
-    }, "View all")), recentApps.length === 0 ? /*#__PURE__*/React.createElement("div", {
+    }, T("View all"))), recentApps.length === 0 ? /*#__PURE__*/React.createElement("div", {
       style: {
         padding: "28px 22px",
         color: "var(--text-muted)",
         fontSize: "var(--text-sm)",
         textAlign: "center"
       }
-    }, "No applications yet. Start applying!") : recentApps.map(function (a, i) {
+    }, T("No applications yet. Start applying!")) : recentApps.map(function (a, i) {
       var job = a.job || {};
       var company = job.company || {};
       return /*#__PURE__*/React.createElement("div", {
@@ -1451,14 +1585,14 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         fontWeight: 700,
         color: "var(--text-strong)"
       }
-    }, "Recommended for you"), /*#__PURE__*/React.createElement(Button, {
+    }, T("Recommended for you")), /*#__PURE__*/React.createElement(Button, {
       variant: "ghost",
       size: "sm",
       iconRight: I("arrow-right", 14),
       onClick: function () {
         onNav("recommended");
       }
-    }, "View all")), /*#__PURE__*/React.createElement("div", {
+    }, T("View all"))), /*#__PURE__*/React.createElement("div", {
       className: "krm-card-grid",
       style: {
         display: "grid",
@@ -4404,13 +4538,13 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         fontSize: "var(--text-xl)",
         color: "var(--text-strong)"
       }
-    }, "Set up your profile"), /*#__PURE__*/React.createElement("div", {
+    }, T("Set up your profile")), /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: "var(--text-sm)",
         color: "var(--text-muted)",
         marginTop: 2
       }
-    }, "Step ", step + 1, " of ", STEPS.length, " \xB7 ", STEPS[step])), /*#__PURE__*/React.createElement("button", {
+    }, T("Step"), " ", step + 1, " ", T("of"), " ", STEPS.length, " \xB7 ", T(STEPS[step]))), /*#__PURE__*/React.createElement("button", {
       onClick: onClose,
       "aria-label": "Close",
       style: {
@@ -4451,8 +4585,8 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         fontSize: "var(--text-sm)",
         color: "var(--text-muted)"
       }
-    }, "Tell us what you're looking for \u2014 we'll email you matching jobs."), /*#__PURE__*/React.createElement(Input, {
-      label: "Job title you want",
+    }, T("Tell us what you're looking for — we'll email you matching jobs.")), /*#__PURE__*/React.createElement(Input, {
+      label: T("Job title you want"),
       placeholder: "e.g. IT Manager, Accountant",
       value: prefs.keyword,
       onChange: function (e) {
@@ -4466,7 +4600,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         color: "var(--text-body)",
         marginBottom: 6
       }
-    }, "Field / category"), /*#__PURE__*/React.createElement("select", {
+    }, T("Field / category")), /*#__PURE__*/React.createElement("select", {
       value: prefs.category_id,
       onChange: function (e) {
         setP("category_id", e.target.value);
@@ -4474,7 +4608,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       style: selStyle
     }, /*#__PURE__*/React.createElement("option", {
       value: ""
-    }, "Any field"), cats.map(function (c) {
+    }, T("Any field")), cats.map(function (c) {
       return /*#__PURE__*/React.createElement("option", {
         key: c.id,
         value: c.id
@@ -4487,7 +4621,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         color: "var(--text-body)",
         marginBottom: 6
       }
-    }, "Location"), /*#__PURE__*/React.createElement("select", {
+    }, T("Location")), /*#__PURE__*/React.createElement("select", {
       value: prefs.location_id,
       onChange: function (e) {
         setP("location_id", e.target.value);
@@ -4495,7 +4629,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       style: selStyle
     }, /*#__PURE__*/React.createElement("option", {
       value: ""
-    }, "Any location"), locs.map(function (l) {
+    }, T("Any location")), locs.map(function (l) {
       return /*#__PURE__*/React.createElement("option", {
         key: l.id,
         value: l.id
@@ -4508,7 +4642,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         color: "var(--text-body)",
         marginBottom: 6
       }
-    }, "Employment type"), /*#__PURE__*/React.createElement("select", {
+    }, T("Employment type")), /*#__PURE__*/React.createElement("select", {
       value: prefs.job_type,
       onChange: function (e) {
         setP("job_type", e.target.value);
@@ -4516,17 +4650,17 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       style: selStyle
     }, /*#__PURE__*/React.createElement("option", {
       value: ""
-    }, "Any type"), JOB_TYPES.map(function (t) {
+    }, T("Any type")), JOB_TYPES.map(function (t) {
       return /*#__PURE__*/React.createElement("option", {
         key: t.v,
         value: t.v
-      }, t.l);
+      }, T(t.l));
     })))), step === 1 && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: "var(--text-sm)",
         color: "var(--text-muted)"
       }
-    }, "Upload your CV so you can apply to jobs in one click."), /*#__PURE__*/React.createElement("div", {
+    }, T("Upload your CV so you can apply to jobs in one click.")), /*#__PURE__*/React.createElement("div", {
       style: {
         border: "1.5px dashed var(--border-strong)",
         borderRadius: "var(--radius-lg)",
@@ -4551,7 +4685,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         fontWeight: 700,
         color: "var(--text-strong)"
       }
-    }, "Upload your CV file"), /*#__PURE__*/React.createElement("input", {
+    }, T("Upload your CV file")), /*#__PURE__*/React.createElement("input", {
       ref: cvRef,
       type: "file",
       accept: ".pdf,.doc,.docx",
@@ -4565,7 +4699,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       onClick: function () {
         cvRef.current && cvRef.current.click();
       }
-    }, uploading ? "Uploading…" : cvName ? "Choose a different file" : "Browse files"), /*#__PURE__*/React.createElement("div", {
+    }, uploading ? T("Uploading…") : cvName ? T("Choose a different file") : T("Browse files")), /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: "var(--text-xs)",
         color: "var(--text-muted)"
@@ -4575,22 +4709,22 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         fontSize: "var(--text-sm)",
         color: "var(--text-muted)"
       }
-    }, "Add your most recent role \u2014 employers see this on your profile."), /*#__PURE__*/React.createElement(Input, {
-      label: "Position",
+    }, T("Add your most recent role — employers see this on your profile.")), /*#__PURE__*/React.createElement(Input, {
+      label: T("Position"),
       placeholder: "e.g. HR Manager, Accountant",
       value: exp.role,
       onChange: function (e) {
         setE("role", e.target.value);
       }
     }), /*#__PURE__*/React.createElement(Input, {
-      label: "Company name",
+      label: T("Company name"),
       placeholder: "e.g. ABA Bank",
       value: exp.org,
       onChange: function (e) {
         setE("org", e.target.value);
       }
     }), /*#__PURE__*/React.createElement(Input, {
-      label: "Years",
+      label: T("Years"),
       placeholder: "e.g. 2021 \u2013 Present",
       value: exp.years,
       onChange: function (e) {
@@ -4601,7 +4735,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         fontSize: "var(--text-xs)",
         color: "var(--text-muted)"
       }
-    }, "You can add more roles later in the R\xE9sum\xE9 builder.")), err && /*#__PURE__*/React.createElement("div", {
+    }, T("You can add more roles later in the Résumé builder."))), err && /*#__PURE__*/React.createElement("div", {
       style: {
         padding: "9px 12px",
         background: "var(--danger-subtle)",
@@ -4621,7 +4755,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       onClick: function () {
         setStep(step - 1);
       }
-    }, "Back"), /*#__PURE__*/React.createElement("button", {
+    }, T("Back")), /*#__PURE__*/React.createElement("button", {
       onClick: next,
       style: {
         marginLeft: "auto",
@@ -4634,11 +4768,11 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         fontWeight: 600,
         padding: "8px 4px"
       }
-    }, "Skip this step"), /*#__PURE__*/React.createElement(Button, {
+    }, T("Skip this step")), /*#__PURE__*/React.createElement(Button, {
       variant: "primary",
       disabled: saving,
       onClick: next
-    }, saving ? "Saving…" : last ? "Finish setup" : "Continue"))));
+    }, saving ? T("Saving…") : last ? T("Finish setup") : T("Continue")))));
   }
 
   // In-app support thread. Messages relay to a Telegram support group and agent replies come
@@ -4890,6 +5024,11 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
   }
   function App() {
     var [page, setPage] = React.useState("dashboard");
+    var [lang, setLang] = React.useState(window.KRAMA_LANG === "km" ? "km" : "en");
+    function switchLang(l) {
+      if (window.KRAMA_SET_LANG) window.KRAMA_SET_LANG(l);
+      setLang(l);
+    }
     var [authUser, setAuthUser] = React.useState(null);
     var [authLoading, setAuthLoading] = React.useState(true);
     var [resume, setResume] = React.useState(null); // for the profile-completion meter
@@ -5025,16 +5164,16 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       }
     });
     var titles = {
-      dashboard: "Welcome back, " + authUser.name.split(" ")[0],
-      applications: "My applications",
-      saved: "Saved jobs",
-      recommended: "Recommended for you",
-      following: "Companies I follow",
-      alerts: "Job alerts",
-      messages: "Messages",
-      resume: "Résumé builder",
-      support: "Help & support",
-      profile: "Profile"
+      dashboard: T("Welcome back") + ", " + authUser.name.split(" ")[0],
+      applications: T("My applications"),
+      saved: T("Saved jobs"),
+      recommended: T("Recommended for you"),
+      following: T("Companies I follow"),
+      alerts: T("Job alerts"),
+      messages: T("Messages"),
+      resume: T("Résumé builder"),
+      support: T("Help & support"),
+      profile: T("Profile")
     };
     return /*#__PURE__*/React.createElement("div", {
       style: {
@@ -5062,7 +5201,9 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         setSidebarOpen(false);
       },
       onLogout: handleLogout,
-      completion: completion
+      completion: completion,
+      lang: lang,
+      onLang: switchLang
     }), /*#__PURE__*/React.createElement("div", {
       style: {
         flex: 1,

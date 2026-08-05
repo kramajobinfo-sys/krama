@@ -6,6 +6,48 @@
   const HOME_URL = /^(localhost|127\.0\.0\.1|::1|192\.168\.|10\.)/.test(location.hostname) ? "../public-website/index.html" : "/";
   const { Button, Badge, Avatar, Card, StatCard, Tabs, ProgressTracker, JobCard, EmptyState, Input, Textarea, Select, Tag, Switch, Modal } = NS;
 
+  // ── i18n ────────────────────────────────────────────────────────────────────
+  // Khmer strings for the candidate dashboard, merged into the shared KRAMA_I18N dict
+  // (loaded from ../public-website/i18n.js). T("English source") → Khmer when km is active.
+  var CAND_KM = {
+    // Nav + shell
+    "Dashboard": "ផ្ទាំងគ្រប់គ្រង", "My applications": "ពាក្យសុំការងាររបស់ខ្ញុំ", "Saved jobs": "ការងារបានរក្សាទុក",
+    "Recommended": "បានណែនាំ", "Following": "កំពុងតាមដាន", "Job alerts": "ការជូនដំណឹងការងារ", "Messages": "សារ",
+    "Résumé builder": "បង្កើតប្រវត្តិរូប", "Profile": "ប្រវត្តិរូប", "Help & support": "ជំនួយ",
+    "Profile strength": "កម្រិតប្រវត្តិរូប", "Profile complete": "ប្រវត្តិរូបពេញលេញ", "Sign out": "ចាកចេញ",
+    "Welcome back": "សូមស្វាគមន៍ត្រឡប់មកវិញ", "Recommended for you": "បានណែនាំសម្រាប់អ្នក",
+    "Companies I follow": "ក្រុមហ៊ុនដែលខ្ញុំតាមដាន",
+    // Dashboard / overview
+    "Applied jobs": "ការងារបានដាក់ពាក្យ", "Interviews": "ការសម្ភាសន៍", "Application pipeline": "ដំណើរការពាក្យសុំ",
+    "Applied": "បានដាក់ពាក្យ", "Reviewed": "បានពិនិត្យ", "Shortlisted": "បានជ្រើសរើស", "Interview": "សម្ភាសន៍", "Offered": "បានផ្តល់ជូន",
+    "Recent applications": "ពាក្យសុំថ្មីៗ", "View all": "មើលទាំងអស់", "No applications yet. Start applying!": "មិនទាន់មានពាក្យសុំនៅឡើយ។ ចាប់ផ្តើមដាក់ពាក្យ!",
+    // Completion meter
+    "Complete your profile": "បំពេញប្រវត្តិរូបរបស់អ្នក", "Guided setup": "ការណែនាំរៀបចំ",
+    "A complete profile gets far more employer views.": "ប្រវត្តិរូបពេញលេញទទួលបានការមើលពីនិយោជកកាន់តែច្រើន។",
+    "step left": "ជំហានទៀត", "steps left": "ជំហានទៀត",
+    "Full name": "ឈ្មោះពេញ", "Email address": "អាសយដ្ឋានអ៊ីមែល", "Phone number": "លេខទូរស័ព្ទ", "Profile photo": "រូបថតប្រវត្តិរូប",
+    "About you": "អំពីអ្នក", "Professional headline": "ចំណងជើងវិជ្ជាជីវៈ", "Career summary": "សេចក្តីសង្ខេបអាជីព",
+    "Work experience": "បទពិសោធន៍ការងារ", "Education": "ការសិក្សា", "Skills": "ជំនាញ", "Upload your CV": "បង្ហោះ CV របស់អ្នក",
+    // Onboarding wizard
+    "Set up your profile": "រៀបចំប្រវត្តិរូបរបស់អ្នក", "Jobs you want": "ការងារដែលអ្នកចង់បាន", "Upload CV": "បង្ហោះ CV",
+    "Step": "ជំហាន", "of": "ក្នុងចំណោម",
+    "Tell us what you're looking for — we'll email you matching jobs.": "ប្រាប់យើងពីអ្វីដែលអ្នកកំពុងស្វែងរក — យើងនឹងផ្ញើអ៊ីមែលការងារដែលត្រូវគ្នាទៅអ្នក។",
+    "Job title you want": "ចំណងជើងការងារដែលអ្នកចង់បាន", "Field / category": "វិស័យ / ប្រភេទ", "Any field": "វិស័យណាមួយ",
+    "Location": "ទីតាំង", "Any location": "ទីតាំងណាមួយ", "Employment type": "ប្រភេទការងារ", "Any type": "ប្រភេទណាមួយ",
+    "Full time": "ពេញម៉ោង", "Part time": "ក្រៅម៉ោង", "Contract": "កិច្ចសន្យា", "Internship": "កម្មសិក្សា",
+    "Upload your CV so you can apply to jobs in one click.": "បង្ហោះ CV របស់អ្នក ដើម្បីអាចដាក់ពាក្យការងារបានក្នុងមួយចុច។",
+    "Upload your CV file": "បង្ហោះឯកសារ CV របស់អ្នក", "Browse files": "រកមើលឯកសារ", "Choose a different file": "ជ្រើសរើសឯកសារផ្សេង",
+    "Add your most recent role — employers see this on your profile.": "បន្ថែមតួនាទីថ្មីបំផុតរបស់អ្នក — និយោជកឃើញវានៅលើប្រវត្តិរូបរបស់អ្នក។",
+    "Position": "មុខតំណែង", "Company name": "ឈ្មោះក្រុមហ៊ុន", "Years": "ឆ្នាំ",
+    "You can add more roles later in the Résumé builder.": "អ្នកអាចបន្ថែមតួនាទីច្រើនទៀតនៅពេលក្រោយ។",
+    "Back": "ថយក្រោយ", "Skip this step": "រំលងជំហាននេះ", "Continue": "បន្ត", "Finish setup": "បញ្ចប់ការរៀបចំ",
+    "CV already on file": "មាន CV រួចហើយ",
+    // Common
+    "Loading…": "កំពុងផ្ទុក…", "Saving…": "កំពុងរក្សាទុក…", "Uploading…": "កំពុងបង្ហោះ…",
+  };
+  try { if (window.KRAMA_I18N && window.KRAMA_I18N.km) { Object.assign(window.KRAMA_I18N.km, CAND_KM); } else { window.KRAMA_I18N = { km: CAND_KM }; } } catch (e) {}
+  var T = function (s) { return (typeof window.KRAMA_T === "function") ? window.KRAMA_T(s) : s; };
+
   const LucideIcon = React.memo(function ({ name, size }) {
     var ref = React.useRef(null);
     React.useEffect(function () {
@@ -173,21 +215,21 @@
       <Card>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
           <span style={{ color: "var(--brand)", display: "inline-flex" }}>{I("badge-check", 18)}</span>
-          <span style={{ fontWeight: 700, color: "var(--text-strong)" }}>Complete your profile</span>
-          {onStartWizard && <Button variant="ghost" size="sm" iconLeft={I("wand-sparkles", 14)} onClick={onStartWizard}>Guided setup</Button>}
+          <span style={{ fontWeight: 700, color: "var(--text-strong)" }}>{T("Complete your profile")}</span>
+          {onStartWizard && <Button variant="ghost" size="sm" iconLeft={I("wand-sparkles", 14)} onClick={onStartWizard}>{T("Guided setup")}</Button>}
           <span style={{ marginLeft: "auto", fontFamily: "var(--font-display)", fontWeight: 800, fontSize: "var(--text-lg)", color: "var(--brand)" }}>{pct}%</span>
         </div>
         <div style={{ height: 8, background: "var(--border-subtle)", borderRadius: 99, overflow: "hidden" }}>
           <div style={{ height: "100%", width: pct + "%", background: "var(--brand)", borderRadius: 99, transition: "width .3s ease" }} />
         </div>
         <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginTop: 10 }}>
-          A complete profile gets far more employer views. {completion.missing.length} step{completion.missing.length === 1 ? "" : "s"} left:
+          {T("A complete profile gets far more employer views.")} {completion.missing.length} {completion.missing.length === 1 ? T("step left") : T("steps left")}
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
           {completion.missing.map(function (m) {
             return (
               <button key={m.key} onClick={function () { onNav(m.page); }} style={{ display: "inline-flex", alignItems: "center", gap: 6, border: "1px solid var(--border-strong)", background: "var(--surface-card)", color: "var(--text-body)", borderRadius: 99, padding: "6px 12px", fontSize: "var(--text-sm)", fontFamily: "var(--font-sans)", fontWeight: 500, cursor: "pointer" }}>
-                {I("plus", 13)} {m.label}
+                {I("plus", 13)} {T(m.label)}
               </button>
             );
           })}
@@ -196,7 +238,7 @@
     );
   }
 
-  function Sidebar({ page, onNav, user, badges, open, onClose, onLogout, completion }) {
+  function Sidebar({ page, onNav, user, badges, open, onClose, onLogout, completion, lang, onLang }) {
     const NAV = [
       { id: "dashboard",    label: "Dashboard",       icon: "layout-dashboard" },
       { id: "applications", label: "My applications", icon: "send",      badge: badges.applications },
@@ -220,7 +262,7 @@
             title={completion.percent >= 100 ? "Profile complete" : "Complete your profile"}
             style={{ textAlign: "left", border: "none", background: "transparent", cursor: "pointer", margin: "0 8px 14px", padding: 0, display: "block" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "var(--text-xs)", marginBottom: 5 }}>
-              <span style={{ color: "var(--text-muted)", fontWeight: 600 }}>{completion.percent >= 100 ? "Profile complete" : "Profile strength"}</span>
+              <span style={{ color: "var(--text-muted)", fontWeight: 600 }}>{completion.percent >= 100 ? T("Profile complete") : T("Profile strength")}</span>
               <span style={{ color: completion.percent >= 100 ? "var(--success)" : "var(--brand)", fontWeight: 800 }}>{completion.percent}%</span>
             </div>
             <div style={{ height: 6, background: "var(--border-subtle)", borderRadius: 99, overflow: "hidden" }}>
@@ -240,7 +282,7 @@
                 fontFamily: "var(--font-sans)", fontWeight: active ? 700 : 500, fontSize: "var(--text-base)",
               }}>
                 <span style={{ display: "inline-flex", color: active ? "var(--brand)" : "var(--text-muted)" }}>{I(n.icon, 19)}</span>
-                <span style={{ flex: 1 }}>{n.label}</span>
+                <span style={{ flex: 1 }}>{T(n.label)}</span>
                 {n.badge > 0 && <Badge tone={active ? "brand" : "neutral"}>{n.badge}</Badge>}
               </button>
             );
@@ -254,8 +296,18 @@
               <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{user ? user.email : ""}</div>
             </div>
           </div>
+          {onLang && (
+            <div style={{ display: "flex", gap: 6, padding: "6px 12px 8px" }}>
+              {[{ v: "en", l: "EN" }, { v: "km", l: "ខ្មែរ" }].map(function (o) {
+                var on = (lang || "en") === o.v;
+                return (
+                  <button key={o.v} onClick={function () { onLang(o.v); }} style={{ flex: 1, padding: "6px 8px", borderRadius: "var(--radius-md)", border: "1px solid " + (on ? "var(--brand)" : "var(--border)"), background: on ? "var(--brand-subtle)" : "transparent", color: on ? "var(--text-brand)" : "var(--text-muted)", fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)", fontWeight: 700, cursor: "pointer" }}>{o.l}</button>
+                );
+              })}
+            </div>
+          )}
           <button onClick={onLogout} style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", border: "none", background: "transparent", cursor: "pointer", padding: "10px 12px", borderRadius: "var(--radius-md)", fontFamily: "var(--font-sans)", fontSize: "var(--text-base)", fontWeight: 500, color: "var(--danger)", textAlign: "left" }}>
-            {I("log-out", 18)} Sign out
+            {I("log-out", 18)} {T("Sign out")}
           </button>
         </div>
       </aside>
@@ -423,32 +475,32 @@
         <ProfileCompletionCard completion={completion} onNav={onNav} onStartWizard={onStartWizard} />
         <div className="krm-stats-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16 }}>
           <StatLink onClick={function(){ onOpenApplications(); }} title="View my applications">
-            <StatCard label="Applied jobs" value={String(stats.applied)} tone="brand" icon={I("send", 22)} />
+            <StatCard label={T("Applied jobs")} value={String(stats.applied)} tone="brand" icon={I("send", 22)} />
           </StatLink>
           <StatLink onClick={function(){ onNav("saved"); }} title="View saved jobs">
-            <StatCard label="Saved jobs" value={String(stats.saved)} tone="accent" icon={I("bookmark", 22)} />
+            <StatCard label={T("Saved jobs")} value={String(stats.saved)} tone="accent" icon={I("bookmark", 22)} />
           </StatLink>
           <StatLink onClick={function(){ onOpenApplications("interview"); }} title="View interviews">
-            <StatCard label="Interviews" value={String(stats.interviews)} tone="success" icon={I("calendar-check", 22)} />
+            <StatCard label={T("Interviews")} value={String(stats.interviews)} tone="success" icon={I("calendar-check", 22)} />
           </StatLink>
         </div>
 
         <Card>
-          <div style={{ fontWeight: 700, fontSize: "var(--text-base)", color: "var(--text-strong)", marginBottom: 16 }}>Application pipeline</div>
+          <div style={{ fontWeight: 700, fontSize: "var(--text-base)", color: "var(--text-strong)", marginBottom: 16 }}>{T("Application pipeline")}</div>
           <div className="krm-pipeline" style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 10 }}>
             {PIPELINE.map(function (s) {
-              return <PipelineTile key={s.key} count={stageCounts[s.key] || 0} label={s.label} onClick={function(){ onOpenApplications(s.key); }} />;
+              return <PipelineTile key={s.key} count={stageCounts[s.key] || 0} label={T(s.label)} onClick={function(){ onOpenApplications(s.key); }} />;
             })}
           </div>
         </Card>
 
         <Card padding={0}>
           <div style={{ padding: "18px 22px", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <h2 style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: "var(--text-strong)" }}>Recent applications</h2>
-            <Button variant="ghost" size="sm" iconRight={I("arrow-right", 14)} onClick={function(){ onNav("applications"); }}>View all</Button>
+            <h2 style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: "var(--text-strong)" }}>{T("Recent applications")}</h2>
+            <Button variant="ghost" size="sm" iconRight={I("arrow-right", 14)} onClick={function(){ onNav("applications"); }}>{T("View all")}</Button>
           </div>
           {recentApps.length === 0
-            ? <div style={{ padding: "28px 22px", color: "var(--text-muted)", fontSize: "var(--text-sm)", textAlign: "center" }}>No applications yet. Start applying!</div>
+            ? <div style={{ padding: "28px 22px", color: "var(--text-muted)", fontSize: "var(--text-sm)", textAlign: "center" }}>{T("No applications yet. Start applying!")}</div>
             : recentApps.map(function (a, i) {
               var job = a.job || {};
               var company = job.company || {};
@@ -472,8 +524,8 @@
         {recs.length > 0 && (
           <div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-              <h2 style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: "var(--text-strong)" }}>Recommended for you</h2>
-              <Button variant="ghost" size="sm" iconRight={I("arrow-right", 14)} onClick={function(){ onNav("recommended"); }}>View all</Button>
+              <h2 style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: "var(--text-strong)" }}>{T("Recommended for you")}</h2>
+              <Button variant="ghost" size="sm" iconRight={I("arrow-right", 14)} onClick={function(){ onNav("recommended"); }}>{T("View all")}</Button>
             </div>
             <div className="krm-card-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
               {recs.map(function (j) {
@@ -1638,8 +1690,8 @@
         <div onClick={function (e) { e.stopPropagation(); }} style={{ width: "100%", maxWidth: 520, maxHeight: "92vh", overflowY: "auto", background: "var(--surface-card)", borderRadius: "var(--radius-xl)", boxShadow: "var(--shadow-xl)" }}>
           <div style={{ padding: "20px 24px 0", display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
             <div>
-              <div style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: "var(--text-xl)", color: "var(--text-strong)" }}>Set up your profile</div>
-              <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginTop: 2 }}>Step {step + 1} of {STEPS.length} · {STEPS[step]}</div>
+              <div style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: "var(--text-xl)", color: "var(--text-strong)" }}>{T("Set up your profile")}</div>
+              <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginTop: 2 }}>{T("Step")} {step + 1} {T("of")} {STEPS.length} · {T(STEPS[step])}</div>
             </div>
             <button onClick={onClose} aria-label="Close" style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--text-muted)", display: "inline-flex" }}>{I("x", 20)}</button>
           </div>
@@ -1652,61 +1704,61 @@
           <div style={{ padding: "20px 24px", display: "flex", flexDirection: "column", gap: 14 }}>
             {step === 0 && (
               <React.Fragment>
-                <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>Tell us what you're looking for — we'll email you matching jobs.</div>
-                <Input label="Job title you want" placeholder="e.g. IT Manager, Accountant" value={prefs.keyword} onChange={function (e) { setP("keyword", e.target.value); }} />
+                <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>{T("Tell us what you're looking for — we'll email you matching jobs.")}</div>
+                <Input label={T("Job title you want")} placeholder="e.g. IT Manager, Accountant" value={prefs.keyword} onChange={function (e) { setP("keyword", e.target.value); }} />
                 <div>
-                  <label style={{ display: "block", fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-body)", marginBottom: 6 }}>Field / category</label>
+                  <label style={{ display: "block", fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-body)", marginBottom: 6 }}>{T("Field / category")}</label>
                   <select value={prefs.category_id} onChange={function (e) { setP("category_id", e.target.value); }} style={selStyle}>
-                    <option value="">Any field</option>
+                    <option value="">{T("Any field")}</option>
                     {cats.map(function (c) { return <option key={c.id} value={c.id}>{c.name}</option>; })}
                   </select>
                 </div>
                 <div>
-                  <label style={{ display: "block", fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-body)", marginBottom: 6 }}>Location</label>
+                  <label style={{ display: "block", fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-body)", marginBottom: 6 }}>{T("Location")}</label>
                   <select value={prefs.location_id} onChange={function (e) { setP("location_id", e.target.value); }} style={selStyle}>
-                    <option value="">Any location</option>
+                    <option value="">{T("Any location")}</option>
                     {locs.map(function (l) { return <option key={l.id} value={l.id}>{l.name}</option>; })}
                   </select>
                 </div>
                 <div>
-                  <label style={{ display: "block", fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-body)", marginBottom: 6 }}>Employment type</label>
+                  <label style={{ display: "block", fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-body)", marginBottom: 6 }}>{T("Employment type")}</label>
                   <select value={prefs.job_type} onChange={function (e) { setP("job_type", e.target.value); }} style={selStyle}>
-                    <option value="">Any type</option>
-                    {JOB_TYPES.map(function (t) { return <option key={t.v} value={t.v}>{t.l}</option>; })}
+                    <option value="">{T("Any type")}</option>
+                    {JOB_TYPES.map(function (t) { return <option key={t.v} value={t.v}>{T(t.l)}</option>; })}
                   </select>
                 </div>
               </React.Fragment>
             )}
             {step === 1 && (
               <React.Fragment>
-                <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>Upload your CV so you can apply to jobs in one click.</div>
+                <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>{T("Upload your CV so you can apply to jobs in one click.")}</div>
                 <div style={{ border: "1.5px dashed var(--border-strong)", borderRadius: "var(--radius-lg)", padding: "28px 20px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
                   <span style={{ color: cvName ? "var(--success)" : "var(--text-faint)" }}>{I(cvName ? "circle-check-big" : "cloud-upload", 34)}</span>
                   {cvName
                     ? <div style={{ fontWeight: 700, color: "var(--text-strong)" }}>{cvName}</div>
-                    : <div style={{ fontWeight: 700, color: "var(--text-strong)" }}>Upload your CV file</div>}
+                    : <div style={{ fontWeight: 700, color: "var(--text-strong)" }}>{T("Upload your CV file")}</div>}
                   <input ref={cvRef} type="file" accept=".pdf,.doc,.docx" onChange={onCv} style={{ display: "none" }} />
-                  <Button variant="primary" disabled={uploading} onClick={function () { cvRef.current && cvRef.current.click(); }}>{uploading ? "Uploading…" : cvName ? "Choose a different file" : "Browse files"}</Button>
+                  <Button variant="primary" disabled={uploading} onClick={function () { cvRef.current && cvRef.current.click(); }}>{uploading ? T("Uploading…") : cvName ? T("Choose a different file") : T("Browse files")}</Button>
                   <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>.pdf, .doc or .docx · up to 5 MB</div>
                 </div>
               </React.Fragment>
             )}
             {step === 2 && (
               <React.Fragment>
-                <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>Add your most recent role — employers see this on your profile.</div>
-                <Input label="Position" placeholder="e.g. HR Manager, Accountant" value={exp.role} onChange={function (e) { setE("role", e.target.value); }} />
-                <Input label="Company name" placeholder="e.g. ABA Bank" value={exp.org} onChange={function (e) { setE("org", e.target.value); }} />
-                <Input label="Years" placeholder="e.g. 2021 – Present" value={exp.years} onChange={function (e) { setE("years", e.target.value); }} />
-                <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>You can add more roles later in the Résumé builder.</div>
+                <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>{T("Add your most recent role — employers see this on your profile.")}</div>
+                <Input label={T("Position")} placeholder="e.g. HR Manager, Accountant" value={exp.role} onChange={function (e) { setE("role", e.target.value); }} />
+                <Input label={T("Company name")} placeholder="e.g. ABA Bank" value={exp.org} onChange={function (e) { setE("org", e.target.value); }} />
+                <Input label={T("Years")} placeholder="e.g. 2021 – Present" value={exp.years} onChange={function (e) { setE("years", e.target.value); }} />
+                <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>{T("You can add more roles later in the Résumé builder.")}</div>
               </React.Fragment>
             )}
             {err && <div style={{ padding: "9px 12px", background: "var(--danger-subtle)", color: "var(--danger)", borderRadius: "var(--radius-md)", fontSize: "var(--text-sm)" }}>{err}</div>}
           </div>
 
           <div style={{ padding: "0 24px 20px", display: "flex", alignItems: "center", gap: 10 }}>
-            {step > 0 && <Button variant="ghost" onClick={function () { setStep(step - 1); }}>Back</Button>}
-            <button onClick={next} style={{ marginLeft: "auto", border: "none", background: "transparent", color: "var(--text-muted)", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)", fontWeight: 600, padding: "8px 4px" }}>Skip this step</button>
-            <Button variant="primary" disabled={saving} onClick={next}>{saving ? "Saving…" : last ? "Finish setup" : "Continue"}</Button>
+            {step > 0 && <Button variant="ghost" onClick={function () { setStep(step - 1); }}>{T("Back")}</Button>}
+            <button onClick={next} style={{ marginLeft: "auto", border: "none", background: "transparent", color: "var(--text-muted)", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)", fontWeight: 600, padding: "8px 4px" }}>{T("Skip this step")}</button>
+            <Button variant="primary" disabled={saving} onClick={next}>{saving ? T("Saving…") : last ? T("Finish setup") : T("Continue")}</Button>
           </div>
         </div>
       </div>
@@ -1862,6 +1914,8 @@
 
   function App() {
     var [page, setPage] = React.useState("dashboard");
+    var [lang, setLang] = React.useState((window.KRAMA_LANG === "km") ? "km" : "en");
+    function switchLang(l) { if (window.KRAMA_SET_LANG) window.KRAMA_SET_LANG(l); setLang(l); }
     var [authUser, setAuthUser] = React.useState(null);
     var [authLoading, setAuthLoading] = React.useState(true);
     var [resume, setResume] = React.useState(null);   // for the profile-completion meter
@@ -1945,13 +1999,13 @@
     if (authLoading) return <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", color: "var(--text-muted)" }}>Loading…</div>;
     if (!authUser) return <CandidateLogin onLogin={function(u){ setAuthUser(u); }} />;
 
-    var titles = { dashboard: "Welcome back, " + (authUser.name.split(" ")[0]), applications: "My applications", saved: "Saved jobs", recommended: "Recommended for you", following: "Companies I follow", alerts: "Job alerts", messages: "Messages", resume: "Résumé builder", support: "Help & support", profile: "Profile" };
+    var titles = { dashboard: T("Welcome back") + ", " + (authUser.name.split(" ")[0]), applications: T("My applications"), saved: T("Saved jobs"), recommended: T("Recommended for you"), following: T("Companies I follow"), alerts: T("Job alerts"), messages: T("Messages"), resume: T("Résumé builder"), support: T("Help & support"), profile: T("Profile") };
 
     return (
       <div style={{ display: "flex", minHeight: "100vh", background: "var(--surface-page)" }}>
         {sidebarOpen && <div className="krm-sidebar-backdrop open" onClick={function(){ setSidebarOpen(false); }} />}
         {showOnboarding && <OnboardingWizard user={authUser} resume={resume} onClose={dismissOnboarding} onDone={finishOnboarding} />}
-        <Sidebar page={page} onNav={navTo} user={authUser} badges={badges} open={sidebarOpen} onClose={function(){ setSidebarOpen(false); }} onLogout={handleLogout} completion={completion} />
+        <Sidebar page={page} onNav={navTo} user={authUser} badges={badges} open={sidebarOpen} onClose={function(){ setSidebarOpen(false); }} onLogout={handleLogout} completion={completion} lang={lang} onLang={switchLang} />
         <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
           <Topbar title={titles[page]} user={authUser} onLogout={handleLogout} onMenu={function(){ setSidebarOpen(function(o){ return !o; }); }} onNav={navTo} />
           <div style={{ flex: 1, overflowY: "auto" }}>
