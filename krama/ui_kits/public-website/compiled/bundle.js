@@ -1988,6 +1988,9 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     }, []);
     const [fjPage, setFjPage] = React.useState(0);
     const [fcPage, setFcPage] = React.useState(0);
+    // Categories: paged on desktop, progressively revealed on mobile (see CAT_PER_* below).
+    const [catPage, setCatPage] = React.useState(0);
+    const [catShown, setCatShown] = React.useState(8);
     // Default view is device-aware: List on mobile (compact rows), Grid on desktop.
     const [fjView, setFjView] = React.useState(function () {
       try {
@@ -2024,6 +2027,8 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     const showFeaturedJobs = hs.featuredJobsVisible !== false;
     const FJ_PER_PAGE = hs.featuredJobsCount || 8;
     const FC_PER_PAGE = 8;
+    const CAT_PER_PAGE = 12; // desktop: one page of the 3-column category grid
+    const CAT_PER_LOAD = 8; // mobile: how many more each "Load more" reveals
     // featured-first ordering across all jobs, then paginate
     // Age in minutes parsed from the relative "postedAt" string (works for static + API data)
     const fjAge = s => {
@@ -2079,6 +2084,13 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     const visibleCats = hs.visibleCategories && hs.visibleCategories.length ? allCats.filter(function (c) {
       return hs.visibleCategories.includes(c.slug);
     }) : allCats;
+    // The catalogue outgrew a single grid, so show a slice: numbered pages on desktop,
+    // a "Load more" step on mobile where pagination controls are fiddly to tap.
+    const catPages = Math.max(1, Math.ceil(visibleCats.length / CAT_PER_PAGE));
+    const catPageSafe = Math.min(catPage, catPages - 1);
+    const catShownSafe = Math.min(catShown, visibleCats.length);
+    const catSlice = isMobile ? visibleCats.slice(0, catShownSafe) : visibleCats.slice(catPageSafe * CAT_PER_PAGE, catPageSafe * CAT_PER_PAGE + CAT_PER_PAGE);
+    const catMoreLeft = visibleCats.length - catShownSafe;
     // featured companies: admin selection (fallback to all), respect visibility
     const allCompanies = D && D.companies || [];
     const featuredNames = hs.featured && hs.featured.length ? hs.featured : null;
@@ -2287,7 +2299,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         gridTemplateColumns: "repeat(3,1fr)",
         gap: 16
       }
-    }, visibleCats.map(c => /*#__PURE__*/React.createElement(Card, {
+    }, catSlice.map(c => /*#__PURE__*/React.createElement(Card, {
       key: c.name,
       interactive: true,
       onClick: () => onNav("jobs", {
@@ -2323,7 +2335,86 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         color: "var(--text-muted)",
         marginTop: 2
       }
-    }, c.count.toLocaleString(), " jobs"))))))), !isMobile && fjSection, showFeatured ? /*#__PURE__*/React.createElement(Section, {
+    }, c.count.toLocaleString(), " jobs")))))), isMobile && catMoreLeft > 0 ? /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 10,
+        marginTop: 20
+      }
+    }, /*#__PURE__*/React.createElement(Button, {
+      variant: "secondary",
+      onClick: () => setCatShown(function (n) {
+        return Math.min(n + CAT_PER_LOAD, visibleCats.length);
+      }),
+      iconRight: I("chevron-down", 16)
+    }, TR("Load more")), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: "var(--text-xs)",
+        color: "var(--text-muted)"
+      }
+    }, catShownSafe, " / ", visibleCats.length)) : null, !isMobile && catPages > 1 ? /*#__PURE__*/React.createElement("div", {
+      className: "krm-pagination",
+      style: {
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        flexWrap: "wrap",
+        gap: 8,
+        marginTop: 28
+      }
+    }, /*#__PURE__*/React.createElement("button", {
+      onClick: () => setCatPage(Math.max(0, catPageSafe - 1)),
+      disabled: catPageSafe === 0,
+      "aria-label": "Previous",
+      style: {
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: 40,
+        height: 40,
+        borderRadius: "var(--radius-md)",
+        border: "1px solid var(--border-strong)",
+        background: "var(--surface-card)",
+        cursor: catPageSafe === 0 ? "not-allowed" : "pointer",
+        color: catPageSafe === 0 ? "var(--text-faint)" : "var(--text-body)"
+      }
+    }, I("chevron-left", 18)), Array.from({
+      length: catPages
+    }).map((_, i) => /*#__PURE__*/React.createElement("button", {
+      key: i,
+      onClick: () => setCatPage(i),
+      style: {
+        minWidth: 40,
+        height: 40,
+        padding: "0 12px",
+        borderRadius: "var(--radius-md)",
+        cursor: "pointer",
+        border: "1px solid " + (i === catPageSafe ? "var(--brand)" : "var(--border-strong)"),
+        background: i === catPageSafe ? "var(--brand)" : "var(--surface-card)",
+        color: i === catPageSafe ? "var(--on-brand)" : "var(--text-body)",
+        fontFamily: "var(--font-sans)",
+        fontSize: "var(--text-sm)",
+        fontWeight: 700
+      }
+    }, i + 1)), /*#__PURE__*/React.createElement("button", {
+      onClick: () => setCatPage(Math.min(catPages - 1, catPageSafe + 1)),
+      disabled: catPageSafe === catPages - 1,
+      "aria-label": "Next",
+      style: {
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: 40,
+        height: 40,
+        borderRadius: "var(--radius-md)",
+        border: "1px solid var(--border-strong)",
+        background: "var(--surface-card)",
+        cursor: catPageSafe === catPages - 1 ? "not-allowed" : "pointer",
+        color: catPageSafe === catPages - 1 ? "var(--text-faint)" : "var(--text-body)"
+      }
+    }, I("chevron-right", 18))) : null), !isMobile && fjSection, showFeatured ? /*#__PURE__*/React.createElement(Section, {
       eyebrow: TR("Trusted by"),
       title: TR("Featured companies"),
       action: /*#__PURE__*/React.createElement(Button, {
