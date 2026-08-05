@@ -25,9 +25,8 @@ class SupportController extends Controller
         $s    = Setting::where('group', 'support')->pluck('value', 'key')->toArray();
         $user = $request->user();
 
-        // Default on: support should be reachable unless an admin deliberately hides it.
-        $enabled = ! array_key_exists('enabled', $s)
-            || ! in_array($s['enabled'], ['0', 0, false, null], true);
+        $audience = self::audienceOf($user);
+        $enabled  = self::enabledFor($user);
 
         $mode = in_array($s['mode'] ?? '', ['telegram_link', 'in_app'], true)
             ? $s['mode'] : 'telegram_link';
@@ -58,9 +57,39 @@ class SupportController extends Controller
             'handle'   => $handle ?: null,
             'hours'    => trim($s['hours'] ?? '') ?: null,
             'note'     => trim($s['note'] ?? '') ?: null,
+            // Which audience switch applied — useful when debugging "why is it hidden?".
+            'audience' => $audience,
             // Surfaced so the UI can explain the channel; not required to render.
             'telegram_ready' => TelegramService::isEnabled(),
         ]);
+    }
+
+    /** 'employer' | 'candidate' | null (staff or unknown → only the master switch applies). */
+    private static function audienceOf($user): ?string
+    {
+        $slug = ($user && $user->role) ? (string) $user->role->slug : '';
+
+        return in_array($slug, ['employer', 'candidate'], true) ? $slug : null;
+    }
+
+    /**
+     * Master switch AND the per-audience switch. Every flag defaults ON, so support stays
+     * reachable unless an admin deliberately turns it off.
+     *
+     * Enforced on send() as well as config(), because hiding the page in the UI is not the
+     * same as disabling the feature — the endpoint is still reachable directly.
+     */
+    private static function enabledFor($user): bool
+    {
+        $s    = Setting::where('group', 'support')->pluck('value', 'key')->toArray();
+        $flag = function (string $key) use ($s): bool {
+            return ! array_key_exists($key, $s)
+                || ! in_array($s[$key], ['0', 0, false, null], true);
+        };
+
+        $audience = self::audienceOf($user);
+
+        return $flag('enabled') && ($audience === null || $flag('enabled_' . $audience));
     }
 
     // GET /api/support/thread — this user's conversation, and marks agent replies as read.
@@ -101,6 +130,11 @@ class SupportController extends Controller
     {
         $data = $request->validate(['body' => 'required|string|max:4000']);
         $user = $request->user();
+
+        // Hiding the page is not disabling the feature — this endpoint is reachable directly.
+        if (! self::enabledFor($user)) {
+            return response()->json(['message' => 'Support chat is not available.'], 403);
+        }
 
         $group = self::supportGroupId();
         if ($group === '') {

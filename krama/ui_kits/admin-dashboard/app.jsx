@@ -141,6 +141,7 @@
     { id: "seo", label: "SEO", icon: "search" },
     { id: "feeds", label: "Feeds", icon: "rss" },
     { id: "ai", label: "AI provider", icon: "sparkles" },
+    { id: "support", label: "Support chat", icon: "life-buoy" },
     { id: "chat", label: "Chat agent", icon: "bot" },
     { id: "social", label: "Social login", icon: "share-2" },
     { id: "email", label: "Email", icon: "mail" },
@@ -6993,6 +6994,132 @@
     );
   }
 
+
+  // ===== Support chat settings =====
+  // Controls the "Help & support" page in the employer and candidate dashboards. The master
+  // switch plus a per-audience switch each — so support can run for employers only,
+  // candidates only, both, or neither. Both switches are enforced server-side on send(),
+  // not just used to hide the UI.
+  const SUP_DEFAULTS = {
+    enabled: true, enabled_employer: true, enabled_candidate: true,
+    mode: "telegram_link", telegram_handle: "", telegram_group_id: "", hours: "", note: "",
+  };
+  const SUP_MODES = [
+    { value: "telegram_link", label: "Telegram link — opens a chat with the bot" },
+    { value: "in_app",        label: "In-app chat — bridged to the Telegram support group" },
+  ];
+
+  function SupportSettings() {
+    const [s, setS] = React.useState(SUP_DEFAULTS);
+    const [saved, setSaved] = React.useState(false);
+    React.useEffect(function () {
+      window.KRAMA_ADMIN_API.fetchSettings('support')
+        .then(function (d) {
+          if (!d) return;
+          // Absent rows mean "on" — mirror the server's default so the switches don't
+          // read as off on a fresh install.
+          const bool = function (v) { return v === undefined || v === null ? true : !(v === "0" || v === 0 || v === false); };
+          setS(Object.assign({}, SUP_DEFAULTS, d, {
+            enabled: bool(d.enabled),
+            enabled_employer: bool(d.enabled_employer),
+            enabled_candidate: bool(d.enabled_candidate),
+            mode: d.mode || "telegram_link",
+          }));
+        })
+        .catch(function () {});
+    }, []);
+    const set = function (k, v) { setS(function (x) { return Object.assign({}, x, { [k]: v }); }); setSaved(false); };
+    const save = function () {
+      window.KRAMA_ADMIN_API.updateSettings('support', {
+        enabled: s.enabled ? 1 : 0,
+        enabled_employer: s.enabled_employer ? 1 : 0,
+        enabled_candidate: s.enabled_candidate ? 1 : 0,
+        mode: s.mode, telegram_handle: s.telegram_handle,
+        telegram_group_id: s.telegram_group_id, hours: s.hours, note: s.note,
+      })
+        .then(function () { setSaved(true); })
+        .catch(function (e) { alert('Save failed: ' + (e && e.message ? e.message : 'Unknown error')); });
+    };
+
+    const off = !s.enabled;
+    const both = s.enabled_employer && s.enabled_candidate;
+    const neither = !s.enabled_employer && !s.enabled_candidate;
+    const who = off ? "Nobody — the master switch is off"
+      : neither ? "Nobody — both audiences are switched off"
+      : both ? "Employers and candidates"
+      : s.enabled_employer ? "Employers only" : "Candidates only";
+
+    return (
+      <div className="krm-page-pad" style={{ padding: 28, maxWidth: 1000 }}>
+        <ScreenHead title="Support chat" sub="Show or hide Help & support in the employer and candidate dashboards."
+          action={<Button variant="primary" iconLeft={I("check", 16)} onClick={save}>Save changes</Button>} />
+
+        {saved ? (
+          <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", background: "var(--success-subtle)", border: "1px solid var(--success-border)", borderRadius: "var(--radius-md)", color: "var(--success)", fontWeight: 600, fontSize: "var(--text-sm)", marginBottom: 18 }}>
+            {I("circle-check-big", 16)} Saved — dashboards pick this up on their next load.
+          </div>
+        ) : null}
+
+        <Card padding={24} style={{ marginBottom: 18 }}>
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16 }}>
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 36, height: 36, borderRadius: "var(--radius-md)", background: "var(--brand-subtle)", color: "var(--brand)" }}>{I("life-buoy", 18)}</span>
+                <h3 style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: "var(--text-strong)" }}>Offer support chat</h3>
+              </div>
+              <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginTop: 8 }}>
+                Adds a <strong>Help &amp; support</strong> item to the dashboard sidebar. Turn this off to hide it from everyone.
+              </p>
+            </div>
+            <Switch checked={s.enabled} onChange={function (v) { set("enabled", v); }} />
+          </div>
+
+          <div style={{ marginTop: 20, paddingTop: 18, borderTop: "1px solid var(--border-subtle)", opacity: off ? 0.45 : 1, pointerEvents: off ? "none" : "auto" }}>
+            <div style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-strong)", marginBottom: 10 }}>Who can see it</div>
+            {[["enabled_employer", "Employer dashboard", "briefcase"], ["enabled_candidate", "Candidate dashboard", "user-round"]].map(function (row) {
+              return (
+                <div key={row[0]} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, padding: "12px 14px", marginBottom: 8, borderRadius: "var(--radius-md)", background: "var(--surface-page)", border: "1px solid var(--border-subtle)" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: "var(--text-sm)", color: "var(--text-body)", fontWeight: 600 }}>
+                    <span style={{ color: "var(--text-muted)", display: "inline-flex" }}>{I(row[2], 16)}</span>{row[1]}
+                  </div>
+                  <Switch checked={!!s[row[0]]} onChange={function (v) { set(row[0], v); }} />
+                </div>
+              );
+            })}
+            <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: 6 }}>
+              Currently visible to: <strong>{who}</strong>
+            </div>
+          </div>
+        </Card>
+
+        <Card padding={24}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+            <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 36, height: 36, borderRadius: "var(--radius-md)", background: "var(--info-subtle)", color: "var(--info)" }}>{I("send", 18)}</span>
+            <h3 style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: "var(--text-strong)" }}>Channel</h3>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 16, opacity: off ? 0.45 : 1, pointerEvents: off ? "none" : "auto" }}>
+            <Select label="How support is delivered" value={s.mode} onChange={function (e) { set("mode", e.target.value); }} options={SUP_MODES} />
+
+            {s.mode === "in_app" ? (
+              <Input label="Telegram support group chat id" value={s.telegram_group_id}
+                onChange={function (e) { set("telegram_group_id", e.target.value); }} placeholder="-1003994175227"
+                hint="Must be a supergroup with Topics enabled, and the bot needs Manage Topics. One topic per user; replies there go back to them in Krama." />
+            ) : (
+              <Input label="Telegram handle" value={s.telegram_handle}
+                onChange={function (e) { set("telegram_handle", e.target.value); }} placeholder="kramajobbot"
+                hint="Leave blank to reuse the notification bot's username." />
+            )}
+
+            <Input label="Support hours (optional)" value={s.hours}
+              onChange={function (e) { set("hours", e.target.value); }} placeholder="Mon–Fri, 8:00–18:00 (ICT)" />
+            <Input label="Note shown under the chat (optional)" value={s.note}
+              onChange={function (e) { set("note", e.target.value); }} placeholder="For billing questions please include your invoice number." />
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
   function App() {
     const [page, setPage] = React.useState("dashboard");
     const [authUser, setAuthUser] = React.useState(null);
@@ -7043,7 +7170,7 @@
 
     if (!authUser) return <AdminLogin onLogin={setAuthUser} />;
 
-    const titles = { dashboard: "Overview", jobs: "Job management", companies: "Company management", candidates: "Candidates", resumes: "Resume Builder", reviews: "Company reviews", forum: "Community forum", homepage: "Homepage content", seo: "SEO", feeds: "Feeds", ai: "AI provider", chat: "Chat agent", social: "Social login", email: "Email settings", telegram: "Telegram notifications", sms: "SMS gateway", social_post: "Social posting", payments: "Payment settings", reports: "Reports", banners: "Promotional banner", brand: "Brand settings", settings: "Settings · Users & roles", profile: "My Profile" };
+    const titles = { dashboard: "Overview", jobs: "Job management", companies: "Company management", candidates: "Candidates", resumes: "Resume Builder", reviews: "Company reviews", forum: "Community forum", homepage: "Homepage content", seo: "SEO", feeds: "Feeds", ai: "AI provider", support: "Support chat", chat: "Chat agent", social: "Social login", email: "Email settings", telegram: "Telegram notifications", sms: "SMS gateway", social_post: "Social posting", payments: "Payment settings", reports: "Reports", banners: "Promotional banner", brand: "Brand settings", settings: "Settings · Users & roles", profile: "My Profile" };
     return (
       <div style={{ display: "flex", minHeight: "100vh", background: "var(--surface-page)" }}>
         {sidebarOpen && <div className="krm-sidebar-backdrop open" onClick={() => setSidebarOpen(false)} />}
@@ -7062,6 +7189,7 @@
           {page === "seo" && <SeoPanel />}
           {page === "feeds" && <FeedsPanel />}
           {page === "ai" && <AiProviderSettings />}
+          {page === "support" && <SupportSettings />}
           {page === "chat" && <ChatAgentSettings />}
           {page === "social" && <SocialLoginSettings />}
           {page === "email" && <EmailSettings />}

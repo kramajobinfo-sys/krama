@@ -127,7 +127,11 @@ class SettingController extends Controller
         // `telegram_link` opens a chat with the bot; `in_app` will render a message thread
         // once the Telegram bridge is built. See App\Http\Controllers\SupportController.
         'support' => [
-            'enabled'          => 'boolean',
+            'enabled'           => 'boolean',   // master switch
+            // Per-audience switches, so support can run for employers only, candidates
+            // only, both, or neither. All default ON when the row is absent.
+            'enabled_employer'  => 'boolean',
+            'enabled_candidate' => 'boolean',
             'mode'             => 'nullable|in:telegram_link,in_app',
             'telegram_handle'  => 'nullable|string|max:64',   // defaults to telegram.bot_username
             // Dedicated Topics-enabled supergroup for in-app support threads (one topic per
