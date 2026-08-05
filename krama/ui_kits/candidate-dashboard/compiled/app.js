@@ -576,6 +576,10 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       id: "profile",
       label: "Profile",
       icon: "user-round"
+    }, {
+      id: "support",
+      label: "Help & support",
+      icon: "life-buoy"
     }];
     return /*#__PURE__*/React.createElement("aside", {
       className: "krm-sidebar" + (open ? " open" : ""),
@@ -4635,6 +4639,111 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       onClick: next
     }, saving ? "Saving…" : last ? "Finish setup" : "Continue"))));
   }
+
+  // ===== Help & support =====
+  // The server decides HOW support is offered (see App\Http\Controllers\SupportController).
+  // Today that is a Telegram deep link carrying a signed token so whoever answers knows who
+  // is writing. When the in-app bridge ships, config.mode becomes "in_app" and only the
+  // branch below changes — the nav entry, the page and the API call all stay as they are.
+  function HelpSupport({
+    user
+  }) {
+    const [cfg, setCfg] = React.useState(null);
+    const [failed, setFailed] = React.useState(false);
+    React.useEffect(function () {
+      cand.fetchSupportConfig().then(setCfg).catch(function () {
+        setFailed(true);
+      });
+    }, []);
+    const open = function () {
+      if (cfg && cfg.url) window.open(cfg.url, "_blank", "noopener,noreferrer");
+    };
+    return /*#__PURE__*/React.createElement("div", {
+      className: "krm-page-pad",
+      style: {
+        padding: 28,
+        maxWidth: 820
+      }
+    }, /*#__PURE__*/React.createElement(ScreenHead, {
+      title: "Help & support",
+      sub: "Talk to the Krama team \u2014 we usually reply within a few hours."
+    }), /*#__PURE__*/React.createElement(Card, {
+      padding: 24
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+        marginBottom: 6
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: 38,
+        height: 38,
+        borderRadius: "var(--radius-md)",
+        background: "var(--brand-subtle)",
+        color: "var(--brand)"
+      }
+    }, I("life-buoy", 19)), /*#__PURE__*/React.createElement("h3", {
+      style: {
+        fontSize: "var(--text-lg)",
+        fontWeight: 700,
+        color: "var(--text-strong)"
+      }
+    }, "Chat with support")), failed ? /*#__PURE__*/React.createElement("p", {
+      style: {
+        fontSize: "var(--text-sm)",
+        color: "var(--text-muted)"
+      }
+    }, "Couldn\u2019t load support options just now. Please refresh, or email us.") : !cfg ? /*#__PURE__*/React.createElement("p", {
+      style: {
+        fontSize: "var(--text-sm)",
+        color: "var(--text-muted)"
+      }
+    }, "Loading\u2026") : !cfg.enabled ? /*#__PURE__*/React.createElement("p", {
+      style: {
+        fontSize: "var(--text-sm)",
+        color: "var(--text-muted)"
+      }
+    }, "Live chat is closed at the moment. Please email us and we\u2019ll come back to you.") : cfg.mode === "telegram_link" ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("p", {
+      style: {
+        fontSize: "var(--text-sm)",
+        color: "var(--text-muted)",
+        margin: "0 0 4px"
+      }
+    }, "Opens a private Telegram chat with ", /*#__PURE__*/React.createElement("strong", null, "@", cfg.handle), ". Your account is identified automatically, so there\u2019s no need to explain who you are."), cfg.hours ? /*#__PURE__*/React.createElement("p", {
+      style: {
+        fontSize: "var(--text-xs)",
+        color: "var(--text-faint)",
+        margin: "0 0 16px"
+      }
+    }, cfg.hours) : /*#__PURE__*/React.createElement("div", {
+      style: {
+        height: 12
+      }
+    }), /*#__PURE__*/React.createElement(Button, {
+      variant: "primary",
+      iconLeft: I("send", 16),
+      onClick: open
+    }, "Chat on Telegram"), cfg.note ? /*#__PURE__*/React.createElement("p", {
+      style: {
+        fontSize: "var(--text-xs)",
+        color: "var(--text-muted)",
+        marginTop: 14
+      }
+    }, cfg.note) : null) :
+    /*#__PURE__*/
+    /* mode === "in_app" — the bridge is not built yet; never leave a dead end. */
+    React.createElement("p", {
+      style: {
+        fontSize: "var(--text-sm)",
+        color: "var(--text-muted)"
+      }
+    }, "In-app support chat is being set up. Please email us in the meantime.")));
+  }
   function App() {
     var [page, setPage] = React.useState("dashboard");
     var [authUser, setAuthUser] = React.useState(null);
@@ -4770,6 +4879,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       alerts: "Job alerts",
       messages: "Messages",
       resume: "Résumé builder",
+      support: "Help & support",
       profile: "Profile"
     };
     return /*#__PURE__*/React.createElement("div", {
@@ -4858,6 +4968,8 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       onUserUpdate: function (u) {
         setAuthUser(u);
       }
+    }), page === "support" && /*#__PURE__*/React.createElement(HelpSupport, {
+      user: authUser
     }))));
   }
   window.KramaCandidateApp = App;

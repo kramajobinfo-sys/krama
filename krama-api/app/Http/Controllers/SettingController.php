@@ -123,6 +123,16 @@ class SettingController extends Controller
             'gemini_api_key'     => 'nullable|string|max:255',
             'gemini_model'       => 'nullable|string|max:80',
         ],
+        // Support chat offered inside the employer/candidate dashboards. `mode` is the seam:
+        // `telegram_link` opens a chat with the bot; `in_app` will render a message thread
+        // once the Telegram bridge is built. See App\Http\Controllers\SupportController.
+        'support' => [
+            'enabled'          => 'boolean',
+            'mode'             => 'nullable|in:telegram_link,in_app',
+            'telegram_handle'  => 'nullable|string|max:64',   // defaults to telegram.bot_username
+            'hours'            => 'nullable|string|max:120',
+            'note'             => 'nullable|string|max:300',
+        ],
         'telegram' => [
             'enabled'        => 'boolean',
             'bot_token'      => 'nullable|string|max:255',

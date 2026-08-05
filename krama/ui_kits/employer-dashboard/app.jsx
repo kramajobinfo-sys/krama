@@ -105,6 +105,7 @@
     { id: "team", label: "Team", icon: "user-plus", adminOnly: true },
     { id: "company", label: "Company profile", icon: "building-2", adminOnly: true },
     { id: "billing", label: "Plan & billing", icon: "credit-card", adminOnly: true },
+    { id: "support", label: "Help & support", icon: "life-buoy" },
   ];
 
   function isCompanyAdmin(user) {
@@ -3278,6 +3279,68 @@
     );
   }
 
+
+  // ===== Help & support =====
+  // The server decides HOW support is offered (see App\Http\Controllers\SupportController).
+  // Today that is a Telegram deep link carrying a signed token so whoever answers knows who
+  // is writing. When the in-app bridge ships, config.mode becomes "in_app" and only the
+  // branch below changes — the nav entry, the page and the API call all stay as they are.
+  function HelpSupport({ user }) {
+    const [cfg, setCfg] = React.useState(null);
+    const [failed, setFailed] = React.useState(false);
+    React.useEffect(function () {
+      emp.fetchSupportConfig().then(setCfg).catch(function () { setFailed(true); });
+    }, []);
+
+    const open = function () {
+      if (cfg && cfg.url) window.open(cfg.url, "_blank", "noopener,noreferrer");
+    };
+
+    return (
+      <div className="krm-page-pad" style={{ padding: 28, maxWidth: 820 }}>
+        <ScreenHead title="Help & support" sub="Talk to the Krama team — we usually reply within a few hours." />
+
+        <Card padding={24}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 6 }}>
+            <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 38, height: 38, borderRadius: "var(--radius-md)", background: "var(--brand-subtle)", color: "var(--brand)" }}>{I("life-buoy", 19)}</span>
+            <h3 style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: "var(--text-strong)" }}>Chat with support</h3>
+          </div>
+
+          {failed ? (
+            <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>
+              Couldn’t load support options just now. Please refresh, or email us.
+            </p>
+          ) : !cfg ? (
+            <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>Loading…</p>
+          ) : !cfg.enabled ? (
+            <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>
+              Live chat is closed at the moment. Please email us and we’ll come back to you.
+            </p>
+          ) : cfg.mode === "telegram_link" ? (
+            <React.Fragment>
+              <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", margin: "0 0 4px" }}>
+                Opens a private Telegram chat with <strong>@{cfg.handle}</strong>. Your account is
+                identified automatically, so there’s no need to explain who you are.
+              </p>
+              {cfg.hours ? (
+                <p style={{ fontSize: "var(--text-xs)", color: "var(--text-faint)", margin: "0 0 16px" }}>{cfg.hours}</p>
+              ) : <div style={{ height: 12 }} />}
+              <Button variant="primary" iconLeft={I("send", 16)} onClick={open}>Chat on Telegram</Button>
+              {cfg.note ? (
+                <p style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: 14 }}>{cfg.note}</p>
+              ) : null}
+            </React.Fragment>
+          ) : (
+            /* mode === "in_app" — the bridge is not built yet; never leave a dead end. */
+            <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>
+              In-app support chat is being set up. Please email us in the meantime.
+            </p>
+          )}
+        </Card>
+      </div>
+    );
+  }
+
   function App() {
     const [page, setPage] = React.useState("dashboard");
     const [authUser, setAuthUser] = React.useState(null);
@@ -3400,7 +3463,7 @@
     // Alert badge on Plan & billing when a subscription is pending payment/approval.
     const badges = { jobs: companyPending, applicants: totalApps, messages: unreadMsg, billing: (sub && sub.status === "pending") ? 1 : 0 };
 
-    const titles = { dashboard: "Dashboard", jobs: "Job postings", applicants: "Applicant tracking", messages: "Messages", team: "Team", company: "Company profile", billing: "Plan & billing", profile: "My Profile" };
+    const titles = { dashboard: "Dashboard", jobs: "Job postings", applicants: "Applicant tracking", messages: "Messages", team: "Team", company: "Company profile", billing: "Plan & billing", support: "Help & support", profile: "My Profile" };
     return (
       <div style={{ display: "flex", minHeight: "100vh", background: "var(--surface-page)" }}>
         {sidebarOpen && <div className="krm-sidebar-backdrop open" onClick={() => setSidebarOpen(false)} />}
@@ -3420,6 +3483,7 @@
           {page === "messages" && <Messages user={authUser} />}
           {page === "billing" && <Billing onSubChange={loadSub} />}
           {page === "profile" && <MyProfile user={authUser} onUserUpdate={u => setAuthUser(u)} />}
+          {page === "support" && <HelpSupport user={authUser} />}
         </div>
         <JobFormModal open={!!posting} mode={posting && posting.mode} job={posting && posting.job} onClose={() => setPosting(null)} onCreated={function(msg) { loadJobs(); setToast(msg || "Done"); setTimeout(function() { setToast(""); }, 3000); }} onPublishRequest={publishJob} user={authUser} />
         <PlanPickerModal picker={planPicker} onPick={confirmPlanPick} onClose={() => setPlanPicker(null)} />

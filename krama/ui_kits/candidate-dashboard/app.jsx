@@ -207,6 +207,7 @@
       { id: "messages",     label: "Messages",          icon: "message-square", badge: badges.messages },
       { id: "resume",       label: "Résumé builder",  icon: "file-text" },
       { id: "profile",      label: "Profile",          icon: "user-round" },
+      { id: "support",      label: "Help & support",  icon: "life-buoy" },
     ];
     return (
       <aside className={"krm-sidebar" + (open ? " open" : "")} style={{ width: 248, flexShrink: 0, background: "var(--surface-card)", borderRight: "1px solid var(--border)", display: "flex", flexDirection: "column", padding: "20px 14px", position: "sticky", top: 0, height: "100vh" }}>
@@ -1712,6 +1713,68 @@
     );
   }
 
+
+  // ===== Help & support =====
+  // The server decides HOW support is offered (see App\Http\Controllers\SupportController).
+  // Today that is a Telegram deep link carrying a signed token so whoever answers knows who
+  // is writing. When the in-app bridge ships, config.mode becomes "in_app" and only the
+  // branch below changes — the nav entry, the page and the API call all stay as they are.
+  function HelpSupport({ user }) {
+    const [cfg, setCfg] = React.useState(null);
+    const [failed, setFailed] = React.useState(false);
+    React.useEffect(function () {
+      cand.fetchSupportConfig().then(setCfg).catch(function () { setFailed(true); });
+    }, []);
+
+    const open = function () {
+      if (cfg && cfg.url) window.open(cfg.url, "_blank", "noopener,noreferrer");
+    };
+
+    return (
+      <div className="krm-page-pad" style={{ padding: 28, maxWidth: 820 }}>
+        <ScreenHead title="Help & support" sub="Talk to the Krama team — we usually reply within a few hours." />
+
+        <Card padding={24}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 6 }}>
+            <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 38, height: 38, borderRadius: "var(--radius-md)", background: "var(--brand-subtle)", color: "var(--brand)" }}>{I("life-buoy", 19)}</span>
+            <h3 style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: "var(--text-strong)" }}>Chat with support</h3>
+          </div>
+
+          {failed ? (
+            <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>
+              Couldn’t load support options just now. Please refresh, or email us.
+            </p>
+          ) : !cfg ? (
+            <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>Loading…</p>
+          ) : !cfg.enabled ? (
+            <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>
+              Live chat is closed at the moment. Please email us and we’ll come back to you.
+            </p>
+          ) : cfg.mode === "telegram_link" ? (
+            <React.Fragment>
+              <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", margin: "0 0 4px" }}>
+                Opens a private Telegram chat with <strong>@{cfg.handle}</strong>. Your account is
+                identified automatically, so there’s no need to explain who you are.
+              </p>
+              {cfg.hours ? (
+                <p style={{ fontSize: "var(--text-xs)", color: "var(--text-faint)", margin: "0 0 16px" }}>{cfg.hours}</p>
+              ) : <div style={{ height: 12 }} />}
+              <Button variant="primary" iconLeft={I("send", 16)} onClick={open}>Chat on Telegram</Button>
+              {cfg.note ? (
+                <p style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: 14 }}>{cfg.note}</p>
+              ) : null}
+            </React.Fragment>
+          ) : (
+            /* mode === "in_app" — the bridge is not built yet; never leave a dead end. */
+            <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>
+              In-app support chat is being set up. Please email us in the meantime.
+            </p>
+          )}
+        </Card>
+      </div>
+    );
+  }
+
   function App() {
     var [page, setPage] = React.useState("dashboard");
     var [authUser, setAuthUser] = React.useState(null);
@@ -1792,7 +1855,7 @@
     if (authLoading) return <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", color: "var(--text-muted)" }}>Loading…</div>;
     if (!authUser) return <CandidateLogin onLogin={function(u){ setAuthUser(u); }} />;
 
-    var titles = { dashboard: "Welcome back, " + (authUser.name.split(" ")[0]), applications: "My applications", saved: "Saved jobs", recommended: "Recommended for you", following: "Companies I follow", alerts: "Job alerts", messages: "Messages", resume: "Résumé builder", profile: "Profile" };
+    var titles = { dashboard: "Welcome back, " + (authUser.name.split(" ")[0]), applications: "My applications", saved: "Saved jobs", recommended: "Recommended for you", following: "Companies I follow", alerts: "Job alerts", messages: "Messages", resume: "Résumé builder", support: "Help & support", profile: "Profile" };
 
     return (
       <div style={{ display: "flex", minHeight: "100vh", background: "var(--surface-page)" }}>
@@ -1811,6 +1874,7 @@
             {page === "messages"     && <Messages user={authUser} />}
             {page === "resume"       && <ResumeBuilder onResumeSaved={reloadResume} />}
             {page === "profile"      && <Profile user={authUser} onUserUpdate={function(u){ setAuthUser(u); }} />}
+            {page === "support"      && <HelpSupport user={authUser} />}
           </div>
         </div>
       </div>

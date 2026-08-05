@@ -171,6 +171,9 @@ Route::middleware('auth:api')->group(function () {
 
     // In-app notifications (candidate + employer)
     Route::get('notifications/unread',          [NotificationController::class, 'unreadCount']);
+    // How the dashboards should offer support (Telegram link today, in-app bridge later).
+    Route::get('support/config',                 [\App\Http\Controllers\SupportController::class, 'config']);
+
     Route::get('notifications',                 [NotificationController::class, 'index']);
     Route::post('notifications/read-all',       [NotificationController::class, 'markAllRead']);
     Route::post('notifications/{id}/read',      [NotificationController::class, 'markRead']);

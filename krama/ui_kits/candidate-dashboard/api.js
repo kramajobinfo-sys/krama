@@ -161,6 +161,9 @@ var cand = (function () {
     markNotifRead: function (id) { return req("POST", "/notifications/" + id + "/read"); },
     markAllNotifRead: function () { return req("POST", "/notifications/read-all"); },
 
+    // Support chat: the server decides the channel (Telegram link today, in-app later).
+    fetchSupportConfig: function () { return req("GET", "/support/config"); },
+
     token: token,
   };
 })();
