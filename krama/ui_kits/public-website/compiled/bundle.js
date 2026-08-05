@@ -8305,6 +8305,17 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     const [password, setPassword] = React.useState("");
     const [error, setError] = React.useState("");
     const [loading, setLoading] = React.useState(false);
+    // Sign-in accepts an email OR a phone number, but only advertise phone while phone
+    // sign-up is actually available — otherwise the field promises something almost nobody
+    // can use. Server-driven, so it comes back on its own if an SMS gateway is configured.
+    const [phoneLogin, setPhoneLogin] = React.useState(false);
+    React.useEffect(function () {
+      window.KRAMA_API.authMethods().then(function (m) {
+        setPhoneLogin(!!(m && m.phone));
+      }).catch(function () {
+        setPhoneLogin(false);
+      });
+    }, []);
     const submit = () => {
       setError("");
       setLoading(true);
@@ -8363,9 +8374,9 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         fontWeight: 500
       }
     }, error), /*#__PURE__*/React.createElement(Input, {
-      label: TR("Email or phone"),
-      type: "text",
-      placeholder: "you@example.com or 012 345 678",
+      label: phoneLogin ? TR("Email or phone") : TR("Email"),
+      type: phoneLogin ? "text" : "email",
+      placeholder: phoneLogin ? "you@example.com or 012 345 678" : "you@example.com",
       value: identifier,
       onChange: e => setIdentifier(e.target.value),
       onKeyDown: onKey
