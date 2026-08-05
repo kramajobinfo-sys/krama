@@ -207,7 +207,7 @@
       { id: "messages",     label: "Messages",          icon: "message-square", badge: badges.messages },
       { id: "resume",       label: "Résumé builder",  icon: "file-text" },
       { id: "profile",      label: "Profile",          icon: "user-round" },
-      { id: "support",      label: "Help & support",  icon: "life-buoy" },
+      { id: "support",      label: "Help & support",  icon: "life-buoy", badge: badges.support },
     ];
     return (
       <aside className={"krm-sidebar" + (open ? " open" : "")} style={{ width: 248, flexShrink: 0, background: "var(--surface-card)", borderRight: "1px solid var(--border)", display: "flex", flexDirection: "column", padding: "20px 14px", position: "sticky", top: 0, height: "100vh" }}>
@@ -1718,7 +1718,7 @@
   // In-app support thread. Messages relay to a Telegram support group and agent replies come
   // back through the webhook, so there is nothing to push to the browser — poll while the
   // page is open (and only while the tab is visible, to avoid pointless background traffic).
-  function SupportThread() {
+  function SupportThread({ onRead }) {
     const [msgs, setMsgs] = React.useState(null);
     const [body, setBody] = React.useState("");
     const [sending, setSending] = React.useState(false);
@@ -1727,7 +1727,12 @@
 
     const load = function () {
       return cand.fetchSupportThread()
-        .then(function (d) { setMsgs((d && d.messages) || []); })
+        .then(function (d) {
+          setMsgs((d && d.messages) || []);
+          // GET /support/thread clears unread_for_user server-side, so drop the nav badge now
+          // rather than leaving it lit until the next 15s poll.
+          if (onRead) onRead();
+        })
         .catch(function () { /* keep whatever is on screen */ });
     };
 
@@ -1801,7 +1806,7 @@
   // Today that is a Telegram deep link carrying a signed token so whoever answers knows who
   // is writing. When the in-app bridge ships, config.mode becomes "in_app" and only the
   // branch below changes — the nav entry, the page and the API call all stay as they are.
-  function HelpSupport({ user }) {
+  function HelpSupport({ user, onRead }) {
     const [cfg, setCfg] = React.useState(null);
     const [failed, setFailed] = React.useState(false);
     React.useEffect(function () {
@@ -1848,7 +1853,7 @@
             </React.Fragment>
           ) : (
             /* mode === "in_app" — bridged to the Telegram support group. */
-            <SupportThread />
+            <SupportThread onRead={onRead} />
           )}
         </Card>
       </div>
@@ -1862,7 +1867,7 @@
     var [resume, setResume] = React.useState(null);   // for the profile-completion meter
     var [showOnboarding, setShowOnboarding] = React.useState(false);
     var onboardCheckedRef = React.useRef(false);
-    var [badges, setBadges] = React.useState({ applications: 0, saved: 0, messages: 0 });
+    var [badges, setBadges] = React.useState({ applications: 0, saved: 0, messages: 0, support: 0 });
     var [sidebarOpen, setSidebarOpen] = React.useState(false);
     // Which tab the Applications page opens on (set by the dashboard "Interviews" stat).
     var [appsInitialTab, setAppsInitialTab] = React.useState("all");
@@ -1913,6 +1918,11 @@
         cand.fetchUnreadCount().then(function(d) {
           setBadges(function(b) { return Object.assign({}, b, { messages: d.count || 0 }); });
         }).catch(function(){});
+        // Support replies come from an agent in Telegram, so nothing pushes them here —
+        // reuse this 15s poll instead of adding another interval.
+        cand.fetchSupportUnread().then(function(d) {
+          setBadges(function(b) { return Object.assign({}, b, { support: d.count || 0 }); });
+        }).catch(function(){});
       }
       pollUnread();
       var t = setInterval(pollUnread, 15000);
@@ -1954,7 +1964,7 @@
             {page === "messages"     && <Messages user={authUser} />}
             {page === "resume"       && <ResumeBuilder onResumeSaved={reloadResume} />}
             {page === "profile"      && <Profile user={authUser} onUserUpdate={function(u){ setAuthUser(u); }} />}
-            {page === "support"      && <HelpSupport user={authUser} />}
+            {page === "support"      && <HelpSupport user={authUser} onRead={function(){ setBadges(function(b){ return Object.assign({}, b, { support: 0 }); }); }} />}
           </div>
         </div>
       </div>

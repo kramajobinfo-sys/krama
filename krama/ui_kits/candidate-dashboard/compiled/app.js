@@ -579,7 +579,8 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     }, {
       id: "support",
       label: "Help & support",
-      icon: "life-buoy"
+      icon: "life-buoy",
+      badge: badges.support
     }];
     return /*#__PURE__*/React.createElement("aside", {
       className: "krm-sidebar" + (open ? " open" : ""),
@@ -4643,7 +4644,9 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
   // In-app support thread. Messages relay to a Telegram support group and agent replies come
   // back through the webhook, so there is nothing to push to the browser — poll while the
   // page is open (and only while the tab is visible, to avoid pointless background traffic).
-  function SupportThread() {
+  function SupportThread({
+    onRead
+  }) {
     const [msgs, setMsgs] = React.useState(null);
     const [body, setBody] = React.useState("");
     const [sending, setSending] = React.useState(false);
@@ -4652,6 +4655,9 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     const load = function () {
       return cand.fetchSupportThread().then(function (d) {
         setMsgs(d && d.messages || []);
+        // GET /support/thread clears unread_for_user server-side, so drop the nav badge now
+        // rather than leaving it lit until the next 15s poll.
+        if (onRead) onRead();
       }).catch(function () {/* keep whatever is on screen */});
     };
     React.useEffect(function () {
@@ -4786,7 +4792,8 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
   // is writing. When the in-app bridge ships, config.mode becomes "in_app" and only the
   // branch below changes — the nav entry, the page and the API call all stay as they are.
   function HelpSupport({
-    user
+    user,
+    onRead
   }) {
     const [cfg, setCfg] = React.useState(null);
     const [failed, setFailed] = React.useState(false);
@@ -4877,7 +4884,9 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     }, cfg.note) : null) :
     /*#__PURE__*/
     /* mode === "in_app" — bridged to the Telegram support group. */
-    React.createElement(SupportThread, null)));
+    React.createElement(SupportThread, {
+      onRead: onRead
+    })));
   }
   function App() {
     var [page, setPage] = React.useState("dashboard");
@@ -4889,7 +4898,8 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     var [badges, setBadges] = React.useState({
       applications: 0,
       saved: 0,
-      messages: 0
+      messages: 0,
+      support: 0
     });
     var [sidebarOpen, setSidebarOpen] = React.useState(false);
     // Which tab the Applications page opens on (set by the dashboard "Interviews" stat).
@@ -4969,6 +4979,15 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
           setBadges(function (b) {
             return Object.assign({}, b, {
               messages: d.count || 0
+            });
+          });
+        }).catch(function () {});
+        // Support replies come from an agent in Telegram, so nothing pushes them here —
+        // reuse this 15s poll instead of adding another interval.
+        cand.fetchSupportUnread().then(function (d) {
+          setBadges(function (b) {
+            return Object.assign({}, b, {
+              support: d.count || 0
             });
           });
         }).catch(function () {});
@@ -5104,7 +5123,14 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         setAuthUser(u);
       }
     }), page === "support" && /*#__PURE__*/React.createElement(HelpSupport, {
-      user: authUser
+      user: authUser,
+      onRead: function () {
+        setBadges(function (b) {
+          return Object.assign({}, b, {
+            support: 0
+          });
+        });
+      }
     }))));
   }
   window.KramaCandidateApp = App;

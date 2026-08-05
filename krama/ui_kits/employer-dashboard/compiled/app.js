@@ -9646,7 +9646,9 @@
   // In-app support thread. Messages relay to a Telegram support group and agent replies come
   // back through the webhook, so there is nothing to push to the browser — poll while the
   // page is open (and only while the tab is visible, to avoid pointless background traffic).
-  function SupportThread() {
+  function SupportThread({
+    onRead
+  }) {
     const [msgs, setMsgs] = React.useState(null);
     const [body, setBody] = React.useState("");
     const [sending, setSending] = React.useState(false);
@@ -9655,6 +9657,9 @@
     const load = function () {
       return emp.fetchSupportThread().then(function (d) {
         setMsgs(d && d.messages || []);
+        // GET /support/thread clears unread_for_user server-side, so drop the nav badge now
+        // rather than leaving it lit until the next 15s poll.
+        if (onRead) onRead();
       }).catch(function () {/* keep whatever is on screen */});
     };
     React.useEffect(function () {
@@ -9789,7 +9794,8 @@
   // is writing. When the in-app bridge ships, config.mode becomes "in_app" and only the
   // branch below changes — the nav entry, the page and the API call all stay as they are.
   function HelpSupport({
-    user
+    user,
+    onRead
   }) {
     const [cfg, setCfg] = React.useState(null);
     const [failed, setFailed] = React.useState(false);
@@ -9880,7 +9886,9 @@
     }, cfg.note) : null) :
     /*#__PURE__*/
     /* mode === "in_app" — bridged to the Telegram support group. */
-    React.createElement(SupportThread, null)));
+    React.createElement(SupportThread, {
+      onRead: onRead
+    })));
   }
   function App() {
     const [page, setPage] = React.useState("dashboard");
@@ -9902,6 +9910,7 @@
     const [allSubs, setAllSubs] = React.useState([]);
     const [planPicker, setPlanPicker] = React.useState(null);
     const [unreadMsg, setUnreadMsg] = React.useState(0);
+    const [supportUnread, setSupportUnread] = React.useState(0);
     const [toast, setToast] = React.useState("");
     React.useEffect(() => {
       emp.fetchMe().then(function (u) {
@@ -10014,6 +10023,11 @@
         emp.fetchUnreadCount().then(function (d) {
           setUnreadMsg(d.count || 0);
         }).catch(function () {});
+        // Support replies arrive out-of-band (an agent answering in Telegram), so there is
+        // nothing to push — piggyback on the existing 15s poll rather than adding a second one.
+        emp.fetchSupportUnread().then(function (d) {
+          setSupportUnread(d.count || 0);
+        }).catch(function () {});
       }
       pollUnread();
       var t = setInterval(pollUnread, 15000);
@@ -10067,6 +10081,7 @@
       jobs: companyPending,
       applicants: totalApps,
       messages: unreadMsg,
+      support: supportUnread,
       billing: sub && sub.status === "pending" ? 1 : 0
     };
     const titles = {
@@ -10161,7 +10176,10 @@
       user: authUser,
       onUserUpdate: u => setAuthUser(u)
     }), page === "support" && /*#__PURE__*/React.createElement(HelpSupport, {
-      user: authUser
+      user: authUser,
+      onRead: function () {
+        setSupportUnread(0);
+      }
     })), /*#__PURE__*/React.createElement(JobFormModal, {
       open: !!posting,
       mode: posting && posting.mode,

@@ -3284,7 +3284,7 @@
   // In-app support thread. Messages relay to a Telegram support group and agent replies come
   // back through the webhook, so there is nothing to push to the browser — poll while the
   // page is open (and only while the tab is visible, to avoid pointless background traffic).
-  function SupportThread() {
+  function SupportThread({ onRead }) {
     const [msgs, setMsgs] = React.useState(null);
     const [body, setBody] = React.useState("");
     const [sending, setSending] = React.useState(false);
@@ -3293,7 +3293,12 @@
 
     const load = function () {
       return emp.fetchSupportThread()
-        .then(function (d) { setMsgs((d && d.messages) || []); })
+        .then(function (d) {
+          setMsgs((d && d.messages) || []);
+          // GET /support/thread clears unread_for_user server-side, so drop the nav badge now
+          // rather than leaving it lit until the next 15s poll.
+          if (onRead) onRead();
+        })
         .catch(function () { /* keep whatever is on screen */ });
     };
 
@@ -3367,7 +3372,7 @@
   // Today that is a Telegram deep link carrying a signed token so whoever answers knows who
   // is writing. When the in-app bridge ships, config.mode becomes "in_app" and only the
   // branch below changes — the nav entry, the page and the API call all stay as they are.
-  function HelpSupport({ user }) {
+  function HelpSupport({ user, onRead }) {
     const [cfg, setCfg] = React.useState(null);
     const [failed, setFailed] = React.useState(false);
     React.useEffect(function () {
@@ -3414,7 +3419,7 @@
             </React.Fragment>
           ) : (
             /* mode === "in_app" — bridged to the Telegram support group. */
-            <SupportThread />
+            <SupportThread onRead={onRead} />
           )}
         </Card>
       </div>
@@ -3437,6 +3442,7 @@
     const [allSubs, setAllSubs] = React.useState([]);
     const [planPicker, setPlanPicker] = React.useState(null);
     const [unreadMsg, setUnreadMsg] = React.useState(0);
+    const [supportUnread, setSupportUnread] = React.useState(0);
     const [toast, setToast] = React.useState("");
 
     React.useEffect(() => {
@@ -3508,6 +3514,9 @@
       if (!authUser) return;
       function pollUnread() {
         emp.fetchUnreadCount().then(function (d) { setUnreadMsg(d.count || 0); }).catch(function () {});
+        // Support replies arrive out-of-band (an agent answering in Telegram), so there is
+        // nothing to push — piggyback on the existing 15s poll rather than adding a second one.
+        emp.fetchSupportUnread().then(function (d) { setSupportUnread(d.count || 0); }).catch(function () {});
       }
       pollUnread();
       var t = setInterval(pollUnread, 15000);
@@ -3541,7 +3550,7 @@
     const totalApps = jobs.reduce((s, j) => s + (j.applications_count || 0), 0);
     // Company admin sees pending-review badge on jobs tab; recruiters see awaiting-review count
     // Alert badge on Plan & billing when a subscription is pending payment/approval.
-    const badges = { jobs: companyPending, applicants: totalApps, messages: unreadMsg, billing: (sub && sub.status === "pending") ? 1 : 0 };
+    const badges = { jobs: companyPending, applicants: totalApps, messages: unreadMsg, support: supportUnread, billing: (sub && sub.status === "pending") ? 1 : 0 };
 
     const titles = { dashboard: "Dashboard", jobs: "Job postings", applicants: "Applicant tracking", messages: "Messages", team: "Team", company: "Company profile", billing: "Plan & billing", support: "Help & support", profile: "My Profile" };
     return (
@@ -3563,7 +3572,7 @@
           {page === "messages" && <Messages user={authUser} />}
           {page === "billing" && <Billing onSubChange={loadSub} />}
           {page === "profile" && <MyProfile user={authUser} onUserUpdate={u => setAuthUser(u)} />}
-          {page === "support" && <HelpSupport user={authUser} />}
+          {page === "support" && <HelpSupport user={authUser} onRead={function () { setSupportUnread(0); }} />}
         </div>
         <JobFormModal open={!!posting} mode={posting && posting.mode} job={posting && posting.job} onClose={() => setPosting(null)} onCreated={function(msg) { loadJobs(); setToast(msg || "Done"); setTimeout(function() { setToast(""); }, 3000); }} onPublishRequest={publishJob} user={authUser} />
         <PlanPickerModal picker={planPicker} onPick={confirmPlanPick} onClose={() => setPlanPicker(null)} />
