@@ -6,7 +6,7 @@
   <title>@yield('title')</title>
   <meta name="description" content="{{ $metaDesc }}">
   <link rel="canonical" href="{{ $canonical }}">
-  <meta name="robots" content="index, follow, max-image-preview:large">
+  <meta name="robots" content="@yield('robots', 'index, follow, max-image-preview:large')">
 
   {{-- Open Graph (social share previews) --}}
   <meta property="og:site_name" content="Krama">

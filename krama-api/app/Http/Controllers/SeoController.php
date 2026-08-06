@@ -30,6 +30,50 @@ class SeoController extends Controller
         'hour' => 'HOUR', 'day' => 'DAY', 'month' => 'MONTH', 'year' => 'YEAR',
     ];
 
+    // ── Digital CV (shareable public résumé page + QR) ──────────────────────────
+    // The share token is {userId}-{HMAC(userId)} — stable, non-enumerable (you can't forge
+    // the signature without APP_KEY), and reversible (the id is in the URL), so no DB column
+    // or migration is needed. hash_equals() guards against timing attacks.
+    public static function cvToken($userId): string
+    {
+        $sig = substr(hash_hmac('sha256', $userId . '|krama-cv', (string) config('app.key')), 0, 24);
+        return $userId . '-' . $sig;
+    }
+
+    public static function cvShareUrl($userId): string
+    {
+        return url('/cv/' . self::cvToken($userId));
+    }
+
+    /** GET /cv/{token} — a candidate's public Digital CV. Private CVs are not shareable (404). */
+    public function candidateCv(string $token)
+    {
+        [$id, $sig] = array_pad(explode('-', $token, 2), 2, '');
+        abort_if(! ctype_digit($id) || ! hash_equals(self::cvToken($id), $token), 404);
+
+        $user = \App\Models\User::whereHas('role', fn ($q) => $q->where('slug', 'candidate'))
+            ->where('id', (int) $id)->where('status', 'active')->first();
+        abort_if(! $user, 404);
+        abort_if(($user->cv_visibility ?? 'employers') === 'private', 404);
+
+        $resume = \App\Models\Resume::where('candidate_id', $user->id)->orderByDesc('is_primary')->orderByDesc('id')->first();
+
+        $name      = $user->name;
+        $headline  = $resume ? $resume->headline : null;
+        $canonical = self::cvShareUrl($user->id);
+        $metaDesc  = trim(($headline ? $headline . ' — ' : '') . $name . ' · CV on Krama');
+        $ld        = array_filter([
+            '@context' => 'https://schema.org',
+            '@type'    => 'Person',
+            'name'     => $name,
+            'jobTitle' => $headline ?: null,
+            'image'    => $user->avatar_url ?: null,
+            'url'      => $canonical,
+        ], fn ($v) => $v !== null && $v !== '');
+
+        return view('seo.cv', compact('user', 'resume', 'canonical', 'metaDesc', 'ld', 'name', 'headline'));
+    }
+
     /** GET /jobs/{slug} — one published job. */
     public function job(string $slug)
     {

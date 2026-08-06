@@ -86,6 +86,7 @@ var cand = (function () {
 
     // Resume
     fetchResume: function () { return req("GET", "/candidate/resume"); },
+    fetchCvLink: function () { return req("GET", "/candidate/cv-link"); },
     saveResume: function (data) { return req("PUT", "/candidate/resume", data); },
     uploadCv: function (file) {
       var form = new FormData();

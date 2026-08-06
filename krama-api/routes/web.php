@@ -11,6 +11,7 @@ Route::get('/jobs/{slug}/og.png',    [SeoController::class, 'jobOg']);
 Route::get('/jobs/{slug}',           [SeoController::class, 'job']);
 Route::get('/companies/{id}/og.png', [SeoController::class, 'companyOg'])->whereNumber('id');
 Route::get('/companies/{id}',        [SeoController::class, 'company'])->whereNumber('id');
+Route::get('/cv/{token}',            [SeoController::class, 'candidateCv']);
 
 /*
 |--------------------------------------------------------------------------

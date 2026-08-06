@@ -10,6 +10,18 @@ use Illuminate\Support\Str;
 
 class ResumeController extends Controller
 {
+    // GET /api/candidate/cv-link — the current candidate's public Digital-CV share URL (+ visibility),
+    // used by the dashboard to render the QR code and shareable link.
+    public function cvLink(Request $request)
+    {
+        $user = $request->user();
+
+        return response()->json([
+            'url'        => SeoController::cvShareUrl($user->id),
+            'visibility' => $user->cv_visibility ?? 'employers',
+        ]);
+    }
+
     // GET /api/admin/resumes — paginated list with candidate info
     public function adminIndex(Request $request)
     {

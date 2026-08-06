@@ -216,7 +216,15 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     "Access your applications and saved jobs.": "ចូលមើលពាក្យសុំ និងការងារបានរក្សាទុករបស់អ្នក។",
     "Password": "ពាក្យសម្ងាត់",
     "Sign in": "ចូល",
-    "Signing in…": "កំពុងចូល…"
+    "Signing in…": "កំពុងចូល…",
+    // Digital CV
+    "My Digital CV": "CV ឌីជីថលរបស់ខ្ញុំ",
+    "Share your CV with a link or QR code.": "ចែករំលែក CV របស់អ្នកជាមួយតំណ ឬកូដ QR។",
+    "Scan the code or share the link — anyone can view your CV, no login needed.": "ស្កេនកូដ ឬចែករំលែកតំណ — នរណាក៏អាចមើល CV របស់អ្នកបាន ដោយមិនចាំបាច់ចូល។",
+    "Copy link": "ចម្លងតំណ",
+    "Copied!": "បានចម្លង!",
+    "Open public CV": "បើក CV សាធារណៈ",
+    "Your CV is private, so this link won't open. Set visibility to Employers or Public in your Profile to share it.": "CV របស់អ្នកជាឯកជន ដូច្នេះតំណនេះនឹងមិនបើកទេ។ កំណត់ភាពមើលឃើញទៅ និយោជក ឬ សាធារណៈ ក្នុងប្រវត្តិរូប ដើម្បីចែករំលែក។"
   };
   try {
     if (window.KRAMA_I18N && window.KRAMA_I18N.km) {
@@ -749,6 +757,10 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       id: "dashboard",
       label: "Dashboard",
       icon: "layout-dashboard"
+    }, {
+      id: "cv",
+      label: "My Digital CV",
+      icon: "qr-code"
     }, {
       id: "applications",
       label: "My applications",
@@ -5128,6 +5140,180 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       onRead: onRead
     })));
   }
+
+  // ── Digital CV (shareable public CV page + QR) ─────────────────────────────
+  // Renders a URL to a QR image via the qrcodejs UMD lib (loaded on demand from the CDN),
+  // same pattern as the employer KHQR canvas.
+  function QrCanvas({
+    value,
+    size
+  }) {
+    var ref = React.useRef(null);
+    React.useEffect(function () {
+      var s = size || 200;
+      function draw() {
+        if (window.QRCode && ref.current && value) {
+          ref.current.innerHTML = "";
+          new window.QRCode(ref.current, {
+            text: value,
+            width: s,
+            height: s,
+            correctLevel: window.QRCode.CorrectLevel.M
+          });
+        }
+      }
+      if (window.QRCode) {
+        draw();
+        return;
+      }
+      var existing = document.getElementById("qrcode-lib");
+      if (existing) {
+        existing.addEventListener("load", draw);
+        return;
+      }
+      var sc = document.createElement("script");
+      sc.id = "qrcode-lib";
+      sc.src = "https://unpkg.com/qrcodejs@1.0.0/qrcode.min.js";
+      sc.onload = draw;
+      document.head.appendChild(sc);
+    }, [value, size]);
+    return /*#__PURE__*/React.createElement("div", {
+      ref: ref,
+      style: {
+        width: size || 200,
+        height: size || 200
+      }
+    });
+  }
+  function DigitalCv({
+    user
+  }) {
+    var [link, setLink] = React.useState(null);
+    var [loading, setLoading] = React.useState(true);
+    var [copied, setCopied] = React.useState(false);
+    React.useEffect(function () {
+      cand.fetchCvLink().then(function (d) {
+        setLink(d);
+        setLoading(false);
+      }).catch(function () {
+        setLoading(false);
+      });
+    }, []);
+    function copy() {
+      if (!link || !link.url) return;
+      try {
+        navigator.clipboard.writeText(link.url);
+      } catch (e) {}
+      setCopied(true);
+      setTimeout(function () {
+        setCopied(false);
+      }, 1800);
+    }
+    var isPrivate = link && link.visibility === "private";
+    var url = link ? link.url : "";
+    return /*#__PURE__*/React.createElement("div", {
+      className: "krm-page-pad",
+      style: {
+        padding: 28,
+        maxWidth: 720
+      }
+    }, /*#__PURE__*/React.createElement(ScreenHead, {
+      title: T("My Digital CV"),
+      sub: T("Share your CV with a link or QR code.")
+    }), loading ? /*#__PURE__*/React.createElement("div", {
+      style: {
+        color: "var(--text-muted)"
+      }
+    }, T("Loading…")) : /*#__PURE__*/React.createElement(Card, {
+      padding: 28
+    }, isPrivate && /*#__PURE__*/React.createElement("div", {
+      style: {
+        padding: "12px 16px",
+        background: "var(--warning-subtle, #fef9c3)",
+        color: "var(--warning, #92400e)",
+        borderRadius: "var(--radius-md)",
+        fontSize: "var(--text-sm)",
+        marginBottom: 20
+      }
+    }, T("Your CV is private, so this link won't open. Set visibility to Employers or Public in your Profile to share it.")), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        gap: 24,
+        alignItems: "center",
+        flexWrap: "wrap",
+        justifyContent: "center"
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        padding: 14,
+        background: "#fff",
+        border: "1px solid var(--border)",
+        borderRadius: "var(--radius-lg)",
+        flexShrink: 0
+      }
+    }, /*#__PURE__*/React.createElement(QrCanvas, {
+      value: url,
+      size: 200
+    })), /*#__PURE__*/React.createElement("div", {
+      style: {
+        flex: 1,
+        minWidth: 240
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontWeight: 700,
+        color: "var(--text-strong)",
+        fontSize: "var(--text-md)",
+        marginBottom: 6
+      }
+    }, user ? user.name : ""), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: "var(--text-sm)",
+        color: "var(--text-muted)",
+        marginBottom: 16,
+        lineHeight: 1.6
+      }
+    }, T("Scan the code or share the link — anyone can view your CV, no login needed.")), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        gap: 8,
+        alignItems: "center",
+        flexWrap: "wrap"
+      }
+    }, /*#__PURE__*/React.createElement("input", {
+      readOnly: true,
+      value: url,
+      onClick: function (e) {
+        e.target.select();
+      },
+      style: {
+        flex: 1,
+        minWidth: 180,
+        height: 40,
+        padding: "0 12px",
+        border: "1px solid var(--border)",
+        borderRadius: "var(--radius-md)",
+        fontFamily: "var(--font-sans)",
+        fontSize: "var(--text-sm)",
+        color: "var(--text-body)",
+        background: "var(--surface-page)"
+      }
+    }), /*#__PURE__*/React.createElement(Button, {
+      variant: "secondary",
+      iconLeft: I(copied ? "check" : "copy", 15),
+      onClick: copy
+    }, copied ? T("Copied!") : T("Copy link"))), /*#__PURE__*/React.createElement("div", {
+      style: {
+        marginTop: 12
+      }
+    }, /*#__PURE__*/React.createElement(Button, {
+      variant: "primary",
+      iconLeft: I("external-link", 15),
+      onClick: function () {
+        if (url) window.open(url, "_blank", "noopener");
+      }
+    }, T("Open public CV")))))));
+  }
   function App() {
     var [page, setPage] = React.useState("dashboard");
     var [lang, setLang] = React.useState(window.KRAMA_LANG === "km" ? "km" : "en");
@@ -5271,6 +5457,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     });
     var titles = {
       dashboard: T("Welcome back") + ", " + authUser.name.split(" ")[0],
+      cv: T("My Digital CV"),
       applications: T("My applications"),
       saved: T("Saved jobs"),
       recommended: T("Recommended for you"),
@@ -5340,6 +5527,8 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       onStartWizard: function () {
         setShowOnboarding(true);
       }
+    }), page === "cv" && /*#__PURE__*/React.createElement(DigitalCv, {
+      user: authUser
     }), page === "applications" && /*#__PURE__*/React.createElement(Applications, {
       initialTab: appsInitialTab,
       onBadgeChange: function (n) {
