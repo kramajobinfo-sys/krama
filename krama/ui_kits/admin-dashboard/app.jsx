@@ -6291,6 +6291,18 @@
     );
   }
 
+  // <input type="date"> has no design-system equivalent, so it is styled by hand. These match
+  // the DS <Select> exactly (44px tall, 15px text, --border-strong, white) — the previous values
+  // were 38px/13px with `--border` and `background: var(--surface-input)`, a token that is not
+  // defined anywhere in krama/tokens, so those fields rendered shorter, lighter and transparent
+  // next to every real DS control in the same form.
+  const DATE_INPUT = {
+    width: "100%", height: 44, padding: "0 14px", borderRadius: "var(--radius-md)",
+    border: "1px solid var(--border-strong)", background: "var(--surface-card)",
+    color: "var(--text-body)", fontFamily: "var(--font-sans)", fontSize: "var(--text-base)",
+  };
+  const DATE_LABEL = { fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-strong)", marginBottom: 6 };
+
   function CouponsPanel() {
     const [rows, setRows] = React.useState(null);
     const [q, setQ] = React.useState("");
@@ -6373,14 +6385,12 @@
     };
 
     return (
-      <div>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18, gap: 12, flexWrap: "wrap" }}>
-          <div>
-            <h1 style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: "var(--text-2xl)", color: "var(--text-strong)", margin: 0 }}>Coupons</h1>
-            <p style={{ color: "var(--text-muted)", fontSize: "var(--text-sm)", margin: "4px 0 0" }}>Promo &amp; event discount codes employers apply at checkout (Khmer New Year, Water Festival…).</p>
-          </div>
-          <Button variant="primary" onClick={openNew}>{I("plus", 15)} New coupon</Button>
-        </div>
+      <div className="krm-page-pad" style={{ padding: 28, maxWidth: 1100 }}>
+        <ScreenHead
+          title="Coupons"
+          sub="Promo & event discount codes employers apply at checkout (Khmer New Year, Water Festival…)."
+          action={<Button variant="primary" onClick={openNew}>{I("plus", 15)} New coupon</Button>}
+        />
 
         <ReferralSettingsCard />
 
@@ -6399,7 +6409,7 @@
           <Card>
             <div className="krm-table-wrap">
               <div style={{ minWidth: 780 }}>
-                <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr 1.3fr 0.8fr 1fr 0.8fr 1.4fr", gap: 12, padding: "10px 14px", borderBottom: "1px solid var(--border)", fontSize: "var(--text-xs)", fontWeight: 700, textTransform: "uppercase", color: "var(--text-muted)" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr 1.3fr 0.8fr 1fr 0.8fr minmax(252px, 1.4fr)", gap: 12, padding: "10px 14px", borderBottom: "1px solid var(--border)", fontSize: "var(--text-xs)", fontWeight: 700, textTransform: "uppercase", color: "var(--text-muted)" }}>
                   <span>Code</span><span>Type</span><span>Reward</span><span>Used</span><span>Expires</span><span>Status</span><span style={{ textAlign: "right" }}>Actions</span>
                 </div>
                 {rows.map(function (c) {
@@ -6407,7 +6417,7 @@
                   var cap = c.scope === "single_use" ? (c.max_redemptions || 1) : (c.max_redemptions || "∞");
                   var expired = c.is_expired;
                   return (
-                    <div key={c.id} style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr 1.3fr 0.8fr 1fr 0.8fr 1.4fr", gap: 12, padding: "12px 14px", borderBottom: "1px solid var(--border-subtle)", alignItems: "center", fontSize: "var(--text-sm)" }}>
+                    <div key={c.id} style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr 1.3fr 0.8fr 1fr 0.8fr minmax(252px, 1.4fr)", gap: 12, padding: "12px 14px", borderBottom: "1px solid var(--border-subtle)", alignItems: "center", fontSize: "var(--text-sm)" }}>
                       <div>
                         <div style={{ fontFamily: "var(--font-mono)", fontWeight: 700, color: "var(--text-strong)" }}>{c.code}</div>
                         {c.label ? <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>{c.label}</div> : null}
@@ -6416,7 +6426,11 @@
                       <span style={{ color: "var(--text-body)" }}>{rewardSummary(c)}</span>
                       <span style={{ color: "var(--text-body)" }}>{used}{cap !== "∞" ? " / " + cap : ""}</span>
                       <span style={{ color: expired ? "var(--danger)" : "var(--text-muted)" }}>{fmtDate(c.expires_at)}</span>
-                      <Badge tone={expired ? "danger" : (c.is_active ? "success" : "neutral")}>{expired ? "Expired" : (c.is_active ? "Active" : "Off")}</Badge>
+                      {/* justifySelf so the pill hugs its label — a grid item stretches to fill
+                          its track by default, which made the badge a full-column-wide block. */}
+                      <span style={{ justifySelf: "start" }}>
+                        <Badge tone={expired ? "danger" : (c.is_active ? "success" : "neutral")}>{expired ? "Expired" : (c.is_active ? "Active" : "Off")}</Badge>
+                      </span>
                       <div style={{ display: "flex", gap: 6, justifyContent: "flex-end", flexWrap: "wrap" }}>
                         <Button variant="ghost" size="sm" onClick={() => viewRedemptions(c)}>Uses</Button>
                         <Button variant="secondary" size="sm" onClick={() => openEdit(c)}>Edit</Button>
@@ -6465,12 +6479,12 @@
                   <Input label="Max total redemptions (optional)" value={String(modal.max_redemptions)} onChange={(e) => setF("max_redemptions", e.target.value)} placeholder="blank = unlimited" />
                 )}
                 <div>
-                  <div style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-strong)", marginBottom: 6 }}>Starts on (optional)</div>
-                  <input type="date" value={modal.starts_at} onChange={(e) => setF("starts_at", e.target.value)} style={{ width: "100%", height: 38, padding: "0 12px", borderRadius: "var(--radius-md)", border: "1px solid var(--border)", background: "var(--surface-input)", color: "var(--text-body)", fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)" }} />
+                  <div style={DATE_LABEL}>Starts on (optional)</div>
+                  <input type="date" value={modal.starts_at} onChange={(e) => setF("starts_at", e.target.value)} style={DATE_INPUT} />
                 </div>
                 <div>
-                  <div style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-strong)", marginBottom: 6 }}>Expires on</div>
-                  <input type="date" value={modal.expires_at} onChange={(e) => setF("expires_at", e.target.value)} style={{ width: "100%", height: 38, padding: "0 12px", borderRadius: "var(--radius-md)", border: "1px solid var(--border)", background: "var(--surface-input)", color: "var(--text-body)", fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)" }} />
+                  <div style={DATE_LABEL}>Expires on</div>
+                  <input type="date" value={modal.expires_at} onChange={(e) => setF("expires_at", e.target.value)} style={DATE_INPUT} />
                 </div>
                 <div style={{ gridColumn: "1 / -1", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                   <span style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-strong)" }}>Active</span>
@@ -7456,7 +7470,7 @@
 
     if (!authUser) return <AdminLogin onLogin={setAuthUser} />;
 
-    const titles = { dashboard: "Overview", jobs: "Job management", companies: "Company management", candidates: "Candidates", resumes: "Resume Builder", reviews: "Company reviews", forum: "Community forum", homepage: "Homepage content", seo: "SEO", feeds: "Feeds", ai: "AI provider", support: "Support chat", chat: "Chat agent", social: "Social login", email: "Email settings", telegram: "Telegram notifications", sms: "SMS gateway", social_post: "Social posting", payments: "Payment settings", reports: "Reports", banners: "Promotional banner", brand: "Brand settings", settings: "Settings · Users & roles", profile: "My Profile" };
+    const titles = { dashboard: "Overview", jobs: "Job management", companies: "Company management", candidates: "Candidates", resumes: "Resume Builder", reviews: "Company reviews", forum: "Community forum", homepage: "Homepage content", seo: "SEO", feeds: "Feeds", ai: "AI provider", support: "Support chat", chat: "Chat agent", social: "Social login", email: "Email settings", telegram: "Telegram notifications", sms: "SMS gateway", social_post: "Social posting", payments: "Payment settings", coupons: "Coupons & referrals", reports: "Reports", audit: "Audit log", cvmatch: "CV match", banners: "Promotional banner", brand: "Brand settings", settings: "Settings · Users & roles", profile: "My Profile" };
     return (
       <div style={{ display: "flex", minHeight: "100vh", background: "var(--surface-page)" }}>
         {sidebarOpen && <div className="krm-sidebar-backdrop open" onClick={() => setSidebarOpen(false)} />}
