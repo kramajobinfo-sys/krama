@@ -1593,12 +1593,12 @@
               <div style={{ padding: "40px 22px", textAlign: "center", color: "var(--text-muted)", fontSize: "var(--text-sm)" }}>No jobs posted yet.</div>
             )}
             {companyJobs.length > 0 && (
-              <React.Fragment>
-                <div style={{ display: "grid", gridTemplateColumns: "1.8fr 0.9fr 0.7fr 0.7fr 0.8fr", padding: "10px 22px", fontSize: "var(--text-xs)", fontWeight: 700, letterSpacing: ".04em", textTransform: "uppercase", color: "var(--text-faint)", borderBottom: "1px solid var(--border-subtle)" }}>
+              <div className="krm-cojobs-scroll">
+                <div className="krm-cojobs-row" style={{ display: "grid", gridTemplateColumns: "1.8fr 0.9fr 0.7fr 0.7fr 0.8fr", padding: "10px 22px", fontSize: "var(--text-xs)", fontWeight: 700, letterSpacing: ".04em", textTransform: "uppercase", color: "var(--text-faint)", borderBottom: "1px solid var(--border-subtle)" }}>
                   <span>Job title</span><span>Status</span><span>Applicants</span><span>Views</span><span>Posted</span>
                 </div>
                 {companyJobs.map((j, i) => (
-                  <div key={j.id} style={{ display: "grid", gridTemplateColumns: "1.8fr 0.9fr 0.7fr 0.7fr 0.8fr", alignItems: "center", padding: "14px 22px", borderBottom: i < companyJobs.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>
+                  <div key={j.id} className="krm-cojobs-row" style={{ display: "grid", gridTemplateColumns: "1.8fr 0.9fr 0.7fr 0.7fr 0.8fr", alignItems: "center", padding: "14px 22px", borderBottom: i < companyJobs.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>
                     <span style={{ fontWeight: 600, color: "var(--text-strong)" }}>{j.title}</span>
                     <span><StatusBadge status={j.status} /></span>
                     <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-sm)", color: "var(--text-body)" }}>{j.applications_count || 0}</span>
@@ -1606,7 +1606,7 @@
                     <span style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>{fmtDate(j.created_at)}</span>
                   </div>
                 ))}
-              </React.Fragment>
+              </div>
             )}
           </Card></div>
         )}
@@ -2107,7 +2107,30 @@
     const [notConfirmed, setNotConfirmed] = React.useState(false); // payment declined / not confirmed in time
     const [currency, setCurrency] = React.useState("USD");         // billing currency: USD or KHR
     const [fxRate, setFxRate] = React.useState(null);              // NBC USD→KHR rate for the riel option
-    React.useEffect(() => { if (plan) { setDone(false); setMethod(available[0] || null); setError(""); setKhqr(null); setStripeUrl(null); setPaymentId(null); setWaiting(false); setAttempts(0); setNotConfirmed(false); setCurrency("USD"); } }, [plan]);
+    // Promo coupon — validated server-side; couponResult holds {code,label,discount,new_charge,credits,free_days}.
+    const [couponInput, setCouponInput] = React.useState("");
+    const [couponResult, setCouponResult] = React.useState(null);
+    const [couponErr, setCouponErr] = React.useState("");
+    const [couponBusy, setCouponBusy] = React.useState(false);
+    React.useEffect(() => { if (plan) { setDone(false); setMethod(available[0] || null); setError(""); setKhqr(null); setStripeUrl(null); setPaymentId(null); setWaiting(false); setAttempts(0); setNotConfirmed(false); setCurrency("USD"); setCouponInput(""); setCouponResult(null); setCouponErr(""); setCouponBusy(false); } }, [plan]);
+
+    const applyCoupon = function () {
+      var code = (couponInput || "").trim();
+      if (!code || couponBusy) return;
+      setCouponBusy(true); setCouponErr("");
+      emp.validateCoupon(plan.id, code)
+        .then(function (r) { setCouponBusy(false); setCouponResult(r); })
+        .catch(function (e) { setCouponBusy(false); setCouponResult(null); setCouponErr((e && e.message) || "This coupon can't be applied."); });
+    };
+    const removeCoupon = function () { setCouponResult(null); setCouponInput(""); setCouponErr(""); };
+    // Pre-apply a personal referral reward (welcome discount / referrer thank-you) if the employer
+    // has one waiting — surfaced automatically, no code to type. They can still remove or replace it.
+    React.useEffect(function () {
+      if (!plan || isTrial || isFree) return;
+      emp.couponAvailable(plan.id).then(function (r) {
+        if (r && r.available) { setCouponResult(r); setCouponInput(r.code || ""); }
+      }).catch(function () {});
+    }, [plan]);
 
     // Fetch the official NBC USD→KHR rate once so the employer can pay in riel. If it can't be
     // reached the KHR option is simply hidden and checkout stays USD-only.
@@ -2152,14 +2175,21 @@
     const m = method ? PAY_META[method] : null;
     const acct = method ? pay[method] : null;
 
+    // Amount actually due after any coupon; willBeFree = a coupon that reduces it to $0, which
+    // the backend activates immediately (no gateway step) just like a free plan.
+    const netCharge  = couponResult ? Number(couponResult.new_charge) : planCharge(plan);
+    const willBeFree = !isTrial && !isFree && netCharge <= 0;
+
     const confirm = () => {
-      if (!isTrial && !isFree && !method) return;
+      if (!isTrial && !isFree && !willBeFree && !method) return;
       setBusy(true); setError("");
-      emp.subscribe(plan.id, isTrial ? "trial" : (isFree ? "other" : PAY_META[method].apiMethod), (!isTrial && !isFree) ? currency : undefined)
+      var couponCode = couponResult ? couponResult.code : undefined;
+      var noGateway  = isTrial || isFree || willBeFree;
+      emp.subscribe(plan.id, isTrial ? "trial" : (noGateway ? "other" : PAY_META[method].apiMethod), noGateway ? undefined : currency, couponCode)
         .then(function (res) {
           setBusy(false);
           // KHQR / ABA / Card(Stripe): enter the waiting state and poll for gateway confirmation.
-          if (res && res.payment && res.payment.id && (method === "khqr" || method === "aba" || method === "card")) {
+          if (!noGateway && res && res.payment && res.payment.id && (method === "khqr" || method === "aba" || method === "card")) {
             onPaid && onPaid(); // refresh billing list in the background
             if (method === "khqr") {
               setPaymentId(res.payment.id); setWaiting(true);
@@ -2309,16 +2339,39 @@
                 <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", padding: "14px 16px", background: "var(--surface-sunken)", borderRadius: "var(--radius-md)" }}>
                   <span style={{ fontWeight: 600, color: "var(--text-body)" }}>{plan.name} plan</span>
                   <span>{currency === "KHR" && fxRate ? (
-                    <strong style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-2xl)", color: "var(--text-strong)" }}>៛{khrOf(planCharge(plan)).toLocaleString()}</strong>
+                    <strong style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-2xl)", color: "var(--text-strong)" }}>៛{khrOf(netCharge).toLocaleString()}</strong>
                   ) : (
-                    <React.Fragment><strong style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-2xl)", color: "var(--text-strong)" }}>${planCharge(plan)}</strong>{planHasDiscount(plan) ? <span style={{ color: "var(--text-muted)", fontSize: "var(--text-sm)", textDecoration: "line-through", marginLeft: 6 }}>${plan.price}</span> : null}</React.Fragment>
+                    <React.Fragment><strong style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-2xl)", color: "var(--text-strong)" }}>${netCharge}</strong>{couponResult ? <span style={{ color: "var(--text-muted)", fontSize: "var(--text-sm)", textDecoration: "line-through", marginLeft: 6 }}>${planCharge(plan)}</span> : (planHasDiscount(plan) ? <span style={{ color: "var(--text-muted)", fontSize: "var(--text-sm)", textDecoration: "line-through", marginLeft: 6 }}>${plan.price}</span> : null)}</React.Fragment>
                   )}<span style={{ color: "var(--text-muted)", fontSize: "var(--text-sm)" }}> / {plan.interval}</span></span>
+                </div>
+                {/* Coupon code */}
+                <div>
+                  <div style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-strong)", marginBottom: 8 }}>Coupon code</div>
+                  {couponResult ? (
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "10px 14px", border: "1px solid var(--success-border, #86efac)", background: "var(--success-subtle)", borderRadius: "var(--radius-md)" }}>
+                      <div style={{ fontSize: "var(--text-sm)", color: "var(--text-body)", lineHeight: 1.5 }}>
+                        {couponResult.kind && couponResult.kind.indexOf("referral") === 0 ? <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontWeight: 700, color: "var(--success, #047857)" }}>{I("gift", 13)} Referral reward · </span> : null}
+                        <strong style={{ color: "var(--success, #047857)" }}>{couponResult.code}</strong> applied — you save ${couponResult.discount}
+                        {couponResult.credits ? <span> · +{couponResult.credits} featured credit{couponResult.credits !== 1 ? "s" : ""}</span> : null}
+                        {couponResult.free_days ? <span> · +{couponResult.free_days} free day{couponResult.free_days !== 1 ? "s" : ""}</span> : null}
+                      </div>
+                      <button onClick={removeCoupon} style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--text-muted)", fontSize: "var(--text-xs)", fontWeight: 700, flexShrink: 0 }}>Remove</button>
+                    </div>
+                  ) : (
+                    <div>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <input value={couponInput} onChange={(e) => setCouponInput(e.target.value.toUpperCase())} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); applyCoupon(); } }} placeholder="Enter code" style={{ flex: 1, padding: "10px 12px", border: "1px solid var(--border-strong)", borderRadius: "var(--radius-md)", fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)", textTransform: "uppercase", background: "var(--surface-card)", color: "var(--text-strong)" }} />
+                        <button onClick={applyCoupon} disabled={couponBusy || !couponInput.trim()} style={{ padding: "10px 16px", border: "1px solid var(--brand)", background: "var(--brand-subtle)", color: "var(--text-brand)", borderRadius: "var(--radius-md)", fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: "var(--text-sm)", cursor: (couponBusy || !couponInput.trim()) ? "default" : "pointer", opacity: (couponBusy || !couponInput.trim()) ? 0.6 : 1, flexShrink: 0 }}>{couponBusy ? "Checking…" : "Apply"}</button>
+                      </div>
+                      {couponErr ? <div style={{ marginTop: 6, fontSize: "var(--text-xs)", color: "var(--danger)" }}>{couponErr}</div> : null}
+                    </div>
+                  )}
                 </div>
                 {fxRate ? (
                   <div>
                     <div style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-strong)", marginBottom: 10 }}>Pay in</div>
                     <div style={{ display: "flex", gap: 8 }}>
-                      {[{ v: "USD", label: "US Dollar", amt: "$" + planCharge(plan) }, { v: "KHR", label: "Khmer Riel", amt: "៛" + khrOf(planCharge(plan)).toLocaleString() }].map(function (c) {
+                      {[{ v: "USD", label: "US Dollar", amt: "$" + netCharge }, { v: "KHR", label: "Khmer Riel", amt: "៛" + khrOf(netCharge).toLocaleString() }].map(function (c) {
                         var on = currency === c.v;
                         return (
                           <button key={c.v} type="button" onClick={function () { setCurrency(c.v); }} style={{ flex: 1, padding: "12px 14px", cursor: "pointer", textAlign: "left", border: "1.5px solid " + (on ? "var(--brand)" : "var(--border-strong)"), background: on ? "var(--brand-subtle)" : "var(--surface-card)", borderRadius: "var(--radius-md)" }}>
@@ -2391,7 +2444,7 @@
               </div>
               <div style={{ display: "flex", gap: 10, padding: "16px 22px", borderTop: "1px solid var(--border)" }}>
                 <Button variant="ghost" onClick={onClose}>Cancel</Button>
-                <Button variant="primary" block disabled={!method || busy} onClick={confirm}>{busy ? "Processing…" : (method === "khqr" || method === "aba" || method === "card") ? "Continue to pay" : method === "cod" ? "Confirm order" : "Confirm payment"}</Button>
+                <Button variant="primary" block disabled={(!method && !willBeFree) || busy} onClick={confirm}>{busy ? "Processing…" : willBeFree ? "Activate plan" : (method === "khqr" || method === "aba" || method === "card") ? "Continue to pay" : method === "cod" ? "Confirm order" : "Confirm payment"}</Button>
               </div>
             </React.Fragment>
             )
@@ -2412,6 +2465,48 @@
               <Button variant="primary" style={{ marginTop: 22 }} onClick={onClose}>Done</Button>
             </div>
           )}
+        </div>
+      </div>
+    );
+  }
+
+  function ReferralCard() {
+    const [ref, setRef] = React.useState(null);
+    const [copied, setCopied] = React.useState(false);
+    React.useEffect(function () { emp.fetchReferral().then(setRef).catch(function () {}); }, []);
+    if (!ref || !ref.code) return null;
+    const rewardLine = function (r) {
+      if (!r) return "";
+      var p = [];
+      if (r.percent_off) p.push(r.percent_off + "% off");
+      if (r.amount_off) p.push("$" + r.amount_off + " off");
+      if (r.credits) p.push(r.credits + " featured credit" + (r.credits !== 1 ? "s" : ""));
+      if (r.free_days) p.push(r.free_days + " free days");
+      return p.join(" + ");
+    };
+    const copy = function () {
+      try { navigator.clipboard.writeText(ref.link); setCopied(true); setTimeout(function () { setCopied(false); }, 1800); } catch (e) {}
+    };
+    const welcome = rewardLine(ref.welcome);
+    const referrer = rewardLine(ref.referrer);
+    return (
+      <div style={{ marginBottom: 24, padding: "20px 22px", borderRadius: "var(--radius-lg)", border: "1px solid var(--brand-border, var(--brand))", background: "var(--brand-subtle)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+          <span style={{ color: "var(--brand)" }}>{I("gift", 18)}</span>
+          <div style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: "var(--text-lg)", color: "var(--text-strong)" }}>Refer &amp; earn</div>
+        </div>
+        {ref.enabled && (welcome || referrer) ? (
+          <div style={{ fontSize: "var(--text-sm)", color: "var(--text-body)", marginBottom: 14, lineHeight: 1.6 }}>
+            {welcome ? <span>Your friend gets <strong>{welcome}</strong> on sign-up. </span> : null}
+            {referrer ? <span>You get <strong>{referrer}</strong> when they subscribe.</span> : null}
+          </div>
+        ) : (
+          <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginBottom: 14 }}>Share your code with other employers.</div>
+        )}
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+          <div style={{ fontFamily: "var(--font-mono)", fontWeight: 800, fontSize: "var(--text-lg)", letterSpacing: ".08em", color: "var(--text-strong)", padding: "8px 16px", background: "var(--surface-card)", border: "1px dashed var(--brand)", borderRadius: "var(--radius-md)" }}>{ref.code}</div>
+          <button onClick={copy} style={{ padding: "9px 16px", border: "none", background: "var(--brand)", color: "#fff", borderRadius: "var(--radius-md)", fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: "var(--text-sm)", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}>{I(copied ? "check" : "copy", 14)} {copied ? "Copied" : "Copy link"}</button>
+          <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>{ref.referred_count} referred · {ref.rewarded_count} reward{ref.rewarded_count !== 1 ? "s" : ""} earned</div>
         </div>
       </div>
     );
@@ -2504,6 +2599,7 @@
     return (
       <div className="krm-page-pad" style={{ padding: 28 }}>
         <ScreenHead title="Plan & billing" sub="Manage your subscription and billing history." />
+        <ReferralCard />
         {loading ? <div style={{ color: "var(--text-muted)", fontSize: "var(--text-sm)" }}>Loading…</div> : (
         <React.Fragment>
         {sub && sub.plan && (

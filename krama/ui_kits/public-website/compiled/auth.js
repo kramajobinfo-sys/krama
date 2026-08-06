@@ -488,6 +488,18 @@
     const [agreed, setAgreed] = React.useState(false);
     const [error, setError] = React.useState("");
     const [loading, setLoading] = React.useState(false);
+    // Referral code (employers) — prefilled from a ?ref=CODE share link, which also defaults the
+    // role to Employer since referrals are employer-to-employer.
+    const [referral, setReferral] = React.useState("");
+    React.useEffect(function () {
+      try {
+        var p = new URLSearchParams(window.location.search).get("ref");
+        if (p) {
+          setReferral(String(p).toUpperCase());
+          setRole("employer");
+        }
+      } catch (e) {}
+    }, []);
     const seg = (id, label, cur, setter) => /*#__PURE__*/React.createElement("button", {
       key: id,
       onClick: () => setter(id),
@@ -568,6 +580,7 @@
       };
       // The code verifies the address before the account is created, so it must go with it.
       if (mode === "email" && emailCode) payload.otp = otp;
+      if (role === "employer" && referral) payload.referral_code = referral.trim();
       window.KRAMA_API.register(payload).then(user => {
         setLoading(false);
         if (onLogin) onLogin(user);
@@ -732,6 +745,12 @@
       placeholder: TR("Min. 8 characters"),
       value: password,
       onChange: e => setPassword(e.target.value)
+    }), role === "employer" && /*#__PURE__*/React.createElement(Input, {
+      label: TR("Referral code (optional)"),
+      type: "text",
+      placeholder: TR("From a Krama employer who invited you"),
+      value: referral,
+      onChange: e => setReferral(e.target.value.toUpperCase())
     }), /*#__PURE__*/React.createElement(Checkbox, {
       label: /*#__PURE__*/React.createElement("span", {
         style: {

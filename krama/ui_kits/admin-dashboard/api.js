@@ -348,6 +348,17 @@
     updatePlan: function (id, data) { return req("PUT", "/admin/plans/" + id, data); },
     deletePlan: function (id) { return req("DELETE", "/admin/plans/" + id); },
 
+    // Coupons (promo / event discount codes)
+    fetchCoupons: function (page, q) {
+      var qs = "?per_page=50&page=" + (page || 1);
+      if (q) qs += "&q=" + encodeURIComponent(q);
+      return req("GET", "/admin/coupons" + qs);
+    },
+    createCoupon: function (data) { return req("POST", "/admin/coupons", data); },
+    updateCoupon: function (id, data) { return req("PUT", "/admin/coupons/" + id, data); },
+    deleteCoupon: function (id) { return req("DELETE", "/admin/coupons/" + id); },
+    fetchCouponRedemptions: function (id, page) { return req("GET", "/admin/coupons/" + id + "/redemptions?per_page=50&page=" + (page || 1)); },
+
     // Subscriptions
     fetchSubscriptions: function (status, page) {
       var qs = "?per_page=20&page=" + (page || 1);

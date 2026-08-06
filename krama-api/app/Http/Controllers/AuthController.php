@@ -177,6 +177,7 @@ class AuthController extends Controller
             'otp'      => 'nullable|string|max:10',
             'password' => ['required', 'string', Password::min(8)->mixedCase()->numbers()->symbols()],
             'role'     => 'in:employer,candidate',
+            'referral_code' => 'nullable|string|max:16',
         ]);
 
         $email = $data['email'] ?? null;
@@ -256,6 +257,19 @@ class AuthController extends Controller
         $user->created_at        = now();
         $user->updated_at        = now();
         $user->save();
+
+        // Referral: give every employer a shareable code, and record who referred them when a
+        // valid code was entered at sign-up (the welcome reward is issued once their company exists).
+        if ($roleSlug === 'employer') {
+            \App\Services\ReferralService::ensureCode($user);
+            if (! empty($data['referral_code'])) {
+                $referrer = \App\Services\ReferralService::referrerByCode($data['referral_code']);
+                if ($referrer && $referrer->id !== $user->id) {
+                    $user->referred_by = $referrer->id;
+                    $user->save();
+                }
+            }
+        }
 
         // Only fall back to the click-a-link email when the code path didn't already verify
         // them — otherwise we'd ask a verified user to verify again.

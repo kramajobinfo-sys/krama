@@ -114,9 +114,9 @@ class PaymentController extends Controller
             ->where('company_id', $company->id)
             ->whereIn('status', ['active', 'trial'])
             ->get();
-        $featuredPool      = (int) $featuredSubs->sum(fn ($s) => (int) ($s->plan->featured_credits ?? 0));
+        $featuredPool      = (int) $featuredSubs->sum(fn ($s) => (int) ($s->plan->featured_credits ?? 0) + (int) ($s->bonus_featured_credits ?? 0));
         $featuredUsed      = (int) $featuredSubs->sum(fn ($s) => (int) $s->featured_credits_used);
-        $featuredRemaining = (int) $featuredSubs->sum(fn ($s) => max(0, (int) ($s->plan->featured_credits ?? 0) - (int) $s->featured_credits_used));
+        $featuredRemaining = (int) $featuredSubs->sum(fn ($s) => max(0, (int) ($s->plan->featured_credits ?? 0) + (int) ($s->bonus_featured_credits ?? 0) - (int) $s->featured_credits_used));
 
         return response()->json([
             'company'            => $company->only('id', 'name'),
@@ -144,22 +144,40 @@ class PaymentController extends Controller
         $company = $this->employerCompany($user);
 
         $data = $request->validate([
-            'plan_id'  => 'required|exists:plans,id',
-            'method'   => 'required|in:stripe,aba,acleda,wing,khqr,cod,card,other,trial',
-            'currency' => 'sometimes|in:USD,KHR',
+            'plan_id'     => 'required|exists:plans,id',
+            'method'      => 'required|in:stripe,aba,acleda,wing,khqr,cod,card,other,trial',
+            'currency'    => 'sometimes|in:USD,KHR',
+            'coupon_code' => 'sometimes|nullable|string|max:40',
         ]);
 
         $plan = Plan::where('is_active', true)->findOrFail($data['plan_id']);
 
         // The amount actually billed = the plan's discounted (effective) price. Every downstream
         // charge derives from this single value (payment.amount → KHQR/ABA/Stripe + invoices).
-        $charge = $plan->effective_price;
+        $charge   = $plan->effective_price;
+        $origPrice = $charge;   // plan's own price before any coupon (drives free/trial detection)
 
-        // A $0 charge is only a timed trial if trial_days is explicitly set (> 0).
-        // A $0 charge with no trial_days is a genuinely free plan — activates immediately, never expires.
-        $isFreePlan = $charge == 0;
-        $isTrial = $isFreePlan && (int) $plan->trial_days > 0;
-        $trialDays = $isTrial ? (int) $plan->trial_days : 0;
+        // Promo coupon (optional) — reduces the pre-VAT charge and may grant bonus featured
+        // credits / free plan days. Validated against the company + plan; a bad code fails the
+        // whole request so the employer sees why rather than being silently charged full price.
+        $couponResult = null;
+        if (! empty($data['coupon_code'])) {
+            $couponResult = \App\Services\CouponService::evaluate($data['coupon_code'], $company, $plan, $charge);
+            if (! $couponResult['ok']) {
+                return response()->json(['message' => $couponResult['message']], 422);
+            }
+            $charge = $couponResult['new_charge'];
+        }
+
+        // Free/trial detection keys off the PLAN's own price, not the post-coupon charge — so a
+        // coupon that zeroes a paid plan activates immediately as a $0 *paid* order (proper renewal
+        // date + no "free plan already used" block), rather than masquerading as a trial/free plan.
+        $planIsFree   = $origPrice == 0;                                  // genuinely free/trial plan
+        $isTrial      = $planIsFree && (int) $plan->trial_days > 0;
+        $isFreePlan   = $planIsFree && ! $isTrial;                        // real free plan (never expires)
+        $couponZeroed = ! $planIsFree && $charge == 0;                    // paid plan reduced to $0 by coupon
+        $noPayment    = $isTrial || $isFreePlan || $couponZeroed;         // no gateway step needed
+        $trialDays    = $isTrial ? (int) $plan->trial_days : 0;
 
         // VAT (Cambodia) — added ON TOP (exclusive) when the tax feature is enabled AND this
         // company is VAT-registered (has a VAT TIN on file). Snapshotted onto the payment so the
@@ -195,7 +213,7 @@ class PaymentController extends Controller
 
         // A $0 plan (free OR trial) can only be used once per company — block repeat use so a
         // trial plan can't be re-subscribed over and over for unlimited free access.
-        if ($isFreePlan) {
+        if ($planIsFree) {
             $alreadyUsed = Subscription::where('company_id', $company->id)
                 ->where('plan_id', $plan->id)
                 ->exists();
@@ -220,11 +238,11 @@ class PaymentController extends Controller
             ->where('plan_id', $plan->id)
             ->exists();
 
-        DB::transaction(function () use ($company, $plan, $data, $isTrial, $isFreePlan, $trialDays, $payAmount, $payCurrency, $subtotal, $vatRate, $vatAmount, $isTaxInvoice, $fxRate, &$payment, &$subscription) {
+        DB::transaction(function () use ($company, $user, $plan, $data, $isTrial, $isFreePlan, $couponZeroed, $noPayment, $trialDays, $payAmount, $payCurrency, $subtotal, $vatRate, $vatAmount, $isTaxInvoice, $fxRate, $couponResult, &$payment, &$subscription) {
             $subscription = Subscription::create([
                 'company_id' => $company->id,
                 'plan_id'    => $plan->id,
-                'status'     => $isTrial ? 'trial' : ($isFreePlan ? 'active' : 'pending'),
+                'status'     => $isTrial ? 'trial' : (($isFreePlan || $couponZeroed) ? 'active' : 'pending'),
                 'started_at' => now(),
                 'renews_at'  => $isTrial
                     ? now()->addDays((int) $trialDays)
@@ -239,9 +257,9 @@ class PaymentController extends Controller
                 'invoice_no'      => $this->nextInvoiceNo(),
                 'amount'          => $payAmount,
                 'currency'        => $payCurrency,
-                'method'          => ($isTrial || $isFreePlan) ? 'other' : $data['method'],
-                'status'          => ($isTrial || $isFreePlan) ? 'paid' : 'pending',
-                'paid_at'         => ($isTrial || $isFreePlan) ? now() : null,
+                'method'          => $noPayment ? 'other' : $data['method'],
+                'status'          => $noPayment ? 'paid' : 'pending',
+                'paid_at'         => $noPayment ? now() : null,
                 'is_tax_invoice'      => $isTaxInvoice,
                 'subtotal'            => $subtotal,
                 'vat_rate'            => $isTaxInvoice ? $vatRate : 0,
@@ -249,8 +267,21 @@ class PaymentController extends Controller
                 'customer_vat_tin'    => $isTaxInvoice ? $company->vat_tin : null,
                 'customer_legal_name' => $isTaxInvoice ? ($company->vat_legal_name ?: $company->name) : null,
                 'fx_rate'             => $fxRate,
+                'coupon_code'         => $couponResult ? $couponResult['coupon']->code : null,
+                'coupon_discount'     => $couponResult ? $couponResult['discount'] : 0,
+                'coupon_credits'      => $couponResult ? $couponResult['credits'] : 0,
+                'coupon_free_days'    => $couponResult ? $couponResult['free_days'] : 0,
                 'created_at'      => now(),
             ]);
+
+            // Record the coupon redemption. For an immediately-active order (trial/free/coupon-zeroed)
+            // it is consumed now and its bonuses granted; a pending gateway payment defers both to
+            // PaymentService::fulfill() so an abandoned checkout never burns a single-use code.
+            if ($couponResult) {
+                \App\Services\CouponService::recordRedemption(
+                    $couponResult['coupon'], $company, $user->id, $payment, $subscription, $couponResult['discount'], $noPayment
+                );
+            }
         });
 
         if ($payment && $payment->status === 'pending') {
@@ -288,7 +319,9 @@ class PaymentController extends Controller
                 ? "Trial activated. Expires in {$trialDays} days."
                 : ($isFreePlan
                     ? 'Free plan activated.'
-                    : 'Payment pending. Complete payment to activate.'),
+                    : ($couponZeroed
+                        ? 'Coupon applied — your plan is now active.'
+                        : 'Payment pending. Complete payment to activate.')),
         ], 201);
     }
 

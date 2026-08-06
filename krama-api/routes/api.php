@@ -131,6 +131,9 @@ Route::middleware('auth:api')->group(function () {
     Route::post('employer/payments/{id}/aba-form',       [PaymentController::class, 'abaForm'])->middleware('throttle:20,1');
     Route::get('employer/payments/{id}/verify',          [PaymentController::class, 'verifyPayment'])->middleware('throttle:60,1');
     Route::get('employer/payments/{id}/invoice',         [PaymentController::class, 'invoice'])->middleware('throttle:60,1');
+    Route::post('employer/coupon/validate',              [\App\Http\Controllers\CouponController::class, 'validateCode'])->middleware('throttle:30,1');
+    Route::get('employer/coupon/available',              [\App\Http\Controllers\CouponController::class, 'available']);
+    Route::get('employer/referral',                      [\App\Http\Controllers\CouponController::class, 'myReferral']);
 
     // Employer: Telegram alerts (deep-link connect flow for new-application alerts)
     Route::post('employer/telegram/link',   [\App\Http\Controllers\TelegramController::class, 'link'])->middleware('throttle:20,1');
@@ -190,6 +193,7 @@ Route::middleware('auth:api')->group(function () {
     Route::put('candidate/resume',              [ResumeController::class, 'save']);
     Route::post('candidate/resume/upload',      [ResumeController::class, 'upload'])->middleware('throttle:10,1');
     Route::get('candidate/resume/cv',           [ResumeController::class, 'downloadCv'])->name('resume.download');
+    Route::get('candidate/cv-link',             [ResumeController::class, 'cvLink']);
 
     // Employer: CV match (credits-based; deterministic + AI)
     Route::get('employer/cv-match/candidates',   [\App\Http\Controllers\EmployerCvMatchController::class, 'candidates']);
@@ -317,6 +321,13 @@ Route::middleware(['auth:api', 'permission:site_settings'])->group(function () {
     Route::get('admin/subscriptions',               [PaymentController::class, 'adminSubscriptions']);
     Route::post('admin/subscriptions',              [PaymentController::class, 'adminCreateSubscription']);
     Route::put('admin/subscriptions/{id}',          [PaymentController::class, 'adminUpdateSubscription']);
+
+    // Admin: coupons (promo / event discount codes)
+    Route::get('admin/coupons',                     [\App\Http\Controllers\CouponController::class, 'adminIndex']);
+    Route::post('admin/coupons',                    [\App\Http\Controllers\CouponController::class, 'store']);
+    Route::put('admin/coupons/{id}',                [\App\Http\Controllers\CouponController::class, 'update']);
+    Route::delete('admin/coupons/{id}',             [\App\Http\Controllers\CouponController::class, 'destroy']);
+    Route::get('admin/coupons/{id}/redemptions',    [\App\Http\Controllers\CouponController::class, 'redemptions']);
 
     // Admin: reports
     Route::get('admin/reports/summary',             [ReportController::class, 'summary']);

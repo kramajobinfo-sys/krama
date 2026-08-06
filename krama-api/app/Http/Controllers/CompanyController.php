@@ -121,6 +121,10 @@ class CompanyController extends Controller
 
         \App\Models\Notification::recordAdmins('company_pending', 'New company pending', 'Company “' . $company->name . '” registered and is awaiting approval.');
 
+        // Referral: if this employer was referred, issue their personal welcome coupon now that a
+        // company (which owns the coupon) exists. No-op if not referred / referrals disabled.
+        \App\Services\ReferralService::issueWelcomeCoupon($company);
+
         return response()->json($company->load('location:id,name'), 201);
     }
 

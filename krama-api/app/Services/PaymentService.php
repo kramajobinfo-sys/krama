@@ -75,6 +75,13 @@ class PaymentService
                     ->update(['status' => 'active']);
             }
 
+            // Consume any coupon attached to this payment now that it is confirmed paid — marks
+            // the redemption used, bumps the coupon count, and grants its bonus credits/free days.
+            // Deferred here (from subscribe) so an abandoned pending checkout never burns a code.
+            if ($payment->coupon_code) {
+                CouponService::consumeForPayment($payment);
+            }
+
             return true;
         });
 

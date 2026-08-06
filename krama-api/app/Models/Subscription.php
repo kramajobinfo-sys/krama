@@ -10,13 +10,14 @@ class Subscription extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'company_id', 'plan_id', 'status', 'started_at', 'renews_at', 'job_post_limit', 'featured_credits_used',
+        'company_id', 'plan_id', 'status', 'started_at', 'renews_at', 'job_post_limit', 'featured_credits_used', 'bonus_featured_credits',
     ];
 
     protected $casts = [
-        'started_at'            => 'datetime',
-        'renews_at'             => 'datetime',
-        'featured_credits_used' => 'integer',
+        'started_at'             => 'datetime',
+        'renews_at'              => 'datetime',
+        'featured_credits_used'  => 'integer',
+        'bonus_featured_credits' => 'integer',
     ];
 
     /**

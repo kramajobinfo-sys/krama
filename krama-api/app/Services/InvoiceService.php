@@ -118,6 +118,15 @@ class InvoiceService
         $method   = self::methodLabel($payment->method);
         [$desc, $period] = self::lineItem($payment);
 
+        // Coupon snapshot — note it on the line item (always visible) and itemise it as a
+        // discount row in the standard USD invoice below.
+        $couponCode = trim((string) ($payment->coupon_code ?? ''));
+        $couponDisc = (float) ($payment->coupon_discount ?? 0);
+        $hasCoupon  = $couponCode !== '' && $couponDisc > 0;
+        if ($hasCoupon) {
+            $desc .= ' — coupon ' . $couponCode . ' applied';
+        }
+
         $companyName    = $company->name ?? 'Customer';
         $companyAddress = $company->address ?? '';
         $ownerEmail     = optional(optional($company)->owner)->email ?? '';
@@ -143,6 +152,14 @@ class InvoiceService
             $save = self::money($invPlan->price - $paidAmt, $payment->currency);
             $pct  = (int) $invPlan->discount_percent;
             $discountRow = "<tr><td style='padding:6px 12px;text-align:right;color:#6b7280'>Discount ({$pct}%)</td><td style='padding:6px 12px;text-align:right;color:#047857'>-" . $e($save) . "</td></tr>";
+        }
+
+        // Coupon discount row (standard USD invoice only — reconciles Subtotal − coupon = Total).
+        // The tax/KHR invoices still apply the coupon (correct total) and note it on the line item.
+        $couponRow = '';
+        if ($hasCoupon && ! $payment->is_tax_invoice && strtoupper((string) $payment->currency) === 'USD') {
+            $lineAmount = self::money(((float) $payment->amount) + $couponDisc, $payment->currency);
+            $couponRow = "<tr><td style='padding:6px 12px;text-align:right;color:#6b7280'>Coupon (" . $e($couponCode) . ")</td><td style='padding:6px 12px;text-align:right;color:#047857'>-" . $e(self::money($couponDisc, $payment->currency)) . "</td></tr>";
         }
 
         // ── VAT / Tax invoice (Cambodia GDT — Prakas 723 / Instruction 1127). is_tax_invoice +
@@ -189,6 +206,7 @@ class InvoiceService
             $totalsTable = "<table style='width:100%;border-collapse:collapse;margin-top:10px'>
       <tr><td style='padding:6px 12px;text-align:right;color:#6b7280;width:80%'>Subtotal</td><td style='padding:6px 12px;text-align:right'>" . $e($lineAmount) . "</td></tr>
       {$discountRow}
+      {$couponRow}
       <tr><td style='padding:6px 12px;text-align:right;color:#6b7280'>Tax</td><td style='padding:6px 12px;text-align:right'>—</td></tr>
       <tr><td style='padding:10px 12px;text-align:right;font-size:15px;font-weight:bold;color:{$teal};border-top:2px solid #e5e7eb'>Total paid</td><td style='padding:10px 12px;text-align:right;font-size:15px;font-weight:bold;color:{$teal};border-top:2px solid #e5e7eb'>" . $e($amount) . "</td></tr>
     </table>";

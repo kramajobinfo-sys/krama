@@ -229,11 +229,15 @@
     fetchSubscription: function () { return req("GET", "/employer/subscription"); },
     fetchPayments: function (page) { return req("GET", "/employer/payments?per_page=10&page=" + (page || 1)); },
     changePassword: function (currentPassword, newPassword) { return req("POST", "/auth/me/password", { current_password: currentPassword, password: newPassword, password_confirmation: newPassword }); },
-    subscribe: function (planId, method, currency) {
+    subscribe: function (planId, method, currency, couponCode) {
       var body = { plan_id: planId, method: method };
       if (currency) body.currency = currency;
+      if (couponCode) body.coupon_code = couponCode;
       return req("POST", "/employer/subscribe", body);
     },
+    validateCoupon: function (planId, code) { return req("POST", "/employer/coupon/validate", { plan_id: planId, code: code }); },
+    couponAvailable: function (planId) { return req("GET", "/employer/coupon/available?plan_id=" + encodeURIComponent(planId)); },
+    fetchReferral: function () { return req("GET", "/employer/referral"); },
     exchangeRate: function () { return req("GET", "/exchange-rate"); },
     generateKhqr: function (paymentId) { return req("POST", "/employer/payments/" + paymentId + "/khqr"); },
     stripeCheckout: function (paymentId) { return req("POST", "/employer/payments/" + paymentId + "/stripe-checkout"); },

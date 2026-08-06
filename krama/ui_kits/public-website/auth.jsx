@@ -237,6 +237,15 @@
     const [agreed, setAgreed] = React.useState(false);
     const [error, setError] = React.useState("");
     const [loading, setLoading] = React.useState(false);
+    // Referral code (employers) — prefilled from a ?ref=CODE share link, which also defaults the
+    // role to Employer since referrals are employer-to-employer.
+    const [referral, setReferral] = React.useState("");
+    React.useEffect(function () {
+      try {
+        var p = new URLSearchParams(window.location.search).get("ref");
+        if (p) { setReferral(String(p).toUpperCase()); setRole("employer"); }
+      } catch (e) {}
+    }, []);
 
     const seg = (id, label, cur, setter) => (
       <button key={id} onClick={() => setter(id)} style={{
@@ -274,6 +283,7 @@
         : { name: name, email: email, password: password, role: role };
       // The code verifies the address before the account is created, so it must go with it.
       if (mode === "email" && emailCode) payload.otp = otp;
+      if (role === "employer" && referral) payload.referral_code = referral.trim();
       window.KRAMA_API.register(payload)
         .then((user) => { setLoading(false); if (onLogin) onLogin(user); })
         .catch((e) => {
@@ -338,6 +348,9 @@
             </React.Fragment>
           )}
           <Input label={TR("Password")} type="password" placeholder={TR("Min. 8 characters")} value={password} onChange={(e) => setPassword(e.target.value)} />
+          {role === "employer" && (
+            <Input label={TR("Referral code (optional)")} type="text" placeholder={TR("From a Krama employer who invited you")} value={referral} onChange={(e) => setReferral(e.target.value.toUpperCase())} />
+          )}
           <Checkbox label={<span style={{ fontSize: "var(--text-sm)" }}>{TR("I agree to the Terms and Privacy Policy")}</span>} checked={agreed} onChange={() => setAgreed((v) => !v)} />
           <Button variant="primary" block size="lg" onClick={submit} disabled={loading}>{loading ? "Creating account…" : "Create account"}</Button>
         </div>

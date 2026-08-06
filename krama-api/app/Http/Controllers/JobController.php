@@ -980,7 +980,8 @@ class JobController extends Controller
     private function featuredCreditsRemaining(?Subscription $sub): int
     {
         if (! $sub || ! $sub->plan) return 0;
-        $total = (int) ($sub->plan->featured_credits ?? 0);
+        // Pool = plan allowance + any bonus credits (e.g. from a coupon) granted to this sub.
+        $total = (int) ($sub->plan->featured_credits ?? 0) + (int) ($sub->bonus_featured_credits ?? 0);
         return max(0, $total - (int) $sub->featured_credits_used);
     }
 

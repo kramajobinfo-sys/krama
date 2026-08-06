@@ -18,7 +18,7 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
     protected $fillable = [
         'role_id', 'company_id', 'company_role', 'name', 'email', 'password_hash',
         'phone', 'bio', 'cv_visibility', 'allow_candidate_messages', 'avatar_url', 'status',
-        'telegram_chat_id', 'telegram_link_token',
+        'telegram_chat_id', 'telegram_link_token', 'referral_code', 'referred_by',
     ];
 
     protected $hidden = ['password_hash', 'telegram_link_token'];

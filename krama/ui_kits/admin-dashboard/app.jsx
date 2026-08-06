@@ -149,6 +149,7 @@
     { id: "sms", label: "SMS gateway", icon: "message-square" },
     { id: "social_post", label: "Social posting", icon: "megaphone" },
     { id: "payments", label: "Payments", icon: "credit-card" },
+    { id: "coupons", label: "Coupons", icon: "ticket-percent" },
     { id: "reports", label: "Reports", icon: "chart-line" },
     { id: "audit", label: "Audit log", icon: "scroll-text" },
     { id: "cvmatch", label: "CV match", icon: "git-compare-arrows" },
@@ -6242,6 +6243,291 @@
     );
   }
 
+  function ReferralSettingsCard() {
+    const [f, setForm] = React.useState(null);
+    const [saving, setSaving] = React.useState(false);
+    const [saved, setSaved] = React.useState(false);
+    React.useEffect(function () {
+      adm.fetchSettings("referral").then(function (d) { setForm(d || {}); }).catch(function () { setForm({}); });
+    }, []);
+    if (!f) return null;
+    const set = function (k, v) { setForm(function (m) { var n = Object.assign({}, m); n[k] = v; return n; }); setSaved(false); };
+    const num = function (label, key, ph) {
+      return <Input label={label} value={f[key] != null ? String(f[key]) : ""} onChange={(e) => set(key, e.target.value)} placeholder={ph || "0"} />;
+    };
+    const save = function () {
+      setSaving(true);
+      var payload = Object.assign({}, f, { enabled: f.enabled ? 1 : 0 });
+      adm.updateSettings("referral", payload).then(function () { setSaving(false); setSaved(true); }).catch(function () { setSaving(false); });
+    };
+    var on = f.enabled === true || f.enabled === 1 || f.enabled === "1";
+    return (
+      <Card style={{ marginBottom: 20 }}>
+        <div style={{ padding: 20 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+            <div style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: "var(--text-strong)" }}>Referral rewards</div>
+            <Switch checked={on} onChange={(v) => set("enabled", v)} />
+          </div>
+          <p style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: 0, marginBottom: 16 }}>Two-sided employer referrals. Rewards are issued as personal coupons — the new employer's welcome, and the referrer's thank-you on the referee's first paid subscription. Leave a field blank/0 to skip it.</p>
+          <div className="krm-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, opacity: on ? 1 : 0.5, pointerEvents: on ? "auto" : "none" }}>
+            <div style={{ gridColumn: "1 / -1", fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-strong)" }}>New employer (welcome)</div>
+            {num("% off first purchase", "welcome_percent_off")}
+            {num("$ off first purchase", "welcome_amount_off")}
+            {num("Bonus featured credits", "welcome_credits")}
+            {num("Free plan days", "welcome_free_days")}
+            <div style={{ gridColumn: "1 / -1", fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-strong)", marginTop: 6 }}>Referrer (thank-you)</div>
+            {num("% off next purchase", "referrer_percent_off")}
+            {num("$ off next purchase", "referrer_amount_off")}
+            {num("Bonus featured credits", "referrer_credits")}
+            {num("Free plan days", "referrer_free_days")}
+            <div style={{ gridColumn: "1 / -1" }}>{num("Reward validity (days)", "expiry_days", "90")}</div>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 18 }}>
+            <Button variant="primary" onClick={save} disabled={saving}>{saving ? "Saving…" : "Save referral rewards"}</Button>
+            {saved && <span style={{ fontSize: "var(--text-sm)", color: "var(--success, #047857)" }}>Saved.</span>}
+          </div>
+        </div>
+      </Card>
+    );
+  }
+
+  function CouponsPanel() {
+    const [rows, setRows] = React.useState(null);
+    const [q, setQ] = React.useState("");
+    const [msg, setMsg] = React.useState(null);           // { type: 'ok'|'err', text }
+    const [modal, setModal] = React.useState(null);       // form data or null
+    const [saving, setSaving] = React.useState(false);
+    const [delRow, setDelRow] = React.useState(null);
+    const [redeemOf, setRedeemOf] = React.useState(null); // coupon whose redemptions we're viewing
+    const [redeems, setRedeems] = React.useState(null);
+
+    const load = function () {
+      setRows(null);
+      adm.fetchCoupons(1, q).then(function (r) { setRows((r && r.data) || []); }).catch(function () { setRows([]); });
+    };
+    React.useEffect(load, []);
+
+    const BLANK = { generate: "single", code: "", label: "", scope: "single_use", prefix: "", generate_count: 50, percent_off: "", amount_off: "", bonus_featured_credits: "", bonus_free_days: "", min_amount: "", max_redemptions: "", starts_at: "", expires_at: "", is_active: true };
+    const setF = function (k, v) { setModal(function (m) { var n = Object.assign({}, m); n[k] = v; return n; }); };
+
+    const money = function (n) { return "$" + Number(n || 0).toFixed(2); };
+    const rewardSummary = function (c) {
+      var parts = [];
+      if (c.percent_off) parts.push(c.percent_off + "% off");
+      if (c.amount_off) parts.push(money(c.amount_off) + " off");
+      if (c.bonus_featured_credits) parts.push("+" + c.bonus_featured_credits + " credits");
+      if (c.bonus_free_days) parts.push("+" + c.bonus_free_days + " days");
+      return parts.join(" · ") || "—";
+    };
+    const fmtDate = function (s) { if (!s) return "—"; try { return new Date(s).toLocaleDateString(); } catch (e) { return s; } };
+
+    const openNew = function () { setModal(Object.assign({}, BLANK)); setMsg(null); };
+    const openEdit = function (c) {
+      setMsg(null);
+      setModal({
+        id: c.id, generate: "single", code: c.code, label: c.label || "", scope: c.scope,
+        percent_off: c.percent_off || "", amount_off: c.amount_off || "", bonus_featured_credits: c.bonus_featured_credits || "",
+        bonus_free_days: c.bonus_free_days || "", min_amount: c.min_amount || "", max_redemptions: c.max_redemptions || "",
+        starts_at: c.starts_at ? String(c.starts_at).slice(0, 10) : "", expires_at: c.expires_at ? String(c.expires_at).slice(0, 10) : "",
+        is_active: !!c.is_active,
+      });
+    };
+
+    const num = function (v) { var n = parseFloat(v); return isNaN(n) ? null : n; };
+    const save = function () {
+      var m = modal;
+      var bulk = m.generate === "bulk" && !m.id;
+      var payload = {
+        label: m.label || null,
+        scope: bulk ? "single_use" : m.scope,
+        percent_off: num(m.percent_off), amount_off: num(m.amount_off),
+        bonus_featured_credits: num(m.bonus_featured_credits), bonus_free_days: num(m.bonus_free_days),
+        min_amount: num(m.min_amount), max_redemptions: num(m.max_redemptions),
+        starts_at: m.starts_at || null,
+        expires_at: m.expires_at ? (m.expires_at + " 23:59:59") : null,
+        is_active: !!m.is_active,
+      };
+      if (bulk) { payload.prefix = m.prefix || ""; payload.generate_count = parseInt(m.generate_count, 10) || 0; }
+      else { payload.code = m.code; }
+
+      setSaving(true); setMsg(null);
+      var p = m.id ? adm.updateCoupon(m.id, payload) : adm.createCoupon(payload);
+      p.then(function (r) {
+        setSaving(false); setModal(null);
+        setMsg({ type: "ok", text: (r && r.message) ? r.message : (m.id ? "Coupon updated." : "Coupon created.") });
+        load();
+      }).catch(function (e) { setSaving(false); setMsg({ type: "err", text: (e && e.message) || "Could not save the coupon." }); });
+    };
+
+    const doDelete = function () {
+      var c = delRow; setDelRow(null);
+      adm.deleteCoupon(c.id).then(function () { setMsg({ type: "ok", text: "Coupon deleted." }); load(); })
+        .catch(function (e) { setMsg({ type: "err", text: (e && e.message) || "Could not delete." }); });
+    };
+    const toggleActive = function (c) {
+      adm.updateCoupon(c.id, { is_active: !c.is_active }).then(load).catch(function (e) { setMsg({ type: "err", text: (e && e.message) || "Could not update." }); });
+    };
+    const viewRedemptions = function (c) {
+      setRedeemOf(c); setRedeems(null);
+      adm.fetchCouponRedemptions(c.id).then(function (r) { setRedeems((r && r.redemptions && r.redemptions.data) || []); }).catch(function () { setRedeems([]); });
+    };
+
+    return (
+      <div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18, gap: 12, flexWrap: "wrap" }}>
+          <div>
+            <h1 style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: "var(--text-2xl)", color: "var(--text-strong)", margin: 0 }}>Coupons</h1>
+            <p style={{ color: "var(--text-muted)", fontSize: "var(--text-sm)", margin: "4px 0 0" }}>Promo &amp; event discount codes employers apply at checkout (Khmer New Year, Water Festival…).</p>
+          </div>
+          <Button variant="primary" onClick={openNew}>{I("plus", 15)} New coupon</Button>
+        </div>
+
+        <ReferralSettingsCard />
+
+        {msg && <div style={{ marginBottom: 14, padding: "10px 14px", borderRadius: "var(--radius-md)", fontSize: "var(--text-sm)", background: msg.type === "ok" ? "var(--success-subtle)" : "var(--danger-subtle)", color: msg.type === "ok" ? "var(--success, #047857)" : "var(--danger)" }}>{msg.text}</div>}
+
+        <div style={{ display: "flex", gap: 8, marginBottom: 14, maxWidth: 360 }}>
+          <Input placeholder="Search code or label…" value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") load(); }} />
+          <Button variant="secondary" onClick={load}>Search</Button>
+        </div>
+
+        {rows === null ? (
+          <Card><div style={{ padding: 28, textAlign: "center", color: "var(--text-muted)" }}>Loading…</div></Card>
+        ) : rows.length === 0 ? (
+          <Card><div style={{ padding: 28, textAlign: "center", color: "var(--text-muted)" }}>No coupons yet. Create one to run a promotion.</div></Card>
+        ) : (
+          <Card>
+            <div className="krm-table-wrap">
+              <div style={{ minWidth: 780 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr 1.3fr 0.8fr 1fr 0.8fr 1.4fr", gap: 12, padding: "10px 14px", borderBottom: "1px solid var(--border)", fontSize: "var(--text-xs)", fontWeight: 700, textTransform: "uppercase", color: "var(--text-muted)" }}>
+                  <span>Code</span><span>Type</span><span>Reward</span><span>Used</span><span>Expires</span><span>Status</span><span style={{ textAlign: "right" }}>Actions</span>
+                </div>
+                {rows.map(function (c) {
+                  var used = (c.consumed_count != null ? c.consumed_count : c.redeemed_count) || 0;
+                  var cap = c.scope === "single_use" ? (c.max_redemptions || 1) : (c.max_redemptions || "∞");
+                  var expired = c.is_expired;
+                  return (
+                    <div key={c.id} style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr 1.3fr 0.8fr 1fr 0.8fr 1.4fr", gap: 12, padding: "12px 14px", borderBottom: "1px solid var(--border-subtle)", alignItems: "center", fontSize: "var(--text-sm)" }}>
+                      <div>
+                        <div style={{ fontFamily: "var(--font-mono)", fontWeight: 700, color: "var(--text-strong)" }}>{c.code}</div>
+                        {c.label ? <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>{c.label}</div> : null}
+                      </div>
+                      <span style={{ color: "var(--text-body)" }}>{c.scope === "single_use" ? "Single-use" : "Per employer"}</span>
+                      <span style={{ color: "var(--text-body)" }}>{rewardSummary(c)}</span>
+                      <span style={{ color: "var(--text-body)" }}>{used}{cap !== "∞" ? " / " + cap : ""}</span>
+                      <span style={{ color: expired ? "var(--danger)" : "var(--text-muted)" }}>{fmtDate(c.expires_at)}</span>
+                      <Badge tone={expired ? "danger" : (c.is_active ? "success" : "neutral")}>{expired ? "Expired" : (c.is_active ? "Active" : "Off")}</Badge>
+                      <div style={{ display: "flex", gap: 6, justifyContent: "flex-end", flexWrap: "wrap" }}>
+                        <Button variant="ghost" size="sm" onClick={() => viewRedemptions(c)}>Uses</Button>
+                        <Button variant="secondary" size="sm" onClick={() => openEdit(c)}>Edit</Button>
+                        <Button variant="ghost" size="sm" onClick={() => toggleActive(c)}>{c.is_active ? "Off" : "On"}</Button>
+                        {used === 0 ? <Button variant="danger" size="sm" onClick={() => setDelRow(c)}>Del</Button> : null}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {modal && (
+          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+            <div style={{ background: "var(--surface-card)", borderRadius: "var(--radius-xl)", width: "100%", maxWidth: 560, maxHeight: "90vh", overflow: "auto", boxShadow: "var(--shadow-xl)", padding: 28 }}>
+              <h2 style={{ fontSize: "var(--text-xl)", fontWeight: 700, color: "var(--text-strong)", marginBottom: 6 }}>{modal.id ? "Edit coupon" : "New coupon"}</h2>
+              <p style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: 0, marginBottom: 18 }}>Set at least one reward. Leave a field blank to skip it.</p>
+              <div className="krm-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                {!modal.id && (
+                  <div style={{ gridColumn: "1 / -1" }}>
+                    <Select label="Create" value={modal.generate} onChange={(e) => setF("generate", e.target.value)} options={[{ value: "single", label: "A single code" }, { value: "bulk", label: "A batch of unique single-use codes" }]} />
+                  </div>
+                )}
+                {modal.generate === "bulk" && !modal.id ? (
+                  <React.Fragment>
+                    <Input label="Code prefix (optional)" value={modal.prefix} onChange={(e) => setF("prefix", e.target.value.toUpperCase())} placeholder="e.g. KHNY" />
+                    <Input label="How many codes" value={String(modal.generate_count)} onChange={(e) => setF("generate_count", e.target.value)} placeholder="50" />
+                  </React.Fragment>
+                ) : (
+                  <React.Fragment>
+                    <Input label="Coupon code" value={modal.code} onChange={(e) => setF("code", e.target.value.toUpperCase())} placeholder="e.g. WATERFEST25" />
+                    <Select label="Type" value={modal.scope} onChange={(e) => setF("scope", e.target.value)} options={[{ value: "single_use", label: "Single-use (one employer, once)" }, { value: "per_employer", label: "Campaign (once per employer)" }]} />
+                  </React.Fragment>
+                )}
+                <div style={{ gridColumn: "1 / -1" }}>
+                  <Input label="Label (internal note)" value={modal.label} onChange={(e) => setF("label", e.target.value)} placeholder="e.g. Water Festival 2026" />
+                </div>
+                <Input label="Percentage off (%)" value={String(modal.percent_off)} onChange={(e) => setF("percent_off", e.target.value)} placeholder="e.g. 25" />
+                <Input label="Fixed amount off ($)" value={String(modal.amount_off)} onChange={(e) => setF("amount_off", e.target.value)} placeholder="e.g. 10" />
+                <Input label="Bonus featured credits" value={String(modal.bonus_featured_credits)} onChange={(e) => setF("bonus_featured_credits", e.target.value)} placeholder="e.g. 3" />
+                <Input label="Free plan days" value={String(modal.bonus_free_days)} onChange={(e) => setF("bonus_free_days", e.target.value)} placeholder="e.g. 30" />
+                <Input label="Minimum spend ($, optional)" value={String(modal.min_amount)} onChange={(e) => setF("min_amount", e.target.value)} placeholder="e.g. 15" />
+                {(modal.generate !== "bulk" && modal.scope === "per_employer") && (
+                  <Input label="Max total redemptions (optional)" value={String(modal.max_redemptions)} onChange={(e) => setF("max_redemptions", e.target.value)} placeholder="blank = unlimited" />
+                )}
+                <div>
+                  <div style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-strong)", marginBottom: 6 }}>Starts on (optional)</div>
+                  <input type="date" value={modal.starts_at} onChange={(e) => setF("starts_at", e.target.value)} style={{ width: "100%", height: 38, padding: "0 12px", borderRadius: "var(--radius-md)", border: "1px solid var(--border)", background: "var(--surface-input)", color: "var(--text-body)", fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)" }} />
+                </div>
+                <div>
+                  <div style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-strong)", marginBottom: 6 }}>Expires on</div>
+                  <input type="date" value={modal.expires_at} onChange={(e) => setF("expires_at", e.target.value)} style={{ width: "100%", height: 38, padding: "0 12px", borderRadius: "var(--radius-md)", border: "1px solid var(--border)", background: "var(--surface-input)", color: "var(--text-body)", fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)" }} />
+                </div>
+                <div style={{ gridColumn: "1 / -1", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <span style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-strong)" }}>Active</span>
+                  <Switch checked={modal.is_active} onChange={(v) => setF("is_active", v)} />
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: 10, marginTop: 22, justifyContent: "flex-end" }}>
+                <Button variant="secondary" onClick={() => setModal(null)}>Cancel</Button>
+                <Button variant="primary" onClick={save} disabled={saving}>{saving ? "Saving…" : modal.id ? "Save changes" : (modal.generate === "bulk" ? "Generate codes" : "Create coupon")}</Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {delRow && (
+          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+            <div style={{ background: "var(--surface-card)", borderRadius: "var(--radius-xl)", width: "100%", maxWidth: 400, boxShadow: "var(--shadow-xl)", padding: 26 }}>
+              <h3 style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: "var(--text-strong)", marginTop: 0 }}>Delete coupon?</h3>
+              <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", lineHeight: 1.6 }}>Delete <strong style={{ fontFamily: "var(--font-mono)", color: "var(--text-strong)" }}>{delRow.code}</strong>? This can't be undone.</p>
+              <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 18 }}>
+                <Button variant="secondary" onClick={() => setDelRow(null)}>Cancel</Button>
+                <Button variant="danger" onClick={doDelete}>Delete</Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {redeemOf && (
+          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }} onClick={() => setRedeemOf(null)}>
+            <div onClick={(e) => e.stopPropagation()} style={{ background: "var(--surface-card)", borderRadius: "var(--radius-xl)", width: "100%", maxWidth: 520, maxHeight: "80vh", overflow: "auto", boxShadow: "var(--shadow-xl)", padding: 26 }}>
+              <h3 style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: "var(--text-strong)", marginTop: 0 }}>Redemptions — <span style={{ fontFamily: "var(--font-mono)" }}>{redeemOf.code}</span></h3>
+              {redeems === null ? (
+                <div style={{ padding: 20, textAlign: "center", color: "var(--text-muted)" }}>Loading…</div>
+              ) : redeems.length === 0 ? (
+                <div style={{ padding: 20, textAlign: "center", color: "var(--text-muted)" }}>No redemptions yet.</div>
+              ) : (
+                <div>
+                  {redeems.map(function (r) {
+                    return (
+                      <div key={r.id} style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "10px 0", borderBottom: "1px solid var(--border-subtle)", fontSize: "var(--text-sm)" }}>
+                        <span style={{ color: "var(--text-body)" }}>{(r.company && r.company.name) || ("Company #" + r.company_id)}</span>
+                        <span style={{ color: "var(--text-muted)" }}>{money(r.discount_amount)} · {r.consumed_at ? fmtDate(r.consumed_at) : "pending"}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 16 }}>
+                <Button variant="secondary" onClick={() => setRedeemOf(null)}>Close</Button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   function PaymentSettings() {
     const [tab, setTab] = React.useState("plans");
     const TABS = [
@@ -7197,6 +7483,7 @@
           {page === "sms" && <SmsSettings />}
           {page === "social_post" && <SocialPostingSettings />}
           {page === "payments" && <PaymentSettings />}
+          {page === "coupons" && <CouponsPanel />}
           {page === "reports" && <Reports />}
           {page === "audit" && <AuditLog />}
           {page === "cvmatch" && <CvMatch />}

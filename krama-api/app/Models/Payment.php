@@ -13,17 +13,21 @@ class Payment extends Model
         'company_id', 'subscription_id', 'purpose', 'job_id', 'invoice_no',
         'amount', 'currency', 'method', 'status', 'paid_at', 'khqr', 'md5', 'gateway_ref', 'credits',
         'is_tax_invoice', 'subtotal', 'vat_rate', 'vat_amount', 'customer_vat_tin', 'customer_legal_name', 'fx_rate',
+        'coupon_code', 'coupon_discount', 'coupon_credits', 'coupon_free_days',
     ];
 
     protected $casts = [
-        'amount'         => 'float',
-        'subtotal'       => 'float',
-        'vat_rate'       => 'float',
-        'vat_amount'     => 'float',
-        'fx_rate'        => 'float',
-        'is_tax_invoice' => 'boolean',
-        'paid_at'        => 'datetime',
-        'created_at'     => 'datetime',
+        'amount'           => 'float',
+        'subtotal'         => 'float',
+        'vat_rate'         => 'float',
+        'vat_amount'       => 'float',
+        'fx_rate'          => 'float',
+        'is_tax_invoice'   => 'boolean',
+        'coupon_discount'  => 'float',
+        'coupon_credits'   => 'integer',
+        'coupon_free_days' => 'integer',
+        'paid_at'          => 'datetime',
+        'created_at'       => 'datetime',
     ];
 
     public function company()

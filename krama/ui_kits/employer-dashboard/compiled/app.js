@@ -4864,7 +4864,10 @@
         color: "var(--text-muted)",
         fontSize: "var(--text-sm)"
       }
-    }, "No jobs posted yet."), companyJobs.length > 0 && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    }, "No jobs posted yet."), companyJobs.length > 0 && /*#__PURE__*/React.createElement("div", {
+      className: "krm-cojobs-scroll"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "krm-cojobs-row",
       style: {
         display: "grid",
         gridTemplateColumns: "1.8fr 0.9fr 0.7fr 0.7fr 0.8fr",
@@ -4878,6 +4881,7 @@
       }
     }, /*#__PURE__*/React.createElement("span", null, "Job title"), /*#__PURE__*/React.createElement("span", null, "Status"), /*#__PURE__*/React.createElement("span", null, "Applicants"), /*#__PURE__*/React.createElement("span", null, "Views"), /*#__PURE__*/React.createElement("span", null, "Posted")), companyJobs.map((j, i) => /*#__PURE__*/React.createElement("div", {
       key: j.id,
+      className: "krm-cojobs-row",
       style: {
         display: "grid",
         gridTemplateColumns: "1.8fr 0.9fr 0.7fr 0.7fr 0.8fr",
@@ -6521,6 +6525,11 @@
     const [notConfirmed, setNotConfirmed] = React.useState(false); // payment declined / not confirmed in time
     const [currency, setCurrency] = React.useState("USD"); // billing currency: USD or KHR
     const [fxRate, setFxRate] = React.useState(null); // NBC USD→KHR rate for the riel option
+    // Promo coupon — validated server-side; couponResult holds {code,label,discount,new_charge,credits,free_days}.
+    const [couponInput, setCouponInput] = React.useState("");
+    const [couponResult, setCouponResult] = React.useState(null);
+    const [couponErr, setCouponErr] = React.useState("");
+    const [couponBusy, setCouponBusy] = React.useState(false);
     React.useEffect(() => {
       if (plan) {
         setDone(false);
@@ -6533,7 +6542,41 @@
         setAttempts(0);
         setNotConfirmed(false);
         setCurrency("USD");
+        setCouponInput("");
+        setCouponResult(null);
+        setCouponErr("");
+        setCouponBusy(false);
       }
+    }, [plan]);
+    const applyCoupon = function () {
+      var code = (couponInput || "").trim();
+      if (!code || couponBusy) return;
+      setCouponBusy(true);
+      setCouponErr("");
+      emp.validateCoupon(plan.id, code).then(function (r) {
+        setCouponBusy(false);
+        setCouponResult(r);
+      }).catch(function (e) {
+        setCouponBusy(false);
+        setCouponResult(null);
+        setCouponErr(e && e.message || "This coupon can't be applied.");
+      });
+    };
+    const removeCoupon = function () {
+      setCouponResult(null);
+      setCouponInput("");
+      setCouponErr("");
+    };
+    // Pre-apply a personal referral reward (welcome discount / referrer thank-you) if the employer
+    // has one waiting — surfaced automatically, no code to type. They can still remove or replace it.
+    React.useEffect(function () {
+      if (!plan || isTrial || isFree) return;
+      emp.couponAvailable(plan.id).then(function (r) {
+        if (r && r.available) {
+          setCouponResult(r);
+          setCouponInput(r.code || "");
+        }
+      }).catch(function () {});
     }, [plan]);
 
     // Fetch the official NBC USD→KHR rate once so the employer can pay in riel. If it can't be
@@ -6610,14 +6653,21 @@
     if (!plan) return null;
     const m = method ? PAY_META[method] : null;
     const acct = method ? pay[method] : null;
+
+    // Amount actually due after any coupon; willBeFree = a coupon that reduces it to $0, which
+    // the backend activates immediately (no gateway step) just like a free plan.
+    const netCharge = couponResult ? Number(couponResult.new_charge) : planCharge(plan);
+    const willBeFree = !isTrial && !isFree && netCharge <= 0;
     const confirm = () => {
-      if (!isTrial && !isFree && !method) return;
+      if (!isTrial && !isFree && !willBeFree && !method) return;
       setBusy(true);
       setError("");
-      emp.subscribe(plan.id, isTrial ? "trial" : isFree ? "other" : PAY_META[method].apiMethod, !isTrial && !isFree ? currency : undefined).then(function (res) {
+      var couponCode = couponResult ? couponResult.code : undefined;
+      var noGateway = isTrial || isFree || willBeFree;
+      emp.subscribe(plan.id, isTrial ? "trial" : noGateway ? "other" : PAY_META[method].apiMethod, noGateway ? undefined : currency, couponCode).then(function (res) {
         setBusy(false);
         // KHQR / ABA / Card(Stripe): enter the waiting state and poll for gateway confirmation.
-        if (res && res.payment && res.payment.id && (method === "khqr" || method === "aba" || method === "card")) {
+        if (!noGateway && res && res.payment && res.payment.id && (method === "khqr" || method === "aba" || method === "card")) {
           onPaid && onPaid(); // refresh billing list in the background
           if (method === "khqr") {
             setPaymentId(res.payment.id);
@@ -7128,13 +7178,20 @@
         fontSize: "var(--text-2xl)",
         color: "var(--text-strong)"
       }
-    }, "\u17DB", khrOf(planCharge(plan)).toLocaleString()) : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("strong", {
+    }, "\u17DB", khrOf(netCharge).toLocaleString()) : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("strong", {
       style: {
         fontFamily: "var(--font-display)",
         fontSize: "var(--text-2xl)",
         color: "var(--text-strong)"
       }
-    }, "$", planCharge(plan)), planHasDiscount(plan) ? /*#__PURE__*/React.createElement("span", {
+    }, "$", netCharge), couponResult ? /*#__PURE__*/React.createElement("span", {
+      style: {
+        color: "var(--text-muted)",
+        fontSize: "var(--text-sm)",
+        textDecoration: "line-through",
+        marginLeft: 6
+      }
+    }, "$", planCharge(plan)) : planHasDiscount(plan) ? /*#__PURE__*/React.createElement("span", {
       style: {
         color: "var(--text-muted)",
         fontSize: "var(--text-sm)",
@@ -7146,7 +7203,102 @@
         color: "var(--text-muted)",
         fontSize: "var(--text-sm)"
       }
-    }, " / ", plan.interval))), fxRate ? /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    }, " / ", plan.interval))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: "var(--text-sm)",
+        fontWeight: 700,
+        color: "var(--text-strong)",
+        marginBottom: 8
+      }
+    }, "Coupon code"), couponResult ? /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 10,
+        padding: "10px 14px",
+        border: "1px solid var(--success-border, #86efac)",
+        background: "var(--success-subtle)",
+        borderRadius: "var(--radius-md)"
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: "var(--text-sm)",
+        color: "var(--text-body)",
+        lineHeight: 1.5
+      }
+    }, couponResult.kind && couponResult.kind.indexOf("referral") === 0 ? /*#__PURE__*/React.createElement("span", {
+      style: {
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 4,
+        fontWeight: 700,
+        color: "var(--success, #047857)"
+      }
+    }, I("gift", 13), " Referral reward \xB7 ") : null, /*#__PURE__*/React.createElement("strong", {
+      style: {
+        color: "var(--success, #047857)"
+      }
+    }, couponResult.code), " applied \u2014 you save $", couponResult.discount, couponResult.credits ? /*#__PURE__*/React.createElement("span", null, " \xB7 +", couponResult.credits, " featured credit", couponResult.credits !== 1 ? "s" : "") : null, couponResult.free_days ? /*#__PURE__*/React.createElement("span", null, " \xB7 +", couponResult.free_days, " free day", couponResult.free_days !== 1 ? "s" : "") : null), /*#__PURE__*/React.createElement("button", {
+      onClick: removeCoupon,
+      style: {
+        border: "none",
+        background: "transparent",
+        cursor: "pointer",
+        color: "var(--text-muted)",
+        fontSize: "var(--text-xs)",
+        fontWeight: 700,
+        flexShrink: 0
+      }
+    }, "Remove")) : /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        gap: 8
+      }
+    }, /*#__PURE__*/React.createElement("input", {
+      value: couponInput,
+      onChange: e => setCouponInput(e.target.value.toUpperCase()),
+      onKeyDown: e => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          applyCoupon();
+        }
+      },
+      placeholder: "Enter code",
+      style: {
+        flex: 1,
+        padding: "10px 12px",
+        border: "1px solid var(--border-strong)",
+        borderRadius: "var(--radius-md)",
+        fontFamily: "var(--font-sans)",
+        fontSize: "var(--text-sm)",
+        textTransform: "uppercase",
+        background: "var(--surface-card)",
+        color: "var(--text-strong)"
+      }
+    }), /*#__PURE__*/React.createElement("button", {
+      onClick: applyCoupon,
+      disabled: couponBusy || !couponInput.trim(),
+      style: {
+        padding: "10px 16px",
+        border: "1px solid var(--brand)",
+        background: "var(--brand-subtle)",
+        color: "var(--text-brand)",
+        borderRadius: "var(--radius-md)",
+        fontFamily: "var(--font-sans)",
+        fontWeight: 700,
+        fontSize: "var(--text-sm)",
+        cursor: couponBusy || !couponInput.trim() ? "default" : "pointer",
+        opacity: couponBusy || !couponInput.trim() ? 0.6 : 1,
+        flexShrink: 0
+      }
+    }, couponBusy ? "Checking…" : "Apply")), couponErr ? /*#__PURE__*/React.createElement("div", {
+      style: {
+        marginTop: 6,
+        fontSize: "var(--text-xs)",
+        color: "var(--danger)"
+      }
+    }, couponErr) : null)), fxRate ? /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: "var(--text-sm)",
         fontWeight: 700,
@@ -7161,11 +7313,11 @@
     }, [{
       v: "USD",
       label: "US Dollar",
-      amt: "$" + planCharge(plan)
+      amt: "$" + netCharge
     }, {
       v: "KHR",
       label: "Khmer Riel",
-      amt: "៛" + khrOf(planCharge(plan)).toLocaleString()
+      amt: "៛" + khrOf(netCharge).toLocaleString()
     }].map(function (c) {
       var on = currency === c.v;
       return /*#__PURE__*/React.createElement("button", {
@@ -7386,9 +7538,9 @@
     }, "Cancel"), /*#__PURE__*/React.createElement(Button, {
       variant: "primary",
       block: true,
-      disabled: !method || busy,
+      disabled: !method && !willBeFree || busy,
       onClick: confirm
-    }, busy ? "Processing…" : method === "khqr" || method === "aba" || method === "card" ? "Continue to pay" : method === "cod" ? "Confirm order" : "Confirm payment"))) : /*#__PURE__*/React.createElement("div", {
+    }, busy ? "Processing…" : willBeFree ? "Activate plan" : method === "khqr" || method === "aba" || method === "card" ? "Continue to pay" : method === "cod" ? "Confirm order" : "Confirm payment"))) : /*#__PURE__*/React.createElement("div", {
       style: {
         padding: "40px 32px",
         textAlign: "center"
@@ -7444,6 +7596,114 @@
       },
       onClick: onClose
     }, "Done"))));
+  }
+  function ReferralCard() {
+    const [ref, setRef] = React.useState(null);
+    const [copied, setCopied] = React.useState(false);
+    React.useEffect(function () {
+      emp.fetchReferral().then(setRef).catch(function () {});
+    }, []);
+    if (!ref || !ref.code) return null;
+    const rewardLine = function (r) {
+      if (!r) return "";
+      var p = [];
+      if (r.percent_off) p.push(r.percent_off + "% off");
+      if (r.amount_off) p.push("$" + r.amount_off + " off");
+      if (r.credits) p.push(r.credits + " featured credit" + (r.credits !== 1 ? "s" : ""));
+      if (r.free_days) p.push(r.free_days + " free days");
+      return p.join(" + ");
+    };
+    const copy = function () {
+      try {
+        navigator.clipboard.writeText(ref.link);
+        setCopied(true);
+        setTimeout(function () {
+          setCopied(false);
+        }, 1800);
+      } catch (e) {}
+    };
+    const welcome = rewardLine(ref.welcome);
+    const referrer = rewardLine(ref.referrer);
+    return /*#__PURE__*/React.createElement("div", {
+      style: {
+        marginBottom: 24,
+        padding: "20px 22px",
+        borderRadius: "var(--radius-lg)",
+        border: "1px solid var(--brand-border, var(--brand))",
+        background: "var(--brand-subtle)"
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        marginBottom: 6
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        color: "var(--brand)"
+      }
+    }, I("gift", 18)), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontFamily: "var(--font-display)",
+        fontWeight: 800,
+        fontSize: "var(--text-lg)",
+        color: "var(--text-strong)"
+      }
+    }, "Refer & earn")), ref.enabled && (welcome || referrer) ? /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: "var(--text-sm)",
+        color: "var(--text-body)",
+        marginBottom: 14,
+        lineHeight: 1.6
+      }
+    }, welcome ? /*#__PURE__*/React.createElement("span", null, "Your friend gets ", /*#__PURE__*/React.createElement("strong", null, welcome), " on sign-up. ") : null, referrer ? /*#__PURE__*/React.createElement("span", null, "You get ", /*#__PURE__*/React.createElement("strong", null, referrer), " when they subscribe.") : null) : /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: "var(--text-sm)",
+        color: "var(--text-muted)",
+        marginBottom: 14
+      }
+    }, "Share your code with other employers."), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        gap: 8,
+        flexWrap: "wrap",
+        alignItems: "center"
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontFamily: "var(--font-mono)",
+        fontWeight: 800,
+        fontSize: "var(--text-lg)",
+        letterSpacing: ".08em",
+        color: "var(--text-strong)",
+        padding: "8px 16px",
+        background: "var(--surface-card)",
+        border: "1px dashed var(--brand)",
+        borderRadius: "var(--radius-md)"
+      }
+    }, ref.code), /*#__PURE__*/React.createElement("button", {
+      onClick: copy,
+      style: {
+        padding: "9px 16px",
+        border: "none",
+        background: "var(--brand)",
+        color: "#fff",
+        borderRadius: "var(--radius-md)",
+        fontFamily: "var(--font-sans)",
+        fontWeight: 700,
+        fontSize: "var(--text-sm)",
+        cursor: "pointer",
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 6
+      }
+    }, I(copied ? "check" : "copy", 14), " ", copied ? "Copied" : "Copy link"), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: "var(--text-xs)",
+        color: "var(--text-muted)"
+      }
+    }, ref.referred_count, " referred \xB7 ", ref.rewarded_count, " reward", ref.rewarded_count !== 1 ? "s" : "", " earned")));
   }
   function Billing({
     onSubChange
@@ -7586,7 +7846,7 @@
     }, /*#__PURE__*/React.createElement(ScreenHead, {
       title: "Plan & billing",
       sub: "Manage your subscription and billing history."
-    }), loading ? /*#__PURE__*/React.createElement("div", {
+    }), /*#__PURE__*/React.createElement(ReferralCard, null), loading ? /*#__PURE__*/React.createElement("div", {
       style: {
         color: "var(--text-muted)",
         fontSize: "var(--text-sm)"
