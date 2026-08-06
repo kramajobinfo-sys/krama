@@ -9,6 +9,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('coupon_redemptions', function (Blueprint $table) {
+            // See the coupons migration: MyISAM would void the transactional single-use
+            // guarantee this table exists to enforce.
+            $table->engine = 'InnoDB';
+
             $table->id();
             $table->unsignedBigInteger('coupon_id');
             $table->unsignedBigInteger('company_id')->nullable();

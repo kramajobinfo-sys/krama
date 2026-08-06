@@ -9,6 +9,11 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('coupons', function (Blueprint $table) {
+            // Prod MariaDB defaults to MyISAM, which ignores transactions — and redemption
+            // runs inside the subscribe()/fulfill() transaction to keep single-use coupons
+            // atomic. On MyISAM that guarantee silently disappears. Pin InnoDB.
+            $table->engine = 'InnoDB';
+
             $table->id();
             $table->string('code', 40)->unique();            // stored uppercased; matched case-insensitively
             $table->string('label', 120)->nullable();        // admin note, e.g. "Water Festival 2026"
