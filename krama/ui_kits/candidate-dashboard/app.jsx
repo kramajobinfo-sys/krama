@@ -44,6 +44,53 @@
     "CV already on file": "មាន CV រួចហើយ",
     // Common
     "Loading…": "កំពុងផ្ទុក…", "Saving…": "កំពុងរក្សាទុក…", "Uploading…": "កំពុងបង្ហោះ…",
+    "Previous": "មុន", "Next": "បន្ទាប់", "Add": "បន្ថែម", "Cancel": "បោះបង់", "Search": "ស្វែងរក", "Clear": "សម្អាត",
+    "No results": "គ្មានលទ្ធផល", "Rejected": "បានបដិសេធ", "View": "មើល", "All": "ទាំងអស់",
+    // Applications
+    "total applications": "ពាក្យសុំសរុប", "No applications found.": "រកមិនឃើញពាក្យសុំ។",
+    "Message": "ផ្ញើសារ", "Withdraw": "ដកពាក្យ", "Send message": "ផ្ញើសារ", "Sending…": "កំពុងផ្ញើ…", "Employer": "និយោជក",
+    // Saved jobs
+    "jobs saved": "ការងារបានរក្សាទុក", "No saved jobs yet. Browse jobs and click the bookmark icon.": "មិនទាន់មានការងារបានរក្សាទុក។ រកមើលការងារ ហើយចុចរូបសញ្ញាចំណាំ។",
+    // Recommended
+    "jobs matched": "ការងារត្រូវគ្នា", "Matches your field": "ត្រូវនឹងវិស័យរបស់អ្នក", "Matches your level": "ត្រូវនឹងកម្រិតរបស់អ្នក",
+    "Apply to or save some jobs first — we'll personalise these recommendations based on your activity.": "ដាក់ពាក្យ ឬរក្សាទុកការងារមុនសិន — យើងនឹងធ្វើឱ្យការណែនាំទាំងនេះផ្ទាល់ខ្លួនតាមសកម្មភាពរបស់អ្នក។",
+    // Profile
+    "How you appear to employers.": "របៀបដែលអ្នកបង្ហាញទៅនិយោជក។", "Change photo": "ប្តូររូបថត",
+    "Email": "អ៊ីមែល", "Phone": "ទូរស័ព្ទ", "Bio / Description": "ជីវប្រវត្តិ / ការពិពណ៌នា",
+    "CV / Resume visibility": "ភាពមើលឃើញ CV", "Controls who can download your uploaded CV file.": "គ្រប់គ្រងអ្នកដែលអាចទាញយកឯកសារ CV របស់អ្នក។",
+    "Public — anyone can view": "សាធារណៈ — នរណាក៏មើលបាន", "Employers only — recruiters who review your application": "និយោជកតែប៉ុណ្ណោះ — អ្នកជ្រើសរើសដែលពិនិត្យពាក្យសុំ", "Private — only you can access": "ឯកជន — មានតែអ្នកទេអាចចូលបាន",
+    "Save changes": "រក្សាទុកការផ្លាស់ប្តូរ", "Change password": "ប្តូរពាក្យសម្ងាត់",
+    "Choose a strong password of at least 8 characters.": "ជ្រើសរើសពាក្យសម្ងាត់ខ្លាំង យ៉ាងតិច ៨ តួអក្សរ។",
+    "Current password": "ពាក្យសម្ងាត់បច្ចុប្បន្ន", "New password": "ពាក្យសម្ងាត់ថ្មី", "Confirm new password": "បញ្ជាក់ពាក្យសម្ងាត់ថ្មី",
+    "Update password": "ធ្វើបច្ចុប្បន្នភាពពាក្យសម្ងាត់", "Updating…": "កំពុងធ្វើបច្ចុប្បន្នភាព…",
+    // Résumé builder
+    "Build your CV to attach when applying for jobs.": "បង្កើត CV របស់អ្នកដើម្បីភ្ជាប់ពេលដាក់ពាក្យការងារ។",
+    "Download CV": "ទាញយក CV", "Save resume": "រក្សាទុកប្រវត្តិរូប", "Resume saved successfully!": "បានរក្សាទុកប្រវត្តិរូបដោយជោគជ័យ!",
+    "Upload CV file": "បង្ហោះឯកសារ CV", "CV uploaded": "បានបង្ហោះ CV", "Replace CV": "ជំនួស CV",
+    "No CV uploaded yet. Upload a PDF or DOC (max 5 MB).": "មិនទាន់បង្ហោះ CV។ បង្ហោះ PDF ឬ DOC (អតិបរមា ៥ MB)។",
+    "Personal summary": "សេចក្តីសង្ខេបផ្ទាល់ខ្លួន", "Headline / Job title": "ចំណងជើង / មុខតំណែង", "Summary": "សេចក្តីសង្ខេប",
+    "No education entries yet.": "មិនទាន់មានការសិក្សា។", "School / University": "សាលា / សាកលវិទ្យាល័យ", "Degree": "សញ្ញាបត្រ",
+    "No experience entries yet.": "មិនទាន់មានបទពិសោធន៍។", "Job title": "មុខតំណែង", "Company": "ក្រុមហ៊ុន", "Description": "ការពិពណ៌នា",
+    "No skills added yet.": "មិនទាន់មានជំនាញ។", "Certifications": "វិញ្ញាបនបត្រ", "No certifications yet.": "មិនទាន់មានវិញ្ញាបនបត្រ។",
+    "Certification name": "ឈ្មោះវិញ្ញាបនបត្រ", "Year": "ឆ្នាំ",
+    // Following
+    "You'll get an email when a followed company posts a new job.": "អ្នកនឹងទទួលបានអ៊ីមែលពេលក្រុមហ៊ុនដែលអ្នកតាមដានបង្ហោះការងារថ្មី។",
+    "Not following anyone yet": "មិនទាន់តាមដាននរណាទេ", "Visit a company profile and click Follow to stay notified of new jobs.": "ចូលទៅកាន់ប្រវត្តិរូបក្រុមហ៊ុន ហើយចុចតាមដាន ដើម្បីទទួលដំណឹងការងារថ្មី។",
+    "Unfollow": "ឈប់តាមដាន",
+    // Job alerts
+    "Your job alerts": "ការជូនដំណឹងការងាររបស់អ្នក", "Get an email the moment a matching role is posted. Up to 10 alerts.": "ទទួលអ៊ីមែលភ្លាមៗពេលមានការងារត្រូវគ្នាបានបង្ហោះ។ រហូតដល់ ១០ ការជូនដំណឹង។",
+    "+ New alert": "+ ការជូនដំណឹងថ្មី", "Create a new alert": "បង្កើតការជូនដំណឹងថ្មី", "Keyword": "ពាក្យគន្លឹះ",
+    "Category": "ប្រភេទ", "Any category": "ប្រភេទណាមួយ", "Job type": "ប្រភេទការងារ", "Work mode": "របៀបធ្វើការ",
+    "Any": "ណាមួយ", "Remote only": "ពីចម្ងាយតែប៉ុណ្ណោះ", "On-site / hybrid": "នៅកន្លែង / ចម្រុះ",
+    "Full-time": "ពេញម៉ោង", "Part-time": "ក្រៅម៉ោង", "Save alert": "រក្សាទុកការជូនដំណឹង",
+    "No job alerts yet": "មិនទាន់មានការជូនដំណឹងការងារ", "Create an alert and we'll email you when a matching role is posted.": "បង្កើតការជូនដំណឹង ហើយយើងនឹងផ្ញើអ៊ីមែលពេលមានការងារត្រូវគ្នា។",
+    "All new jobs": "ការងារថ្មីទាំងអស់", "Remote": "ពីចម្ងាយ",
+    // Messages
+    "Conversations": "ការសន្ទនា", "No conversations yet.": "មិនទាន់មានការសន្ទនា។", "Employers can message you directly after viewing your application.": "និយោជកអាចផ្ញើសារទៅអ្នកដោយផ្ទាល់ បន្ទាប់ពីមើលពាក្យសុំរបស់អ្នក។",
+    "Send": "ផ្ញើ", "Select a conversation to read messages": "ជ្រើសរើសការសន្ទនាដើម្បីអានសារ",
+    // Login
+    "Candidate sign in": "ការចូលរបស់បេក្ខជន", "Access your applications and saved jobs.": "ចូលមើលពាក្យសុំ និងការងារបានរក្សាទុករបស់អ្នក។",
+    "Password": "ពាក្យសម្ងាត់", "Sign in": "ចូល", "Signing in…": "កំពុងចូល…",
   };
   try { if (window.KRAMA_I18N && window.KRAMA_I18N.km) { Object.assign(window.KRAMA_I18N.km, CAND_KM); } else { window.KRAMA_I18N = { km: CAND_KM }; } } catch (e) {}
   var T = function (s) { return (typeof window.KRAMA_T === "function") ? window.KRAMA_T(s) : s; };
@@ -166,13 +213,13 @@
             <img src={window.getKramaLogo("../../assets/krama-icon.png")} height="42" alt="KRAMA" />
             <span style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: "var(--text-xl)", letterSpacing: ".08em", color: "var(--text-strong)" }}>{window.KRAMA_BRAND_NAME || "KRAMA"}</span>
           </a>
-          <h2 style={{ fontSize: "var(--text-xl)", fontWeight: 700, color: "var(--text-strong)", marginBottom: 6 }}>Candidate sign in</h2>
-          <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginBottom: 24 }}>Access your applications and saved jobs.</p>
+          <h2 style={{ fontSize: "var(--text-xl)", fontWeight: 700, color: "var(--text-strong)", marginBottom: 6 }}>{T("Candidate sign in")}</h2>
+          <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginBottom: 24 }}>{T("Access your applications and saved jobs.")}</p>
           {error && <div style={{ marginBottom: 16, padding: "10px 14px", background: "var(--danger-subtle)", color: "var(--danger)", borderRadius: "var(--radius-md)", fontSize: "var(--text-sm)" }}>{error}</div>}
           <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            <Input label="Email" type="email" value={email} onChange={function(e){ setEmail(e.target.value); }} required />
-            <Input label="Password" type="password" value={password} onChange={function(e){ setPassword(e.target.value); }} required />
-            <Button variant="primary" block disabled={busy}>{busy ? "Signing in…" : "Sign in"}</Button>
+            <Input label={T("Email")} type="email" value={email} onChange={function(e){ setEmail(e.target.value); }} required />
+            <Input label={T("Password")} type="password" value={password} onChange={function(e){ setPassword(e.target.value); }} required />
+            <Button variant="primary" block disabled={busy}>{busy ? T("Signing in…") : T("Sign in")}</Button>
           </form>
         </Card>
       </div>
@@ -352,7 +399,7 @@
               <span style={{ fontWeight: 700, fontSize: "var(--text-sm)", color: "var(--text-strong)" }}>Notifications</span>
               {unread > 0 && <button onClick={markAll} style={{ fontSize: "var(--text-xs)", color: "var(--text-brand)", cursor: "pointer", background: "none", border: "none", fontFamily: "var(--font-sans)", fontWeight: 600 }}>Mark all read</button>}
             </div>
-            {loading ? <div style={{ padding: 24, color: "var(--text-muted)", fontSize: "var(--text-sm)", textAlign: "center" }}>Loading…</div>
+            {loading ? <div style={{ padding: 24, color: "var(--text-muted)", fontSize: "var(--text-sm)", textAlign: "center" }}>{T("Loading…")}</div>
               : list.length === 0 ? <div style={{ padding: 28, color: "var(--text-muted)", fontSize: "var(--text-sm)", textAlign: "center" }}>{I("bell", 26)}<div style={{ marginTop: 8 }}>No notifications yet.</div></div>
               : list.map(function (n) { return (
                 <div key={n.id} onClick={function () { clickNotif(n); }} style={{ display: "flex", gap: 11, padding: "12px 16px", borderBottom: "1px solid var(--border)", cursor: "pointer", background: n.read_at ? "transparent" : "var(--brand-subtle)" }}>
@@ -468,7 +515,7 @@
       }).catch(function(){});
     }
 
-    if (loading) return <div style={{ padding: 28, color: "var(--text-muted)" }}>Loading…</div>;
+    if (loading) return <div style={{ padding: 28, color: "var(--text-muted)" }}>{T("Loading…")}</div>;
 
     return (
       <div className="krm-page-pad" style={{ padding: 28, display: "flex", flexDirection: "column", gap: 24 }}>
@@ -512,7 +559,7 @@
                     <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>{company.name}</div>
                   </div>
                   <div className="krm-tracker" style={{ flex: 1, maxWidth: 380 }}>
-                    <ProgressTracker current={stageIndex(a.stage)} steps={PIPELINE_STEPS} />
+                    <ProgressTracker current={stageIndex(a.stage)} steps={PIPELINE_STEPS.map(T)} />
                   </div>
                   <span style={{ marginLeft: "auto", fontSize: "var(--text-sm)", color: "var(--text-faint)" }}>{fmtDate(a.created_at)}</span>
                 </div>
@@ -589,20 +636,20 @@
       }).catch(function(err){ alert(err.message || "Failed to withdraw."); });
     }
 
-    var tabList = [{ value: "all", label: "All", count: counts.all }];
-    PIPELINE.forEach(function (s) { tabList.push({ value: s.key, label: s.label, count: counts[s.key] || 0 }); });
-    if (counts.rejected > 0) tabList.push({ value: "rejected", label: "Rejected", count: counts.rejected });
+    var tabList = [{ value: "all", label: T("All"), count: counts.all }];
+    PIPELINE.forEach(function (s) { tabList.push({ value: s.key, label: T(s.label), count: counts[s.key] || 0 }); });
+    if (counts.rejected > 0) tabList.push({ value: "rejected", label: T("Rejected"), count: counts.rejected });
 
     return (
       <div className="krm-page-pad" style={{ padding: 28 }}>
-        <ScreenHead title="My applications" sub={counts.all + " total applications"} />
+        <ScreenHead title={T("My applications")} sub={counts.all + " " + T("total applications")} />
         <div className="krm-tabs-scroll" style={{ marginBottom: 20 }}>
           <Tabs value={tab} onChange={changeTab} tabs={tabList} />
         </div>
         {loading
-          ? <div style={{ color: "var(--text-muted)", fontSize: "var(--text-sm)" }}>Loading…</div>
+          ? <div style={{ color: "var(--text-muted)", fontSize: "var(--text-sm)" }}>{T("Loading…")}</div>
           : apps.length === 0
-            ? <Card padding={32}><div style={{ textAlign: "center", color: "var(--text-muted)" }}>No applications found.</div></Card>
+            ? <Card padding={32}><div style={{ textAlign: "center", color: "var(--text-muted)" }}>{T("No applications found.")}</div></Card>
             : (
               <Card padding={0}>
                 {apps.map(function (a, i) {
@@ -617,18 +664,18 @@
                       <div style={{ minWidth: 0 }}>
                         <div style={{ fontWeight: 700, color: "var(--text-strong)", fontSize: "var(--text-md)" }}>{job.title}</div>
                         <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>{company.name} · Applied {fmtDate(a.created_at)}</div>
-                        {rejected && <Badge tone="danger" style={{ marginTop: 4 }}>Rejected</Badge>}
+                        {rejected && <Badge tone="danger" style={{ marginTop: 4 }}>{T("Rejected")}</Badge>}
                       </div>
                       {!rejected
-                        ? <div className="krm-tracker" style={{ flex: 1, maxWidth: 420 }}><ProgressTracker current={stageIndex(a.stage)} steps={PIPELINE_STEPS} /></div>
+                        ? <div className="krm-tracker" style={{ flex: 1, maxWidth: 420 }}><ProgressTracker current={stageIndex(a.stage)} steps={PIPELINE_STEPS.map(T)} /></div>
                         : <div style={{ flex: 1 }} />
                       }
                       <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
                         {canMessage && (
-                          <Button variant="secondary" size="sm" iconLeft={I("message-square", 13)} onClick={function(){ openMessage(job, owner); }}>Message</Button>
+                          <Button variant="secondary" size="sm" iconLeft={I("message-square", 13)} onClick={function(){ openMessage(job, owner); }}>{T("Message")}</Button>
                         )}
                         {a.stage === "applied" && (
-                          <Button variant="ghost" size="sm" style={{ color: "var(--danger)" }} onClick={function(){ withdraw(a.id); }}>Withdraw</Button>
+                          <Button variant="ghost" size="sm" style={{ color: "var(--danger)" }} onClick={function(){ withdraw(a.id); }}>{T("Withdraw")}</Button>
                         )}
                       </div>
                     </div>
@@ -639,8 +686,8 @@
                     {meta.total > 0 ? "Showing " + ((meta.current_page - 1) * 10 + 1) + "–" + ((meta.current_page - 1) * 10 + apps.length) + " of " + meta.total : "No results"}
                   </span>
                   <div style={{ display: "flex", gap: 8 }}>
-                    <Button variant="secondary" size="sm" disabled={meta.current_page <= 1} onClick={function(){ load(tab, meta.current_page - 1); }}>Previous</Button>
-                    <Button variant="secondary" size="sm" disabled={meta.current_page >= meta.last_page} onClick={function(){ load(tab, meta.current_page + 1); }}>Next</Button>
+                    <Button variant="secondary" size="sm" disabled={meta.current_page <= 1} onClick={function(){ load(tab, meta.current_page - 1); }}>{T("Previous")}</Button>
+                    <Button variant="secondary" size="sm" disabled={meta.current_page >= meta.last_page} onClick={function(){ load(tab, meta.current_page + 1); }}>{T("Next")}</Button>
                   </div>
                 </div>
               </Card>
@@ -660,8 +707,8 @@
                 {msgErr && <div style={{ color: "var(--danger)", fontSize: "var(--text-xs)", marginTop: 8 }}>{msgErr}</div>}
               </div>
               <div style={{ padding: "0 18px 18px", display: "flex", justifyContent: "flex-end", gap: 10 }}>
-                <Button variant="secondary" onClick={function(){ setMsgModal(null); }}>Cancel</Button>
-                <Button variant="primary" disabled={msgSending || !msgBody.trim()} onClick={sendNewMessage}>{msgSending ? "Sending…" : "Send message"}</Button>
+                <Button variant="secondary" onClick={function(){ setMsgModal(null); }}>{T("Cancel")}</Button>
+                <Button variant="primary" disabled={msgSending || !msgBody.trim()} onClick={sendNewMessage}>{msgSending ? T("Sending…") : T("Send message")}</Button>
               </div>
             </div>
           </div>
@@ -694,11 +741,11 @@
 
     return (
       <div className="krm-page-pad" style={{ padding: 28 }}>
-        <ScreenHead title="Saved jobs" sub={meta.total + " jobs saved"} />
+        <ScreenHead title={T("Saved jobs")} sub={meta.total + " " + T("jobs saved")} />
         {loading
-          ? <div style={{ color: "var(--text-muted)" }}>Loading…</div>
+          ? <div style={{ color: "var(--text-muted)" }}>{T("Loading…")}</div>
           : jobs.length === 0
-            ? <Card padding={32}><div style={{ textAlign: "center", color: "var(--text-muted)" }}>No saved jobs yet. Browse jobs and click the bookmark icon.</div></Card>
+            ? <Card padding={32}><div style={{ textAlign: "center", color: "var(--text-muted)" }}>{T("No saved jobs yet. Browse jobs and click the bookmark icon.")}</div></Card>
             : (
               <React.Fragment>
                 <div className="krm-card-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 20 }}>
@@ -711,8 +758,8 @@
                     Showing {(meta.current_page - 1) * 10 + 1}–{(meta.current_page - 1) * 10 + jobs.length} of {meta.total}
                   </span>
                   <div style={{ display: "flex", gap: 8 }}>
-                    <Button variant="secondary" size="sm" disabled={meta.current_page <= 1} onClick={function(){ load(meta.current_page - 1); }}>Previous</Button>
-                    <Button variant="secondary" size="sm" disabled={meta.current_page >= meta.last_page} onClick={function(){ load(meta.current_page + 1); }}>Next</Button>
+                    <Button variant="secondary" size="sm" disabled={meta.current_page <= 1} onClick={function(){ load(meta.current_page - 1); }}>{T("Previous")}</Button>
+                    <Button variant="secondary" size="sm" disabled={meta.current_page >= meta.last_page} onClick={function(){ load(meta.current_page + 1); }}>{T("Next")}</Button>
                   </div>
                 </div>
               </React.Fragment>
@@ -731,7 +778,7 @@
         {reasons.map(function(r) {
           return (
             <span key={r} style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "2px 8px", borderRadius: "var(--radius-full)", background: "var(--brand-subtle)", color: "var(--text-brand)", fontSize: "var(--text-xs)", fontWeight: 600 }}>
-              {I("sparkles", 11)} {labels[r] || r}
+              {I("sparkles", 11)} {T(labels[r] || r)}
             </span>
           );
         })}
@@ -782,11 +829,11 @@
 
     return (
       <div className="krm-page-pad" style={{ padding: 28 }}>
-        <ScreenHead title="Recommended for you" sub={loading ? "Loading…" : meta.total + " jobs matched"} />
+        <ScreenHead title={T("Recommended for you")} sub={loading ? T("Loading…") : meta.total + " " + T("jobs matched")} />
 
         {!loading && !hasHistory && (
           <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", background: "var(--info-subtle)", border: "1px solid var(--info-border)", borderRadius: "var(--radius-md)", marginBottom: 18, fontSize: "var(--text-sm)", color: "var(--info)" }}>
-            {I("info", 15)} Apply to or save some jobs first — we'll personalise these recommendations based on your activity.
+            {I("info", 15)} {T("Apply to or save some jobs first — we'll personalise these recommendations based on your activity.")}
           </div>
         )}
 
@@ -800,12 +847,12 @@
               style={{ width: "100%", height: 40, padding: "0 12px 0 38px", borderRadius: "var(--radius-md)", border: "1px solid var(--border)", background: "var(--surface-input)", color: "var(--text-body)", fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)", boxSizing: "border-box" }}
             />
           </div>
-          <Button variant="primary" type="submit">Search</Button>
-          {search && <Button variant="secondary" onClick={function(){ setSearchInput(""); setSearch(""); load(1, ""); }}>Clear</Button>}
+          <Button variant="primary" type="submit">{T("Search")}</Button>
+          {search && <Button variant="secondary" onClick={function(){ setSearchInput(""); setSearch(""); load(1, ""); }}>{T("Clear")}</Button>}
         </form>
 
         {loading
-          ? <div style={{ color: "var(--text-muted)", padding: "28px 0" }}>Loading…</div>
+          ? <div style={{ color: "var(--text-muted)", padding: "28px 0" }}>{T("Loading…")}</div>
           : jobs.length === 0
             ? <Card padding={32}><div style={{ textAlign: "center", color: "var(--text-muted)" }}>No jobs found{search ? ' for "' + search + '"' : ""}. Try a different keyword.</div></Card>
             : (
@@ -825,8 +872,8 @@
                     Showing {(meta.current_page - 1) * 12 + 1}–{(meta.current_page - 1) * 12 + jobs.length} of {meta.total}
                   </span>
                   <div style={{ display: "flex", gap: 8 }}>
-                    <Button variant="secondary" size="sm" disabled={meta.current_page <= 1} onClick={function(){ load(meta.current_page - 1, search); }}>Previous</Button>
-                    <Button variant="secondary" size="sm" disabled={meta.current_page >= meta.last_page} onClick={function(){ load(meta.current_page + 1, search); }}>Next</Button>
+                    <Button variant="secondary" size="sm" disabled={meta.current_page <= 1} onClick={function(){ load(meta.current_page - 1, search); }}>{T("Previous")}</Button>
+                    <Button variant="secondary" size="sm" disabled={meta.current_page >= meta.last_page} onClick={function(){ load(meta.current_page + 1, search); }}>{T("Next")}</Button>
                   </div>
                 </div>
               </React.Fragment>
@@ -901,7 +948,7 @@
 
     return (
       <div className="krm-page-pad" style={{ padding: 28, maxWidth: 720 }}>
-        <ScreenHead title="Profile" sub="How you appear to employers." />
+        <ScreenHead title={T("Profile")} sub={T("How you appear to employers.")} />
         <Card padding={24}>
           <div style={{ display: "flex", gap: 20, alignItems: "center", marginBottom: 24 }}>
             <div style={{ position: "relative", flexShrink: 0 }}>
@@ -915,25 +962,25 @@
               <div style={{ fontWeight: 700, fontSize: "var(--text-md)", color: "var(--text-strong)" }}>{name}</div>
               <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginTop: 2 }}>{email}</div>
               <Button variant="ghost" size="sm" style={{ marginTop: 8, paddingLeft: 0 }} onClick={function(){ fileRef.current && fileRef.current.click(); }} disabled={uploading}>
-                {uploading ? "Uploading…" : "Change photo"}
+                {uploading ? T("Uploading…") : T("Change photo")}
               </Button>
             </div>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <Input label="Full name" value={name} onChange={function(e){ setName(e.target.value); }} />
+            <Input label={T("Full name")} value={name} onChange={function(e){ setName(e.target.value); }} />
             <div className="krm-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-              <Input label="Email" type="email" value={email} onChange={function(e){ setEmail(e.target.value); }} iconLeft={I("mail", 16)} />
-              <Input label="Phone" value={phone} onChange={function(e){ setPhone(e.target.value); }} iconLeft={I("phone", 16)} />
+              <Input label={T("Email")} type="email" value={email} onChange={function(e){ setEmail(e.target.value); }} iconLeft={I("mail", 16)} />
+              <Input label={T("Phone")} value={phone} onChange={function(e){ setPhone(e.target.value); }} iconLeft={I("phone", 16)} />
             </div>
-            <Textarea label="Bio / Description" value={bio} onChange={function(e){ setBio(e.target.value); }} rows={4} placeholder="Tell employers a bit about yourself…" />
+            <Textarea label={T("Bio / Description")} value={bio} onChange={function(e){ setBio(e.target.value); }} rows={4} placeholder="Tell employers a bit about yourself…" />
             <div>
-              <div style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-strong)", marginBottom: 6 }}>CV / Resume visibility</div>
+              <div style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-strong)", marginBottom: 6 }}>{T("CV / Resume visibility")}</div>
               <Select value={cvVis} onChange={function(e){ setCvVis(e.target.value); }} options={[
-                { value: "public", label: "Public — anyone can view" },
-                { value: "employers", label: "Employers only — recruiters who review your application" },
-                { value: "private", label: "Private — only you can access" },
+                { value: "public", label: T("Public — anyone can view") },
+                { value: "employers", label: T("Employers only — recruiters who review your application") },
+                { value: "private", label: T("Private — only you can access") },
               ]} />
-              <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: 5 }}>Controls who can download your uploaded CV file.</div>
+              <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: 5 }}>{T("Controls who can download your uploaded CV file.")}</div>
             </div>
             {msg && (
               <div style={{ padding: "10px 14px", borderRadius: "var(--radius-md)", background: msg.ok ? "var(--success-subtle,#f0fdf4)" : "var(--danger-subtle,#fff5f5)", color: msg.ok ? "var(--success)" : "var(--danger)", fontSize: "var(--text-sm)", fontWeight: 600 }}>
@@ -941,22 +988,22 @@
               </div>
             )}
             <div style={{ display: "flex", gap: 10, paddingTop: 6 }}>
-              <Button variant="primary" disabled={busy} onClick={save}>{busy ? "Saving…" : "Save changes"}</Button>
+              <Button variant="primary" disabled={busy} onClick={save}>{busy ? T("Saving…") : T("Save changes")}</Button>
             </div>
           </div>
         </Card>
         <Card padding={24} style={{ marginTop: 20 }}>
-          <h3 style={{ fontSize: "var(--text-base)", fontWeight: 700, color: "var(--text-strong)", marginBottom: 4 }}>Change password</h3>
-          <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginBottom: 18 }}>Choose a strong password of at least 8 characters.</p>
+          <h3 style={{ fontSize: "var(--text-base)", fontWeight: 700, color: "var(--text-strong)", marginBottom: 4 }}>{T("Change password")}</h3>
+          <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginBottom: 18 }}>{T("Choose a strong password of at least 8 characters.")}</p>
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            <Input label="Current password" type="password" value={curPwd} onChange={function(e){ setCurPwd(e.target.value); }} placeholder="••••••••" />
+            <Input label={T("Current password")} type="password" value={curPwd} onChange={function(e){ setCurPwd(e.target.value); }} placeholder="••••••••" />
             <div className="krm-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-              <Input label="New password" type="password" value={newPwd} onChange={function(e){ setNewPwd(e.target.value); }} placeholder="At least 8 characters" />
-              <Input label="Confirm new password" type="password" value={conPwd} onChange={function(e){ setConPwd(e.target.value); }} placeholder="••••••••" />
+              <Input label={T("New password")} type="password" value={newPwd} onChange={function(e){ setNewPwd(e.target.value); }} placeholder="At least 8 characters" />
+              <Input label={T("Confirm new password")} type="password" value={conPwd} onChange={function(e){ setConPwd(e.target.value); }} placeholder="••••••••" />
             </div>
             {pwdMsg && <div style={{ fontSize: "var(--text-sm)", color: pwdMsg.ok ? "var(--success)" : "var(--danger)", fontWeight: 600 }}>{pwdMsg.text}</div>}
             <div style={{ paddingTop: 4 }}>
-              <Button variant="primary" disabled={pwdBusy} onClick={changePwd}>{pwdBusy ? "Updating…" : "Update password"}</Button>
+              <Button variant="primary" disabled={pwdBusy} onClick={changePwd}>{pwdBusy ? T("Updating…") : T("Update password")}</Button>
             </div>
           </div>
         </Card>
@@ -1045,37 +1092,37 @@
     var sectionHeadStyle = { display: "flex", alignItems: "center", gap: 10, marginBottom: 14 };
     var iconBoxStyle = { display: "inline-flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: "var(--radius-md)", background: "var(--brand-subtle)", color: "var(--brand)", flexShrink: 0 };
 
-    if (loading) return <div style={{ padding: 28, color: "var(--text-muted)" }}>Loading…</div>;
+    if (loading) return <div style={{ padding: 28, color: "var(--text-muted)" }}>{T("Loading…")}</div>;
 
     return (
       <div className="krm-page-pad" style={{ padding: 28, maxWidth: 860 }}>
-        <ScreenHead title="Résumé builder" sub="Build your CV to attach when applying for jobs."
+        <ScreenHead title={T("Résumé builder")} sub={T("Build your CV to attach when applying for jobs.")}
           action={
             <div style={{ display: "flex", gap: 10 }}>
-              {resume.has_cv && <Button variant="secondary" iconLeft={I("download", 15)} onClick={downloadCv}>Download CV</Button>}
-              <Button variant="primary" disabled={busy} onClick={saveAll} iconLeft={I("save", 15)}>{busy ? "Saving…" : "Save resume"}</Button>
+              {resume.has_cv && <Button variant="secondary" iconLeft={I("download", 15)} onClick={downloadCv}>{T("Download CV")}</Button>}
+              <Button variant="primary" disabled={busy} onClick={saveAll} iconLeft={I("save", 15)}>{busy ? T("Saving…") : T("Save resume")}</Button>
             </div>
           }
         />
-        {saved && <div style={{ marginBottom: 16, padding: "10px 16px", background: "var(--success-subtle)", color: "var(--success)", borderRadius: "var(--radius-md)", fontSize: "var(--text-sm)" }}>Resume saved successfully!</div>}
+        {saved && <div style={{ marginBottom: 16, padding: "10px 16px", background: "var(--success-subtle)", color: "var(--success)", borderRadius: "var(--radius-md)", fontSize: "var(--text-sm)" }}>{T("Resume saved successfully!")}</div>}
 
         {/* Upload CV file */}
         <Card padding={20} style={{ marginBottom: 20 }}>
           <div style={sectionHeadStyle}>
             <span style={iconBoxStyle}>{I("upload", 18)}</span>
-            <h3 style={{ fontSize: "var(--text-md)", fontWeight: 700, color: "var(--text-strong)", flex: 1 }}>Upload CV file</h3>
+            <h3 style={{ fontSize: "var(--text-md)", fontWeight: 700, color: "var(--text-strong)", flex: 1 }}>{T("Upload CV file")}</h3>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
             {resume.has_cv
               ? <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", flex: 1 }}>
                   <span style={{ color: "var(--brand)" }}>{I("file-text", 20)}</span>
-                  <span style={{ fontSize: "var(--text-sm)", color: "var(--text-body)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>CV uploaded</span>
-                  <button onClick={downloadCv} style={{ fontSize: "var(--text-sm)", color: "var(--brand)", background: "none", border: "none", cursor: "pointer", padding: 0 }}>View</button>
+                  <span style={{ fontSize: "var(--text-sm)", color: "var(--text-body)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{T("CV uploaded")}</span>
+                  <button onClick={downloadCv} style={{ fontSize: "var(--text-sm)", color: "var(--brand)", background: "none", border: "none", cursor: "pointer", padding: 0 }}>{T("View")}</button>
                 </div>
-              : <div style={{ flex: 1, fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>No CV uploaded yet. Upload a PDF or DOC (max 5 MB).</div>
+              : <div style={{ flex: 1, fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>{T("No CV uploaded yet. Upload a PDF or DOC (max 5 MB).")}</div>
             }
             <input ref={cvRef} type="file" accept=".pdf,.doc,.docx" style={{ display: "none" }} onChange={onCvChange} />
-            <Button variant="secondary" disabled={uploading} onClick={function(){ cvRef.current && cvRef.current.click(); }}>{uploading ? "Uploading…" : resume.has_cv ? "Replace CV" : "Upload CV"}</Button>
+            <Button variant="secondary" disabled={uploading} onClick={function(){ cvRef.current && cvRef.current.click(); }}>{uploading ? T("Uploading…") : resume.has_cv ? T("Replace CV") : T("Upload CV")}</Button>
           </div>
         </Card>
 
@@ -1083,11 +1130,11 @@
         <Card padding={20} style={sectionStyle}>
           <div style={sectionHeadStyle}>
             <span style={iconBoxStyle}>{I("user-round", 18)}</span>
-            <h3 style={{ fontSize: "var(--text-md)", fontWeight: 700, color: "var(--text-strong)" }}>Personal summary</h3>
+            <h3 style={{ fontSize: "var(--text-md)", fontWeight: 700, color: "var(--text-strong)" }}>{T("Personal summary")}</h3>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            <Input label="Headline / Job title" value={resume.headline} onChange={function(e){ setField("headline", e.target.value); }} placeholder="e.g. Senior Accountant" />
-            <RichEditor label="Summary" rows={4} value={resume.summary} onChange={function(v){ setField("summary", v); }} placeholder="Brief professional summary…" />
+            <Input label={T("Headline / Job title")} value={resume.headline} onChange={function(e){ setField("headline", e.target.value); }} placeholder="e.g. Senior Accountant" />
+            <RichEditor label={T("Summary")} rows={4} value={resume.summary} onChange={function(v){ setField("summary", v); }} placeholder="Brief professional summary…" />
           </div>
         </Card>
 
@@ -1095,16 +1142,16 @@
         <Card padding={20} style={sectionStyle}>
           <div style={sectionHeadStyle}>
             <span style={iconBoxStyle}>{I("graduation-cap", 18)}</span>
-            <h3 style={{ fontSize: "var(--text-md)", fontWeight: 700, color: "var(--text-strong)", flex: 1 }}>Education</h3>
-            <Button variant="ghost" size="sm" iconLeft={I("plus", 13)} onClick={addEdu}>Add</Button>
+            <h3 style={{ fontSize: "var(--text-md)", fontWeight: 700, color: "var(--text-strong)", flex: 1 }}>{T("Education")}</h3>
+            <Button variant="ghost" size="sm" iconLeft={I("plus", 13)} onClick={addEdu}>{T("Add")}</Button>
           </div>
-          {resume.data.education.length === 0 && <div style={{ color: "var(--text-faint)", fontSize: "var(--text-sm)" }}>No education entries yet.</div>}
+          {resume.data.education.length === 0 && <div style={{ color: "var(--text-faint)", fontSize: "var(--text-sm)" }}>{T("No education entries yet.")}</div>}
           {resume.data.education.map(function(e, i) {
             return (
               <div key={i} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10, marginBottom: 10, alignItems: "end" }}>
-                <Input label={i === 0 ? "School / University" : undefined} value={e.school} onChange={function(ev){ updateEdu(i,"school",ev.target.value); }} placeholder="School" />
-                <Input label={i === 0 ? "Degree" : undefined} value={e.degree} onChange={function(ev){ updateEdu(i,"degree",ev.target.value); }} placeholder="e.g. BBA, Accounting" />
-                <Input label={i === 0 ? "Years" : undefined} value={e.years} onChange={function(ev){ updateEdu(i,"years",ev.target.value); }} placeholder="2018–2022" />
+                <Input label={i === 0 ? T("School / University") : undefined} value={e.school} onChange={function(ev){ updateEdu(i,"school",ev.target.value); }} placeholder="School" />
+                <Input label={i === 0 ? T("Degree") : undefined} value={e.degree} onChange={function(ev){ updateEdu(i,"degree",ev.target.value); }} placeholder="e.g. BBA, Accounting" />
+                <Input label={i === 0 ? T("Years") : undefined} value={e.years} onChange={function(ev){ updateEdu(i,"years",ev.target.value); }} placeholder="2018–2022" />
                 <button onClick={function(){ removeEdu(i); }} style={{ height: 40, width: 36, border: "1px solid var(--border)", borderRadius: "var(--radius-md)", background: "transparent", cursor: "pointer", color: "var(--danger)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{I("trash-2", 15)}</button>
               </div>
             );
@@ -1115,20 +1162,20 @@
         <Card padding={20} style={sectionStyle}>
           <div style={sectionHeadStyle}>
             <span style={iconBoxStyle}>{I("briefcase", 18)}</span>
-            <h3 style={{ fontSize: "var(--text-md)", fontWeight: 700, color: "var(--text-strong)", flex: 1 }}>Work experience</h3>
-            <Button variant="ghost" size="sm" iconLeft={I("plus", 13)} onClick={addExp}>Add</Button>
+            <h3 style={{ fontSize: "var(--text-md)", fontWeight: 700, color: "var(--text-strong)", flex: 1 }}>{T("Work experience")}</h3>
+            <Button variant="ghost" size="sm" iconLeft={I("plus", 13)} onClick={addExp}>{T("Add")}</Button>
           </div>
-          {resume.data.experience.length === 0 && <div style={{ color: "var(--text-faint)", fontSize: "var(--text-sm)" }}>No experience entries yet.</div>}
+          {resume.data.experience.length === 0 && <div style={{ color: "var(--text-faint)", fontSize: "var(--text-sm)" }}>{T("No experience entries yet.")}</div>}
           {resume.data.experience.map(function(e, i) {
             return (
               <div key={e._k != null ? e._k : i} style={{ border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-md)", padding: "14px", marginBottom: 12 }}>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10, marginBottom: 10, alignItems: "end" }}>
-                  <Input label="Job title" value={e.role} onChange={function(ev){ updateExp(i,"role",ev.target.value); }} placeholder="e.g. Senior Accountant" />
-                  <Input label="Company" value={e.org} onChange={function(ev){ updateExp(i,"org",ev.target.value); }} placeholder="Company name" />
-                  <Input label="Years" value={e.years} onChange={function(ev){ updateExp(i,"years",ev.target.value); }} placeholder="2021–present" />
+                  <Input label={T("Job title")} value={e.role} onChange={function(ev){ updateExp(i,"role",ev.target.value); }} placeholder="e.g. Senior Accountant" />
+                  <Input label={T("Company")} value={e.org} onChange={function(ev){ updateExp(i,"org",ev.target.value); }} placeholder="Company name" />
+                  <Input label={T("Years")} value={e.years} onChange={function(ev){ updateExp(i,"years",ev.target.value); }} placeholder="2021–present" />
                   <button onClick={function(){ removeExp(i); }} style={{ height: 40, width: 36, border: "1px solid var(--border)", borderRadius: "var(--radius-md)", background: "transparent", cursor: "pointer", color: "var(--danger)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 20 }}>{I("trash-2", 15)}</button>
                 </div>
-                <RichEditor key={"expnote-" + (e._k != null ? e._k : i)} label="Description" rows={2} value={e.note} onChange={function(v){ updateExp(i,"note",v); }} placeholder="Key responsibilities and achievements…" />
+                <RichEditor key={"expnote-" + (e._k != null ? e._k : i)} label={T("Description")} rows={2} value={e.note} onChange={function(v){ updateExp(i,"note",v); }} placeholder="Key responsibilities and achievements…" />
               </div>
             );
           })}
@@ -1138,14 +1185,14 @@
         <Card padding={20} style={sectionStyle}>
           <div style={sectionHeadStyle}>
             <span style={iconBoxStyle}>{I("sparkles", 18)}</span>
-            <h3 style={{ fontSize: "var(--text-md)", fontWeight: 700, color: "var(--text-strong)", flex: 1 }}>Skills</h3>
+            <h3 style={{ fontSize: "var(--text-md)", fontWeight: 700, color: "var(--text-strong)", flex: 1 }}>{T("Skills")}</h3>
           </div>
           <div style={{ display: "flex", gap: 8, marginBottom: 12, alignItems: "center" }}>
             <input value={skillInput} onChange={function(e){ setSkillInput(e.target.value); }}
               onKeyDown={function(e){ if(e.key==="Enter"){ e.preventDefault(); addSkill(); } }}
               placeholder="Type a skill and press Enter or Add"
               style={{ flex: 1, height: 40, padding: "0 12px", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)", color: "var(--text-body)" }} />
-            <Button variant="secondary" size="sm" onClick={addSkill}>Add</Button>
+            <Button variant="secondary" size="sm" onClick={addSkill}>{T("Add")}</Button>
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
             {resume.data.skills.map(function(s, i) {
@@ -1156,7 +1203,7 @@
                 </span>
               );
             })}
-            {resume.data.skills.length === 0 && <span style={{ color: "var(--text-faint)", fontSize: "var(--text-sm)" }}>No skills added yet.</span>}
+            {resume.data.skills.length === 0 && <span style={{ color: "var(--text-faint)", fontSize: "var(--text-sm)" }}>{T("No skills added yet.")}</span>}
           </div>
         </Card>
 
@@ -1164,15 +1211,15 @@
         <Card padding={20} style={sectionStyle}>
           <div style={sectionHeadStyle}>
             <span style={iconBoxStyle}>{I("award", 18)}</span>
-            <h3 style={{ fontSize: "var(--text-md)", fontWeight: 700, color: "var(--text-strong)", flex: 1 }}>Certifications</h3>
-            <Button variant="ghost" size="sm" iconLeft={I("plus", 13)} onClick={addCert}>Add</Button>
+            <h3 style={{ fontSize: "var(--text-md)", fontWeight: 700, color: "var(--text-strong)", flex: 1 }}>{T("Certifications")}</h3>
+            <Button variant="ghost" size="sm" iconLeft={I("plus", 13)} onClick={addCert}>{T("Add")}</Button>
           </div>
-          {resume.data.certifications.length === 0 && <div style={{ color: "var(--text-faint)", fontSize: "var(--text-sm)" }}>No certifications yet.</div>}
+          {resume.data.certifications.length === 0 && <div style={{ color: "var(--text-faint)", fontSize: "var(--text-sm)" }}>{T("No certifications yet.")}</div>}
           {resume.data.certifications.map(function(c, i) {
             return (
               <div key={i} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10, marginBottom: 10, alignItems: "end" }}>
-                <Input label={i === 0 ? "Certification name" : undefined} value={c.name} onChange={function(ev){ updateCert(i,"name",ev.target.value); }} placeholder="e.g. CPA Cambodia" />
-                <Input label={i === 0 ? "Year" : undefined} value={c.year} onChange={function(ev){ updateCert(i,"year",ev.target.value); }} placeholder="2021" />
+                <Input label={i === 0 ? T("Certification name") : undefined} value={c.name} onChange={function(ev){ updateCert(i,"name",ev.target.value); }} placeholder="e.g. CPA Cambodia" />
+                <Input label={i === 0 ? T("Year") : undefined} value={c.year} onChange={function(ev){ updateCert(i,"year",ev.target.value); }} placeholder="2021" />
                 <button onClick={function(){ removeCert(i); }} style={{ height: 40, width: 36, border: "1px solid var(--border)", borderRadius: "var(--radius-md)", background: "transparent", cursor: "pointer", color: "var(--danger)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{I("trash-2", 15)}</button>
               </div>
             );
@@ -1194,8 +1241,8 @@
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 14, flexWrap: "wrap", gap: 10 }}>
         <span style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>Showing {from}–{to} of {total}{label ? " " + label : ""}</span>
         <div style={{ display: "flex", gap: 8 }}>
-          <Button variant="secondary" size="sm" disabled={safe <= 1} onClick={function(){ onPage(safe - 1); }}>Previous</Button>
-          <Button variant="secondary" size="sm" disabled={safe >= pages} onClick={function(){ onPage(safe + 1); }}>Next</Button>
+          <Button variant="secondary" size="sm" disabled={safe <= 1} onClick={function(){ onPage(safe - 1); }}>{T("Previous")}</Button>
+          <Button variant="secondary" size="sm" disabled={safe >= pages} onClick={function(){ onPage(safe + 1); }}>{T("Next")}</Button>
         </div>
       </div>
     );
@@ -1233,19 +1280,19 @@
       });
     }
 
-    if (loading) return <div className="krm-page-pad" style={{ padding: 28, color: "var(--text-muted)" }}>Loading…</div>;
+    if (loading) return <div className="krm-page-pad" style={{ padding: 28, color: "var(--text-muted)" }}>{T("Loading…")}</div>;
     if (error) return <div className="krm-page-pad" style={{ padding: 28, color: "var(--danger)" }}>{error}</div>;
 
     return (
       <div className="krm-page-pad" style={{ padding: 28 }}>
         <div style={{ maxWidth: 740 }}>
           <div style={{ marginBottom: 22 }}>
-            <div style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: "var(--text-lg)", color: "var(--text-strong)" }}>Companies I follow</div>
-            <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginTop: 2 }}>You'll get an email when a followed company posts a new job.</div>
+            <div style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: "var(--text-lg)", color: "var(--text-strong)" }}>{T("Companies I follow")}</div>
+            <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginTop: 2 }}>{T("You'll get an email when a followed company posts a new job.")}</div>
           </div>
 
           {companies.length === 0 ? (
-            <EmptyState icon={I("heart", 28)} title="Not following anyone yet" description="Visit a company profile and click Follow to stay notified of new jobs." />
+            <EmptyState icon={I("heart", 28)} title={T("Not following anyone yet")} description={T("Visit a company profile and click Follow to stay notified of new jobs.")} />
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {shown.map(function(c) {
@@ -1260,7 +1307,7 @@
                       </div>
                     </div>
                     <button onClick={function(){ handleUnfollow(c.id); }} disabled={unfollowing === c.id} style={{ border: "1px solid var(--border-strong)", background: "transparent", cursor: "pointer", color: "var(--text-muted)", padding: "7px 14px", borderRadius: "var(--radius-md)", fontFamily: "var(--font-sans)", fontWeight: 600, fontSize: "var(--text-xs)", display: "inline-flex", alignItems: "center", gap: 6 }}>
-                      {I("heart-off", 14)} Unfollow
+                      {I("heart-off", 14)} {T("Unfollow")}
                     </button>
                   </Card>
                 );
@@ -1352,11 +1399,11 @@
       if (a.category) parts.push(a.category.name);
       if (a.location) parts.push(a.location.name);
       if (a.job_type) parts.push(a.job_type.replace("_", "-"));
-      if (a.is_remote === true) parts.push("Remote");
-      return parts.length ? parts.join(" · ") : "All new jobs";
+      if (a.is_remote === true) parts.push(T("Remote"));
+      return parts.length ? parts.join(" · ") : T("All new jobs");
     }
 
-    if (loading) return <div className="krm-page-pad" style={{ padding: 28, color: "var(--text-muted)" }}>Loading…</div>;
+    if (loading) return <div className="krm-page-pad" style={{ padding: 28, color: "var(--text-muted)" }}>{T("Loading…")}</div>;
     if (error) return <div className="krm-page-pad" style={{ padding: 28, color: "var(--danger)" }}>{error}</div>;
 
     return (
@@ -1364,12 +1411,12 @@
         <div style={{ maxWidth: 740 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
           <div>
-            <div style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: "var(--text-lg)", color: "var(--text-strong)" }}>Your job alerts</div>
-            <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginTop: 2 }}>Get an email the moment a matching role is posted. Up to 10 alerts.</div>
+            <div style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: "var(--text-lg)", color: "var(--text-strong)" }}>{T("Your job alerts")}</div>
+            <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginTop: 2 }}>{T("Get an email the moment a matching role is posted. Up to 10 alerts.")}</div>
           </div>
           {alerts.length < 10 && alerts.length > 0 && (
             <Button variant="primary" size="sm" onClick={function(){ setShowForm(!showForm); setFormErr(""); }}>
-              {showForm ? "Cancel" : "+ New alert"}
+              {showForm ? T("Cancel") : T("+ New alert")}
             </Button>
           )}
         </div>
@@ -1377,44 +1424,44 @@
         {showForm && (
           <Card style={{ marginBottom: 24 }}>
             <form onSubmit={handleCreate}>
-              <div style={{ fontWeight: 700, fontSize: "var(--text-base)", color: "var(--text-strong)", marginBottom: 16 }}>Create a new alert</div>
+              <div style={{ fontWeight: 700, fontSize: "var(--text-base)", color: "var(--text-strong)", marginBottom: 16 }}>{T("Create a new alert")}</div>
               <div className="krm-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
-                <Input label="Keyword" placeholder="e.g. Software Engineer" value={form.keyword} onChange={function(e){ setForm(function(f){ return Object.assign({}, f, { keyword: e.target.value }); }); }} />
+                <Input label={T("Keyword")} placeholder="e.g. Software Engineer" value={form.keyword} onChange={function(e){ setForm(function(f){ return Object.assign({}, f, { keyword: e.target.value }); }); }} />
                 <div>
-                  <label style={{ display: "block", fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-label)", marginBottom: 6 }}>Category</label>
+                  <label style={{ display: "block", fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-label)", marginBottom: 6 }}>{T("Category")}</label>
                   <select value={form.category_id} onChange={function(e){ setForm(function(f){ return Object.assign({}, f, { category_id: e.target.value }); }); }} style={{ width: "100%", padding: "9px 12px", border: "1px solid var(--border-strong)", borderRadius: "var(--radius-md)", fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)", background: "var(--surface-card)", color: "var(--text-body)" }}>
-                    <option value="">Any category</option>
+                    <option value="">{T("Any category")}</option>
                     {categories.map(function(c){ return <option key={c.id} value={c.id}>{c.name}</option>; })}
                   </select>
                 </div>
                 <div>
-                  <label style={{ display: "block", fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-label)", marginBottom: 6 }}>Location</label>
+                  <label style={{ display: "block", fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-label)", marginBottom: 6 }}>{T("Location")}</label>
                   <select value={form.location_id} onChange={function(e){ setForm(function(f){ return Object.assign({}, f, { location_id: e.target.value }); }); }} style={{ width: "100%", padding: "9px 12px", border: "1px solid var(--border-strong)", borderRadius: "var(--radius-md)", fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)", background: "var(--surface-card)", color: "var(--text-body)" }}>
-                    <option value="">Any location</option>
+                    <option value="">{T("Any location")}</option>
                     {locations.map(function(l){ return <option key={l.id} value={l.id}>{l.name}</option>; })}
                   </select>
                 </div>
                 <div>
-                  <label style={{ display: "block", fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-label)", marginBottom: 6 }}>Job type</label>
+                  <label style={{ display: "block", fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-label)", marginBottom: 6 }}>{T("Job type")}</label>
                   <select value={form.job_type} onChange={function(e){ setForm(function(f){ return Object.assign({}, f, { job_type: e.target.value }); }); }} style={{ width: "100%", padding: "9px 12px", border: "1px solid var(--border-strong)", borderRadius: "var(--radius-md)", fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)", background: "var(--surface-card)", color: "var(--text-body)" }}>
-                    {JOB_TYPES.map(function(o){ return <option key={o.value} value={o.value}>{o.label}</option>; })}
+                    {JOB_TYPES.map(function(o){ return <option key={o.value} value={o.value}>{T(o.label)}</option>; })}
                   </select>
                 </div>
                 <div>
-                  <label style={{ display: "block", fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-label)", marginBottom: 6 }}>Work mode</label>
+                  <label style={{ display: "block", fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-label)", marginBottom: 6 }}>{T("Work mode")}</label>
                   <select value={form.is_remote} onChange={function(e){ setForm(function(f){ return Object.assign({}, f, { is_remote: e.target.value }); }); }} style={{ width: "100%", padding: "9px 12px", border: "1px solid var(--border-strong)", borderRadius: "var(--radius-md)", fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)", background: "var(--surface-card)", color: "var(--text-body)" }}>
-                    {REMOTE_OPTS.map(function(o){ return <option key={o.value} value={o.value}>{o.label}</option>; })}
+                    {REMOTE_OPTS.map(function(o){ return <option key={o.value} value={o.value}>{T(o.label)}</option>; })}
                   </select>
                 </div>
               </div>
               {formErr && <div style={{ color: "var(--danger)", fontSize: "var(--text-sm)", marginBottom: 12 }}>{formErr}</div>}
-              <Button variant="primary" size="sm" disabled={saving}>{saving ? "Saving…" : "Save alert"}</Button>
+              <Button variant="primary" size="sm" disabled={saving}>{saving ? T("Saving…") : T("Save alert")}</Button>
             </form>
           </Card>
         )}
 
         {alerts.length === 0 && !showForm && (
-          <EmptyState icon={I("bell", 28)} title="No job alerts yet" description="Create an alert and we'll email you when a matching role is posted." />
+          <EmptyState icon={I("bell", 28)} title={T("No job alerts yet")} description={T("Create an alert and we'll email you when a matching role is posted.")} />
         )}
         {alerts.length > 0 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -1538,13 +1585,13 @@
     return (
       <div className={"krm-msg-wrap" + (activeConv ? " krm-msg-wrap--active" : "")} style={{ display: "flex", height: "calc(100vh - 64px)", overflow: "hidden" }}>
         <div className="krm-msg-list" style={{ width: 290, flexShrink: 0, borderRight: "1px solid var(--border)", overflowY: "auto", background: "var(--surface-card)" }}>
-          <div style={{ padding: "16px 16px 12px", borderBottom: "1px solid var(--border)", fontWeight: 700, fontSize: "var(--text-base)", color: "var(--text-strong)" }}>Conversations</div>
-          {loading && <div style={{ padding: 24, color: "var(--text-muted)", fontSize: "var(--text-sm)" }}>Loading…</div>}
+          <div style={{ padding: "16px 16px 12px", borderBottom: "1px solid var(--border)", fontWeight: 700, fontSize: "var(--text-base)", color: "var(--text-strong)" }}>{T("Conversations")}</div>
+          {loading && <div style={{ padding: 24, color: "var(--text-muted)", fontSize: "var(--text-sm)" }}>{T("Loading…")}</div>}
           {!loading && convs.length === 0 && (
             <div style={{ padding: 28, color: "var(--text-muted)", fontSize: "var(--text-sm)", textAlign: "center" }}>
               {I("message-square", 28)}
-              <div style={{ marginTop: 8 }}>No conversations yet.</div>
-              <div style={{ marginTop: 4, fontSize: 12, color: "var(--text-faint)" }}>Employers can message you directly after viewing your application.</div>
+              <div style={{ marginTop: 8 }}>{T("No conversations yet.")}</div>
+              <div style={{ marginTop: 4, fontSize: 12, color: "var(--text-faint)" }}>{T("Employers can message you directly after viewing your application.")}</div>
             </div>
           )}
           {convs.map(function(conv) {
@@ -1577,7 +1624,7 @@
           {!activeConv ? (
             <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 12, color: "var(--text-faint)" }}>
               {I("message-square", 40)}
-              <span style={{ fontSize: "var(--text-sm)" }}>Select a conversation to read messages</span>
+              <span style={{ fontSize: "var(--text-sm)" }}>{T("Select a conversation to read messages")}</span>
             </div>
           ) : (<>
             <div style={{ padding: "12px 20px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: 12, background: "var(--surface-card)", flexShrink: 0 }}>
@@ -1589,7 +1636,7 @@
               </div>
             </div>
             <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
-              {msgLoading && msgs.length === 0 && <div style={{ color: "var(--text-muted)", fontSize: "var(--text-sm)" }}>Loading…</div>}
+              {msgLoading && msgs.length === 0 && <div style={{ color: "var(--text-muted)", fontSize: "var(--text-sm)" }}>{T("Loading…")}</div>}
               {msgs.map(function(msg) {
                 var mine = msg.sender_id === user.id;
                 return (
@@ -1619,7 +1666,7 @@
                 rows={2}
                 style={{ flex: 1, resize: "none", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", padding: "8px 12px", fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)", color: "var(--text-body)", background: "var(--surface-page)", outline: "none", lineHeight: 1.5 }}
               />
-              <Button variant="primary" iconLeft={I("send", 16)} disabled={sending || !body.trim()} onClick={send}>{sending ? "…" : "Send"}</Button>
+              <Button variant="primary" iconLeft={I("send", 16)} disabled={sending || !body.trim()} onClick={send}>{sending ? "…" : T("Send")}</Button>
             </div>
           </>)}
         </div>
@@ -1813,7 +1860,7 @@
       <React.Fragment>
         <div style={{ border: "1px solid var(--border)", borderRadius: "var(--radius-md)", background: "var(--surface-page)", padding: 14, maxHeight: 380, overflowY: "auto", display: "flex", flexDirection: "column", gap: 10 }}>
           {msgs === null ? (
-            <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>Loading…</div>
+            <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>{T("Loading…")}</div>
           ) : msgs.length === 0 ? (
             <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>
               No messages yet — tell us what you need help with and we’ll reply here.
@@ -1996,7 +2043,7 @@
       cand.logout().then(doLogout).catch(doLogout);
     }
 
-    if (authLoading) return <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", color: "var(--text-muted)" }}>Loading…</div>;
+    if (authLoading) return <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", color: "var(--text-muted)" }}>{T("Loading…")}</div>;
     if (!authUser) return <CandidateLogin onLogin={function(u){ setAuthUser(u); }} />;
 
     var titles = { dashboard: T("Welcome back") + ", " + (authUser.name.split(" ")[0]), applications: T("My applications"), saved: T("Saved jobs"), recommended: T("Recommended for you"), following: T("Companies I follow"), alerts: T("Job alerts"), messages: T("Messages"), resume: T("Résumé builder"), support: T("Help & support"), profile: T("Profile") };

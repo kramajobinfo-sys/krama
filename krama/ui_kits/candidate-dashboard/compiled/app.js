@@ -110,7 +110,113 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     // Common
     "Loading…": "កំពុងផ្ទុក…",
     "Saving…": "កំពុងរក្សាទុក…",
-    "Uploading…": "កំពុងបង្ហោះ…"
+    "Uploading…": "កំពុងបង្ហោះ…",
+    "Previous": "មុន",
+    "Next": "បន្ទាប់",
+    "Add": "បន្ថែម",
+    "Cancel": "បោះបង់",
+    "Search": "ស្វែងរក",
+    "Clear": "សម្អាត",
+    "No results": "គ្មានលទ្ធផល",
+    "Rejected": "បានបដិសេធ",
+    "View": "មើល",
+    "All": "ទាំងអស់",
+    // Applications
+    "total applications": "ពាក្យសុំសរុប",
+    "No applications found.": "រកមិនឃើញពាក្យសុំ។",
+    "Message": "ផ្ញើសារ",
+    "Withdraw": "ដកពាក្យ",
+    "Send message": "ផ្ញើសារ",
+    "Sending…": "កំពុងផ្ញើ…",
+    "Employer": "និយោជក",
+    // Saved jobs
+    "jobs saved": "ការងារបានរក្សាទុក",
+    "No saved jobs yet. Browse jobs and click the bookmark icon.": "មិនទាន់មានការងារបានរក្សាទុក។ រកមើលការងារ ហើយចុចរូបសញ្ញាចំណាំ។",
+    // Recommended
+    "jobs matched": "ការងារត្រូវគ្នា",
+    "Matches your field": "ត្រូវនឹងវិស័យរបស់អ្នក",
+    "Matches your level": "ត្រូវនឹងកម្រិតរបស់អ្នក",
+    "Apply to or save some jobs first — we'll personalise these recommendations based on your activity.": "ដាក់ពាក្យ ឬរក្សាទុកការងារមុនសិន — យើងនឹងធ្វើឱ្យការណែនាំទាំងនេះផ្ទាល់ខ្លួនតាមសកម្មភាពរបស់អ្នក។",
+    // Profile
+    "How you appear to employers.": "របៀបដែលអ្នកបង្ហាញទៅនិយោជក។",
+    "Change photo": "ប្តូររូបថត",
+    "Email": "អ៊ីមែល",
+    "Phone": "ទូរស័ព្ទ",
+    "Bio / Description": "ជីវប្រវត្តិ / ការពិពណ៌នា",
+    "CV / Resume visibility": "ភាពមើលឃើញ CV",
+    "Controls who can download your uploaded CV file.": "គ្រប់គ្រងអ្នកដែលអាចទាញយកឯកសារ CV របស់អ្នក។",
+    "Public — anyone can view": "សាធារណៈ — នរណាក៏មើលបាន",
+    "Employers only — recruiters who review your application": "និយោជកតែប៉ុណ្ណោះ — អ្នកជ្រើសរើសដែលពិនិត្យពាក្យសុំ",
+    "Private — only you can access": "ឯកជន — មានតែអ្នកទេអាចចូលបាន",
+    "Save changes": "រក្សាទុកការផ្លាស់ប្តូរ",
+    "Change password": "ប្តូរពាក្យសម្ងាត់",
+    "Choose a strong password of at least 8 characters.": "ជ្រើសរើសពាក្យសម្ងាត់ខ្លាំង យ៉ាងតិច ៨ តួអក្សរ។",
+    "Current password": "ពាក្យសម្ងាត់បច្ចុប្បន្ន",
+    "New password": "ពាក្យសម្ងាត់ថ្មី",
+    "Confirm new password": "បញ្ជាក់ពាក្យសម្ងាត់ថ្មី",
+    "Update password": "ធ្វើបច្ចុប្បន្នភាពពាក្យសម្ងាត់",
+    "Updating…": "កំពុងធ្វើបច្ចុប្បន្នភាព…",
+    // Résumé builder
+    "Build your CV to attach when applying for jobs.": "បង្កើត CV របស់អ្នកដើម្បីភ្ជាប់ពេលដាក់ពាក្យការងារ។",
+    "Download CV": "ទាញយក CV",
+    "Save resume": "រក្សាទុកប្រវត្តិរូប",
+    "Resume saved successfully!": "បានរក្សាទុកប្រវត្តិរូបដោយជោគជ័យ!",
+    "Upload CV file": "បង្ហោះឯកសារ CV",
+    "CV uploaded": "បានបង្ហោះ CV",
+    "Replace CV": "ជំនួស CV",
+    "No CV uploaded yet. Upload a PDF or DOC (max 5 MB).": "មិនទាន់បង្ហោះ CV។ បង្ហោះ PDF ឬ DOC (អតិបរមា ៥ MB)។",
+    "Personal summary": "សេចក្តីសង្ខេបផ្ទាល់ខ្លួន",
+    "Headline / Job title": "ចំណងជើង / មុខតំណែង",
+    "Summary": "សេចក្តីសង្ខេប",
+    "No education entries yet.": "មិនទាន់មានការសិក្សា។",
+    "School / University": "សាលា / សាកលវិទ្យាល័យ",
+    "Degree": "សញ្ញាបត្រ",
+    "No experience entries yet.": "មិនទាន់មានបទពិសោធន៍។",
+    "Job title": "មុខតំណែង",
+    "Company": "ក្រុមហ៊ុន",
+    "Description": "ការពិពណ៌នា",
+    "No skills added yet.": "មិនទាន់មានជំនាញ។",
+    "Certifications": "វិញ្ញាបនបត្រ",
+    "No certifications yet.": "មិនទាន់មានវិញ្ញាបនបត្រ។",
+    "Certification name": "ឈ្មោះវិញ្ញាបនបត្រ",
+    "Year": "ឆ្នាំ",
+    // Following
+    "You'll get an email when a followed company posts a new job.": "អ្នកនឹងទទួលបានអ៊ីមែលពេលក្រុមហ៊ុនដែលអ្នកតាមដានបង្ហោះការងារថ្មី។",
+    "Not following anyone yet": "មិនទាន់តាមដាននរណាទេ",
+    "Visit a company profile and click Follow to stay notified of new jobs.": "ចូលទៅកាន់ប្រវត្តិរូបក្រុមហ៊ុន ហើយចុចតាមដាន ដើម្បីទទួលដំណឹងការងារថ្មី។",
+    "Unfollow": "ឈប់តាមដាន",
+    // Job alerts
+    "Your job alerts": "ការជូនដំណឹងការងាររបស់អ្នក",
+    "Get an email the moment a matching role is posted. Up to 10 alerts.": "ទទួលអ៊ីមែលភ្លាមៗពេលមានការងារត្រូវគ្នាបានបង្ហោះ។ រហូតដល់ ១០ ការជូនដំណឹង។",
+    "+ New alert": "+ ការជូនដំណឹងថ្មី",
+    "Create a new alert": "បង្កើតការជូនដំណឹងថ្មី",
+    "Keyword": "ពាក្យគន្លឹះ",
+    "Category": "ប្រភេទ",
+    "Any category": "ប្រភេទណាមួយ",
+    "Job type": "ប្រភេទការងារ",
+    "Work mode": "របៀបធ្វើការ",
+    "Any": "ណាមួយ",
+    "Remote only": "ពីចម្ងាយតែប៉ុណ្ណោះ",
+    "On-site / hybrid": "នៅកន្លែង / ចម្រុះ",
+    "Full-time": "ពេញម៉ោង",
+    "Part-time": "ក្រៅម៉ោង",
+    "Save alert": "រក្សាទុកការជូនដំណឹង",
+    "No job alerts yet": "មិនទាន់មានការជូនដំណឹងការងារ",
+    "Create an alert and we'll email you when a matching role is posted.": "បង្កើតការជូនដំណឹង ហើយយើងនឹងផ្ញើអ៊ីមែលពេលមានការងារត្រូវគ្នា។",
+    "All new jobs": "ការងារថ្មីទាំងអស់",
+    "Remote": "ពីចម្ងាយ",
+    // Messages
+    "Conversations": "ការសន្ទនា",
+    "No conversations yet.": "មិនទាន់មានការសន្ទនា។",
+    "Employers can message you directly after viewing your application.": "និយោជកអាចផ្ញើសារទៅអ្នកដោយផ្ទាល់ បន្ទាប់ពីមើលពាក្យសុំរបស់អ្នក។",
+    "Send": "ផ្ញើ",
+    "Select a conversation to read messages": "ជ្រើសរើសការសន្ទនាដើម្បីអានសារ",
+    // Login
+    "Candidate sign in": "ការចូលរបស់បេក្ខជន",
+    "Access your applications and saved jobs.": "ចូលមើលពាក្យសុំ និងការងារបានរក្សាទុករបស់អ្នក។",
+    "Password": "ពាក្យសម្ងាត់",
+    "Sign in": "ចូល",
+    "Signing in…": "កំពុងចូល…"
   };
   try {
     if (window.KRAMA_I18N && window.KRAMA_I18N.km) {
@@ -415,13 +521,13 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         color: "var(--text-strong)",
         marginBottom: 6
       }
-    }, "Candidate sign in"), /*#__PURE__*/React.createElement("p", {
+    }, T("Candidate sign in")), /*#__PURE__*/React.createElement("p", {
       style: {
         fontSize: "var(--text-sm)",
         color: "var(--text-muted)",
         marginBottom: 24
       }
-    }, "Access your applications and saved jobs."), error && /*#__PURE__*/React.createElement("div", {
+    }, T("Access your applications and saved jobs.")), error && /*#__PURE__*/React.createElement("div", {
       style: {
         marginBottom: 16,
         padding: "10px 14px",
@@ -438,7 +544,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         gap: 14
       }
     }, /*#__PURE__*/React.createElement(Input, {
-      label: "Email",
+      label: T("Email"),
       type: "email",
       value: email,
       onChange: function (e) {
@@ -446,7 +552,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       },
       required: true
     }), /*#__PURE__*/React.createElement(Input, {
-      label: "Password",
+      label: T("Password"),
       type: "password",
       value: password,
       onChange: function (e) {
@@ -457,7 +563,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       variant: "primary",
       block: true,
       disabled: busy
-    }, busy ? "Signing in…" : "Sign in"))));
+    }, busy ? T("Signing in…") : T("Sign in")))));
   }
 
   // ── Sidebar ────────────────────────────────────────────────────────────────
@@ -1084,7 +1190,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         fontSize: "var(--text-sm)",
         textAlign: "center"
       }
-    }, "Loading\u2026") : list.length === 0 ? /*#__PURE__*/React.createElement("div", {
+    }, T("Loading…")) : list.length === 0 ? /*#__PURE__*/React.createElement("div", {
       style: {
         padding: 28,
         color: "var(--text-muted)",
@@ -1421,7 +1527,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         padding: 28,
         color: "var(--text-muted)"
       }
-    }, "Loading\u2026");
+    }, T("Loading…"));
     return /*#__PURE__*/React.createElement("div", {
       className: "krm-page-pad",
       style: {
@@ -1564,7 +1670,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         }
       }, /*#__PURE__*/React.createElement(ProgressTracker, {
         current: stageIndex(a.stage),
-        steps: PIPELINE_STEPS
+        steps: PIPELINE_STEPS.map(T)
       })), /*#__PURE__*/React.createElement("span", {
         style: {
           marginLeft: "auto",
@@ -1712,19 +1818,19 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     }
     var tabList = [{
       value: "all",
-      label: "All",
+      label: T("All"),
       count: counts.all
     }];
     PIPELINE.forEach(function (s) {
       tabList.push({
         value: s.key,
-        label: s.label,
+        label: T(s.label),
         count: counts[s.key] || 0
       });
     });
     if (counts.rejected > 0) tabList.push({
       value: "rejected",
-      label: "Rejected",
+      label: T("Rejected"),
       count: counts.rejected
     });
     return /*#__PURE__*/React.createElement("div", {
@@ -1733,8 +1839,8 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         padding: 28
       }
     }, /*#__PURE__*/React.createElement(ScreenHead, {
-      title: "My applications",
-      sub: counts.all + " total applications"
+      title: T("My applications"),
+      sub: counts.all + " " + T("total applications")
     }), /*#__PURE__*/React.createElement("div", {
       className: "krm-tabs-scroll",
       style: {
@@ -1749,14 +1855,14 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         color: "var(--text-muted)",
         fontSize: "var(--text-sm)"
       }
-    }, "Loading\u2026") : apps.length === 0 ? /*#__PURE__*/React.createElement(Card, {
+    }, T("Loading…")) : apps.length === 0 ? /*#__PURE__*/React.createElement(Card, {
       padding: 32
     }, /*#__PURE__*/React.createElement("div", {
       style: {
         textAlign: "center",
         color: "var(--text-muted)"
       }
-    }, "No applications found.")) : /*#__PURE__*/React.createElement(Card, {
+    }, T("No applications found."))) : /*#__PURE__*/React.createElement(Card, {
       padding: 0
     }, apps.map(function (a, i) {
       var job = a.job || {};
@@ -1799,7 +1905,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         style: {
           marginTop: 4
         }
-      }, "Rejected")), !rejected ? /*#__PURE__*/React.createElement("div", {
+      }, T("Rejected"))), !rejected ? /*#__PURE__*/React.createElement("div", {
         className: "krm-tracker",
         style: {
           flex: 1,
@@ -1807,7 +1913,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         }
       }, /*#__PURE__*/React.createElement(ProgressTracker, {
         current: stageIndex(a.stage),
-        steps: PIPELINE_STEPS
+        steps: PIPELINE_STEPS.map(T)
       })) : /*#__PURE__*/React.createElement("div", {
         style: {
           flex: 1
@@ -1826,7 +1932,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         onClick: function () {
           openMessage(job, owner);
         }
-      }, "Message"), a.stage === "applied" && /*#__PURE__*/React.createElement(Button, {
+      }, T("Message")), a.stage === "applied" && /*#__PURE__*/React.createElement(Button, {
         variant: "ghost",
         size: "sm",
         style: {
@@ -1835,7 +1941,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         onClick: function () {
           withdraw(a.id);
         }
-      }, "Withdraw")));
+      }, T("Withdraw"))));
     }), /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
@@ -1861,14 +1967,14 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       onClick: function () {
         load(tab, meta.current_page - 1);
       }
-    }, "Previous"), /*#__PURE__*/React.createElement(Button, {
+    }, T("Previous")), /*#__PURE__*/React.createElement(Button, {
       variant: "secondary",
       size: "sm",
       disabled: meta.current_page >= meta.last_page,
       onClick: function () {
         load(tab, meta.current_page + 1);
       }
-    }, "Next")))), msgModal && /*#__PURE__*/React.createElement("div", {
+    }, T("Next"))))), msgModal && /*#__PURE__*/React.createElement("div", {
       onClick: function () {
         setMsgModal(null);
       },
@@ -1961,11 +2067,11 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       onClick: function () {
         setMsgModal(null);
       }
-    }, "Cancel"), /*#__PURE__*/React.createElement(Button, {
+    }, T("Cancel")), /*#__PURE__*/React.createElement(Button, {
       variant: "primary",
       disabled: msgSending || !msgBody.trim(),
       onClick: sendNewMessage
-    }, msgSending ? "Sending…" : "Send message")))));
+    }, msgSending ? T("Sending…") : T("Send message"))))));
   }
 
   // ── Saved Jobs ─────────────────────────────────────────────────────────────
@@ -2008,20 +2114,20 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         padding: 28
       }
     }, /*#__PURE__*/React.createElement(ScreenHead, {
-      title: "Saved jobs",
-      sub: meta.total + " jobs saved"
+      title: T("Saved jobs"),
+      sub: meta.total + " " + T("jobs saved")
     }), loading ? /*#__PURE__*/React.createElement("div", {
       style: {
         color: "var(--text-muted)"
       }
-    }, "Loading\u2026") : jobs.length === 0 ? /*#__PURE__*/React.createElement(Card, {
+    }, T("Loading…")) : jobs.length === 0 ? /*#__PURE__*/React.createElement(Card, {
       padding: 32
     }, /*#__PURE__*/React.createElement("div", {
       style: {
         textAlign: "center",
         color: "var(--text-muted)"
       }
-    }, "No saved jobs yet. Browse jobs and click the bookmark icon.")) : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    }, T("No saved jobs yet. Browse jobs and click the bookmark icon."))) : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
       className: "krm-card-grid",
       style: {
         display: "grid",
@@ -2064,14 +2170,14 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       onClick: function () {
         load(meta.current_page - 1);
       }
-    }, "Previous"), /*#__PURE__*/React.createElement(Button, {
+    }, T("Previous")), /*#__PURE__*/React.createElement(Button, {
       variant: "secondary",
       size: "sm",
       disabled: meta.current_page >= meta.last_page,
       onClick: function () {
         load(meta.current_page + 1);
       }
-    }, "Next")))));
+    }, T("Next"))))));
   }
 
   // ── Recommended ────────────────────────────────────────────────────────────
@@ -2104,7 +2210,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
           fontSize: "var(--text-xs)",
           fontWeight: 600
         }
-      }, I("sparkles", 11), " ", labels[r] || r);
+      }, I("sparkles", 11), " ", T(labels[r] || r));
     }));
   }
   function Recommended() {
@@ -2167,8 +2273,8 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         padding: 28
       }
     }, /*#__PURE__*/React.createElement(ScreenHead, {
-      title: "Recommended for you",
-      sub: loading ? "Loading…" : meta.total + " jobs matched"
+      title: T("Recommended for you"),
+      sub: loading ? T("Loading…") : meta.total + " " + T("jobs matched")
     }), !loading && !hasHistory && /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
@@ -2182,7 +2288,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         fontSize: "var(--text-sm)",
         color: "var(--info)"
       }
-    }, I("info", 15), " Apply to or save some jobs first \u2014 we'll personalise these recommendations based on your activity."), /*#__PURE__*/React.createElement("form", {
+    }, I("info", 15), " ", T("Apply to or save some jobs first — we'll personalise these recommendations based on your activity.")), /*#__PURE__*/React.createElement("form", {
       onSubmit: doSearch,
       style: {
         display: "flex",
@@ -2224,19 +2330,19 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     })), /*#__PURE__*/React.createElement(Button, {
       variant: "primary",
       type: "submit"
-    }, "Search"), search && /*#__PURE__*/React.createElement(Button, {
+    }, T("Search")), search && /*#__PURE__*/React.createElement(Button, {
       variant: "secondary",
       onClick: function () {
         setSearchInput("");
         setSearch("");
         load(1, "");
       }
-    }, "Clear")), loading ? /*#__PURE__*/React.createElement("div", {
+    }, T("Clear"))), loading ? /*#__PURE__*/React.createElement("div", {
       style: {
         color: "var(--text-muted)",
         padding: "28px 0"
       }
-    }, "Loading\u2026") : jobs.length === 0 ? /*#__PURE__*/React.createElement(Card, {
+    }, T("Loading…")) : jobs.length === 0 ? /*#__PURE__*/React.createElement(Card, {
       padding: 32
     }, /*#__PURE__*/React.createElement("div", {
       style: {
@@ -2288,14 +2394,14 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       onClick: function () {
         load(meta.current_page - 1, search);
       }
-    }, "Previous"), /*#__PURE__*/React.createElement(Button, {
+    }, T("Previous")), /*#__PURE__*/React.createElement(Button, {
       variant: "secondary",
       size: "sm",
       disabled: meta.current_page >= meta.last_page,
       onClick: function () {
         load(meta.current_page + 1, search);
       }
-    }, "Next")))));
+    }, T("Next"))))));
   }
 
   // ── Profile ────────────────────────────────────────────────────────────────
@@ -2427,8 +2533,8 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         maxWidth: 720
       }
     }, /*#__PURE__*/React.createElement(ScreenHead, {
-      title: "Profile",
-      sub: "How you appear to employers."
+      title: T("Profile"),
+      sub: T("How you appear to employers.")
     }), /*#__PURE__*/React.createElement(Card, {
       padding: 24
     }, /*#__PURE__*/React.createElement("div", {
@@ -2502,14 +2608,14 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         fileRef.current && fileRef.current.click();
       },
       disabled: uploading
-    }, uploading ? "Uploading…" : "Change photo"))), /*#__PURE__*/React.createElement("div", {
+    }, uploading ? T("Uploading…") : T("Change photo")))), /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
         flexDirection: "column",
         gap: 16
       }
     }, /*#__PURE__*/React.createElement(Input, {
-      label: "Full name",
+      label: T("Full name"),
       value: name,
       onChange: function (e) {
         setName(e.target.value);
@@ -2522,7 +2628,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         gap: 16
       }
     }, /*#__PURE__*/React.createElement(Input, {
-      label: "Email",
+      label: T("Email"),
       type: "email",
       value: email,
       onChange: function (e) {
@@ -2530,14 +2636,14 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       },
       iconLeft: I("mail", 16)
     }), /*#__PURE__*/React.createElement(Input, {
-      label: "Phone",
+      label: T("Phone"),
       value: phone,
       onChange: function (e) {
         setPhone(e.target.value);
       },
       iconLeft: I("phone", 16)
     })), /*#__PURE__*/React.createElement(Textarea, {
-      label: "Bio / Description",
+      label: T("Bio / Description"),
       value: bio,
       onChange: function (e) {
         setBio(e.target.value);
@@ -2551,20 +2657,20 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         color: "var(--text-strong)",
         marginBottom: 6
       }
-    }, "CV / Resume visibility"), /*#__PURE__*/React.createElement(Select, {
+    }, T("CV / Resume visibility")), /*#__PURE__*/React.createElement(Select, {
       value: cvVis,
       onChange: function (e) {
         setCvVis(e.target.value);
       },
       options: [{
         value: "public",
-        label: "Public — anyone can view"
+        label: T("Public — anyone can view")
       }, {
         value: "employers",
-        label: "Employers only — recruiters who review your application"
+        label: T("Employers only — recruiters who review your application")
       }, {
         value: "private",
-        label: "Private — only you can access"
+        label: T("Private — only you can access")
       }]
     }), /*#__PURE__*/React.createElement("div", {
       style: {
@@ -2572,7 +2678,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         color: "var(--text-muted)",
         marginTop: 5
       }
-    }, "Controls who can download your uploaded CV file.")), msg && /*#__PURE__*/React.createElement("div", {
+    }, T("Controls who can download your uploaded CV file."))), msg && /*#__PURE__*/React.createElement("div", {
       style: {
         padding: "10px 14px",
         borderRadius: "var(--radius-md)",
@@ -2591,7 +2697,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       variant: "primary",
       disabled: busy,
       onClick: save
-    }, busy ? "Saving…" : "Save changes")))), /*#__PURE__*/React.createElement(Card, {
+    }, busy ? T("Saving…") : T("Save changes"))))), /*#__PURE__*/React.createElement(Card, {
       padding: 24,
       style: {
         marginTop: 20
@@ -2603,20 +2709,20 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         color: "var(--text-strong)",
         marginBottom: 4
       }
-    }, "Change password"), /*#__PURE__*/React.createElement("p", {
+    }, T("Change password")), /*#__PURE__*/React.createElement("p", {
       style: {
         fontSize: "var(--text-sm)",
         color: "var(--text-muted)",
         marginBottom: 18
       }
-    }, "Choose a strong password of at least 8 characters."), /*#__PURE__*/React.createElement("div", {
+    }, T("Choose a strong password of at least 8 characters.")), /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
         flexDirection: "column",
         gap: 14
       }
     }, /*#__PURE__*/React.createElement(Input, {
-      label: "Current password",
+      label: T("Current password"),
       type: "password",
       value: curPwd,
       onChange: function (e) {
@@ -2631,7 +2737,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         gap: 14
       }
     }, /*#__PURE__*/React.createElement(Input, {
-      label: "New password",
+      label: T("New password"),
       type: "password",
       value: newPwd,
       onChange: function (e) {
@@ -2639,7 +2745,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       },
       placeholder: "At least 8 characters"
     }), /*#__PURE__*/React.createElement(Input, {
-      label: "Confirm new password",
+      label: T("Confirm new password"),
       type: "password",
       value: conPwd,
       onChange: function (e) {
@@ -2660,7 +2766,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       variant: "primary",
       disabled: pwdBusy,
       onClick: changePwd
-    }, pwdBusy ? "Updating…" : "Update password")))));
+    }, pwdBusy ? T("Updating…") : T("Update password"))))));
   }
 
   // ── Resume Builder ─────────────────────────────────────────────────────────
@@ -2890,7 +2996,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         padding: 28,
         color: "var(--text-muted)"
       }
-    }, "Loading\u2026");
+    }, T("Loading…"));
     return /*#__PURE__*/React.createElement("div", {
       className: "krm-page-pad",
       style: {
@@ -2898,8 +3004,8 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         maxWidth: 860
       }
     }, /*#__PURE__*/React.createElement(ScreenHead, {
-      title: "R\xE9sum\xE9 builder",
-      sub: "Build your CV to attach when applying for jobs.",
+      title: T("Résumé builder"),
+      sub: T("Build your CV to attach when applying for jobs."),
       action: /*#__PURE__*/React.createElement("div", {
         style: {
           display: "flex",
@@ -2909,12 +3015,12 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         variant: "secondary",
         iconLeft: I("download", 15),
         onClick: downloadCv
-      }, "Download CV"), /*#__PURE__*/React.createElement(Button, {
+      }, T("Download CV")), /*#__PURE__*/React.createElement(Button, {
         variant: "primary",
         disabled: busy,
         onClick: saveAll,
         iconLeft: I("save", 15)
-      }, busy ? "Saving…" : "Save resume"))
+      }, busy ? T("Saving…") : T("Save resume")))
     }), saved && /*#__PURE__*/React.createElement("div", {
       style: {
         marginBottom: 16,
@@ -2924,7 +3030,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         borderRadius: "var(--radius-md)",
         fontSize: "var(--text-sm)"
       }
-    }, "Resume saved successfully!"), /*#__PURE__*/React.createElement(Card, {
+    }, T("Resume saved successfully!")), /*#__PURE__*/React.createElement(Card, {
       padding: 20,
       style: {
         marginBottom: 20
@@ -2940,7 +3046,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         color: "var(--text-strong)",
         flex: 1
       }
-    }, "Upload CV file")), /*#__PURE__*/React.createElement("div", {
+    }, T("Upload CV file"))), /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
         alignItems: "center",
@@ -2969,7 +3075,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         textOverflow: "ellipsis",
         whiteSpace: "nowrap"
       }
-    }, "CV uploaded"), /*#__PURE__*/React.createElement("button", {
+    }, T("CV uploaded")), /*#__PURE__*/React.createElement("button", {
       onClick: downloadCv,
       style: {
         fontSize: "var(--text-sm)",
@@ -2979,13 +3085,13 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         cursor: "pointer",
         padding: 0
       }
-    }, "View")) : /*#__PURE__*/React.createElement("div", {
+    }, T("View"))) : /*#__PURE__*/React.createElement("div", {
       style: {
         flex: 1,
         fontSize: "var(--text-sm)",
         color: "var(--text-muted)"
       }
-    }, "No CV uploaded yet. Upload a PDF or DOC (max 5 MB)."), /*#__PURE__*/React.createElement("input", {
+    }, T("No CV uploaded yet. Upload a PDF or DOC (max 5 MB).")), /*#__PURE__*/React.createElement("input", {
       ref: cvRef,
       type: "file",
       accept: ".pdf,.doc,.docx",
@@ -2999,7 +3105,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       onClick: function () {
         cvRef.current && cvRef.current.click();
       }
-    }, uploading ? "Uploading…" : resume.has_cv ? "Replace CV" : "Upload CV"))), /*#__PURE__*/React.createElement(Card, {
+    }, uploading ? T("Uploading…") : resume.has_cv ? T("Replace CV") : T("Upload CV")))), /*#__PURE__*/React.createElement(Card, {
       padding: 20,
       style: sectionStyle
     }, /*#__PURE__*/React.createElement("div", {
@@ -3012,21 +3118,21 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         fontWeight: 700,
         color: "var(--text-strong)"
       }
-    }, "Personal summary")), /*#__PURE__*/React.createElement("div", {
+    }, T("Personal summary"))), /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
         flexDirection: "column",
         gap: 14
       }
     }, /*#__PURE__*/React.createElement(Input, {
-      label: "Headline / Job title",
+      label: T("Headline / Job title"),
       value: resume.headline,
       onChange: function (e) {
         setField("headline", e.target.value);
       },
       placeholder: "e.g. Senior Accountant"
     }), /*#__PURE__*/React.createElement(RichEditor, {
-      label: "Summary",
+      label: T("Summary"),
       rows: 4,
       value: resume.summary,
       onChange: function (v) {
@@ -3047,17 +3153,17 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         color: "var(--text-strong)",
         flex: 1
       }
-    }, "Education"), /*#__PURE__*/React.createElement(Button, {
+    }, T("Education")), /*#__PURE__*/React.createElement(Button, {
       variant: "ghost",
       size: "sm",
       iconLeft: I("plus", 13),
       onClick: addEdu
-    }, "Add")), resume.data.education.length === 0 && /*#__PURE__*/React.createElement("div", {
+    }, T("Add"))), resume.data.education.length === 0 && /*#__PURE__*/React.createElement("div", {
       style: {
         color: "var(--text-faint)",
         fontSize: "var(--text-sm)"
       }
-    }, "No education entries yet."), resume.data.education.map(function (e, i) {
+    }, T("No education entries yet.")), resume.data.education.map(function (e, i) {
       return /*#__PURE__*/React.createElement("div", {
         key: i,
         style: {
@@ -3068,21 +3174,21 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
           alignItems: "end"
         }
       }, /*#__PURE__*/React.createElement(Input, {
-        label: i === 0 ? "School / University" : undefined,
+        label: i === 0 ? T("School / University") : undefined,
         value: e.school,
         onChange: function (ev) {
           updateEdu(i, "school", ev.target.value);
         },
         placeholder: "School"
       }), /*#__PURE__*/React.createElement(Input, {
-        label: i === 0 ? "Degree" : undefined,
+        label: i === 0 ? T("Degree") : undefined,
         value: e.degree,
         onChange: function (ev) {
           updateEdu(i, "degree", ev.target.value);
         },
         placeholder: "e.g. BBA, Accounting"
       }), /*#__PURE__*/React.createElement(Input, {
-        label: i === 0 ? "Years" : undefined,
+        label: i === 0 ? T("Years") : undefined,
         value: e.years,
         onChange: function (ev) {
           updateEdu(i, "years", ev.target.value);
@@ -3120,17 +3226,17 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         color: "var(--text-strong)",
         flex: 1
       }
-    }, "Work experience"), /*#__PURE__*/React.createElement(Button, {
+    }, T("Work experience")), /*#__PURE__*/React.createElement(Button, {
       variant: "ghost",
       size: "sm",
       iconLeft: I("plus", 13),
       onClick: addExp
-    }, "Add")), resume.data.experience.length === 0 && /*#__PURE__*/React.createElement("div", {
+    }, T("Add"))), resume.data.experience.length === 0 && /*#__PURE__*/React.createElement("div", {
       style: {
         color: "var(--text-faint)",
         fontSize: "var(--text-sm)"
       }
-    }, "No experience entries yet."), resume.data.experience.map(function (e, i) {
+    }, T("No experience entries yet.")), resume.data.experience.map(function (e, i) {
       return /*#__PURE__*/React.createElement("div", {
         key: e._k != null ? e._k : i,
         style: {
@@ -3148,21 +3254,21 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
           alignItems: "end"
         }
       }, /*#__PURE__*/React.createElement(Input, {
-        label: "Job title",
+        label: T("Job title"),
         value: e.role,
         onChange: function (ev) {
           updateExp(i, "role", ev.target.value);
         },
         placeholder: "e.g. Senior Accountant"
       }), /*#__PURE__*/React.createElement(Input, {
-        label: "Company",
+        label: T("Company"),
         value: e.org,
         onChange: function (ev) {
           updateExp(i, "org", ev.target.value);
         },
         placeholder: "Company name"
       }), /*#__PURE__*/React.createElement(Input, {
-        label: "Years",
+        label: T("Years"),
         value: e.years,
         onChange: function (ev) {
           updateExp(i, "years", ev.target.value);
@@ -3188,7 +3294,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         }
       }, I("trash-2", 15))), /*#__PURE__*/React.createElement(RichEditor, {
         key: "expnote-" + (e._k != null ? e._k : i),
-        label: "Description",
+        label: T("Description"),
         rows: 2,
         value: e.note,
         onChange: function (v) {
@@ -3210,7 +3316,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         color: "var(--text-strong)",
         flex: 1
       }
-    }, "Skills")), /*#__PURE__*/React.createElement("div", {
+    }, T("Skills"))), /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
         gap: 8,
@@ -3243,7 +3349,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       variant: "secondary",
       size: "sm",
       onClick: addSkill
-    }, "Add")), /*#__PURE__*/React.createElement("div", {
+    }, T("Add"))), /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
         flexWrap: "wrap",
@@ -3282,7 +3388,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         color: "var(--text-faint)",
         fontSize: "var(--text-sm)"
       }
-    }, "No skills added yet."))), /*#__PURE__*/React.createElement(Card, {
+    }, T("No skills added yet.")))), /*#__PURE__*/React.createElement(Card, {
       padding: 20,
       style: sectionStyle
     }, /*#__PURE__*/React.createElement("div", {
@@ -3296,17 +3402,17 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         color: "var(--text-strong)",
         flex: 1
       }
-    }, "Certifications"), /*#__PURE__*/React.createElement(Button, {
+    }, T("Certifications")), /*#__PURE__*/React.createElement(Button, {
       variant: "ghost",
       size: "sm",
       iconLeft: I("plus", 13),
       onClick: addCert
-    }, "Add")), resume.data.certifications.length === 0 && /*#__PURE__*/React.createElement("div", {
+    }, T("Add"))), resume.data.certifications.length === 0 && /*#__PURE__*/React.createElement("div", {
       style: {
         color: "var(--text-faint)",
         fontSize: "var(--text-sm)"
       }
-    }, "No certifications yet."), resume.data.certifications.map(function (c, i) {
+    }, T("No certifications yet.")), resume.data.certifications.map(function (c, i) {
       return /*#__PURE__*/React.createElement("div", {
         key: i,
         style: {
@@ -3317,14 +3423,14 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
           alignItems: "end"
         }
       }, /*#__PURE__*/React.createElement(Input, {
-        label: i === 0 ? "Certification name" : undefined,
+        label: i === 0 ? T("Certification name") : undefined,
         value: c.name,
         onChange: function (ev) {
           updateCert(i, "name", ev.target.value);
         },
         placeholder: "e.g. CPA Cambodia"
       }), /*#__PURE__*/React.createElement(Input, {
-        label: i === 0 ? "Year" : undefined,
+        label: i === 0 ? T("Year") : undefined,
         value: c.year,
         onChange: function (ev) {
           updateCert(i, "year", ev.target.value);
@@ -3391,14 +3497,14 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       onClick: function () {
         onPage(safe - 1);
       }
-    }, "Previous"), /*#__PURE__*/React.createElement(Button, {
+    }, T("Previous")), /*#__PURE__*/React.createElement(Button, {
       variant: "secondary",
       size: "sm",
       disabled: safe >= pages,
       onClick: function () {
         onPage(safe + 1);
       }
-    }, "Next")));
+    }, T("Next"))));
   }
   function Following() {
     var [companies, setCompanies] = React.useState([]);
@@ -3439,7 +3545,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         padding: 28,
         color: "var(--text-muted)"
       }
-    }, "Loading\u2026");
+    }, T("Loading…"));
     if (error) return /*#__PURE__*/React.createElement("div", {
       className: "krm-page-pad",
       style: {
@@ -3467,16 +3573,16 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         fontSize: "var(--text-lg)",
         color: "var(--text-strong)"
       }
-    }, "Companies I follow"), /*#__PURE__*/React.createElement("div", {
+    }, T("Companies I follow")), /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: "var(--text-sm)",
         color: "var(--text-muted)",
         marginTop: 2
       }
-    }, "You'll get an email when a followed company posts a new job.")), companies.length === 0 ? /*#__PURE__*/React.createElement(EmptyState, {
+    }, T("You'll get an email when a followed company posts a new job."))), companies.length === 0 ? /*#__PURE__*/React.createElement(EmptyState, {
       icon: I("heart", 28),
-      title: "Not following anyone yet",
-      description: "Visit a company profile and click Follow to stay notified of new jobs."
+      title: T("Not following anyone yet"),
+      description: T("Visit a company profile and click Follow to stay notified of new jobs.")
     }) : /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
@@ -3538,7 +3644,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
           alignItems: "center",
           gap: 6
         }
-      }, I("heart-off", 14), " Unfollow"));
+      }, I("heart-off", 14), " ", T("Unfollow")));
     }), /*#__PURE__*/React.createElement(Pager, {
       page: pageSafe,
       perPage: FOLLOW_PER,
@@ -3676,8 +3782,8 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       if (a.category) parts.push(a.category.name);
       if (a.location) parts.push(a.location.name);
       if (a.job_type) parts.push(a.job_type.replace("_", "-"));
-      if (a.is_remote === true) parts.push("Remote");
-      return parts.length ? parts.join(" · ") : "All new jobs";
+      if (a.is_remote === true) parts.push(T("Remote"));
+      return parts.length ? parts.join(" · ") : T("All new jobs");
     }
     if (loading) return /*#__PURE__*/React.createElement("div", {
       className: "krm-page-pad",
@@ -3685,7 +3791,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         padding: 28,
         color: "var(--text-muted)"
       }
-    }, "Loading\u2026");
+    }, T("Loading…"));
     if (error) return /*#__PURE__*/React.createElement("div", {
       className: "krm-page-pad",
       style: {
@@ -3716,20 +3822,20 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         fontSize: "var(--text-lg)",
         color: "var(--text-strong)"
       }
-    }, "Your job alerts"), /*#__PURE__*/React.createElement("div", {
+    }, T("Your job alerts")), /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: "var(--text-sm)",
         color: "var(--text-muted)",
         marginTop: 2
       }
-    }, "Get an email the moment a matching role is posted. Up to 10 alerts.")), alerts.length < 10 && alerts.length > 0 && /*#__PURE__*/React.createElement(Button, {
+    }, T("Get an email the moment a matching role is posted. Up to 10 alerts."))), alerts.length < 10 && alerts.length > 0 && /*#__PURE__*/React.createElement(Button, {
       variant: "primary",
       size: "sm",
       onClick: function () {
         setShowForm(!showForm);
         setFormErr("");
       }
-    }, showForm ? "Cancel" : "+ New alert")), showForm && /*#__PURE__*/React.createElement(Card, {
+    }, showForm ? T("Cancel") : T("+ New alert"))), showForm && /*#__PURE__*/React.createElement(Card, {
       style: {
         marginBottom: 24
       }
@@ -3742,7 +3848,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         color: "var(--text-strong)",
         marginBottom: 16
       }
-    }, "Create a new alert"), /*#__PURE__*/React.createElement("div", {
+    }, T("Create a new alert")), /*#__PURE__*/React.createElement("div", {
       className: "krm-form-grid",
       style: {
         display: "grid",
@@ -3751,7 +3857,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         marginBottom: 14
       }
     }, /*#__PURE__*/React.createElement(Input, {
-      label: "Keyword",
+      label: T("Keyword"),
       placeholder: "e.g. Software Engineer",
       value: form.keyword,
       onChange: function (e) {
@@ -3769,7 +3875,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         color: "var(--text-label)",
         marginBottom: 6
       }
-    }, "Category"), /*#__PURE__*/React.createElement("select", {
+    }, T("Category")), /*#__PURE__*/React.createElement("select", {
       value: form.category_id,
       onChange: function (e) {
         setForm(function (f) {
@@ -3790,7 +3896,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       }
     }, /*#__PURE__*/React.createElement("option", {
       value: ""
-    }, "Any category"), categories.map(function (c) {
+    }, T("Any category")), categories.map(function (c) {
       return /*#__PURE__*/React.createElement("option", {
         key: c.id,
         value: c.id
@@ -3803,7 +3909,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         color: "var(--text-label)",
         marginBottom: 6
       }
-    }, "Location"), /*#__PURE__*/React.createElement("select", {
+    }, T("Location")), /*#__PURE__*/React.createElement("select", {
       value: form.location_id,
       onChange: function (e) {
         setForm(function (f) {
@@ -3824,7 +3930,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       }
     }, /*#__PURE__*/React.createElement("option", {
       value: ""
-    }, "Any location"), locations.map(function (l) {
+    }, T("Any location")), locations.map(function (l) {
       return /*#__PURE__*/React.createElement("option", {
         key: l.id,
         value: l.id
@@ -3837,7 +3943,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         color: "var(--text-label)",
         marginBottom: 6
       }
-    }, "Job type"), /*#__PURE__*/React.createElement("select", {
+    }, T("Job type")), /*#__PURE__*/React.createElement("select", {
       value: form.job_type,
       onChange: function (e) {
         setForm(function (f) {
@@ -3860,7 +3966,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       return /*#__PURE__*/React.createElement("option", {
         key: o.value,
         value: o.value
-      }, o.label);
+      }, T(o.label));
     }))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
       style: {
         display: "block",
@@ -3869,7 +3975,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         color: "var(--text-label)",
         marginBottom: 6
       }
-    }, "Work mode"), /*#__PURE__*/React.createElement("select", {
+    }, T("Work mode")), /*#__PURE__*/React.createElement("select", {
       value: form.is_remote,
       onChange: function (e) {
         setForm(function (f) {
@@ -3892,7 +3998,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       return /*#__PURE__*/React.createElement("option", {
         key: o.value,
         value: o.value
-      }, o.label);
+      }, T(o.label));
     })))), formErr && /*#__PURE__*/React.createElement("div", {
       style: {
         color: "var(--danger)",
@@ -3903,10 +4009,10 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       variant: "primary",
       size: "sm",
       disabled: saving
-    }, saving ? "Saving…" : "Save alert"))), alerts.length === 0 && !showForm && /*#__PURE__*/React.createElement(EmptyState, {
+    }, saving ? T("Saving…") : T("Save alert")))), alerts.length === 0 && !showForm && /*#__PURE__*/React.createElement(EmptyState, {
       icon: I("bell", 28),
-      title: "No job alerts yet",
-      description: "Create an alert and we'll email you when a matching role is posted."
+      title: T("No job alerts yet"),
+      description: T("Create an alert and we'll email you when a matching role is posted.")
     }), alerts.length > 0 && /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
@@ -4113,13 +4219,13 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         fontSize: "var(--text-base)",
         color: "var(--text-strong)"
       }
-    }, "Conversations"), loading && /*#__PURE__*/React.createElement("div", {
+    }, T("Conversations")), loading && /*#__PURE__*/React.createElement("div", {
       style: {
         padding: 24,
         color: "var(--text-muted)",
         fontSize: "var(--text-sm)"
       }
-    }, "Loading\u2026"), !loading && convs.length === 0 && /*#__PURE__*/React.createElement("div", {
+    }, T("Loading…")), !loading && convs.length === 0 && /*#__PURE__*/React.createElement("div", {
       style: {
         padding: 28,
         color: "var(--text-muted)",
@@ -4130,13 +4236,13 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       style: {
         marginTop: 8
       }
-    }, "No conversations yet."), /*#__PURE__*/React.createElement("div", {
+    }, T("No conversations yet.")), /*#__PURE__*/React.createElement("div", {
       style: {
         marginTop: 4,
         fontSize: 12,
         color: "var(--text-faint)"
       }
-    }, "Employers can message you directly after viewing your application.")), convs.map(function (conv) {
+    }, T("Employers can message you directly after viewing your application."))), convs.map(function (conv) {
       var other = otherParty(conv);
       var latest = conv.latest_message;
       var isActive = activeId === conv.id;
@@ -4230,7 +4336,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       style: {
         fontSize: "var(--text-sm)"
       }
-    }, "Select a conversation to read messages")) : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    }, T("Select a conversation to read messages"))) : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
       style: {
         padding: "12px 20px",
         borderBottom: "1px solid var(--border)",
@@ -4288,7 +4394,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         color: "var(--text-muted)",
         fontSize: "var(--text-sm)"
       }
-    }, "Loading\u2026"), msgs.map(function (msg) {
+    }, T("Loading…")), msgs.map(function (msg) {
       var mine = msg.sender_id === user.id;
       return /*#__PURE__*/React.createElement("div", {
         key: msg.id,
@@ -4363,7 +4469,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       iconLeft: I("send", 16),
       disabled: sending || !body.trim(),
       onClick: send
-    }, sending ? "…" : "Send")))));
+    }, sending ? "…" : T("Send"))))));
   }
 
   // ── App ────────────────────────────────────────────────────────────────────
@@ -4845,7 +4951,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         fontSize: "var(--text-sm)",
         color: "var(--text-muted)"
       }
-    }, "Loading\u2026") : msgs.length === 0 ? /*#__PURE__*/React.createElement("div", {
+    }, T("Loading…")) : msgs.length === 0 ? /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: "var(--text-sm)",
         color: "var(--text-muted)"
@@ -5157,7 +5263,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         minHeight: "100vh",
         color: "var(--text-muted)"
       }
-    }, "Loading\u2026");
+    }, T("Loading…"));
     if (!authUser) return /*#__PURE__*/React.createElement(CandidateLogin, {
       onLogin: function (u) {
         setAuthUser(u);
