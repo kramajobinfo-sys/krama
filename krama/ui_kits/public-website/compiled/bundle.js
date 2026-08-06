@@ -13339,7 +13339,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
             if (prev.length === 1 && prev[0].from === 'bot' && prev[0].text === CHAT_DEFAULTS.welcome) {
               return [{
                 from: 'bot',
-                text: newCfg.welcome
+                text: CHAT_DEFAULTS.welcome
               }];
             }
             return prev;

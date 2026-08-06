@@ -522,7 +522,12 @@
   .krm-auth-form-center { align-items: flex-start !important; }
 
   /* ── Company profile page ───────────────────────────────────────────── */
-  .krm-co-hero { height: 130px !important; }
+  /* The hero carries an inline `aspect-ratio: 1600/360` for the wide desktop band.
+     Once we pin an explicit height here, the browser derives the *width* from
+     height × ratio (130 × 1600/360 ≈ 578px) — wider than the phone, which forces
+     the whole layout viewport open and makes the page scroll sideways. Drop the
+     ratio on mobile so width falls back to filling the viewport. */
+  .krm-co-hero { height: 130px !important; aspect-ratio: auto !important; }
   /* When the company set a cover photo, show it full-natural like the home hero
      (the branded SVG fallback keeps the 130px band above). */
   .krm-co-hero.krm-co-hero--img { height: auto !important; }

@@ -100,7 +100,7 @@
             chatSet({ enabled: CHAT_DEFAULTS.enabled });
             setMsgs(function(prev) {
               if (prev.length === 1 && prev[0].from === 'bot' && prev[0].text === CHAT_DEFAULTS.welcome) {
-                return [{ from: 'bot', text: newCfg.welcome }];
+                return [{ from: 'bot', text: CHAT_DEFAULTS.welcome }];
               }
               return prev;
             });
