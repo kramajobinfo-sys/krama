@@ -13705,6 +13705,15 @@ function App() {
       setForumThreadId(deepThreadId);
       setPage("community");
     }
+    // ?page=<id> opens a top-level view that has no clean URL of its own. Those views are
+    // otherwise reachable only by clicking inside the SPA, so anything rendered OUTSIDE it
+    // — the server-rendered CV page's header and footer — had no way to link to them.
+    // Allowlisted so a stray/hostile value can't push the app into an unknown state.
+    const PAGE_LINKS = ["jobs", "companies", "community", "employers", "pricing", "about", "contact", "privacy", "terms", "login", "register"];
+    const deepPage = params.get("page");
+    if (deepPage && PAGE_LINKS.indexOf(deepPage) !== -1) {
+      setPage(deepPage);
+    }
     // Clean-URL deep links: /companies/{id} and /jobs/{slug} — the same pages Laravel
     // server-renders for crawlers. A company opens immediately; a job is resolved from the
     // loaded catalogue once init() finishes (the public job API only accepts numeric ids).
