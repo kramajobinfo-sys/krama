@@ -98,10 +98,13 @@ class SettingController extends Controller
             'accentColor'    => 'nullable|string|max:20',
         ],
         'social' => [
-            'google_enabled'     => 'boolean',
-            'google_client_id'   => 'nullable|string|max:255',
-            'facebook_enabled'   => 'boolean',
-            'facebook_app_id'    => 'nullable|string|max:255',
+            'google_enabled'      => 'boolean',
+            'google_client_id'    => 'nullable|string|max:255',
+            'facebook_enabled'    => 'boolean',
+            'facebook_app_id'     => 'nullable|string|max:255',
+            // Used server-side only, to confirm an access token was minted for THIS app
+            // (see AuthController::verifyFacebookToken). Never sent to the browser.
+            'facebook_app_secret' => 'nullable|string|max:255',
         ],
         'payment_config' => [
             'data' => 'nullable|string|max:500000',
@@ -199,6 +202,7 @@ class SettingController extends Controller
         'password',                                // smtp
         'bakong_token', 'aba_api_key', 'stripe_secret_key', // payment gateways
         'facebook_page_token', 'linkedin_token',   // social_post
+        'facebook_app_secret',                     // social login — app secret
         'google_indexing_key',                     // seo — Google service-account JSON
     ];
 

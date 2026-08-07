@@ -646,7 +646,11 @@ class AuthController extends Controller
                 if (empty($social['facebook_enabled']) || $social['facebook_enabled'] === '0' || empty($social['facebook_app_id'])) {
                     return response()->json(['message' => 'Facebook sign-in is not configured.'], 422);
                 }
-                $profile = $this->verifyFacebookToken($data['token']);
+                $profile = $this->verifyFacebookToken(
+                    $data['token'],
+                    $social['facebook_app_id'],
+                    $social['facebook_app_secret'] ?? null
+                );
             }
         } catch (\Exception $e) {
             Log::warning('Social login verification failed: ' . $e->getMessage());
@@ -717,13 +721,44 @@ class AuthController extends Controller
         return ['email' => $ti['email'] ?? null, 'name' => $name];
     }
 
-    // Verify a Facebook access token via the Graph API and return the profile.
-    private function verifyFacebookToken(string $token): array
+    // Verify a Facebook access token and return the profile. Mirrors the Google path:
+    // /me alone proves only that SOME app minted the token, so a token obtained from any
+    // other Facebook app would have been accepted here and signed that person in. Confirm
+    // via /debug_token that the token really belongs to OUR app before trusting it.
+    private function verifyFacebookToken(string $token, string $appId, ?string $appSecret): array
     {
-        $resp = Http::timeout(10)->get('https://graph.facebook.com/me', [
-            'fields'       => 'id,name,email',
-            'access_token' => $token,
-        ]);
+        if ($appSecret) {
+            $appToken = $appId . '|' . $appSecret;
+
+            $dbg = Http::timeout(10)->get('https://graph.facebook.com/debug_token', [
+                'input_token'  => $token,
+                'access_token' => $appToken,
+            ]);
+            if (! $dbg->successful()) {
+                throw new \RuntimeException('Facebook could not inspect the token.');
+            }
+            $info = $dbg->json()['data'] ?? [];
+
+            if (empty($info['is_valid'])) {
+                throw new \RuntimeException('Facebook reports the token is not valid.');
+            }
+            if ((string) ($info['app_id'] ?? '') !== (string) $appId) {
+                throw new \RuntimeException('Facebook token app mismatch.');
+            }
+        } else {
+            // No secret stored — the app-identity check above cannot run. Left working
+            // rather than failing closed so an existing install doesn't break on upgrade.
+            Log::warning('Facebook sign-in: no app secret configured, token app-identity unverified.');
+        }
+
+        $params = ['fields' => 'id,name,email', 'access_token' => $token];
+        // appsecret_proof stops a leaked user token from being replayed against the Graph
+        // API by anyone who doesn't also hold the app secret.
+        if ($appSecret) {
+            $params['appsecret_proof'] = hash_hmac('sha256', $token, $appSecret);
+        }
+
+        $resp = Http::timeout(10)->get('https://graph.facebook.com/me', $params);
         if (! $resp->successful()) {
             throw new \RuntimeException('Facebook Graph API rejected the token.');
         }

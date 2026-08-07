@@ -5243,13 +5243,14 @@
   }
 
   // ===== Social login settings =====
-  const SOCIAL_DEFAULTS = { googleEnabled: true, googleClientId: "", facebookEnabled: true, facebookAppId: "" };
+  const SOCIAL_DEFAULTS = { googleEnabled: true, googleClientId: "", facebookEnabled: true, facebookAppId: "", facebookAppSecret: "" };
 
   function SocialLoginSettings() {
     const [s, setS] = React.useState(SOCIAL_DEFAULTS);
     const [saved, setSaved] = React.useState(false);
     const [showGKey, setShowGKey] = React.useState(false);
     const [showFKey, setShowFKey] = React.useState(false);
+    const [showFSecret, setShowFSecret] = React.useState(false);
     React.useEffect(function() {
       window.KRAMA_ADMIN_API.fetchSettings('social')
         .then(function(d) {
@@ -5259,6 +5260,7 @@
               googleClientId: d.google_client_id || "",
               facebookEnabled: d.facebook_enabled !== undefined ? !!d.facebook_enabled : SOCIAL_DEFAULTS.facebookEnabled,
               facebookAppId: d.facebook_app_id || "",
+              facebookAppSecret: d.facebook_app_secret || "",
             });
           }
         })
@@ -5272,6 +5274,7 @@
         google_client_id: s.googleClientId,
         facebook_enabled: s.facebookEnabled,
         facebook_app_id: s.facebookAppId,
+        facebook_app_secret: s.facebookAppSecret,
       }).then(function() { setSaved(true); })
         .catch(function(e) { alert('Save failed: ' + (e && e.message ? e.message : 'Unknown error')); });
     };
@@ -5337,8 +5340,12 @@
                 <Input label="Facebook App ID" value={s.facebookAppId} onChange={(e) => set("facebookAppId", e.target.value)} type={showFKey ? "text" : "password"} placeholder="123456789012345" iconLeft={I("key", 16)} />
                 <button onClick={() => setShowFKey((v) => !v)} style={{ position: "absolute", right: 10, top: 36, border: "none", background: "transparent", color: "var(--text-muted)", cursor: "pointer", display: "inline-flex" }}>{I(showFKey ? "eye-off" : "eye", 16)}</button>
               </div>
+                <div style={{ position: "relative" }}>
+                  <Input label="Facebook App Secret" value={s.facebookAppSecret} onChange={(e) => set("facebookAppSecret", e.target.value)} type={showFSecret ? "text" : "password"} placeholder="Used server-side only" iconLeft={I("lock", 16)} />
+                  <button onClick={() => setShowFSecret((v) => !v)} style={{ position: "absolute", right: 10, top: 36, border: "none", background: "transparent", color: "var(--text-muted)", cursor: "pointer" }}>{I(showFSecret ? "eye-off" : "eye", 16)}</button>
+                </div>
               <div style={{ padding: "10px 14px", background: "var(--info-subtle)", borderRadius: "var(--radius-md)", fontSize: "var(--text-sm)", color: "var(--text-body)", lineHeight: 1.5 }}>
-                {I("info", 14)} Get your App ID from <strong>Meta for Developers</strong> → My Apps. Add your domain to App Domains and enable Facebook Login product.
+                {I("info", 14)} Get your App ID from <strong>Meta for Developers</strong> → My Apps. Add your domain to App Domains and enable the Facebook Login product. The App Secret lets the server confirm a sign-in token was issued for THIS app.
               </div>
             </div>
           </Card>
