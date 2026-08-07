@@ -37,7 +37,10 @@ class SecurityHeaders
         $response->headers->set('Content-Security-Policy', $isHtml
             ? "default-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; "
                 . "img-src 'self' data: https:; font-src 'self' https://fonts.gstatic.com; "
-                . "style-src 'nonce-{$nonce}' https://fonts.googleapis.com; script-src 'nonce-{$nonce}'; connect-src 'none'"
+                // connect-src 'self': these pages issue no XHR of their own, but Cloudflare
+                // injects its RUM beacon to /cdn-cgi/rum — 'none' blocked it and logged a
+                // CSP error on every visit. 'self' is what the API policy already allows.
+                . "style-src 'nonce-{$nonce}' https://fonts.googleapis.com; script-src 'nonce-{$nonce}'; connect-src 'self'"
             : "default-src 'none'; script-src 'none'; style-src 'none'; img-src 'self' data: https:; font-src 'self' https:; connect-src 'self'; frame-ancestors 'none'");
 
         return $response;

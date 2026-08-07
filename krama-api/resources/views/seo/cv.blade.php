@@ -40,7 +40,10 @@
     .tl-note ul { padding-left:18px; margin:4px 0; }
 
     .cv-aside .chips { gap:7px; }
-    .cv-aside .chip { font-size:12.5px; padding:5px 11px; }
+    /* Squarer than the pill used elsewhere: skills like "Microsoft Dynamics Business
+       Central 365" wrap to two lines in a 250px column, and a 999px radius on a
+       two-line box reads as a squashed stadium rather than a tag. */
+    .cv-aside .chip { font-size:12.5px; padding:5px 11px; border-radius:9px; line-height:1.45; }
     .cert { font-size:14px; color:var(--body); padding:7px 0; border-bottom:1px solid var(--line-soft); }
     .cert:last-child { border-bottom:none; }
     .cert-year { color:var(--muted); font-size:13px; }
