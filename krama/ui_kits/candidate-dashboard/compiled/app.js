@@ -3825,6 +3825,8 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
+        gap: 12,
+        flexWrap: "wrap",
         marginBottom: 24
       }
     }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
@@ -3879,15 +3881,9 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
           });
         });
       }
-    }), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
-      style: {
-        display: "block",
-        fontSize: "var(--text-sm)",
-        fontWeight: 600,
-        color: "var(--text-label)",
-        marginBottom: 6
-      }
-    }, T("Category")), /*#__PURE__*/React.createElement("select", {
+    }), /*#__PURE__*/React.createElement(Select, {
+      label: T("Category"),
+      placeholder: T("Any category"),
       value: form.category_id,
       onChange: function (e) {
         setForm(function (f) {
@@ -3896,32 +3892,15 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
           });
         });
       },
-      style: {
-        width: "100%",
-        padding: "9px 12px",
-        border: "1px solid var(--border-strong)",
-        borderRadius: "var(--radius-md)",
-        fontFamily: "var(--font-sans)",
-        fontSize: "var(--text-sm)",
-        background: "var(--surface-card)",
-        color: "var(--text-body)"
-      }
-    }, /*#__PURE__*/React.createElement("option", {
-      value: ""
-    }, T("Any category")), categories.map(function (c) {
-      return /*#__PURE__*/React.createElement("option", {
-        key: c.id,
-        value: c.id
-      }, c.name);
-    }))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
-      style: {
-        display: "block",
-        fontSize: "var(--text-sm)",
-        fontWeight: 600,
-        color: "var(--text-label)",
-        marginBottom: 6
-      }
-    }, T("Location")), /*#__PURE__*/React.createElement("select", {
+      options: categories.map(function (c) {
+        return {
+          value: c.id,
+          label: c.name
+        };
+      })
+    }), /*#__PURE__*/React.createElement(Select, {
+      label: T("Location"),
+      placeholder: T("Any location"),
       value: form.location_id,
       onChange: function (e) {
         setForm(function (f) {
@@ -3930,32 +3909,14 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
           });
         });
       },
-      style: {
-        width: "100%",
-        padding: "9px 12px",
-        border: "1px solid var(--border-strong)",
-        borderRadius: "var(--radius-md)",
-        fontFamily: "var(--font-sans)",
-        fontSize: "var(--text-sm)",
-        background: "var(--surface-card)",
-        color: "var(--text-body)"
-      }
-    }, /*#__PURE__*/React.createElement("option", {
-      value: ""
-    }, T("Any location")), locations.map(function (l) {
-      return /*#__PURE__*/React.createElement("option", {
-        key: l.id,
-        value: l.id
-      }, l.name);
-    }))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
-      style: {
-        display: "block",
-        fontSize: "var(--text-sm)",
-        fontWeight: 600,
-        color: "var(--text-label)",
-        marginBottom: 6
-      }
-    }, T("Job type")), /*#__PURE__*/React.createElement("select", {
+      options: locations.map(function (l) {
+        return {
+          value: l.id,
+          label: l.name
+        };
+      })
+    }), /*#__PURE__*/React.createElement(Select, {
+      label: T("Job type"),
       value: form.job_type,
       onChange: function (e) {
         setForm(function (f) {
@@ -3964,30 +3925,14 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
           });
         });
       },
-      style: {
-        width: "100%",
-        padding: "9px 12px",
-        border: "1px solid var(--border-strong)",
-        borderRadius: "var(--radius-md)",
-        fontFamily: "var(--font-sans)",
-        fontSize: "var(--text-sm)",
-        background: "var(--surface-card)",
-        color: "var(--text-body)"
-      }
-    }, JOB_TYPES.map(function (o) {
-      return /*#__PURE__*/React.createElement("option", {
-        key: o.value,
-        value: o.value
-      }, T(o.label));
-    }))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
-      style: {
-        display: "block",
-        fontSize: "var(--text-sm)",
-        fontWeight: 600,
-        color: "var(--text-label)",
-        marginBottom: 6
-      }
-    }, T("Work mode")), /*#__PURE__*/React.createElement("select", {
+      options: JOB_TYPES.map(function (o) {
+        return {
+          value: o.value,
+          label: T(o.label)
+        };
+      })
+    }), /*#__PURE__*/React.createElement(Select, {
+      label: T("Work mode"),
       value: form.is_remote,
       onChange: function (e) {
         setForm(function (f) {
@@ -3996,22 +3941,13 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
           });
         });
       },
-      style: {
-        width: "100%",
-        padding: "9px 12px",
-        border: "1px solid var(--border-strong)",
-        borderRadius: "var(--radius-md)",
-        fontFamily: "var(--font-sans)",
-        fontSize: "var(--text-sm)",
-        background: "var(--surface-card)",
-        color: "var(--text-body)"
-      }
-    }, REMOTE_OPTS.map(function (o) {
-      return /*#__PURE__*/React.createElement("option", {
-        key: o.value,
-        value: o.value
-      }, T(o.label));
-    })))), formErr && /*#__PURE__*/React.createElement("div", {
+      options: REMOTE_OPTS.map(function (o) {
+        return {
+          value: o.value,
+          label: T(o.label)
+        };
+      })
+    })), formErr && /*#__PURE__*/React.createElement("div", {
       style: {
         color: "var(--danger)",
         fontSize: "var(--text-sm)",

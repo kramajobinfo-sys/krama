@@ -1415,7 +1415,10 @@
     return (
       <div className="krm-page-pad" style={{ padding: 28 }}>
         <div style={{ maxWidth: 740 }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
+        {/* gap + wrap + a non-shrinking button: with none of these the subtitle ran right up
+            against the button with 0px between them on a phone (worse in Khmer, where the
+            line is longer), and the button itself could be squashed. */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 24 }}>
           <div>
             <div style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: "var(--text-lg)", color: "var(--text-strong)" }}>{T("Your job alerts")}</div>
             <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginTop: 2 }}>{T("Get an email the moment a matching role is posted. Up to 10 alerts.")}</div>
@@ -1433,32 +1436,36 @@
               <div style={{ fontWeight: 700, fontSize: "var(--text-base)", color: "var(--text-strong)", marginBottom: 16 }}>{T("Create a new alert")}</div>
               <div className="krm-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
                 <Input label={T("Keyword")} placeholder="e.g. Software Engineer" value={form.keyword} onChange={function(e){ setForm(function(f){ return Object.assign({}, f, { keyword: e.target.value }); }); }} />
-                <div>
-                  <label style={{ display: "block", fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-label)", marginBottom: 6 }}>{T("Category")}</label>
-                  <select value={form.category_id} onChange={function(e){ setForm(function(f){ return Object.assign({}, f, { category_id: e.target.value }); }); }} style={{ width: "100%", padding: "9px 12px", border: "1px solid var(--border-strong)", borderRadius: "var(--radius-md)", fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)", background: "var(--surface-card)", color: "var(--text-body)" }}>
-                    <option value="">{T("Any category")}</option>
-                    {categories.map(function(c){ return <option key={c.id} value={c.id}>{c.name}</option>; })}
-                  </select>
-                </div>
-                <div>
-                  <label style={{ display: "block", fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-label)", marginBottom: 6 }}>{T("Location")}</label>
-                  <select value={form.location_id} onChange={function(e){ setForm(function(f){ return Object.assign({}, f, { location_id: e.target.value }); }); }} style={{ width: "100%", padding: "9px 12px", border: "1px solid var(--border-strong)", borderRadius: "var(--radius-md)", fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)", background: "var(--surface-card)", color: "var(--text-body)" }}>
-                    <option value="">{T("Any location")}</option>
-                    {locations.map(function(l){ return <option key={l.id} value={l.id}>{l.name}</option>; })}
-                  </select>
-                </div>
-                <div>
-                  <label style={{ display: "block", fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-label)", marginBottom: 6 }}>{T("Job type")}</label>
-                  <select value={form.job_type} onChange={function(e){ setForm(function(f){ return Object.assign({}, f, { job_type: e.target.value }); }); }} style={{ width: "100%", padding: "9px 12px", border: "1px solid var(--border-strong)", borderRadius: "var(--radius-md)", fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)", background: "var(--surface-card)", color: "var(--text-body)" }}>
-                    {JOB_TYPES.map(function(o){ return <option key={o.value} value={o.value}>{T(o.label)}</option>; })}
-                  </select>
-                </div>
-                <div>
-                  <label style={{ display: "block", fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-label)", marginBottom: 6 }}>{T("Work mode")}</label>
-                  <select value={form.is_remote} onChange={function(e){ setForm(function(f){ return Object.assign({}, f, { is_remote: e.target.value }); }); }} style={{ width: "100%", padding: "9px 12px", border: "1px solid var(--border-strong)", borderRadius: "var(--radius-md)", fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)", background: "var(--surface-card)", color: "var(--text-body)" }}>
-                    {REMOTE_OPTS.map(function(o){ return <option key={o.value} value={o.value}>{T(o.label)}</option>; })}
-                  </select>
-                </div>
+                {/* Design-system Select, not a raw <select>: the hand-rolled ones were 39px
+                    tall next to the 44px Input on the same row, set their own 13px font
+                    against the Input's 15px, and coloured their label with an undefined
+                    --text-label token, so it silently inherited a different grey. */}
+                <Select
+                  label={T("Category")}
+                  placeholder={T("Any category")}
+                  value={form.category_id}
+                  onChange={function(e){ setForm(function(f){ return Object.assign({}, f, { category_id: e.target.value }); }); }}
+                  options={categories.map(function(c){ return { value: c.id, label: c.name }; })}
+                />
+                <Select
+                  label={T("Location")}
+                  placeholder={T("Any location")}
+                  value={form.location_id}
+                  onChange={function(e){ setForm(function(f){ return Object.assign({}, f, { location_id: e.target.value }); }); }}
+                  options={locations.map(function(l){ return { value: l.id, label: l.name }; })}
+                />
+                <Select
+                  label={T("Job type")}
+                  value={form.job_type}
+                  onChange={function(e){ setForm(function(f){ return Object.assign({}, f, { job_type: e.target.value }); }); }}
+                  options={JOB_TYPES.map(function(o){ return { value: o.value, label: T(o.label) }; })}
+                />
+                <Select
+                  label={T("Work mode")}
+                  value={form.is_remote}
+                  onChange={function(e){ setForm(function(f){ return Object.assign({}, f, { is_remote: e.target.value }); }); }}
+                  options={REMOTE_OPTS.map(function(o){ return { value: o.value, label: T(o.label) }; })}
+                />
               </div>
               {formErr && <div style={{ color: "var(--danger)", fontSize: "var(--text-sm)", marginBottom: 12 }}>{formErr}</div>}
               <Button variant="primary" size="sm" disabled={saving}>{saving ? T("Saving…") : T("Save alert")}</Button>
