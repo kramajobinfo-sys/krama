@@ -668,9 +668,19 @@ class AuthController extends Controller
                 return response()->json(['message' => 'This account is not active.'], 403);
             }
         } else {
-            // First-time social sign-in → honor the role picked on the register page
-            // (default candidate). Only applies to brand-new accounts.
-            $roleSlug = (($data['role'] ?? null) === 'employer') ? 'employer' : 'candidate';
+            // No account yet, so this is really a SIGN-UP. The register page sends the role
+            // picked with the candidate/employer toggle; the sign-in page has no toggle and
+            // sends none — and silently defaulting that to "candidate" is how someone who
+            // meant to sign up as an employer ended up with a candidate account. Ask instead
+            // of guessing; the client shows the chooser and retries with a role.
+            if (empty($data['role'])) {
+                return response()->json([
+                    'needs_role' => true,
+                    'message'    => 'Tell us whether you are a candidate or an employer to finish creating your account.',
+                ], 422);
+            }
+
+            $roleSlug = $data['role'] === 'employer' ? 'employer' : 'candidate';
             $role = Role::where('slug', $roleSlug)->firstOrFail();
             $user = new User([
                 'role_id'       => $role->id,

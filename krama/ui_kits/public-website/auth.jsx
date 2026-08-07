@@ -178,16 +178,46 @@
     };
     const onKey = (e) => { if (e.key === "Enter") submit(); };
 
+    // Signing in with Google/Facebook for the first time is really a sign-up, and this page
+    // has no candidate/employer toggle. The server used to assume "candidate", which is how
+    // people who meant to join as an employer ended up in the wrong role. It now answers
+    // needs_role instead, so hold the provider token and ask before finishing.
+    const [pendingSocial, setPendingSocial] = React.useState(null);
+    const socialSignIn = (provider, token, chosenRole) => {
+      setError(""); setLoading(true);
+      window.KRAMA_API.socialLogin(provider, token, chosenRole)
+        .then((user) => { setLoading(false); setPendingSocial(null); if (onLogin) onLogin(user); })
+        .catch((e) => {
+          setLoading(false);
+          if (e && e.needs_role) { setPendingSocial({ provider: provider, token: token }); return; }
+          setPendingSocial(null);
+          setError((e && e.message) || "Social sign-in failed. Please try again.");
+        });
+    };
+
     return (
       <Shell onNav={onNav}>
         <h1 className="krm-auth-title" style={{ fontSize: "var(--text-3xl)", fontWeight: 700, color: "var(--text-strong)" }}>{TR("Welcome back")}</h1>
         <p style={{ color: "var(--text-muted)", marginTop: 8, marginBottom: 28 }}>{TR("Sign in to track applications and saved jobs.")}</p>
-        <SocialButtons onError={(msg) => setError(msg)} onSocialLogin={(provider, token) => {
-          setError(""); setLoading(true);
-          window.KRAMA_API.socialLogin(provider, token)
-            .then((user) => { setLoading(false); if (onLogin) onLogin(user); })
-            .catch((e) => { setLoading(false); setError((e && e.message) || "Social sign-in failed. Please try again."); });
-        }} />
+        <SocialButtons onError={(msg) => setError(msg)} onSocialLogin={(provider, token) => socialSignIn(provider, token)} />
+        {pendingSocial && (
+          <div style={{ marginTop: 14, padding: "14px 16px", background: "var(--surface-sunken)", borderRadius: "var(--radius-md)", border: "1px solid var(--border)" }}>
+            <div style={{ fontWeight: 700, color: "var(--text-strong)", fontSize: "var(--text-sm)" }}>{TR("One more thing")}</div>
+            <div style={{ color: "var(--text-muted)", fontSize: "var(--text-sm)", marginTop: 4, marginBottom: 12 }}>
+              {TR("You don't have an account yet. Are you looking for a job, or hiring?")}
+            </div>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <Button variant="secondary" disabled={loading}
+                onClick={() => socialSignIn(pendingSocial.provider, pendingSocial.token, "candidate")}>
+                {TR("I'm a candidate")}
+              </Button>
+              <Button variant="primary" disabled={loading}
+                onClick={() => socialSignIn(pendingSocial.provider, pendingSocial.token, "employer")}>
+                {TR("I'm an employer")}
+              </Button>
+            </div>
+          </div>
+        )}
         <Divider />
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           {error && <div style={{ padding: "10px 14px", background: "var(--danger-subtle)", color: "var(--danger)", borderRadius: "var(--radius-md)", fontSize: "var(--text-sm)", fontWeight: 500 }}>{error}</div>}
