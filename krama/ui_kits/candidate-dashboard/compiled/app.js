@@ -4542,16 +4542,6 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     function next() {
       if (step < STEPS.length - 1) setStep(step + 1);else finish();
     }
-    var selStyle = {
-      width: "100%",
-      padding: "10px 12px",
-      border: "1px solid var(--border-strong)",
-      borderRadius: "var(--radius-md)",
-      fontFamily: "var(--font-sans)",
-      fontSize: "var(--text-sm)",
-      background: "var(--surface-card)",
-      color: "var(--text-body)"
-    };
     var pct = Math.round((step + 1) / STEPS.length * 100);
     var last = step === STEPS.length - 1;
     return /*#__PURE__*/React.createElement("div", {
@@ -4646,70 +4636,46 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       onChange: function (e) {
         setP("keyword", e.target.value);
       }
-    }), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
-      style: {
-        display: "block",
-        fontSize: "var(--text-sm)",
-        fontWeight: 600,
-        color: "var(--text-body)",
-        marginBottom: 6
-      }
-    }, T("Field / category")), /*#__PURE__*/React.createElement("select", {
+    }), /*#__PURE__*/React.createElement(Select, {
+      label: T("Field / category"),
+      placeholder: T("Any field"),
       value: prefs.category_id,
       onChange: function (e) {
         setP("category_id", e.target.value);
       },
-      style: selStyle
-    }, /*#__PURE__*/React.createElement("option", {
-      value: ""
-    }, T("Any field")), cats.map(function (c) {
-      return /*#__PURE__*/React.createElement("option", {
-        key: c.id,
-        value: c.id
-      }, c.name);
-    }))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
-      style: {
-        display: "block",
-        fontSize: "var(--text-sm)",
-        fontWeight: 600,
-        color: "var(--text-body)",
-        marginBottom: 6
-      }
-    }, T("Location")), /*#__PURE__*/React.createElement("select", {
+      options: cats.map(function (c) {
+        return {
+          value: c.id,
+          label: c.name
+        };
+      })
+    }), /*#__PURE__*/React.createElement(Select, {
+      label: T("Location"),
+      placeholder: T("Any location"),
       value: prefs.location_id,
       onChange: function (e) {
         setP("location_id", e.target.value);
       },
-      style: selStyle
-    }, /*#__PURE__*/React.createElement("option", {
-      value: ""
-    }, T("Any location")), locs.map(function (l) {
-      return /*#__PURE__*/React.createElement("option", {
-        key: l.id,
-        value: l.id
-      }, l.name);
-    }))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
-      style: {
-        display: "block",
-        fontSize: "var(--text-sm)",
-        fontWeight: 600,
-        color: "var(--text-body)",
-        marginBottom: 6
-      }
-    }, T("Employment type")), /*#__PURE__*/React.createElement("select", {
+      options: locs.map(function (l) {
+        return {
+          value: l.id,
+          label: l.name
+        };
+      })
+    }), /*#__PURE__*/React.createElement(Select, {
+      label: T("Employment type"),
+      placeholder: T("Any type"),
       value: prefs.job_type,
       onChange: function (e) {
         setP("job_type", e.target.value);
       },
-      style: selStyle
-    }, /*#__PURE__*/React.createElement("option", {
-      value: ""
-    }, T("Any type")), JOB_TYPES.map(function (t) {
-      return /*#__PURE__*/React.createElement("option", {
-        key: t.v,
-        value: t.v
-      }, T(t.l));
-    })))), step === 1 && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+      options: JOB_TYPES.map(function (t) {
+        return {
+          value: t.v,
+          label: T(t.l)
+        };
+      })
+    })), step === 1 && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: "var(--text-sm)",
         color: "var(--text-muted)"
@@ -4798,6 +4764,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         fontSize: "var(--text-sm)"
       }
     }, err)), /*#__PURE__*/React.createElement("div", {
+      className: "krm-wizard-foot",
       style: {
         padding: "0 24px 20px",
         display: "flex",
@@ -4820,7 +4787,9 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         fontFamily: "var(--font-sans)",
         fontSize: "var(--text-sm)",
         fontWeight: 600,
-        padding: "8px 4px"
+        padding: "8px 4px",
+        whiteSpace: "nowrap",
+        flexShrink: 0
       }
     }, T("Skip this step")), /*#__PURE__*/React.createElement(Button, {
       variant: "primary",

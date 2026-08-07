@@ -68,6 +68,14 @@
   }
   /* 2-column form grids collapse to 1 column */
   .krm-form-grid { grid-template-columns: 1fr !important; }
+
+  /* Onboarding wizard footer. Back + "Skip this step" + the primary action don't fit one
+     line at 375px — worst in Khmer, where every label is longer. Without wrapping, the
+     middle text button got squeezed until it broke onto two lines and stood 50px tall
+     between two 42px buttons. Wrap the row and give the primary action its own full-width
+     line so it stays the obvious next step. */
+  .krm-wizard-foot { flex-wrap: wrap !important; row-gap: 12px !important; }
+  .krm-wizard-foot > *:last-child { width: 100% !important; margin-left: 0 !important; }
   /* Tables scroll horizontally */
   .krm-table-wrap {
     overflow-x: auto !important;

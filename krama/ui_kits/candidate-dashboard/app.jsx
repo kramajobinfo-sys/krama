@@ -1741,7 +1741,6 @@
 
     function next() { if (step < STEPS.length - 1) setStep(step + 1); else finish(); }
 
-    var selStyle = { width: "100%", padding: "10px 12px", border: "1px solid var(--border-strong)", borderRadius: "var(--radius-md)", fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)", background: "var(--surface-card)", color: "var(--text-body)" };
     var pct = Math.round(((step + 1) / STEPS.length) * 100);
     var last = step === STEPS.length - 1;
 
@@ -1766,27 +1765,30 @@
               <React.Fragment>
                 <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>{T("Tell us what you're looking for — we'll email you matching jobs.")}</div>
                 <Input label={T("Job title you want")} placeholder="e.g. IT Manager, Accountant" value={prefs.keyword} onChange={function (e) { setP("keyword", e.target.value); }} />
-                <div>
-                  <label style={{ display: "block", fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-body)", marginBottom: 6 }}>{T("Field / category")}</label>
-                  <select value={prefs.category_id} onChange={function (e) { setP("category_id", e.target.value); }} style={selStyle}>
-                    <option value="">{T("Any field")}</option>
-                    {cats.map(function (c) { return <option key={c.id} value={c.id}>{c.name}</option>; })}
-                  </select>
-                </div>
-                <div>
-                  <label style={{ display: "block", fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-body)", marginBottom: 6 }}>{T("Location")}</label>
-                  <select value={prefs.location_id} onChange={function (e) { setP("location_id", e.target.value); }} style={selStyle}>
-                    <option value="">{T("Any location")}</option>
-                    {locs.map(function (l) { return <option key={l.id} value={l.id}>{l.name}</option>; })}
-                  </select>
-                </div>
-                <div>
-                  <label style={{ display: "block", fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-body)", marginBottom: 6 }}>{T("Employment type")}</label>
-                  <select value={prefs.job_type} onChange={function (e) { setP("job_type", e.target.value); }} style={selStyle}>
-                    <option value="">{T("Any type")}</option>
-                    {JOB_TYPES.map(function (t) { return <option key={t.v} value={t.v}>{T(t.l)}</option>; })}
-                  </select>
-                </div>
+                {/* Design-system Select: the raw <select>s here were 41px tall beside the
+                    44px Input above them, used a 13px font against its 15px, and labelled
+                    themselves --text-body while the Input label is --text-strong. */}
+                <Select
+                  label={T("Field / category")}
+                  placeholder={T("Any field")}
+                  value={prefs.category_id}
+                  onChange={function (e) { setP("category_id", e.target.value); }}
+                  options={cats.map(function (c) { return { value: c.id, label: c.name }; })}
+                />
+                <Select
+                  label={T("Location")}
+                  placeholder={T("Any location")}
+                  value={prefs.location_id}
+                  onChange={function (e) { setP("location_id", e.target.value); }}
+                  options={locs.map(function (l) { return { value: l.id, label: l.name }; })}
+                />
+                <Select
+                  label={T("Employment type")}
+                  placeholder={T("Any type")}
+                  value={prefs.job_type}
+                  onChange={function (e) { setP("job_type", e.target.value); }}
+                  options={JOB_TYPES.map(function (t) { return { value: t.v, label: T(t.l) }; })}
+                />
               </React.Fragment>
             )}
             {step === 1 && (
@@ -1815,9 +1817,13 @@
             {err && <div style={{ padding: "9px 12px", background: "var(--danger-subtle)", color: "var(--danger)", borderRadius: "var(--radius-md)", fontSize: "var(--text-sm)" }}>{err}</div>}
           </div>
 
-          <div style={{ padding: "0 24px 20px", display: "flex", alignItems: "center", gap: 10 }}>
+          {/* krm-wizard-foot: on a 375px phone the three Khmer labels don't fit one line, so
+              the middle text button was squeezed until it wrapped, leaving it 50px tall
+              between two 42px buttons. mobile.css wraps the row and gives the primary action
+              its own full-width line there; desktop is unchanged. */}
+          <div className="krm-wizard-foot" style={{ padding: "0 24px 20px", display: "flex", alignItems: "center", gap: 10 }}>
             {step > 0 && <Button variant="ghost" onClick={function () { setStep(step - 1); }}>{T("Back")}</Button>}
-            <button onClick={next} style={{ marginLeft: "auto", border: "none", background: "transparent", color: "var(--text-muted)", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)", fontWeight: 600, padding: "8px 4px" }}>{T("Skip this step")}</button>
+            <button onClick={next} style={{ marginLeft: "auto", border: "none", background: "transparent", color: "var(--text-muted)", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)", fontWeight: 600, padding: "8px 4px", whiteSpace: "nowrap", flexShrink: 0 }}>{T("Skip this step")}</button>
             <Button variant="primary" disabled={saving} onClick={next}>{saving ? T("Saving…") : last ? T("Finish setup") : T("Continue")}</Button>
           </div>
         </div>
