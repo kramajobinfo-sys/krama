@@ -97,6 +97,6 @@
     </p>
   </div>
 
-  <p class="meta" style="margin-top:24px"><a href="{{ url('/terms') }}">Terms of Service</a></p>
+  <p class="meta mt-lg"><a href="{{ url('/terms') }}">Terms of Service</a></p>
 </article>
 @endsection
