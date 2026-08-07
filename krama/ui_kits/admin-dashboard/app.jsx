@@ -5257,10 +5257,10 @@
           if (d && Object.keys(d).length) {
             setS({
               googleEnabled: d.google_enabled !== undefined ? !!d.google_enabled : SOCIAL_DEFAULTS.googleEnabled,
-              googleClientId: d.google_client_id || "",
+              googleClientId: d.google_client_id != null ? String(d.google_client_id) : "",
               facebookEnabled: d.facebook_enabled !== undefined ? !!d.facebook_enabled : SOCIAL_DEFAULTS.facebookEnabled,
-              facebookAppId: d.facebook_app_id || "",
-              facebookAppSecret: d.facebook_app_secret || "",
+              facebookAppId: d.facebook_app_id != null ? String(d.facebook_app_id) : "",
+              facebookAppSecret: d.facebook_app_secret != null ? String(d.facebook_app_secret) : "",
             });
           }
         })
@@ -5273,7 +5273,7 @@
         google_enabled: s.googleEnabled,
         google_client_id: s.googleClientId,
         facebook_enabled: s.facebookEnabled,
-        facebook_app_id: s.facebookAppId,
+        facebook_app_id: String(s.facebookAppId || ""),
         facebook_app_secret: s.facebookAppSecret,
       }).then(function() { setSaved(true); })
         .catch(function(e) { alert('Save failed: ' + (e && e.message ? e.message : 'Unknown error')); });

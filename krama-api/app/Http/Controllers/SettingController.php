@@ -317,6 +317,19 @@ class SettingController extends Controller
             return response()->json(['message' => 'No recognised keys provided.'], 422);
         }
 
+        // castValue() turns an all-digit stored value into an int when settings are READ,
+        // so the admin form loads e.g. facebook_app_id as the number 878759271633172 and
+        // posts it straight back — where a `string` rule rejects it ("The facebook app id
+        // must be a string"). Only all-digit values are affected, which is why a Google
+        // client ID (letters and dots) never tripped it. Normalise numbers to strings for
+        // string-typed keys so any numeric-looking setting survives the round trip.
+        foreach ($input as $key => $value) {
+            if ((is_int($value) || is_float($value)) && str_contains($schema[$key], 'string')) {
+                $input[$key] = (string) $value;
+            }
+        }
+        $request->merge($input);
+
         // Validate each submitted key against its rule
         $rules = [];
         foreach ($input as $key => $_) {
@@ -558,6 +571,13 @@ class SettingController extends Controller
             return (bool)(int)$value;
         }
         if (is_numeric($value) && strpos($value, '.') === false) {
+            // Leave anything past JS's safe-integer range as a string: these are always
+            // identifiers (app / page / chat ids), never quantities, and JSON.parse would
+            // round them and silently corrupt the value on the way back.
+            if (abs((float) $value) > 9007199254740991) {
+                return $value;
+            }
+
             return (int)$value;
         }
         return $value;
