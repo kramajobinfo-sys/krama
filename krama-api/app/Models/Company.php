@@ -17,6 +17,9 @@ class Company extends Model
 
     protected $casts = [
         'is_verified'   => 'boolean',
+        // org_status / org_type are set only by the admin review endpoint (forceFill), never
+        // mass-assigned — an employer must not be able to self-verify for the free org plan.
+        'org_verified_at' => 'datetime',
         'social_links'    => 'array',
         'culture_values'  => 'array',
         'benefits_tags'   => 'array',

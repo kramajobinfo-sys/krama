@@ -462,6 +462,11 @@ class CompanyController extends Controller
             $q->where('status', $request->status);
         }
 
+        // Organization-verification queue filter (e.g. org_status=pending → applications to review).
+        if ($request->filled('org_status')) {
+            $q->where('org_status', $request->org_status);
+        }
+
         if ($request->filled('search')) {
             $term = '%' . $request->search . '%';
             $q->where('name', 'like', $term);
@@ -535,6 +540,46 @@ class CompanyController extends Controller
         $this->auditLog('company.' . $label, ['company_id' => $company->id, 'company_name' => $company->name]);
 
         return response()->json(['message' => "Company $label.", 'is_verified' => $company->is_verified]);
+    }
+
+    // PATCH /api/admin/companies/{id}/org-review — classify + verify an employer as a
+    // non-commercial organization (NGO / government / education / international). The free-org
+    // benefit gates on org_status, which ONLY this admin endpoint can set (forceFill) — org_status
+    // is intentionally not mass-assignable, so an employer can never self-verify.
+    public function orgReview(Request $request, $id)
+    {
+        $this->requirePermission('approve_companies');
+
+        $data = $request->validate([
+            'org_type'   => 'required|in:company,ngo,government,education,international',
+            'org_status' => 'required|in:none,pending,verified,rejected',
+            'org_reg_no' => 'nullable|string|max:100',
+            'note'       => 'nullable|string|max:500',
+        ]);
+
+        $company = Company::findOrFail($id);
+        $company->forceFill([
+            'org_type'        => $data['org_type'],
+            'org_status'      => $data['org_status'],
+            'org_reg_no'      => $data['org_reg_no'] ?? $company->org_reg_no,
+            'org_note'        => $data['note'] ?? null,
+            'org_verified_at' => $data['org_status'] === 'verified' ? now() : null,
+        ])->save();
+
+        $this->auditLog('company.org_' . $data['org_status'], [
+            'company_id'   => $company->id,
+            'company_name' => $company->name,
+            'org_type'     => $company->org_type,
+        ]);
+
+        return response()->json([
+            'message'         => 'Organization status updated.',
+            'org_type'        => $company->org_type,
+            'org_status'      => $company->org_status,
+            'org_reg_no'      => $company->org_reg_no,
+            'org_note'        => $company->org_note,
+            'org_verified_at' => $company->org_verified_at,
+        ]);
     }
 
     // POST /api/admin/companies — admin creates a company shell (e.g. on an employer's

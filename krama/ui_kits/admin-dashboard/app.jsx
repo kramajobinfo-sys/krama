@@ -1022,6 +1022,15 @@
     const [gallery, setGallery] = React.useState(Array.isArray(company && company.gallery) ? company.gallery : []);
     const [awards, setAwards] = React.useState(Array.isArray(company && company.awards) ? company.awards : []);
     const [awardForm, setAwardForm] = React.useState({ title: "", year: String(new Date().getFullYear()), description: "" });
+    const [org, setOrg] = React.useState({
+      type: (company && company.org_type) || "company",
+      status: (company && company.org_status) || "none",
+      reg_no: (company && company.org_reg_no) || "",
+      note: (company && company.org_note) || "",
+      doc_url: (company && company.org_doc_url) || "",
+    });
+    const [orgBusy, setOrgBusy] = React.useState(false);
+    const setOrgField = (k, v) => setOrg(function (o) { return Object.assign({}, o, { [k]: v }); });
 
     const [saving, setSaving] = React.useState(false);
     const [logoUploading, setLogoUploading] = React.useState(false);
@@ -1041,6 +1050,21 @@
     const set = (k, v) => setForm(function (f) { return Object.assign({}, f, { [k]: v }); });
     const flash = (m, isErr) => { if (isErr) { setErr(m); setTimeout(() => setErr(""), 4000); } else { setMsg(m); setTimeout(() => setMsg(""), 3000); } };
     const normalizeWebsite = (w) => { w = (w || "").trim(); return w && !/^https?:\/\//i.test(w) ? "https://" + w : w; };
+
+    // Organization verification — separate from the form save; the free-org benefit gates on
+    // org_status, which only this admin action can set.
+    const submitOrg = (status) => {
+      if (!id) return;
+      setOrgBusy(true); setErr("");
+      adm.orgReviewCompany(id, { org_type: org.type, org_status: status, org_reg_no: org.reg_no, note: org.note })
+        .then(function (r) {
+          setOrg(function (o) { return Object.assign({}, o, { status: r.org_status, reg_no: r.org_reg_no || o.reg_no }); });
+          setOrgBusy(false);
+          flash(status === "verified" ? "Organization verified — eligible for the free plan." : status === "rejected" ? "Organization request rejected." : "Organization status updated.");
+          onSaved && onSaved(Object.assign({}, company || {}, { id: id, org_type: r.org_type, org_status: r.org_status }), false);
+        })
+        .catch(function (e) { setOrgBusy(false); flash("Error: " + ((e && e.message) || "Update failed."), true); });
+    };
 
     const save = () => {
       if (!form.name.trim()) { setErr("Company name is required."); return; }
@@ -1194,6 +1218,39 @@
                 <Input label="Address" value={form.address} onChange={(e) => set("address", e.target.value)} iconLeft={I("map-pin", 16)} />
                 <Input label="Registration no." value={form.registration_no} onChange={(e) => set("registration_no", e.target.value)} />
                 {!id && <Select label="Status" value={form.status} onChange={(e) => set("status", e.target.value)} options={[{ value: "approved", label: "Approved (visible in the public directory)" }, { value: "pending", label: "Pending (hidden until ready)" }]} />}
+
+                {id && (
+                  <div style={{ padding: "16px 18px", borderRadius: "var(--radius-md)", border: "1px solid var(--border)", background: "var(--surface-sunken)" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                      <span style={{ display: "inline-flex", color: "var(--brand)" }}>{I("shield-check", 15)}</span>
+                      <span style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-strong)" }}>Organization verification</span>
+                      <Badge tone={org.status === "verified" ? "success" : org.status === "pending" ? "warning" : org.status === "rejected" ? "danger" : "neutral"} style={{ marginLeft: "auto" }}>
+                        {org.status === "none" ? "Commercial company" : (org.status === "verified" ? "Verified organization" : org.status)}
+                      </Badge>
+                    </div>
+                    <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginBottom: 12, lineHeight: 1.5 }}>
+                      Verify a non-commercial employer (NGO, government, education, international) for the free plan. Only <strong>verified</strong> organizations qualify — check the registration document before approving.
+                    </div>
+                    <Select label="Organization type" value={org.type} onChange={(e) => setOrgField("type", e.target.value)} options={[
+                      { value: "company", label: "Company (commercial)" },
+                      { value: "ngo", label: "NGO / non-profit" },
+                      { value: "government", label: "Government / public sector" },
+                      { value: "education", label: "Educational institution" },
+                      { value: "international", label: "International organization" },
+                    ]} />
+                    <div style={{ marginTop: 12 }}><Input label="Registration / MoU number" value={org.reg_no} onChange={(e) => setOrgField("reg_no", e.target.value)} placeholder="e.g. MoI #1234" /></div>
+                    {org.doc_url
+                      ? <div style={{ marginTop: 10, fontSize: "var(--text-sm)" }}><a href={org.doc_url} target="_blank" rel="noopener noreferrer" style={{ color: "var(--text-brand)", fontWeight: 600 }}>{I("file-text", 13)} View submitted document</a></div>
+                      : <div style={{ marginTop: 10, fontSize: "var(--text-xs)", color: "var(--text-faint)" }}>No proof document uploaded yet.</div>}
+                    <div style={{ marginTop: 12 }}><Input label="Note (reason / reference)" value={org.note} onChange={(e) => setOrgField("note", e.target.value)} placeholder="e.g. checked against the NGO registry" /></div>
+                    <div style={{ marginTop: 14, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      <Button variant="primary" size="sm" disabled={orgBusy} onClick={() => submitOrg("verified")}>{orgBusy ? "Saving…" : "Verify organization"}</Button>
+                      <Button variant="secondary" size="sm" disabled={orgBusy} onClick={() => submitOrg("pending")}>Mark pending</Button>
+                      <Button variant="ghost" size="sm" disabled={orgBusy} onClick={() => submitOrg("rejected")} style={{ color: "var(--danger)" }}>Reject</Button>
+                      {org.status !== "none" && <Button variant="ghost" size="sm" disabled={orgBusy} onClick={() => submitOrg("none")}>Clear</Button>}
+                    </div>
+                  </div>
+                )}
 
                 <div style={{ padding: "16px 18px", borderRadius: "var(--radius-md)", border: "1px solid var(--border)", background: "var(--surface-sunken)" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-strong)", marginBottom: 4 }}>{I("receipt", 15)} Tax / VAT details <span style={{ fontWeight: 500, color: "var(--text-faint)" }}>— optional</span></div>

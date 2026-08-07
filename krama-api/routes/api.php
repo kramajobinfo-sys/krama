@@ -379,6 +379,7 @@ Route::middleware(['auth:api', 'permission:site_settings'])->group(function () {
     Route::patch('admin/companies/{id}/reject',  [CompanyController::class, 'reject']);
     Route::patch('admin/companies/{id}/suspend', [CompanyController::class, 'suspend']);
     Route::patch('admin/companies/{id}/verify',  [CompanyController::class, 'verify']);
+    Route::patch('admin/companies/{id}/org-review', [CompanyController::class, 'orgReview']);
     Route::put('admin/companies/{id}',               [CompanyController::class, 'adminUpdate']);
     Route::delete('admin/companies/{id}',            [CompanyController::class, 'adminDestroy'])->where('id', '[0-9]+');
     Route::post('admin/companies/{id}/logo',         [CompanyController::class, 'adminUploadLogo'])->middleware('throttle:20,1');

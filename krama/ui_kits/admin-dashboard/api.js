@@ -257,6 +257,8 @@
     suspendCompany: function (id) { return req("PATCH", "/admin/companies/" + id + "/suspend"); },
     reinstateCompany: function (id) { return req("PATCH", "/admin/companies/" + id + "/approve"); },
     verifyCompany: function (id) { return req("PATCH", "/admin/companies/" + id + "/verify"); },
+    // Organization verification (free-tier eligibility): classify + verify NGO/gov/education/international.
+    orgReviewCompany: function (id, data) { return req("PATCH", "/admin/companies/" + id + "/org-review", data); },
     // Admin creates a company shell (assign an employer to it later via addCompanyMember).
     createCompany: function (data) { return req("POST", "/admin/companies", data); },
     fetchCompanyDetail: function (id) { return req("GET", "/admin/companies/" + id); },
