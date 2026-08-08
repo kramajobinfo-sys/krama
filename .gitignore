@@ -44,3 +44,7 @@ yarn-error.log
 
 # Local patch/deploy zip artifacts
 /krama_fix_bug/
+
+# Local-only operator notes (deploy connection details, etc.) — never commit
+DEPLOY.local.md
+*.local.md
