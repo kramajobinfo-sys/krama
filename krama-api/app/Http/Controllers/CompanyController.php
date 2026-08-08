@@ -616,11 +616,22 @@ class CompanyController extends Controller
             ]);
         }
 
-        // Un-verified: cancel any active/trial org subscription so the free benefit is withdrawn.
-        \App\Models\Subscription::where('company_id', $company->id)
+        // Un-verified: withdraw the free benefit. Close the jobs published under the org
+        // subscription first (mirrors Subscription::expireOverdue) so losing verified status
+        // actually pulls the free listings down — a never-expiring org sub would otherwise
+        // leave them 'published' forever — then cancel the subscription. The company's other
+        // (paid) subscriptions and the jobs under them are left untouched.
+        $orgSubIds = \App\Models\Subscription::where('company_id', $company->id)
             ->where('plan_id', $orgPlan->id)
             ->whereIn('status', ['active', 'trial'])
-            ->update(['status' => 'canceled']);
+            ->pluck('id');
+
+        if ($orgSubIds->isNotEmpty()) {
+            \App\Models\Job::whereIn('subscription_id', $orgSubIds)
+                ->where('status', 'published')
+                ->update(['status' => 'closed']);
+            \App\Models\Subscription::whereIn('id', $orgSubIds)->update(['status' => 'canceled']);
+        }
         return null;
     }
 

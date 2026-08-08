@@ -1154,8 +1154,17 @@ class JobController extends Controller
             })
             ->values();
 
-        // No active/trial plan — block posting
+        // No active/trial plan — block posting. Make the gate explicit for organizations:
+        // a verified org always has the free org subscription (so it never lands here), but a
+        // company still awaiting or refused verification does, and a generic "subscribe" message
+        // would hide why the promised free plan isn't active yet.
         if ($subscriptions->isEmpty()) {
+            if ($company->org_status === 'pending') {
+                abort(422, 'Your organization is still being verified. Once approved you can post jobs for free — or subscribe to a plan to start posting now.');
+            }
+            if ($company->org_status === 'rejected') {
+                abort(422, 'Your organization verification was not approved, so the free plan is not active. Re-apply with clearer documents, or subscribe to a plan to post jobs.');
+            }
             abort(422, 'An active subscription plan is required to post jobs. Please subscribe to a plan first.');
         }
 
