@@ -566,6 +566,9 @@ class CompanyController extends Controller
             'org_verified_at' => $data['org_status'] === 'verified' ? now() : null,
         ])->save();
 
+        // Verifying grants the free Organization plan; un-verifying revokes it.
+        $orgSub = $this->syncOrgSubscription($company, $data['org_status'] === 'verified');
+
         $this->auditLog('company.org_' . $data['org_status'], [
             'company_id'   => $company->id,
             'company_name' => $company->name,
@@ -573,13 +576,52 @@ class CompanyController extends Controller
         ]);
 
         return response()->json([
-            'message'         => 'Organization status updated.',
+            'message'         => $data['org_status'] === 'verified'
+                ? 'Organization verified — the free Organization plan has been assigned.'
+                : 'Organization status updated.',
             'org_type'        => $company->org_type,
             'org_status'      => $company->org_status,
             'org_reg_no'      => $company->org_reg_no,
             'org_note'        => $company->org_note,
             'org_verified_at' => $company->org_verified_at,
+            'free_plan'       => (bool) $orgSub,
         ]);
+    }
+
+    // Grant or revoke the free Organization plan to match verification status. Returns the
+    // active org subscription when granted (or already present), null otherwise. Idempotent:
+    // never stacks a second org subscription, and cancelling is a no-op when there's nothing
+    // to cancel. Does NOT touch the company's other (paid) subscriptions.
+    private function syncOrgSubscription(Company $company, bool $verified)
+    {
+        $orgPlan = \App\Models\Plan::where('is_org_plan', true)->first();
+        if (! $orgPlan) {
+            return null;
+        }
+
+        if ($verified) {
+            $existing = \App\Models\Subscription::where('company_id', $company->id)
+                ->where('plan_id', $orgPlan->id)
+                ->whereIn('status', ['active', 'trial'])
+                ->first();
+            if ($existing) {
+                return $existing;
+            }
+            return \App\Models\Subscription::create([
+                'company_id' => $company->id,
+                'plan_id'    => $orgPlan->id,
+                'status'     => 'active',
+                'started_at' => now(),
+                'renews_at'  => null, // free plan — never expires while the org stays verified
+            ]);
+        }
+
+        // Un-verified: cancel any active/trial org subscription so the free benefit is withdrawn.
+        \App\Models\Subscription::where('company_id', $company->id)
+            ->where('plan_id', $orgPlan->id)
+            ->whereIn('status', ['active', 'trial'])
+            ->update(['status' => 'canceled']);
+        return null;
     }
 
     // POST /api/companies/{id}/org-apply — employer applies to be recognised as a

@@ -152,6 +152,13 @@ class PaymentController extends Controller
 
         $plan = Plan::where('is_active', true)->findOrFail($data['plan_id']);
 
+        // The Organization (free) plan is never self-serve — it's granted only when an admin
+        // verifies a non-commercial org. Reject any attempt to subscribe to it directly, even
+        // if it were somehow made active, so it can't become a free-posting loophole.
+        if ($plan->is_org_plan) {
+            return response()->json(['message' => 'The Organization plan is assigned through verification, not self-service.'], 403);
+        }
+
         // The amount actually billed = the plan's discounted (effective) price. Every downstream
         // charge derives from this single value (payment.amount → KHQR/ABA/Stripe + invoices).
         $charge   = $plan->effective_price;

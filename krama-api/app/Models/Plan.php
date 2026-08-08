@@ -11,7 +11,7 @@ class Plan extends Model
 
     protected $fillable = [
         'name', 'price', 'discount_percent', 'currency', 'interval', 'job_post_limit', 'trial_days',
-        'featured_credits', 'features_json', 'is_active', 'custom_pricing', 'sort_order',
+        'featured_credits', 'features_json', 'is_active', 'custom_pricing', 'is_org_plan', 'sort_order',
     ];
 
     protected $casts = [
@@ -23,6 +23,7 @@ class Plan extends Model
         'features_json'    => 'array',
         'is_active'        => 'boolean',
         'custom_pricing'   => 'boolean',
+        'is_org_plan'      => 'boolean',
         'sort_order'       => 'integer',
     ];
 
