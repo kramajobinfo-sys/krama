@@ -13,8 +13,12 @@
 @endpush
 
 @section('content')
+@php
+  $orgLabels = ['ngo' => 'NGO', 'government' => 'Government', 'education' => 'Education', 'international' => 'International'];
+  $orgLabel = ($company->org_status === 'verified' && isset($orgLabels[$company->org_type])) ? $orgLabels[$company->org_type] : null;
+@endphp
 <article class="card">
-  <h1>{{ $company->name }}@if($company->is_verified) <span class="chip">Verified</span>@endif</h1>
+  <h1>{{ $company->name }}@if($company->is_verified) <span class="chip">Verified</span>@endif @if($orgLabel)<span class="chip-org chip-org-{{ $company->org_type }}">{{ $orgLabel }}</span>@endif</h1>
   <p class="meta">{{ $company->industry }}@if($company->industry && $company->address) · @endif{{ $company->address }}</p>
   @if($company->website)<p class="meta"><a href="{{ $company->website }}" rel="nofollow noopener" target="_blank">{{ preg_replace('#^https?://#', '', rtrim($company->website, '/')) }}</a></p>@endif
 

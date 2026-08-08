@@ -131,6 +131,21 @@
              internship: "Internship", temporary: "Temporary" }[t] || t;
   }
 
+  // Public NGO/Gov/Education/International trust-badge metadata, keyed by org_type.
+  // Shared by the kit's inline badge renders (the DS cards carry their own copy).
+  window.KRAMA_ORG_BADGE = {
+    ngo:           { label: "NGO",           color: "#0e7490", bg: "rgba(14,116,144,.12)" },
+    government:    { label: "Government",    color: "#4338ca", bg: "rgba(67,56,202,.12)" },
+    education:     { label: "Education",     color: "#7c3aed", bg: "rgba(124,58,237,.12)" },
+    international: { label: "International", color: "#0f766e", bg: "rgba(15,118,110,.12)" },
+  };
+  // A company's badge type: its org_type, but ONLY when an admin has verified it AND it's a
+  // recognised non-commercial category. Plain companies (and unverified/pending orgs) → null.
+  function orgTypeOf(co) {
+    var t = co && co.org_type;
+    return (co && co.org_status === "verified" && window.KRAMA_ORG_BADGE[t]) ? t : null;
+  }
+
   function normaliseJob(j) {
     var co = (j.company && typeof j.company === "object") ? j.company : {};
     var companyName = co.name || (typeof j.company === "string" ? j.company : "");
@@ -146,6 +161,7 @@
       companyWebsite:  co.website  || "",
       companyAddress:  co.address  || "",
       isVerified:      !!co.is_verified,
+      orgType:         orgTypeOf(co),
       location:        locationName || (j.is_remote ? "Remote" : ""),
       salary:          fmtSalary(j),
       type:            fmtJobType(j.job_type),
@@ -178,6 +194,7 @@
       openJobs:      c.open_jobs_count || 0,
       followerCount: c.follower_count  || 0,
       verified:      !!c.is_verified,
+      orgType:       orgTypeOf(c),
       logo:      c.logo_url || (window.KRAMA_LOGOS || {})[c.name] || null,
     };
   }

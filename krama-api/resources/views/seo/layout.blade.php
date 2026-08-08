@@ -62,6 +62,11 @@
     .mt-lg { margin-top:24px; }
     .chips { display:flex; flex-wrap:wrap; gap:8px; margin:14px 0; }
     .chip { background:var(--teal-50); border:1px solid var(--teal-100); border-radius:999px; padding:5px 13px; font-size:13px; font-weight:600; color:var(--teal-700); }
+    .chip-org { display:inline-block; border-radius:999px; padding:5px 13px; font-size:13px; font-weight:700; }
+    .chip-org-ngo { background:rgba(14,116,144,.12); color:#0e7490; }
+    .chip-org-government { background:rgba(67,56,202,.12); color:#4338ca; }
+    .chip-org-education { background:rgba(124,58,237,.12); color:#7c3aed; }
+    .chip-org-international { background:rgba(15,118,110,.12); color:#0f766e; }
     .cta { display:inline-block; background:var(--teal); color:#fff; text-decoration:none; font-weight:700; padding:12px 22px; border-radius:10px; margin:20px 0 4px; }
     .cta:hover { background:var(--teal-700); }
     .content { font-size:15px; color:var(--body); }

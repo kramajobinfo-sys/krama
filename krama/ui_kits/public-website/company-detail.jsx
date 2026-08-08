@@ -153,6 +153,7 @@
     const description = c.description || "";
     const aboutImage = c.about_image_url || "";
     const verified = c.is_verified != null ? c.is_verified : !!summary.verified;
+    const orgMeta = (c.org_status === "verified" && (window.KRAMA_ORG_BADGE || {})[c.org_type]) ? window.KRAMA_ORG_BADGE[c.org_type] : null;
     const social = c.social_links || null;
     const gallery = Array.isArray(c.gallery) ? c.gallery : [];
     const awards = Array.isArray(c.awards) ? c.awards : [];
@@ -221,6 +222,7 @@
                 <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
                   <h1 style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: "var(--text-2xl)", color: "var(--text-strong)", margin: 0 }}>{name}</h1>
                   {verified && <Badge tone="success"><span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>{I("badge-check", 13)} Verified</span></Badge>}
+                  {orgMeta && <span title={"Verified " + orgMeta.label} style={{ display: "inline-flex", alignItems: "center", padding: "3px 10px", borderRadius: 999, fontSize: "var(--text-xs)", fontWeight: 700, background: orgMeta.bg, color: orgMeta.color }}>{orgMeta.label}</span>}
                 </div>
                 <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginTop: 6, display: "flex", gap: 16, flexWrap: "wrap" }}>
                   {industry && <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>{I("briefcase", 14)} {industry}</span>}

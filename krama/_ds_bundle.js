@@ -8,6 +8,16 @@ const __ds_scope = {};
 
 (__ds_ns.__errors = __ds_ns.__errors || []);
 
+// Verified non-commercial organization → small trust pill. Shared by CompanyCard + JobCard.
+// Returns null for unset/unknown types, so it's inert for kits that never pass orgType.
+function __ds_orgBadge(orgType, opts) {
+  var M = { ngo: ["NGO", "#0e7490", "rgba(14,116,144,.12)"], government: ["Government", "#4338ca", "rgba(67,56,202,.12)"], education: ["Education", "#7c3aed", "rgba(124,58,237,.12)"], international: ["International", "#0f766e", "rgba(15,118,110,.12)"] };
+  var m = orgType ? M[orgType] : null;
+  if (!m) return null;
+  var sm = opts && opts.small;
+  return React.createElement("span", { title: "Verified " + m[0], style: { display: "inline-flex", alignItems: "center", padding: sm ? "1px 7px" : "2px 8px", borderRadius: 999, fontSize: sm ? 10.5 : 11, fontWeight: 700, background: m[2], color: m[1], lineHeight: sm ? 1.7 : 1.6, whiteSpace: "nowrap" } }, m[0]);
+}
+
 // components/core/Avatar.jsx
 try { (() => {
 function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
@@ -513,6 +523,7 @@ function CompanyCard({
   location,
   openJobs = 0,
   verified = false,
+  orgType = null,
   onClick,
   style = {}
 }) {
@@ -570,7 +581,11 @@ function CompanyCard({
     strokeLinejoin: "round"
   }), /*#__PURE__*/React.createElement("path", {
     d: "M12 2 3.5 6v6c0 5 3.5 8 8.5 10 5-2 8.5-5 8.5-10V6L12 2Z"
-  })))), /*#__PURE__*/React.createElement("div", {
+  })))), orgType && /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 6
+    }
+  }, __ds_orgBadge(orgType)), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: "var(--text-sm)",
       color: "var(--text-muted)",
@@ -664,6 +679,7 @@ function JobCard({
   featured = false,
   postedAt,
   saved = false,
+  orgType = null,
   onSave,
   onClick,
   style = {}
@@ -712,11 +728,23 @@ function JobCard({
     }
   }, title), /*#__PURE__*/React.createElement("div", {
     style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 8,
+      marginTop: 2,
+      minWidth: 0
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
       fontSize: "var(--text-sm)",
       color: "var(--text-muted)",
-      marginTop: 2
+      whiteSpace: "nowrap",
+      overflow: "hidden",
+      textOverflow: "ellipsis"
     }
-  }, company)), /*#__PURE__*/React.createElement(__ds_scope.IconButton, {
+  }, company), __ds_orgBadge(orgType, {
+    small: true
+  }))), /*#__PURE__*/React.createElement(__ds_scope.IconButton, {
     size: "sm",
     "aria-label": saved ? "Saved" : "Save job",
     onClick: e => {

@@ -234,6 +234,7 @@
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6, color: "var(--text-muted)", fontSize: "var(--text-md)", flexWrap: "wrap" }}>
                       <span style={{ fontWeight: 600, color: "var(--text-body)" }}>{j.company}</span>
                       {j.isVerified && <span style={{ color: "var(--brand)", display: "inline-flex" }}>{I("badge-check", 16)}</span>}
+                      {(function () { var m = j.orgType && (window.KRAMA_ORG_BADGE || {})[j.orgType]; return m ? <span title={"Verified " + m.label} style={{ display: "inline-flex", alignItems: "center", padding: "2px 9px", borderRadius: 999, fontSize: "var(--text-xs)", fontWeight: 700, background: m.bg, color: m.color }}>{m.label}</span> : null; })()}
                       {j.location && <React.Fragment><span>·</span><span>{j.location}</span></React.Fragment>}
                     </div>
                   </div>

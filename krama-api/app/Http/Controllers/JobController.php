@@ -25,7 +25,7 @@ class JobController extends Controller
         // Expire overdue subscriptions (and close their now-lapsed jobs) before filtering.
         Subscription::expireOverdue();
 
-        $q = Job::with(['company:id,name,logo_url,is_verified', 'category:id,name,slug', 'location:id,name'])
+        $q = Job::with(['company:id,name,logo_url,is_verified,org_type,org_status', 'category:id,name,slug', 'location:id,name'])
             ->where('status', 'published')
             ->where(function ($outer) {
                 // Show jobs from companies with no subscription (free tier) or with at
@@ -85,7 +85,7 @@ class JobController extends Controller
         // No subscription gate here — a published job is always viewable via direct link.
         // The index() listing hides jobs from expired companies, but a direct URL should never 404.
         $job = Job::with([
-            'company:id,name,logo_url,website,industry,address,is_verified',
+            'company:id,name,logo_url,website,industry,address,is_verified,org_type,org_status',
             'category:id,name,slug',
             'location:id,name',
         ])->where('status', 'published')

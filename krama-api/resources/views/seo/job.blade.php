@@ -31,7 +31,11 @@
 <article class="card">
   <h1>{{ $job->title }}</h1>
   @if($company)
-    <p class="meta">at <a href="{{ url('/companies/' . $company->id) }}">{{ $company->name }}</a>@if($company->is_verified) · Verified employer @endif</p>
+    @php
+      $orgLabels = ['ngo' => 'NGO', 'government' => 'Government', 'education' => 'Education', 'international' => 'International'];
+      $orgLabel = ($company->org_status === 'verified' && isset($orgLabels[$company->org_type])) ? $orgLabels[$company->org_type] : null;
+    @endphp
+    <p class="meta">at <a href="{{ url('/companies/' . $company->id) }}">{{ $company->name }}</a>@if($company->is_verified) · Verified employer @endif @if($orgLabel)<span class="chip-org chip-org-{{ $company->org_type }}">{{ $orgLabel }}</span>@endif</p>
   @endif
 
   <div class="chips">

@@ -617,6 +617,7 @@
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <span style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "var(--text-lg)", color: "var(--text-strong)" }}>{c.name}</span>
               {c.verified ? <span style={{ color: "var(--brand)", display: "inline-flex" }} title="Verified">{I("badge-check", 16)}</span> : null}
+              {(function () { var m = c.orgType && (window.KRAMA_ORG_BADGE || {})[c.orgType]; return m ? <span title={"Verified " + m.label} style={{ display: "inline-flex", alignItems: "center", padding: "2px 9px", borderRadius: 999, fontSize: "var(--text-xs)", fontWeight: 700, background: m.bg, color: m.color }}>{m.label}</span> : null; })()}
             </div>
             <div style={{ display: "flex", gap: 18, flexWrap: "wrap", marginTop: 8 }}>
               {meta("briefcase", c.industry)}

@@ -4,13 +4,28 @@ import { Badge } from "../core/Badge.jsx";
 import { Avatar } from "../core/Avatar.jsx";
 import { IconButton } from "../core/IconButton.jsx";
 
+// Verified non-commercial organization types → a small trust pill shown next to the company.
+const ORG_BADGE = {
+  ngo:           { label: "NGO",           color: "#0e7490", bg: "rgba(14,116,144,.12)" },
+  government:    { label: "Government",    color: "#4338ca", bg: "rgba(67,56,202,.12)" },
+  education:     { label: "Education",     color: "#7c3aed", bg: "rgba(124,58,237,.12)" },
+  international: { label: "International", color: "#0f766e", bg: "rgba(15,118,110,.12)" },
+};
+function OrgBadge({ orgType }) {
+  const m = orgType ? ORG_BADGE[orgType] : null;
+  if (!m) return null;
+  return (
+    <span title={"Verified " + m.label} style={{ display: "inline-flex", alignItems: "center", padding: "1px 7px", borderRadius: 999, fontSize: 10.5, fontWeight: 700, background: m.bg, color: m.color, lineHeight: 1.7, whiteSpace: "nowrap" }}>{m.label}</span>
+  );
+}
+
 /**
  * Job listing card used across search results, featured grids, and dashboards.
  * Composes Card + Avatar + Badge.
  */
 export function JobCard({
   title, company, logo, location, salary, type, remote = false,
-  featured = false, postedAt, saved = false, onSave, onClick, style = {},
+  featured = false, postedAt, saved = false, orgType = null, onSave, onClick, style = {},
 }) {
   return (
     <Card interactive featured={featured} onClick={onClick} padding={20} style={style}>
@@ -24,7 +39,10 @@ export function JobCard({
                 color: "var(--text-strong)", letterSpacing: "var(--tracking-snug)",
                 whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
               }}>{title}</div>
-              <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginTop: 2 }}>{company}</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 2, minWidth: 0 }}>
+                <span style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{company}</span>
+                <OrgBadge orgType={orgType} />
+              </div>
             </div>
             <IconButton
               size="sm"
