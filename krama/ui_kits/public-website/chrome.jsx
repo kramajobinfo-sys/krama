@@ -108,7 +108,7 @@
     );
     const links = [
       { id: "home", label: "Home" },
-      { id: "jobs", label: "Find jobs" },
+      { id: "jobs", label: "Jobs" },
       { id: "companies", label: "Companies" },
       { id: "community", label: "Community" },
       { id: "employers", label: "Employers" },

@@ -253,7 +253,7 @@
       label: "Home"
     }, {
       id: "jobs",
-      label: "Find jobs"
+      label: "Jobs"
     }, {
       id: "companies",
       label: "Companies"
