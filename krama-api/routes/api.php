@@ -112,6 +112,8 @@ Route::middleware('auth:api')->group(function () {
     Route::post('companies',                    [CompanyController::class, 'store']);
     Route::put('companies/{id}',                [CompanyController::class, 'update']);
     Route::post('companies/{id}/logo',          [CompanyController::class, 'uploadLogo'])->middleware('throttle:10,1');
+    Route::post('companies/{id}/org-apply',      [CompanyController::class, 'orgApply'])->middleware('throttle:5,1');
+    Route::get('companies/{id}/org-document',    [CompanyController::class, 'orgDocument']);
     Route::post('companies/{id}/about-image',    [CompanyController::class, 'uploadAboutImage'])->middleware('throttle:10,1');
     Route::post('companies/{id}/cover-banner',   [CompanyController::class, 'uploadCoverBanner'])->middleware('throttle:10,1');
     Route::post('companies/{id}/gallery',        [CompanyController::class, 'uploadGalleryPhoto'])->middleware('throttle:20,1');

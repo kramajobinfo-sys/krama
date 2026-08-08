@@ -1031,6 +1031,12 @@
     });
     const [orgBusy, setOrgBusy] = React.useState(false);
     const setOrgField = (k, v) => setOrg(function (o) { return Object.assign({}, o, { [k]: v }); });
+    const openOrgDoc = () => {
+      if (!id) return;
+      adm.orgDocumentUrl(id)
+        .then(function (url) { window.open(url, "_blank", "noopener,noreferrer"); })
+        .catch(function (e) { flash(e.message || "Could not open the document.", true); });
+    };
 
     const [saving, setSaving] = React.useState(false);
     const [logoUploading, setLogoUploading] = React.useState(false);
@@ -1240,7 +1246,7 @@
                     ]} />
                     <div style={{ marginTop: 12 }}><Input label="Registration / MoU number" value={org.reg_no} onChange={(e) => setOrgField("reg_no", e.target.value)} placeholder="e.g. MoI #1234" /></div>
                     {org.doc_url
-                      ? <div style={{ marginTop: 10, fontSize: "var(--text-sm)" }}><a href={org.doc_url} target="_blank" rel="noopener noreferrer" style={{ color: "var(--text-brand)", fontWeight: 600 }}>{I("file-text", 13)} View submitted document</a></div>
+                      ? <div style={{ marginTop: 10, fontSize: "var(--text-sm)" }}><a href="#" onClick={(e) => { e.preventDefault(); openOrgDoc(); }} style={{ color: "var(--text-brand)", fontWeight: 600, cursor: "pointer" }}>{I("file-text", 13)} View submitted document</a></div>
                       : <div style={{ marginTop: 10, fontSize: "var(--text-xs)", color: "var(--text-faint)" }}>No proof document uploaded yet.</div>}
                     <div style={{ marginTop: 12 }}><Input label="Note (reason / reference)" value={org.note} onChange={(e) => setOrgField("note", e.target.value)} placeholder="e.g. checked against the NGO registry" /></div>
                     <div style={{ marginTop: 14, display: "flex", gap: 8, flexWrap: "wrap" }}>

@@ -15,6 +15,10 @@ class Company extends Model
         'telegram_chat_id', 'vat_tin', 'vat_legal_name', 'vat_address',
     ];
 
+    // org_doc_path is the raw on-disk filename of the proof document — never expose it;
+    // the document is reached only through the auth-gated org-document route.
+    protected $hidden = ['org_doc_path'];
+
     protected $casts = [
         'is_verified'   => 'boolean',
         // org_status / org_type are set only by the admin review endpoint (forceFill), never

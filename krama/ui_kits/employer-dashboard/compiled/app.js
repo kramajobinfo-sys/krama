@@ -4046,6 +4046,15 @@
     const [coverBannerUrl, setCoverBannerUrl] = React.useState("");
     const [coverUploading, setCoverUploading] = React.useState(false);
     const coverInputRef = React.useRef(null);
+    // Organization verification (free-plan eligibility)
+    const [orgApp, setOrgApp] = React.useState({
+      type: "ngo",
+      reg_no: "",
+      note: ""
+    });
+    const [orgFile, setOrgFile] = React.useState(null);
+    const [orgBusy, setOrgBusy] = React.useState(false);
+    const orgFileRef = React.useRef(null);
     React.useEffect(function () {
       if (company) {
         var sl = company.social_links || {};
@@ -4124,6 +4133,38 @@
       }).catch(function (e) {
         setSaving(false);
         flash(e && e.message || "Save failed.", true);
+      });
+    };
+    const submitOrgApplication = () => {
+      if (!orgFile) {
+        flash("Please attach a proof document (PDF, JPG or PNG).", true);
+        return;
+      }
+      setOrgBusy(true);
+      setErr("");
+      setMsg("");
+      emp.applyAsOrganization(company.id, orgApp.type, orgApp.reg_no, orgApp.note, orgFile).then(function (res) {
+        setOrgBusy(false);
+        setOrgFile(null);
+        if (orgFileRef.current) orgFileRef.current.value = "";
+        onSaved && onSaved(Object.assign({}, company, {
+          org_type: res.org_type,
+          org_status: res.org_status,
+          org_reg_no: res.org_reg_no,
+          org_note: res.org_note,
+          org_doc_url: res.org_doc_url
+        }));
+        flash(res.message || "Application submitted for review.");
+      }).catch(function (e) {
+        setOrgBusy(false);
+        flash(e && e.message || "Application failed.", true);
+      });
+    };
+    const openOrgDoc = () => {
+      emp.orgDocumentUrl(company.id).then(function (url) {
+        window.open(url, "_blank", "noopener,noreferrer");
+      }).catch(function (e) {
+        flash(e && e.message || "Could not open the document.", true);
       });
     };
     const handleLogoChange = e => {
@@ -4597,7 +4638,195 @@
       value: form.vat_address,
       onChange: e => set("vat_address", e.target.value),
       placeholder: "Registered address"
-    }))), /*#__PURE__*/React.createElement(RichEditor, {
+    }))), function () {
+      var st = company.org_status || "none";
+      var typeLabels = {
+        ngo: "NGO / non-profit",
+        government: "Government",
+        education: "Education",
+        international: "International organization"
+      };
+      var head = /*#__PURE__*/React.createElement("div", {
+        style: {
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          marginBottom: 4,
+          flexWrap: "wrap"
+        }
+      }, /*#__PURE__*/React.createElement("span", {
+        style: {
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 8,
+          fontSize: "var(--text-sm)",
+          fontWeight: 700,
+          color: "var(--text-strong)"
+        }
+      }, I("shield-check", 15), " Non-profit / organization"), st === "verified" && /*#__PURE__*/React.createElement(Badge, {
+        tone: "success"
+      }, /*#__PURE__*/React.createElement("span", {
+        style: {
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 4
+        }
+      }, I("badge-check", 12), " Verified ", typeLabels[company.org_type] || "organization")), st === "pending" && /*#__PURE__*/React.createElement(Badge, {
+        tone: "warning"
+      }, "Under review"), st === "rejected" && /*#__PURE__*/React.createElement(Badge, {
+        tone: "danger"
+      }, "Not approved"));
+      return /*#__PURE__*/React.createElement("div", {
+        style: {
+          marginTop: 4,
+          padding: "16px 18px",
+          borderRadius: "var(--radius-md)",
+          border: "1px solid var(--border)",
+          background: "var(--surface-sunken)"
+        }
+      }, head, st === "verified" ? /*#__PURE__*/React.createElement("div", {
+        style: {
+          fontSize: "var(--text-sm)",
+          color: "var(--text-muted)"
+        }
+      }, "Your organization is verified \u2014 you qualify for the ", /*#__PURE__*/React.createElement("strong", null, "free plan"), ". Thank you for the work you do.", company.org_doc_url && /*#__PURE__*/React.createElement("span", null, " \xB7 ", /*#__PURE__*/React.createElement("a", {
+        href: "#",
+        onClick: e => {
+          e.preventDefault();
+          openOrgDoc();
+        },
+        style: {
+          color: "var(--text-brand)",
+          fontWeight: 600,
+          cursor: "pointer"
+        }
+      }, "View submitted document"))) : st === "pending" ? /*#__PURE__*/React.createElement("div", {
+        style: {
+          fontSize: "var(--text-sm)",
+          color: "var(--text-muted)"
+        }
+      }, "We've received your application to be verified as a ", /*#__PURE__*/React.createElement("strong", null, typeLabels[company.org_type] || "organization"), ". Our team will review it shortly \u2014 you'll be notified once it's approved.", company.org_doc_url && /*#__PURE__*/React.createElement("span", null, " \xB7 ", /*#__PURE__*/React.createElement("a", {
+        href: "#",
+        onClick: e => {
+          e.preventDefault();
+          openOrgDoc();
+        },
+        style: {
+          color: "var(--text-brand)",
+          fontWeight: 600,
+          cursor: "pointer"
+        }
+      }, "View submitted document"))) : /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+        style: {
+          fontSize: "var(--text-xs)",
+          color: "var(--text-muted)",
+          marginBottom: 12
+        }
+      }, st === "rejected" ? /*#__PURE__*/React.createElement("span", null, "Your previous application wasn't approved", company.org_note ? /*#__PURE__*/React.createElement("span", null, " \u2014 ", /*#__PURE__*/React.createElement("em", null, "\u201C", company.org_note, "\u201D")) : null, ". You can submit again with clearer documentation below.") : /*#__PURE__*/React.createElement("span", null, "Registered NGOs, government bodies, schools and international organizations can post jobs for ", /*#__PURE__*/React.createElement("strong", null, "free"), ". Upload an official document (registration certificate, MoU, or letterhead) and we'll verify you.")), /*#__PURE__*/React.createElement("div", {
+        className: "krm-form-grid",
+        style: {
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: 16
+        }
+      }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+        style: {
+          fontSize: "var(--text-xs)",
+          fontWeight: 600,
+          color: "var(--text-muted)",
+          marginBottom: 6
+        }
+      }, "Organization type"), /*#__PURE__*/React.createElement("select", {
+        value: orgApp.type,
+        onChange: e => setOrgApp(Object.assign({}, orgApp, {
+          type: e.target.value
+        })),
+        style: {
+          width: "100%",
+          padding: "8px 12px",
+          borderRadius: "var(--radius-md)",
+          border: "1px solid var(--border)",
+          background: "var(--surface-input)",
+          color: "var(--text)",
+          fontSize: "var(--text-sm)"
+        }
+      }, /*#__PURE__*/React.createElement("option", {
+        value: "ngo"
+      }, "NGO / non-profit"), /*#__PURE__*/React.createElement("option", {
+        value: "government"
+      }, "Government"), /*#__PURE__*/React.createElement("option", {
+        value: "education"
+      }, "Education"), /*#__PURE__*/React.createElement("option", {
+        value: "international"
+      }, "International organization"))), /*#__PURE__*/React.createElement(Input, {
+        label: "Registration / MoU number",
+        value: orgApp.reg_no,
+        onChange: e => setOrgApp(Object.assign({}, orgApp, {
+          reg_no: e.target.value
+        })),
+        placeholder: "e.g. MoI #1234"
+      })), /*#__PURE__*/React.createElement("div", {
+        style: {
+          marginTop: 12
+        }
+      }, /*#__PURE__*/React.createElement(Input, {
+        label: "Note (optional)",
+        value: orgApp.note,
+        onChange: e => setOrgApp(Object.assign({}, orgApp, {
+          note: e.target.value
+        })),
+        placeholder: "Anything that helps us verify you faster"
+      })), /*#__PURE__*/React.createElement("div", {
+        style: {
+          marginTop: 12
+        }
+      }, /*#__PURE__*/React.createElement("div", {
+        style: {
+          fontSize: "var(--text-xs)",
+          fontWeight: 600,
+          color: "var(--text-muted)",
+          marginBottom: 6
+        }
+      }, "Proof document ", /*#__PURE__*/React.createElement("span", {
+        style: {
+          fontWeight: 400,
+          color: "var(--text-faint)"
+        }
+      }, "\u2014 PDF, JPG or PNG, max 10MB")), /*#__PURE__*/React.createElement("div", {
+        style: {
+          display: "flex",
+          gap: 10,
+          alignItems: "center",
+          flexWrap: "wrap"
+        }
+      }, /*#__PURE__*/React.createElement(Button, {
+        variant: "secondary",
+        size: "sm",
+        onClick: () => orgFileRef.current && orgFileRef.current.click()
+      }, I("upload", 14), " Choose file"), /*#__PURE__*/React.createElement("span", {
+        style: {
+          fontSize: "var(--text-sm)",
+          color: orgFile ? "var(--text)" : "var(--text-faint)"
+        }
+      }, orgFile ? orgFile.name : "No file selected"), /*#__PURE__*/React.createElement("input", {
+        ref: orgFileRef,
+        type: "file",
+        accept: ".pdf,image/*",
+        style: {
+          display: "none"
+        },
+        onChange: e => setOrgFile(e.target.files && e.target.files[0] || null)
+      }))), /*#__PURE__*/React.createElement("div", {
+        style: {
+          marginTop: 14
+        }
+      }, /*#__PURE__*/React.createElement(Button, {
+        variant: "primary",
+        size: "sm",
+        disabled: orgBusy,
+        onClick: submitOrgApplication
+      }, orgBusy ? "Submitting…" : st === "rejected" ? "Re-submit application" : "Apply for verification"))));
+    }(), /*#__PURE__*/React.createElement(RichEditor, {
       label: "About the company",
       rows: 5,
       value: form.description,

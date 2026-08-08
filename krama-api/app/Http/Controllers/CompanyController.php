@@ -582,6 +582,93 @@ class CompanyController extends Controller
         ]);
     }
 
+    // POST /api/companies/{id}/org-apply — employer applies to be recognised as a
+    // non-commercial organization (NGO / government / education / international) to
+    // qualify for the free plan. Uploads a proof document and lands in the admin queue
+    // as org_status='pending'. The employer can NEVER reach 'verified' from here — only
+    // the admin orgReview endpoint sets that (org_status is not $fillable), so this is a
+    // request, not a grant.
+    public function orgApply(Request $request, $id)
+    {
+        $user = $request->user();
+        $this->requirePermission('post_jobs');
+        $this->requireEmployerRole($user);
+
+        $company = $this->ownCompany($user, $id);
+
+        // Don't let a verified org re-open its own review (and drop the free plan back
+        // to pending). They can contact support if something genuinely changed.
+        if ($company->org_status === 'verified') {
+            return response()->json(['message' => 'This organization is already verified.'], 422);
+        }
+
+        $data = $request->validate([
+            'org_type'   => 'required|in:ngo,government,education,international',
+            'org_reg_no' => 'nullable|string|max:100',
+            'note'       => 'nullable|string|max:500',
+            'document'   => 'required|file|mimes:pdf,jpg,jpeg,png|max:10240',
+        ]);
+
+        // Store the proof under a private disk; only staff read it, via a signed
+        // employer/admin route — registration certificates and MoUs aren't public assets.
+        $file = $data['document'];
+        $ext  = strtolower($file->getClientOriginalExtension() ?: 'pdf');
+        if (! in_array($ext, ['pdf', 'jpg', 'jpeg', 'png'])) { $ext = 'pdf'; }
+        $name = 'org_' . $company->id . '_' . time() . '_' . bin2hex(random_bytes(6)) . '.' . $ext;
+        $file->storeAs('org_docs', $name, 'local');
+
+        $company->forceFill([
+            'org_type'   => $data['org_type'],
+            'org_status' => 'pending',
+            'org_reg_no' => $data['org_reg_no'] ?? $company->org_reg_no,
+            'org_doc_url' => url('api/companies/' . $company->id . '/org-document'),
+            'org_note'   => $data['note'] ?? null,
+            'org_verified_at' => null,
+        ])->save();
+        // Keep the stored filename out of $fillable-serialized output; track it separately.
+        $company->forceFill(['org_doc_path' => $name])->save();
+
+        \App\Models\Notification::recordAdmins(
+            'company_org_pending',
+            'Organization verification requested',
+            'Company “' . $company->name . '” applied as ' . $data['org_type'] . ' and is awaiting verification.'
+        );
+
+        return response()->json([
+            'message'    => 'Application received. Your organization status is now pending review.',
+            'org_type'   => $company->org_type,
+            'org_status' => $company->org_status,
+            'org_reg_no' => $company->org_reg_no,
+            'org_note'   => $company->org_note,
+            'org_doc_url' => $company->org_doc_url,
+        ]);
+    }
+
+    // GET /api/companies/{id}/org-document — stream the uploaded proof document to the
+    // company's own employer/recruiter or to an admin. Never public.
+    public function orgDocument(Request $request, $id)
+    {
+        $user    = $request->user();
+        $company = Company::findOrFail($id);
+
+        if ($user && ! $user->relationLoaded('role')) { $user->load('role.permissions'); }
+        $isAdmin = $user && $user->hasPermission('approve_companies');
+        $isOwner = $user && (
+            (int) $company->user_id === (int) $user->id
+            || ((int) ($user->company_id ?? 0) === (int) $company->id)
+        );
+        if (! $isAdmin && ! $isOwner) {
+            abort(403);
+        }
+
+        $path = $company->org_doc_path;
+        if (! $path || ! \Illuminate\Support\Facades\Storage::disk('local')->exists('org_docs/' . $path)) {
+            abort(404);
+        }
+
+        return response()->file(storage_path('app/org_docs/' . $path));
+    }
+
     // POST /api/admin/companies — admin creates a company shell (e.g. on an employer's
     // behalf). The owner (companies.user_id, required) defaults to the acting admin as a
     // placeholder; an employer is attached later via adminAddMember (the Access modal) as

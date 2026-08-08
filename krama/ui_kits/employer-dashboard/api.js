@@ -146,6 +146,24 @@
         .then(function (r) { return r.json().then(function (d) { if (!r.ok) throw new Error(d.message || "Upload failed"); return d.company || d; }); });
     },
 
+    // Organization verification (free-plan eligibility) — submit a proof document to be
+    // reviewed. Sets org_status='pending'; only an admin can move it to 'verified'.
+    applyAsOrganization: function (id, orgType, regNo, note, file) {
+      var token = getToken();
+      var fd = new FormData();
+      fd.append("org_type", orgType);
+      if (regNo) fd.append("org_reg_no", regNo);
+      if (note) fd.append("note", note);
+      fd.append("document", file);
+      return fetch(BASE + "/companies/" + id + "/org-apply", { method: "POST", headers: { Authorization: "Bearer " + token }, body: fd })
+        .then(function (r) { return r.json().then(function (d) { if (!r.ok) throw new Error(d.message || (d.errors && Object.values(d.errors)[0][0]) || "Application failed"); return d; }); });
+    },
+    orgDocumentUrl: function (id) {
+      return fetch(BASE + "/companies/" + id + "/org-document", { headers: { Authorization: "Bearer " + getToken() } })
+        .then(function (r) { if (!r.ok) throw new Error("Could not load the document"); return r.blob(); })
+        .then(function (b) { return URL.createObjectURL(b); });
+    },
+
     // Jobs
     fetchJobs: function () { return req("GET", "/employer/jobs?per_page=100"); },
     uploadJobImage: function (file) {

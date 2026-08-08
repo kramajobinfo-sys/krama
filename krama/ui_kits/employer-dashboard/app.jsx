@@ -1309,6 +1309,11 @@
     const [coverBannerUrl, setCoverBannerUrl] = React.useState("");
     const [coverUploading, setCoverUploading] = React.useState(false);
     const coverInputRef = React.useRef(null);
+    // Organization verification (free-plan eligibility)
+    const [orgApp, setOrgApp] = React.useState({ type: "ngo", reg_no: "", note: "" });
+    const [orgFile, setOrgFile] = React.useState(null);
+    const [orgBusy, setOrgBusy] = React.useState(false);
+    const orgFileRef = React.useRef(null);
 
     React.useEffect(function () {
       if (company) {
@@ -1335,6 +1340,23 @@
       emp.updateCompany(company.id, payload)
         .then(function (updated) { setSaving(false); flash("Profile saved."); onSaved && onSaved(updated); })
         .catch(function (e) { setSaving(false); flash((e && e.message) || "Save failed.", true); });
+    };
+
+    const submitOrgApplication = () => {
+      if (!orgFile) { flash("Please attach a proof document (PDF, JPG or PNG).", true); return; }
+      setOrgBusy(true); setErr(""); setMsg("");
+      emp.applyAsOrganization(company.id, orgApp.type, orgApp.reg_no, orgApp.note, orgFile)
+        .then(function (res) {
+          setOrgBusy(false); setOrgFile(null); if (orgFileRef.current) orgFileRef.current.value = "";
+          onSaved && onSaved(Object.assign({}, company, { org_type: res.org_type, org_status: res.org_status, org_reg_no: res.org_reg_no, org_note: res.org_note, org_doc_url: res.org_doc_url }));
+          flash(res.message || "Application submitted for review.");
+        })
+        .catch(function (e) { setOrgBusy(false); flash((e && e.message) || "Application failed.", true); });
+    };
+    const openOrgDoc = () => {
+      emp.orgDocumentUrl(company.id)
+        .then(function (url) { window.open(url, "_blank", "noopener,noreferrer"); })
+        .catch(function (e) { flash((e && e.message) || "Could not open the document.", true); });
     };
 
     const handleLogoChange = (e) => {
@@ -1500,6 +1522,70 @@
                   <Input label="Billing address (on invoice)" value={form.vat_address} onChange={(e) => set("vat_address", e.target.value)} placeholder="Registered address" />
                 </div>
               </div>
+
+              {/* Organization verification — opt-in path to the free plan for non-commercial orgs */}
+              {(function () {
+                var st = company.org_status || "none";
+                var typeLabels = { ngo: "NGO / non-profit", government: "Government", education: "Education", international: "International organization" };
+                var head = (
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-strong)" }}>{I("shield-check", 15)} Non-profit / organization</span>
+                    {st === "verified" && <Badge tone="success"><span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>{I("badge-check", 12)} Verified {typeLabels[company.org_type] || "organization"}</span></Badge>}
+                    {st === "pending" && <Badge tone="warning">Under review</Badge>}
+                    {st === "rejected" && <Badge tone="danger">Not approved</Badge>}
+                  </div>
+                );
+                return (
+                  <div style={{ marginTop: 4, padding: "16px 18px", borderRadius: "var(--radius-md)", border: "1px solid var(--border)", background: "var(--surface-sunken)" }}>
+                    {head}
+                    {st === "verified" ? (
+                      <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>
+                        Your organization is verified — you qualify for the <strong>free plan</strong>. Thank you for the work you do.
+                        {company.org_doc_url && <span> · <a href="#" onClick={(e) => { e.preventDefault(); openOrgDoc(); }} style={{ color: "var(--text-brand)", fontWeight: 600, cursor: "pointer" }}>View submitted document</a></span>}
+                      </div>
+                    ) : st === "pending" ? (
+                      <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>
+                        We've received your application to be verified as a <strong>{typeLabels[company.org_type] || "organization"}</strong>. Our team will review it shortly — you'll be notified once it's approved.
+                        {company.org_doc_url && <span> · <a href="#" onClick={(e) => { e.preventDefault(); openOrgDoc(); }} style={{ color: "var(--text-brand)", fontWeight: 600, cursor: "pointer" }}>View submitted document</a></span>}
+                      </div>
+                    ) : (
+                      <div>
+                        <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginBottom: 12 }}>
+                          {st === "rejected"
+                            ? <span>Your previous application wasn't approved{company.org_note ? <span> — <em>“{company.org_note}”</em></span> : null}. You can submit again with clearer documentation below.</span>
+                            : <span>Registered NGOs, government bodies, schools and international organizations can post jobs for <strong>free</strong>. Upload an official document (registration certificate, MoU, or letterhead) and we'll verify you.</span>}
+                        </div>
+                        <div className="krm-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                          <div>
+                            <div style={{ fontSize: "var(--text-xs)", fontWeight: 600, color: "var(--text-muted)", marginBottom: 6 }}>Organization type</div>
+                            <select value={orgApp.type} onChange={(e) => setOrgApp(Object.assign({}, orgApp, { type: e.target.value }))} style={{ width: "100%", padding: "8px 12px", borderRadius: "var(--radius-md)", border: "1px solid var(--border)", background: "var(--surface-input)", color: "var(--text)", fontSize: "var(--text-sm)" }}>
+                              <option value="ngo">NGO / non-profit</option>
+                              <option value="government">Government</option>
+                              <option value="education">Education</option>
+                              <option value="international">International organization</option>
+                            </select>
+                          </div>
+                          <Input label="Registration / MoU number" value={orgApp.reg_no} onChange={(e) => setOrgApp(Object.assign({}, orgApp, { reg_no: e.target.value }))} placeholder="e.g. MoI #1234" />
+                        </div>
+                        <div style={{ marginTop: 12 }}>
+                          <Input label="Note (optional)" value={orgApp.note} onChange={(e) => setOrgApp(Object.assign({}, orgApp, { note: e.target.value }))} placeholder="Anything that helps us verify you faster" />
+                        </div>
+                        <div style={{ marginTop: 12 }}>
+                          <div style={{ fontSize: "var(--text-xs)", fontWeight: 600, color: "var(--text-muted)", marginBottom: 6 }}>Proof document <span style={{ fontWeight: 400, color: "var(--text-faint)" }}>— PDF, JPG or PNG, max 10MB</span></div>
+                          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                            <Button variant="secondary" size="sm" onClick={() => orgFileRef.current && orgFileRef.current.click()}>{I("upload", 14)} Choose file</Button>
+                            <span style={{ fontSize: "var(--text-sm)", color: orgFile ? "var(--text)" : "var(--text-faint)" }}>{orgFile ? orgFile.name : "No file selected"}</span>
+                            <input ref={orgFileRef} type="file" accept=".pdf,image/*" style={{ display: "none" }} onChange={(e) => setOrgFile((e.target.files && e.target.files[0]) || null)} />
+                          </div>
+                        </div>
+                        <div style={{ marginTop: 14 }}>
+                          <Button variant="primary" size="sm" disabled={orgBusy} onClick={submitOrgApplication}>{orgBusy ? "Submitting…" : (st === "rejected" ? "Re-submit application" : "Apply for verification")}</Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
 
               <RichEditor label="About the company" rows={5} value={form.description} onChange={(v) => set("description", v)} placeholder="Tell candidates about your company, culture, and mission…" />
 

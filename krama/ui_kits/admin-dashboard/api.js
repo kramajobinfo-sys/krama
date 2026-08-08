@@ -259,6 +259,13 @@
     verifyCompany: function (id) { return req("PATCH", "/admin/companies/" + id + "/verify"); },
     // Organization verification (free-tier eligibility): classify + verify NGO/gov/education/international.
     orgReviewCompany: function (id, data) { return req("PATCH", "/admin/companies/" + id + "/org-review", data); },
+    // Fetch the private org proof document (auth-gated) as an object URL to open in a new tab —
+    // a plain <a href> can't carry the Bearer token, so we fetch the blob and window.open it.
+    orgDocumentUrl: function (id) {
+      return fetch(BASE + "/companies/" + id + "/org-document", { headers: { Authorization: "Bearer " + getToken() } })
+        .then(function (r) { if (!r.ok) throw new Error("Could not load the document (" + r.status + ")"); return r.blob(); })
+        .then(function (b) { return URL.createObjectURL(b); });
+    },
     // Admin creates a company shell (assign an employer to it later via addCompanyMember).
     createCompany: function (data) { return req("POST", "/admin/companies", data); },
     fetchCompanyDetail: function (id) { return req("GET", "/admin/companies/" + id); },
