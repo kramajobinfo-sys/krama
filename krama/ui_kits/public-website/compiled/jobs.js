@@ -1982,7 +1982,22 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         display: "inline-flex"
       },
       title: "Verified"
-    }, I("badge-check", 16)) : null), /*#__PURE__*/React.createElement("div", {
+    }, I("badge-check", 16)) : null, function () {
+      var m = c.orgType && (window.KRAMA_ORG_BADGE || {})[c.orgType];
+      return m ? /*#__PURE__*/React.createElement("span", {
+        title: "Verified " + m.label,
+        style: {
+          display: "inline-flex",
+          alignItems: "center",
+          padding: "2px 9px",
+          borderRadius: 999,
+          fontSize: "var(--text-xs)",
+          fontWeight: 700,
+          background: m.bg,
+          color: m.color
+        }
+      }, m.label) : null;
+    }()), /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
         gap: 18,

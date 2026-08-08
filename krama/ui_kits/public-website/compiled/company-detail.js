@@ -396,6 +396,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     const description = c.description || "";
     const aboutImage = c.about_image_url || "";
     const verified = c.is_verified != null ? c.is_verified : !!summary.verified;
+    const orgMeta = c.org_status === "verified" && (window.KRAMA_ORG_BADGE || {})[c.org_type] ? window.KRAMA_ORG_BADGE[c.org_type] : null;
     const social = c.social_links || null;
     const gallery = Array.isArray(c.gallery) ? c.gallery : [];
     const awards = Array.isArray(c.awards) ? c.awards : [];
@@ -579,7 +580,19 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         alignItems: "center",
         gap: 4
       }
-    }, I("badge-check", 13), " Verified"))), /*#__PURE__*/React.createElement("div", {
+    }, I("badge-check", 13), " Verified")), orgMeta && /*#__PURE__*/React.createElement("span", {
+      title: "Verified " + orgMeta.label,
+      style: {
+        display: "inline-flex",
+        alignItems: "center",
+        padding: "3px 10px",
+        borderRadius: 999,
+        fontSize: "var(--text-xs)",
+        fontWeight: 700,
+        background: orgMeta.bg,
+        color: orgMeta.color
+      }
+    }, orgMeta.label)), /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: "var(--text-sm)",
         color: "var(--text-muted)",

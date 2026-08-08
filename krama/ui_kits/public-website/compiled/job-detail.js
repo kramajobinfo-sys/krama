@@ -723,7 +723,22 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         color: "var(--brand)",
         display: "inline-flex"
       }
-    }, I("badge-check", 16)), j.location && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("span", null, "\xB7"), /*#__PURE__*/React.createElement("span", null, j.location)))), /*#__PURE__*/React.createElement("div", {
+    }, I("badge-check", 16)), function () {
+      var m = j.orgType && (window.KRAMA_ORG_BADGE || {})[j.orgType];
+      return m ? /*#__PURE__*/React.createElement("span", {
+        title: "Verified " + m.label,
+        style: {
+          display: "inline-flex",
+          alignItems: "center",
+          padding: "2px 9px",
+          borderRadius: 999,
+          fontSize: "var(--text-xs)",
+          fontWeight: 700,
+          background: m.bg,
+          color: m.color
+        }
+      }, m.label) : null;
+    }(), j.location && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("span", null, "\xB7"), /*#__PURE__*/React.createElement("span", null, j.location)))), /*#__PURE__*/React.createElement("div", {
       style: {
         flexShrink: 0
       }
