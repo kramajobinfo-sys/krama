@@ -23,12 +23,14 @@ class ReferralService
                 'amount_off'  => (float) $n('welcome_amount_off'),
                 'credits'     => (int) $n('welcome_credits'),
                 'free_days'   => (int) $n('welcome_free_days'),
+                'job_posts'   => (int) $n('welcome_job_posts'),
             ],
             'referrer'         => [
                 'percent_off' => (int) $n('referrer_percent_off'),
                 'amount_off'  => (float) $n('referrer_amount_off'),
                 'credits'     => (int) $n('referrer_credits'),
                 'free_days'   => (int) $n('referrer_free_days'),
+                'job_posts'   => (int) $n('referrer_job_posts'),
             ],
         ];
     }
@@ -60,7 +62,7 @@ class ReferralService
 
     private static function rewardIsEmpty(array $r): bool
     {
-        return empty($r['percent_off']) && empty($r['amount_off']) && empty($r['credits']) && empty($r['free_days']);
+        return empty($r['percent_off']) && empty($r['amount_off']) && empty($r['credits']) && empty($r['free_days']) && empty($r['job_posts']);
     }
 
     private static function makeCode(string $prefix): string
@@ -141,6 +143,7 @@ class ReferralService
             'amount_off'             => $reward['amount_off'] ?: null,
             'bonus_featured_credits' => $reward['credits'] ?: null,
             'bonus_free_days'        => $reward['free_days'] ?: null,
+            'bonus_job_posts'        => $reward['job_posts'] ?: null,
             'max_redemptions'        => 1,
             'expires_at'             => $expiryDays > 0 ? now()->addDays($expiryDays) : null,
             'is_active'              => true,

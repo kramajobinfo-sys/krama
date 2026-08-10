@@ -108,6 +108,7 @@ class CouponService
             'new_charge' => $newCharge,
             'credits'    => (int) $coupon->bonus_featured_credits,
             'free_days'  => (int) $coupon->bonus_free_days,
+            'job_posts'  => (int) $coupon->bonus_job_posts,
         ];
     }
 
@@ -122,7 +123,7 @@ class CouponService
         foreach ($coupons as $c) {
             $r = self::evaluate($c->code, $company, $plan, $plan->effective_price);
             if (! empty($r['ok'])) {
-                $score = $r['discount'] + $r['credits'] + $r['free_days'];
+                $score = $r['discount'] + $r['credits'] + $r['free_days'] + ($r['job_posts'] ?? 0);
                 if (! $best || $score > $best['_score']) {
                     $r['_score'] = $score;
                     $best = $r;
@@ -153,7 +154,7 @@ class CouponService
 
         if ($consumeNow) {
             Coupon::where('id', $coupon->id)->increment('redeemed_count');
-            self::grantBonuses($subscription, (int) $payment->coupon_credits, (int) $payment->coupon_free_days);
+            self::grantBonuses($subscription, (int) $payment->coupon_credits, (int) $payment->coupon_free_days, (int) $payment->coupon_job_posts);
             self::onConsumed($coupon, $company->id);
         }
     }
@@ -179,7 +180,7 @@ class CouponService
         if ($payment->subscription_id) {
             $sub = Subscription::find($payment->subscription_id);
             if ($sub) {
-                self::grantBonuses($sub, (int) $payment->coupon_credits, (int) $payment->coupon_free_days);
+                self::grantBonuses($sub, (int) $payment->coupon_credits, (int) $payment->coupon_free_days, (int) $payment->coupon_job_posts);
             }
         }
 
@@ -200,11 +201,14 @@ class CouponService
         }
     }
 
-    /** Add bonus featured credits and extend the renewal date by any free days. */
-    private static function grantBonuses(Subscription $sub, int $credits, int $freeDays): void
+    /** Add bonus featured credits + job-post slots and extend the renewal date by any free days. */
+    private static function grantBonuses(Subscription $sub, int $credits, int $freeDays, int $jobPosts = 0): void
     {
         if ($credits > 0) {
             Subscription::where('id', $sub->id)->increment('bonus_featured_credits', $credits);
+        }
+        if ($jobPosts > 0) {
+            Subscription::where('id', $sub->id)->increment('bonus_job_posts', $jobPosts);
         }
         if ($freeDays > 0 && $sub->renews_at) {
             Subscription::where('id', $sub->id)->update([

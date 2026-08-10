@@ -45,6 +45,7 @@ class CouponController extends Controller
             'new_charge' => $result['new_charge'],
             'credits'    => $result['credits'],
             'free_days'  => $result['free_days'],
+            'job_posts'  => $result['job_posts'],
         ]);
     }
 
@@ -69,6 +70,7 @@ class CouponController extends Controller
             'new_charge' => $r['new_charge'],
             'credits'    => $r['credits'],
             'free_days'  => $r['free_days'],
+            'job_posts'  => $r['job_posts'],
         ]);
     }
 
@@ -141,9 +143,10 @@ class CouponController extends Controller
 
         // Every coupon must grant something.
         $hasReward = ! empty($data['percent_off']) || ! empty($data['amount_off'])
-            || ! empty($data['bonus_featured_credits']) || ! empty($data['bonus_free_days']);
+            || ! empty($data['bonus_featured_credits']) || ! empty($data['bonus_free_days'])
+            || ! empty($data['bonus_job_posts']);
         if (! $hasReward) {
-            return response()->json(['message' => 'Set at least one reward: a percentage, a fixed amount, featured credits, or free days.'], 422);
+            return response()->json(['message' => 'Set at least one reward: a percentage, a fixed amount, featured credits, free days, or bonus job posts.'], 422);
         }
 
         // A single explicit code, or bulk-generate a batch of unique single-use codes.
@@ -251,6 +254,7 @@ class CouponController extends Controller
             'amount_currency'        => 'sometimes|string|max:8',
             'bonus_featured_credits' => 'sometimes|nullable|integer|min:0|max:1000',
             'bonus_free_days'        => 'sometimes|nullable|integer|min:0|max:3650',
+            'bonus_job_posts'        => 'sometimes|nullable|integer|min:0|max:1000',
             'plan_id'                => 'sometimes|nullable|exists:plans,id',
             'min_amount'             => 'sometimes|nullable|numeric|min:0',
             'max_redemptions'        => 'sometimes|nullable|integer|min:1',
@@ -263,10 +267,10 @@ class CouponController extends Controller
     // Blank reward fields come in as null; force at least one reward to be present.
     private function normaliseRewardFields(array $data, Request $request): array
     {
-        foreach (['percent_off', 'amount_off', 'bonus_featured_credits', 'bonus_free_days', 'min_amount', 'max_redemptions'] as $k) {
+        foreach (['percent_off', 'amount_off', 'bonus_featured_credits', 'bonus_free_days', 'bonus_job_posts', 'min_amount', 'max_redemptions'] as $k) {
             if (array_key_exists($k, $data) && ($data[$k] === '' || $data[$k] === 0 || $data[$k] === '0')) {
                 // treat 0 / empty as "not set" for the reward + limit fields
-                if (in_array($k, ['percent_off', 'amount_off', 'bonus_featured_credits', 'bonus_free_days'], true)) {
+                if (in_array($k, ['percent_off', 'amount_off', 'bonus_featured_credits', 'bonus_free_days', 'bonus_job_posts'], true)) {
                     $data[$k] = null;
                 }
             }

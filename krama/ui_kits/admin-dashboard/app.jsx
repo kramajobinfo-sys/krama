@@ -6345,11 +6345,13 @@
             {num("$ off first purchase", "welcome_amount_off")}
             {num("Bonus featured credits", "welcome_credits")}
             {num("Free plan days", "welcome_free_days")}
+            {num("Bonus job posts", "welcome_job_posts")}
             <div style={{ gridColumn: "1 / -1", fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-strong)", marginTop: 6 }}>Referrer (thank-you)</div>
             {num("% off next purchase", "referrer_percent_off")}
             {num("$ off next purchase", "referrer_amount_off")}
             {num("Bonus featured credits", "referrer_credits")}
             {num("Free plan days", "referrer_free_days")}
+            {num("Bonus job posts", "referrer_job_posts")}
             <div style={{ gridColumn: "1 / -1" }}>{num("Reward validity (days)", "expiry_days", "90")}</div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 18 }}>
@@ -6389,7 +6391,7 @@
     };
     React.useEffect(load, []);
 
-    const BLANK = { generate: "single", code: "", label: "", scope: "single_use", prefix: "", generate_count: 50, percent_off: "", amount_off: "", bonus_featured_credits: "", bonus_free_days: "", min_amount: "", max_redemptions: "", starts_at: "", expires_at: "", is_active: true };
+    const BLANK = { generate: "single", code: "", label: "", scope: "single_use", prefix: "", generate_count: 50, percent_off: "", amount_off: "", bonus_featured_credits: "", bonus_free_days: "", bonus_job_posts: "", min_amount: "", max_redemptions: "", starts_at: "", expires_at: "", is_active: true };
     const setF = function (k, v) { setModal(function (m) { var n = Object.assign({}, m); n[k] = v; return n; }); };
 
     const money = function (n) { return "$" + Number(n || 0).toFixed(2); };
@@ -6399,6 +6401,7 @@
       if (c.amount_off) parts.push(money(c.amount_off) + " off");
       if (c.bonus_featured_credits) parts.push("+" + c.bonus_featured_credits + " credits");
       if (c.bonus_free_days) parts.push("+" + c.bonus_free_days + " days");
+      if (c.bonus_job_posts) parts.push("+" + c.bonus_job_posts + " job posts");
       return parts.join(" · ") || "—";
     };
     const fmtDate = function (s) { if (!s) return "—"; try { return new Date(s).toLocaleDateString(); } catch (e) { return s; } };
@@ -6409,7 +6412,7 @@
       setModal({
         id: c.id, generate: "single", code: c.code, label: c.label || "", scope: c.scope,
         percent_off: c.percent_off || "", amount_off: c.amount_off || "", bonus_featured_credits: c.bonus_featured_credits || "",
-        bonus_free_days: c.bonus_free_days || "", min_amount: c.min_amount || "", max_redemptions: c.max_redemptions || "",
+        bonus_free_days: c.bonus_free_days || "", bonus_job_posts: c.bonus_job_posts || "", min_amount: c.min_amount || "", max_redemptions: c.max_redemptions || "",
         starts_at: c.starts_at ? String(c.starts_at).slice(0, 10) : "", expires_at: c.expires_at ? String(c.expires_at).slice(0, 10) : "",
         is_active: !!c.is_active,
       });
@@ -6423,7 +6426,7 @@
         label: m.label || null,
         scope: bulk ? "single_use" : m.scope,
         percent_off: num(m.percent_off), amount_off: num(m.amount_off),
-        bonus_featured_credits: num(m.bonus_featured_credits), bonus_free_days: num(m.bonus_free_days),
+        bonus_featured_credits: num(m.bonus_featured_credits), bonus_free_days: num(m.bonus_free_days), bonus_job_posts: num(m.bonus_job_posts),
         min_amount: num(m.min_amount), max_redemptions: num(m.max_redemptions),
         starts_at: m.starts_at || null,
         expires_at: m.expires_at ? (m.expires_at + " 23:59:59") : null,
@@ -6544,6 +6547,7 @@
                 <Input label="Fixed amount off ($)" value={String(modal.amount_off)} onChange={(e) => setF("amount_off", e.target.value)} placeholder="e.g. 10" />
                 <Input label="Bonus featured credits" value={String(modal.bonus_featured_credits)} onChange={(e) => setF("bonus_featured_credits", e.target.value)} placeholder="e.g. 3" />
                 <Input label="Free plan days" value={String(modal.bonus_free_days)} onChange={(e) => setF("bonus_free_days", e.target.value)} placeholder="e.g. 30" />
+                <Input label="Bonus job posts" value={String(modal.bonus_job_posts)} onChange={(e) => setF("bonus_job_posts", e.target.value)} placeholder="e.g. 5" />
                 <Input label="Minimum spend ($, optional)" value={String(modal.min_amount)} onChange={(e) => setF("min_amount", e.target.value)} placeholder="e.g. 15" />
                 {(modal.generate !== "bulk" && modal.scope === "per_employer") && (
                   <Input label="Max total redemptions (optional)" value={String(modal.max_redemptions)} onChange={(e) => setF("max_redemptions", e.target.value)} placeholder="blank = unlimited" />

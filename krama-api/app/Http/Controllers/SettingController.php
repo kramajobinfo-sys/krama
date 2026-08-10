@@ -54,10 +54,12 @@ class SettingController extends Controller
             'welcome_amount_off'   => 'nullable|numeric|min:0',
             'welcome_credits'      => 'nullable|integer|min:0|max:1000',
             'welcome_free_days'    => 'nullable|integer|min:0|max:3650',
+            'welcome_job_posts'    => 'nullable|integer|min:0|max:1000',
             'referrer_percent_off' => 'nullable|integer|min:0|max:100',
             'referrer_amount_off'  => 'nullable|numeric|min:0',
             'referrer_credits'     => 'nullable|integer|min:0|max:1000',
             'referrer_free_days'   => 'nullable|integer|min:0|max:3650',
+            'referrer_job_posts'   => 'nullable|integer|min:0|max:1000',
         ],
         'payment' => [
             'khqr_enabled'      => 'boolean',

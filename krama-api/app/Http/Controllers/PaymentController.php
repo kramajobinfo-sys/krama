@@ -60,6 +60,9 @@ class PaymentController extends Controller
         if ($subscription) {
             $jobLimit = $subscription->job_post_limit
                 ?? ($subscription->plan ? $subscription->plan->job_post_limit : null);
+            if ($jobLimit !== null) {
+                $jobLimit += (int) $subscription->bonus_job_posts; // coupon/referral bonus slots
+            }
         }
 
         // Count only published jobs under the current subscription — per-subscription quota
@@ -91,6 +94,9 @@ class PaymentController extends Controller
             ->get()
             ->map(function ($s) use ($company) {
                 $limit = $s->job_post_limit ?? ($s->plan ? $s->plan->job_post_limit : null);
+                if ($limit !== null) {
+                    $limit += (int) $s->bonus_job_posts; // coupon/referral bonus slots
+                }
                 $used  = \App\Models\Job::where('company_id', $company->id)
                     ->where('subscription_id', $s->id)
                     ->where('status', 'published')
@@ -278,6 +284,7 @@ class PaymentController extends Controller
                 'coupon_discount'     => $couponResult ? $couponResult['discount'] : 0,
                 'coupon_credits'      => $couponResult ? $couponResult['credits'] : 0,
                 'coupon_free_days'    => $couponResult ? $couponResult['free_days'] : 0,
+                'coupon_job_posts'    => $couponResult ? $couponResult['job_posts'] : 0,
                 'created_at'      => now(),
             ]);
 

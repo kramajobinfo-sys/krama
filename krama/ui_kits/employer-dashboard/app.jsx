@@ -2440,6 +2440,7 @@
                         <strong style={{ color: "var(--success, #047857)" }}>{couponResult.code}</strong> applied — you save ${couponResult.discount}
                         {couponResult.credits ? <span> · +{couponResult.credits} featured credit{couponResult.credits !== 1 ? "s" : ""}</span> : null}
                         {couponResult.free_days ? <span> · +{couponResult.free_days} free day{couponResult.free_days !== 1 ? "s" : ""}</span> : null}
+                        {couponResult.job_posts ? <span> · +{couponResult.job_posts} job post{couponResult.job_posts !== 1 ? "s" : ""}</span> : null}
                       </div>
                       <button onClick={removeCoupon} style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--text-muted)", fontSize: "var(--text-xs)", fontWeight: 700, flexShrink: 0 }}>Remove</button>
                     </div>
@@ -2568,6 +2569,7 @@
       if (r.amount_off) p.push("$" + r.amount_off + " off");
       if (r.credits) p.push(r.credits + " featured credit" + (r.credits !== 1 ? "s" : ""));
       if (r.free_days) p.push(r.free_days + " free days");
+      if (r.job_posts) p.push(r.job_posts + " job post" + (r.job_posts !== 1 ? "s" : ""));
       return p.join(" + ");
     };
     const copy = function () {

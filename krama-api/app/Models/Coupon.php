@@ -10,7 +10,7 @@ class Coupon extends Model
 
     protected $fillable = [
         'code', 'label', 'kind', 'scope',
-        'percent_off', 'amount_off', 'amount_currency', 'bonus_featured_credits', 'bonus_free_days',
+        'percent_off', 'amount_off', 'amount_currency', 'bonus_featured_credits', 'bonus_free_days', 'bonus_job_posts',
         'plan_id', 'min_amount', 'max_redemptions', 'redeemed_count',
         'starts_at', 'expires_at', 'is_active', 'created_by', 'owner_company_id',
     ];
@@ -20,6 +20,7 @@ class Coupon extends Model
         'amount_off'             => 'float',
         'bonus_featured_credits' => 'integer',
         'bonus_free_days'        => 'integer',
+        'bonus_job_posts'        => 'integer',
         'plan_id'                => 'integer',
         'min_amount'             => 'float',
         'max_redemptions'        => 'integer',

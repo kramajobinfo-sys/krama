@@ -1108,6 +1108,7 @@ class JobController extends Controller
 
         $limit = $sub->job_post_limit ?? ($sub->plan ? $sub->plan->job_post_limit : null);
         if ($limit !== null) {
+            $limit += (int) $sub->bonus_job_posts; // coupon/referral bonus slots on top of the plan quota
             $used = Job::where('company_id', $company->id)
                 ->where('subscription_id', $sub->id)
                 ->where('status', 'published')
@@ -1170,8 +1171,12 @@ class JobController extends Controller
 
         // Publish under the first (cheapest/free) subscription that still has an open slot.
         foreach ($subscriptions as $sub) {
-            // Subscription-level override takes priority over plan's default limit
+            // Subscription-level override takes priority over plan's default limit,
+            // plus any coupon/referral bonus job-post slots granted to this subscription.
             $limit = $sub->job_post_limit ?? ($sub->plan ? $sub->plan->job_post_limit : null);
+            if ($limit !== null) {
+                $limit += (int) $sub->bonus_job_posts;
+            }
 
             // Unlimited — allow
             if ($limit === null) {
