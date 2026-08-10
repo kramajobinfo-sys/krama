@@ -102,7 +102,7 @@
   }
 
   function fmtSalary(job) {
-    if (!job.salary_min && !job.salary_max) return null;
+    if (!job.salary_min && !job.salary_max) return "Negotiable";
     var sym = job.salary_currency === "USD" ? "$" : job.salary_currency + " ";
     var per = { hour: "/hr", day: "/day", month: "/mo", year: "/yr" }[job.salary_period] || "/mo";
     function fmt(n) { return n ? Number(n).toLocaleString() : null; }

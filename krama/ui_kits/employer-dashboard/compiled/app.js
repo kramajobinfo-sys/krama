@@ -2586,7 +2586,7 @@
       return ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][d.getMonth()] + " " + d.getDate() + ", " + d.getFullYear();
     };
     const fmtSalary = j => {
-      if (!j.salary_min && !j.salary_max) return "—";
+      if (!j.salary_min && !j.salary_max) return "Negotiable";
       var cur = j.salary_currency || "USD";
       var per = j.salary_period || "month";
       var range = j.salary_min && j.salary_max ? j.salary_min + " – " + j.salary_max : j.salary_min || j.salary_max;

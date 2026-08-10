@@ -803,7 +803,7 @@
     if (!job) return null;
     const JTL = { full_time: "Full-time", part_time: "Part-time", contract: "Contract", freelance: "Freelance", internship: "Internship" };
     const fmtDate = (iso) => { if (!iso) return "—"; var d = new Date(iso); return ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][d.getMonth()] + " " + d.getDate() + ", " + d.getFullYear(); };
-    const fmtSalary = (j) => { if (!j.salary_min && !j.salary_max) return "—"; var cur = j.salary_currency || "USD"; var per = j.salary_period || "month"; var range = j.salary_min && j.salary_max ? j.salary_min + " – " + j.salary_max : (j.salary_min || j.salary_max); return cur + " " + range + " / " + per; };
+    const fmtSalary = (j) => { if (!j.salary_min && !j.salary_max) return "Negotiable"; var cur = j.salary_currency || "USD"; var per = j.salary_period || "month"; var range = j.salary_min && j.salary_max ? j.salary_min + " – " + j.salary_max : (j.salary_min || j.salary_max); return cur + " " + range + " / " + per; };
     const Row = ({ label, value }) => value ? (<div style={{ display: "flex", gap: 8, marginBottom: 10 }}><span style={{ minWidth: 130, fontSize: "var(--text-sm)", color: "var(--text-muted)", fontWeight: 600 }}>{label}</span><span style={{ fontSize: "var(--text-sm)", color: "var(--text-body)" }}>{value}</span></div>) : null;
     const Section = ({ title, text }) => text ? (<div style={{ marginTop: 18 }}><div style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-strong)", marginBottom: 6 }}>{title}</div><div className="krama-rich-body" style={{ fontSize: "var(--text-sm)", color: "var(--text-body)", lineHeight: 1.65 }} dangerouslySetInnerHTML={{ __html: text }} /></div>) : null;
     return (
