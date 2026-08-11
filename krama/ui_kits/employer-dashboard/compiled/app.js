@@ -4064,12 +4064,16 @@
           industry: company.industry || "",
           website: company.website || "",
           address: company.address || "",
+          phone: company.phone || "",
+          contact_name: company.contact_name || "",
+          contact_email: company.contact_email || "",
           description: company.description || "",
           logo_url: company.logo_url || "",
           facebook_url: sl.facebook || "",
           linkedin_url: sl.linkedin || "",
           twitter_url: sl.twitter || "",
           instagram_url: sl.instagram || "",
+          telegram_url: sl.telegram || "",
           company_size: company.company_size || "",
           culture_values: company.culture_values || "",
           benefits_tags: Array.isArray(company.benefits_tags) ? company.benefits_tags : [],
@@ -4112,12 +4116,16 @@
         industry: form.industry,
         website: form.website,
         address: form.address,
+        phone: form.phone || null,
+        contact_name: form.contact_name || null,
+        contact_email: form.contact_email || null,
         description: form.description,
         social_links: {
           facebook: form.facebook_url,
           linkedin: form.linkedin_url,
           twitter: form.twitter_url,
-          instagram: form.instagram_url
+          instagram: form.instagram_url,
+          telegram: form.telegram_url
         },
         company_size: form.company_size || null,
         culture_values: form.culture_values || null,
@@ -4514,7 +4522,22 @@
         justifyContent: "center",
         textDecoration: "none"
       }
-    }, I("instagram", 15))))), err && /*#__PURE__*/React.createElement("div", {
+    }, I("instagram", 15)), form.telegram_url && /*#__PURE__*/React.createElement("a", {
+      href: form.telegram_url,
+      target: "_blank",
+      rel: "noopener",
+      style: {
+        width: 32,
+        height: 32,
+        borderRadius: "50%",
+        background: "#229ED9",
+        color: "#fff",
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        textDecoration: "none"
+      }
+    }, I("send", 15))))), err && /*#__PURE__*/React.createElement("div", {
       style: {
         padding: "10px 14px",
         background: "var(--danger-subtle)",
@@ -4587,6 +4610,32 @@
       onChange: e => set("address", e.target.value),
       iconLeft: I("map-pin", 16)
     }), /*#__PURE__*/React.createElement("div", {
+      className: "krm-form-grid",
+      style: {
+        display: "grid",
+        gridTemplateColumns: "1fr 1fr 1fr",
+        gap: 16
+      }
+    }, /*#__PURE__*/React.createElement(Input, {
+      label: "Phone",
+      value: form.phone,
+      onChange: e => set("phone", e.target.value),
+      iconLeft: I("phone", 16),
+      placeholder: "+855 \u2026"
+    }), /*#__PURE__*/React.createElement(Input, {
+      label: "Contact person",
+      value: form.contact_name,
+      onChange: e => set("contact_name", e.target.value),
+      iconLeft: I("user", 16),
+      placeholder: "Full name"
+    }), /*#__PURE__*/React.createElement(Input, {
+      label: "Contact email",
+      type: "email",
+      value: form.contact_email,
+      onChange: e => set("contact_email", e.target.value),
+      iconLeft: I("mail", 16),
+      placeholder: "hr@company.com"
+    })), /*#__PURE__*/React.createElement("div", {
       style: {
         marginTop: 4,
         padding: "16px 18px",
@@ -4988,6 +5037,12 @@
       onChange: e => set("instagram_url", e.target.value),
       iconLeft: I("instagram", 16),
       placeholder: "https://instagram.com/yourpage"
+    }), /*#__PURE__*/React.createElement(Input, {
+      label: "Telegram",
+      value: form.telegram_url,
+      onChange: e => set("telegram_url", e.target.value),
+      iconLeft: I("send", 16),
+      placeholder: "https://t.me/yourchannel"
     }))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: "var(--text-sm)",

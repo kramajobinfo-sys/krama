@@ -269,6 +269,10 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     key: "instagram",
     icon: "instagram",
     bg: "linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)"
+  }, {
+    key: "telegram",
+    icon: "send",
+    bg: "#229ED9"
   }];
   function SocialIcons({
     links
@@ -393,6 +397,9 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     const location = c.location && c.location.name || summary.location || "";
     const website = c.website || "";
     const address = c.address || "";
+    const phone = c.phone || "";
+    const contactName = c.contact_name || "";
+    const contactEmail = c.contact_email || "";
     const description = c.description || "";
     const aboutImage = c.about_image_url || "";
     const verified = c.is_verified != null ? c.is_verified : !!summary.verified;
@@ -870,6 +877,31 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
           wordBreak: "break-all"
         }
       }, website.replace(/^https?:\/\//, ""))
+    }), phone && /*#__PURE__*/React.createElement(DetailRow, {
+      icon: "phone",
+      label: TR("Phone"),
+      value: /*#__PURE__*/React.createElement("a", {
+        href: "tel:" + phone.replace(/\s+/g, ""),
+        style: {
+          color: "var(--text-brand)",
+          textDecoration: "none"
+        }
+      }, phone)
+    }), contactName && /*#__PURE__*/React.createElement(DetailRow, {
+      icon: "user",
+      label: TR("Contact"),
+      value: contactName
+    }), contactEmail && /*#__PURE__*/React.createElement(DetailRow, {
+      icon: "mail",
+      label: TR("Email"),
+      value: /*#__PURE__*/React.createElement("a", {
+        href: "mailto:" + contactEmail,
+        style: {
+          color: "var(--text-brand)",
+          textDecoration: "none",
+          wordBreak: "break-all"
+        }
+      }, contactEmail)
     })), social && SOCIALS.some(s => social[s.key]) && /*#__PURE__*/React.createElement("div", {
       style: {
         marginTop: 18,

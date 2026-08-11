@@ -1033,8 +1033,9 @@
       name: (company && company.name) || "", registration_no: (company && company.registration_no) || "",
       industry: (company && company.industry) || "", website: (company && company.website) || "",
       address: (company && company.address) || "", description: (company && company.description) || "",
+      phone: (company && company.phone) || "", contact_name: (company && company.contact_name) || "", contact_email: (company && company.contact_email) || "",
       logo_url: (company && company.logo_url) || "",
-      facebook_url: sl0.facebook || "", linkedin_url: sl0.linkedin || "", twitter_url: sl0.twitter || "", instagram_url: sl0.instagram || "",
+      facebook_url: sl0.facebook || "", linkedin_url: sl0.linkedin || "", twitter_url: sl0.twitter || "", instagram_url: sl0.instagram || "", telegram_url: sl0.telegram || "",
       company_size: (company && company.company_size) || "", culture_values: (company && company.culture_values) || "",
       benefits_tags: Array.isArray(company && company.benefits_tags) ? company.benefits_tags : [],
       vat_tin: (company && company.vat_tin) || "", vat_legal_name: (company && company.vat_legal_name) || "", vat_address: (company && company.vat_address) || "",
@@ -1101,7 +1102,8 @@
       var payload = {
         name: form.name.trim(), registration_no: form.registration_no, industry: form.industry,
         website: normalizeWebsite(form.website), address: form.address, description: form.description,
-        social_links: { facebook: form.facebook_url, linkedin: form.linkedin_url, twitter: form.twitter_url, instagram: form.instagram_url },
+        phone: form.phone || null, contact_name: form.contact_name || null, contact_email: form.contact_email || null,
+        social_links: { facebook: form.facebook_url, linkedin: form.linkedin_url, twitter: form.twitter_url, instagram: form.instagram_url, telegram: form.telegram_url },
         company_size: form.company_size || null, culture_values: form.culture_values || null,
         benefits_tags: form.benefits_tags && form.benefits_tags.length ? form.benefits_tags : null,
         vat_tin: form.vat_tin || null, vat_legal_name: form.vat_legal_name || null, vat_address: form.vat_address || null,
@@ -1245,6 +1247,9 @@
                 <Input label="Industry" value={form.industry} onChange={(e) => set("industry", e.target.value)} placeholder="e.g. Financial services" />
                 <Input label="Website" value={form.website} onChange={(e) => set("website", e.target.value)} placeholder="example.com" iconLeft={I("globe", 16)} />
                 <Input label="Address" value={form.address} onChange={(e) => set("address", e.target.value)} iconLeft={I("map-pin", 16)} />
+                <Input label="Phone" value={form.phone} onChange={(e) => set("phone", e.target.value)} iconLeft={I("phone", 16)} placeholder="+855 …" />
+                <Input label="Contact person" value={form.contact_name} onChange={(e) => set("contact_name", e.target.value)} iconLeft={I("user", 16)} placeholder="Full name" />
+                <Input label="Contact email" value={form.contact_email} onChange={(e) => set("contact_email", e.target.value)} iconLeft={I("mail", 16)} placeholder="hr@company.com" />
                 <Input label="Registration no." value={form.registration_no} onChange={(e) => set("registration_no", e.target.value)} />
                 {!id && <Select label="Status" value={form.status} onChange={(e) => set("status", e.target.value)} options={[{ value: "approved", label: "Approved (visible in the public directory)" }, { value: "pending", label: "Pending (hidden until ready)" }]} />}
 
@@ -1324,6 +1329,7 @@
                     <Input label="LinkedIn" value={form.linkedin_url} onChange={(e) => set("linkedin_url", e.target.value)} iconLeft={I("linkedin", 16)} placeholder="https://linkedin.com/company/yourpage" />
                     <Input label="Twitter / X" value={form.twitter_url} onChange={(e) => set("twitter_url", e.target.value)} iconLeft={I("twitter", 16)} placeholder="https://x.com/yourhandle" />
                     <Input label="Instagram" value={form.instagram_url} onChange={(e) => set("instagram_url", e.target.value)} iconLeft={I("instagram", 16)} placeholder="https://instagram.com/yourpage" />
+                    <Input label="Telegram" value={form.telegram_url} onChange={(e) => set("telegram_url", e.target.value)} iconLeft={I("send", 16)} placeholder="https://t.me/yourchannel" />
                   </div>
                 </div>
 

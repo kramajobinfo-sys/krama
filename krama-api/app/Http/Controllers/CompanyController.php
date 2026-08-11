@@ -93,6 +93,9 @@ class CompanyController extends Controller
             'industry'        => 'nullable|string|max:120',
             'website'         => ['nullable', 'url', 'max:190', 'regex:/^https?:\/\//'],
             'address'         => 'nullable|string|max:255',
+            'phone'           => 'nullable|string|max:40',
+            'contact_name'    => 'nullable|string|max:120',
+            'contact_email'   => 'nullable|email|max:190',
             'location_id'     => 'nullable|exists:locations,id',
             'logo_url'        => ['nullable', 'url', 'max:255', 'regex:/^https?:\/\//'],
             'description'     => 'nullable|string|max:10000',
@@ -143,6 +146,9 @@ class CompanyController extends Controller
             'industry'        => 'nullable|string|max:120',
             'website'         => ['nullable', 'url', 'max:190', 'regex:/^https?:\/\//'],
             'address'         => 'nullable|string|max:255',
+            'phone'           => 'nullable|string|max:40',
+            'contact_name'    => 'nullable|string|max:120',
+            'contact_email'   => 'nullable|email|max:190',
             'location_id'     => 'nullable|exists:locations,id',
             'logo_url'        => ['nullable', 'url', 'max:255', 'regex:/^https?:\/\//'],
             'description'       => 'nullable|string|max:10000',
@@ -172,7 +178,7 @@ class CompanyController extends Controller
         // Sanitize social links — keep only known platforms with non-empty values.
         if ($request->has('social_links')) {
             $links = [];
-            foreach (['facebook', 'linkedin', 'twitter', 'instagram'] as $k) {
+            foreach (['facebook', 'linkedin', 'twitter', 'instagram', 'telegram'] as $k) {
                 $v = trim((string) $request->input("social_links.$k", ''));
                 if ($v !== '') { $links[$k] = mb_substr($v, 0, 255); }
             }
@@ -736,6 +742,9 @@ class CompanyController extends Controller
             'industry'        => 'nullable|string|max:120',
             'website'         => ['nullable', 'url', 'max:190', 'regex:/^https?:\/\//'],
             'address'         => 'nullable|string|max:255',
+            'phone'           => 'nullable|string|max:40',
+            'contact_name'    => 'nullable|string|max:120',
+            'contact_email'   => 'nullable|email|max:190',
             'location_id'     => 'nullable|exists:locations,id',
             'logo_url'        => ['nullable', 'url', 'max:255', 'regex:/^https?:\/\//'],
             'description'       => 'nullable|string|max:10000',
@@ -774,7 +783,7 @@ class CompanyController extends Controller
         // Sanitize social links the same way as update() — keep only known platforms.
         if ($request->has('social_links')) {
             $links = [];
-            foreach (['facebook', 'linkedin', 'twitter', 'instagram'] as $k) {
+            foreach (['facebook', 'linkedin', 'twitter', 'instagram', 'telegram'] as $k) {
                 $v = trim((string) $request->input("social_links.$k", ''));
                 if ($v !== '') { $links[$k] = mb_substr($v, 0, 255); }
             }
@@ -806,6 +815,9 @@ class CompanyController extends Controller
             'industry'        => 'nullable|string|max:120',
             'website'         => ['nullable', 'url', 'max:190', 'regex:/^https?:\/\//'],
             'address'         => 'nullable|string|max:255',
+            'phone'           => 'nullable|string|max:40',
+            'contact_name'    => 'nullable|string|max:120',
+            'contact_email'   => 'nullable|email|max:190',
             'location_id'     => 'nullable|exists:locations,id',
             'logo_url'        => ['nullable', 'url', 'max:255', 'regex:/^https?:\/\//'],
             'description'       => 'nullable|string|max:10000',
@@ -830,7 +842,7 @@ class CompanyController extends Controller
         $company->fill($data);
         if ($request->has('social_links')) {
             $links = [];
-            foreach (['facebook', 'linkedin', 'twitter', 'instagram'] as $k) {
+            foreach (['facebook', 'linkedin', 'twitter', 'instagram', 'telegram'] as $k) {
                 $v = trim((string) $request->input("social_links.$k", ''));
                 if ($v !== '') { $links[$k] = mb_substr($v, 0, 255); }
             }

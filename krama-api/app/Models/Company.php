@@ -10,7 +10,7 @@ class Company extends Model
 
     protected $fillable = [
         'user_id', 'name', 'registration_no', 'industry', 'website',
-        'address', 'location_id', 'logo_url', 'description', 'about_image_url', 'social_links',
+        'address', 'phone', 'contact_name', 'contact_email', 'location_id', 'logo_url', 'description', 'about_image_url', 'social_links',
         'cover_banner_url', 'company_size', 'culture_values', 'benefits_tags',
         'telegram_chat_id', 'vat_tin', 'vat_legal_name', 'vat_address',
     ];

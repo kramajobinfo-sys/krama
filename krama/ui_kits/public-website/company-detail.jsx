@@ -70,6 +70,7 @@
     { key: "linkedin",  icon: "linkedin",  bg: "#0a66c2" },
     { key: "twitter",   icon: "twitter",   bg: "#000000" },
     { key: "instagram", icon: "instagram", bg: "linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)" },
+    { key: "telegram",  icon: "send",      bg: "#229ED9" },
   ];
 
   function SocialIcons({ links }) {
@@ -150,6 +151,9 @@
     const location = (c.location && c.location.name) || summary.location || "";
     const website = c.website || "";
     const address = c.address || "";
+    const phone = c.phone || "";
+    const contactName = c.contact_name || "";
+    const contactEmail = c.contact_email || "";
     const description = c.description || "";
     const aboutImage = c.about_image_url || "";
     const verified = c.is_verified != null ? c.is_verified : !!summary.verified;
@@ -306,6 +310,9 @@
                     {address && <DetailRow icon="building-2" label={TR("Address")} value={address} />}
                     {companySize && <DetailRow icon="users" label={TR("Company size")} value={companySize} />}
                     {website && <DetailRow icon="globe" label={TR("Website")} value={<a href={website} target="_blank" rel="noopener noreferrer" style={{ color: "var(--text-brand)", textDecoration: "none", wordBreak: "break-all" }}>{website.replace(/^https?:\/\//, "")}</a>} />}
+                    {phone && <DetailRow icon="phone" label={TR("Phone")} value={<a href={"tel:" + phone.replace(/\s+/g, "")} style={{ color: "var(--text-brand)", textDecoration: "none" }}>{phone}</a>} />}
+                    {contactName && <DetailRow icon="user" label={TR("Contact")} value={contactName} />}
+                    {contactEmail && <DetailRow icon="mail" label={TR("Email")} value={<a href={"mailto:" + contactEmail} style={{ color: "var(--text-brand)", textDecoration: "none", wordBreak: "break-all" }}>{contactEmail}</a>} />}
                   </div>
                   {social && SOCIALS.some((s) => social[s.key]) && (
                     <div style={{ marginTop: 18, paddingTop: 16, borderTop: "1px solid var(--border-subtle)" }}>

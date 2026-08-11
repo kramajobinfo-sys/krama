@@ -1318,7 +1318,7 @@
     React.useEffect(function () {
       if (company) {
         var sl = company.social_links || {};
-        setForm({ name: company.name || "", registration_no: company.registration_no || "", industry: company.industry || "", website: company.website || "", address: company.address || "", description: company.description || "", logo_url: company.logo_url || "", facebook_url: sl.facebook || "", linkedin_url: sl.linkedin || "", twitter_url: sl.twitter || "", instagram_url: sl.instagram || "", company_size: company.company_size || "", culture_values: company.culture_values || "", benefits_tags: Array.isArray(company.benefits_tags) ? company.benefits_tags : [], vat_tin: company.vat_tin || "", vat_legal_name: company.vat_legal_name || "", vat_address: company.vat_address || "" });
+        setForm({ name: company.name || "", registration_no: company.registration_no || "", industry: company.industry || "", website: company.website || "", address: company.address || "", phone: company.phone || "", contact_name: company.contact_name || "", contact_email: company.contact_email || "", description: company.description || "", logo_url: company.logo_url || "", facebook_url: sl.facebook || "", linkedin_url: sl.linkedin || "", twitter_url: sl.twitter || "", instagram_url: sl.instagram || "", telegram_url: sl.telegram || "", company_size: company.company_size || "", culture_values: company.culture_values || "", benefits_tags: Array.isArray(company.benefits_tags) ? company.benefits_tags : [], vat_tin: company.vat_tin || "", vat_legal_name: company.vat_legal_name || "", vat_address: company.vat_address || "" });
         setAboutImageUrl(company.about_image_url || "");
         setCoverBannerUrl(company.cover_banner_url || "");
         setGallery(Array.isArray(company.gallery) ? company.gallery : []);
@@ -1336,7 +1336,7 @@
 
     const save = () => {
       setSaving(true); setErr(""); setMsg("");
-      var payload = { name: form.name, registration_no: form.registration_no, industry: form.industry, website: form.website, address: form.address, description: form.description, social_links: { facebook: form.facebook_url, linkedin: form.linkedin_url, twitter: form.twitter_url, instagram: form.instagram_url }, company_size: form.company_size || null, culture_values: form.culture_values || null, benefits_tags: form.benefits_tags && form.benefits_tags.length ? form.benefits_tags : null, vat_tin: form.vat_tin || null, vat_legal_name: form.vat_legal_name || null, vat_address: form.vat_address || null };
+      var payload = { name: form.name, registration_no: form.registration_no, industry: form.industry, website: form.website, address: form.address, phone: form.phone || null, contact_name: form.contact_name || null, contact_email: form.contact_email || null, description: form.description, social_links: { facebook: form.facebook_url, linkedin: form.linkedin_url, twitter: form.twitter_url, instagram: form.instagram_url, telegram: form.telegram_url }, company_size: form.company_size || null, culture_values: form.culture_values || null, benefits_tags: form.benefits_tags && form.benefits_tags.length ? form.benefits_tags : null, vat_tin: form.vat_tin || null, vat_legal_name: form.vat_legal_name || null, vat_address: form.vat_address || null };
       emp.updateCompany(company.id, payload)
         .then(function (updated) { setSaving(false); flash("Profile saved."); onSaved && onSaved(updated); })
         .catch(function (e) { setSaving(false); flash((e && e.message) || "Save failed.", true); });
@@ -1485,6 +1485,7 @@
               {form.linkedin_url && <a href={form.linkedin_url} target="_blank" rel="noopener" style={{ width: 32, height: 32, borderRadius: "50%", background: "#0a66c2", color: "#fff", display: "inline-flex", alignItems: "center", justifyContent: "center", textDecoration: "none" }}>{I("linkedin", 15)}</a>}
               {form.twitter_url && <a href={form.twitter_url} target="_blank" rel="noopener" style={{ width: 32, height: 32, borderRadius: "50%", background: "#000", color: "#fff", display: "inline-flex", alignItems: "center", justifyContent: "center", textDecoration: "none" }}>{I("twitter", 15)}</a>}
               {form.instagram_url && <a href={form.instagram_url} target="_blank" rel="noopener" style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)", color: "#fff", display: "inline-flex", alignItems: "center", justifyContent: "center", textDecoration: "none" }}>{I("instagram", 15)}</a>}
+              {form.telegram_url && <a href={form.telegram_url} target="_blank" rel="noopener" style={{ width: 32, height: 32, borderRadius: "50%", background: "#229ED9", color: "#fff", display: "inline-flex", alignItems: "center", justifyContent: "center", textDecoration: "none" }}>{I("send", 15)}</a>}
             </div>
           </div>
         </div>
@@ -1511,6 +1512,11 @@
                 <Input label="Website" value={form.website} onChange={(e) => set("website", e.target.value)} iconLeft={I("globe", 16)} />
               </div>
               <Input label="Address" value={form.address} onChange={(e) => set("address", e.target.value)} iconLeft={I("map-pin", 16)} />
+              <div className="krm-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
+                <Input label="Phone" value={form.phone} onChange={(e) => set("phone", e.target.value)} iconLeft={I("phone", 16)} placeholder="+855 …" />
+                <Input label="Contact person" value={form.contact_name} onChange={(e) => set("contact_name", e.target.value)} iconLeft={I("user", 16)} placeholder="Full name" />
+                <Input label="Contact email" type="email" value={form.contact_email} onChange={(e) => set("contact_email", e.target.value)} iconLeft={I("mail", 16)} placeholder="hr@company.com" />
+              </div>
 
               {/* Tax / VAT details — opt-in for Cambodia tax invoices */}
               <div style={{ marginTop: 4, padding: "16px 18px", borderRadius: "var(--radius-md)", border: "1px solid var(--border)", background: "var(--surface-sunken)" }}>
@@ -1627,6 +1633,7 @@
                   <Input label="LinkedIn" value={form.linkedin_url} onChange={(e) => set("linkedin_url", e.target.value)} iconLeft={I("linkedin", 16)} placeholder="https://linkedin.com/company/yourpage" />
                   <Input label="Twitter / X" value={form.twitter_url} onChange={(e) => set("twitter_url", e.target.value)} iconLeft={I("twitter", 16)} placeholder="https://x.com/yourhandle" />
                   <Input label="Instagram" value={form.instagram_url} onChange={(e) => set("instagram_url", e.target.value)} iconLeft={I("instagram", 16)} placeholder="https://instagram.com/yourpage" />
+                  <Input label="Telegram" value={form.telegram_url} onChange={(e) => set("telegram_url", e.target.value)} iconLeft={I("send", 16)} placeholder="https://t.me/yourchannel" />
                 </div>
               </div>
 
