@@ -320,18 +320,29 @@
     const monthly = (stats && stats.monthly) || [];
     const maxC = Math.max(1, ...monthly.map((x) => x.count || 0));
     const curMonthIdx = stats ? (stats.current_month - 1) : -1;
+    // % change of this month vs last month (for the period cards). null when there's no baseline.
+    const trend = (cur, prev) => {
+      cur = Number(cur || 0); prev = Number(prev || 0);
+      if (prev <= 0) return cur > 0 ? { delta: "New", dir: "up" } : null;
+      const p = Math.round(((cur - prev) / prev) * 100);
+      return { delta: (p >= 0 ? "+" : "") + p + "%", dir: p < 0 ? "down" : "up" };
+    };
+    const tJobs = stats ? trend(stats.jobs_mtd, stats.jobs_prev) : null;
+    const tCompanies = stats ? trend(stats.companies_mtd, stats.companies_prev) : null;
+    const tCandidates = stats ? trend(stats.candidates_mtd, stats.candidates_prev) : null;
+    const tRevenue = stats ? trend(stats.revenue_mtd, stats.revenue_prev) : null;
     return (
       <div className="krm-page-pad" style={{ padding: 28, display: "flex", flexDirection: "column", gap: 24 }}>
         <div className="krm-stats-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16 }}>
           <StatCard label="Total jobs" value={stats ? fmt(stats.jobs_total) : "--"} tone="brand" icon={I("briefcase", 22)} />
           <StatCard label="Active jobs" value={stats ? fmt(stats.jobs_published) : "--"} tone="success" icon={I("circle-check-big", 22)} />
           <StatCard label="Pending approval" value={stats ? fmt(stats.jobs_pending) : "--"} tone="warning" icon={I("clock", 22)} />
-          <StatCard label="New jobs (this month)" value={stats ? fmt(stats.jobs_mtd) : "--"} tone="success" icon={I("briefcase", 22)} />
+          <StatCard label="New jobs (this month)" value={stats ? fmt(stats.jobs_mtd) : "--"} tone="success" icon={I("briefcase", 22)} delta={tJobs ? tJobs.delta : null} deltaDir={tJobs ? tJobs.dir : "up"} />
           <StatCard label="Companies" value={stats ? fmt(stats.companies_total) : "--"} tone="info" icon={I("building-2", 22)} />
-          <StatCard label="New companies (this month)" value={stats ? fmt(stats.companies_mtd) : "--"} tone="success" icon={I("building-2", 22)} />
+          <StatCard label="New companies (this month)" value={stats ? fmt(stats.companies_mtd) : "--"} tone="success" icon={I("building-2", 22)} delta={tCompanies ? tCompanies.delta : null} deltaDir={tCompanies ? tCompanies.dir : "up"} />
           <StatCard label="Candidates" value={stats ? fmt(stats.candidates) : "--"} tone="brand" icon={I("users", 22)} />
-          <StatCard label="New candidates (this month)" value={stats ? fmt(stats.candidates_mtd) : "--"} tone="success" icon={I("user-plus", 22)} />
-          <StatCard label="Revenue (MTD)" value={stats ? fmtUsd(stats.revenue_mtd) : "--"} tone="accent" icon={I("banknote", 22)} />
+          <StatCard label="New candidates (this month)" value={stats ? fmt(stats.candidates_mtd) : "--"} tone="success" icon={I("user-plus", 22)} delta={tCandidates ? tCandidates.delta : null} deltaDir={tCandidates ? tCandidates.dir : "up"} />
+          <StatCard label="Revenue (MTD)" value={stats ? fmtUsd(stats.revenue_mtd) : "--"} tone="accent" icon={I("banknote", 22)} delta={tRevenue ? tRevenue.delta : null} deltaDir={tRevenue ? tRevenue.dir : "up"} />
         </div>
 
         <Card padding={24}>

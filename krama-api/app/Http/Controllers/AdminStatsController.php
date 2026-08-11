@@ -19,6 +19,7 @@ class AdminStatsController extends Controller
         $now   = now();
         $year  = (int) $now->year;
         $month = $now->copy()->startOfMonth();
+        $prevStart = $month->copy()->subMonthNoOverflow();   // start of last month; prev range = [$prevStart, $month)
 
         $candidateRoleId = \App\Models\Role::where('slug', 'candidate')->value('id');
 
@@ -49,12 +50,16 @@ class AdminStatsController extends Controller
             'jobs_published'     => Job::where('status', 'published')->count(),
             'jobs_pending'       => Job::where('status', 'pending')->count(),
             'jobs_mtd'           => Job::where('created_at', '>=', $month)->count(),
+            'jobs_prev'          => Job::where('created_at', '>=', $prevStart)->where('created_at', '<', $month)->count(),
             'companies_total'    => Company::count(),
             'companies_approved' => Company::where('status', 'approved')->count(),
             'companies_mtd'      => Company::where('created_at', '>=', $month)->count(),
+            'companies_prev'     => Company::where('created_at', '>=', $prevStart)->where('created_at', '<', $month)->count(),
             'candidates'         => $candidateRoleId ? User::where('role_id', $candidateRoleId)->count() : 0,
             'candidates_mtd'     => $candidateRoleId ? User::where('role_id', $candidateRoleId)->where('created_at', '>=', $month)->count() : 0,
+            'candidates_prev'    => $candidateRoleId ? User::where('role_id', $candidateRoleId)->where('created_at', '>=', $prevStart)->where('created_at', '<', $month)->count() : 0,
             'revenue_mtd'        => $usdEquiv(Payment::where('status', 'paid')->where('created_at', '>=', $month)),
+            'revenue_prev'       => $usdEquiv(Payment::where('status', 'paid')->where('created_at', '>=', $prevStart)->where('created_at', '<', $month)),
             'revenue_total'      => $usdEquiv(Payment::where('status', 'paid')),
             'year'               => $year,
             'current_month'      => (int) $now->month,   // 1-12, for highlighting the chart bar
