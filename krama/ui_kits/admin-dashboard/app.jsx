@@ -326,7 +326,9 @@
           <StatCard label="Total jobs" value={stats ? fmt(stats.jobs_total) : "--"} tone="brand" icon={I("briefcase", 22)} />
           <StatCard label="Active jobs" value={stats ? fmt(stats.jobs_published) : "--"} tone="success" icon={I("circle-check-big", 22)} />
           <StatCard label="Pending approval" value={stats ? fmt(stats.jobs_pending) : "--"} tone="warning" icon={I("clock", 22)} />
+          <StatCard label="New jobs (this month)" value={stats ? fmt(stats.jobs_mtd) : "--"} tone="success" icon={I("briefcase", 22)} />
           <StatCard label="Companies" value={stats ? fmt(stats.companies_total) : "--"} tone="info" icon={I("building-2", 22)} />
+          <StatCard label="New companies (this month)" value={stats ? fmt(stats.companies_mtd) : "--"} tone="success" icon={I("building-2", 22)} />
           <StatCard label="Candidates" value={stats ? fmt(stats.candidates) : "--"} tone="brand" icon={I("users", 22)} />
           <StatCard label="New candidates (this month)" value={stats ? fmt(stats.candidates_mtd) : "--"} tone="success" icon={I("user-plus", 22)} />
           <StatCard label="Revenue (MTD)" value={stats ? fmtUsd(stats.revenue_mtd) : "--"} tone="accent" icon={I("banknote", 22)} />
