@@ -328,6 +328,7 @@
           <StatCard label="Pending approval" value={stats ? fmt(stats.jobs_pending) : "--"} tone="warning" icon={I("clock", 22)} />
           <StatCard label="Companies" value={stats ? fmt(stats.companies_total) : "--"} tone="info" icon={I("building-2", 22)} />
           <StatCard label="Candidates" value={stats ? fmt(stats.candidates) : "--"} tone="brand" icon={I("users", 22)} />
+          <StatCard label="New candidates (this month)" value={stats ? fmt(stats.candidates_mtd) : "--"} tone="success" icon={I("user-plus", 22)} />
           <StatCard label="Revenue (MTD)" value={stats ? fmtUsd(stats.revenue_mtd) : "--"} tone="accent" icon={I("banknote", 22)} />
         </div>
 

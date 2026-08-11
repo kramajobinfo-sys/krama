@@ -51,6 +51,7 @@ class AdminStatsController extends Controller
             'companies_total'    => Company::count(),
             'companies_approved' => Company::where('status', 'approved')->count(),
             'candidates'         => $candidateRoleId ? User::where('role_id', $candidateRoleId)->count() : 0,
+            'candidates_mtd'     => $candidateRoleId ? User::where('role_id', $candidateRoleId)->where('created_at', '>=', $month)->count() : 0,
             'revenue_mtd'        => $usdEquiv(Payment::where('status', 'paid')->where('created_at', '>=', $month)),
             'revenue_total'      => $usdEquiv(Payment::where('status', 'paid')),
             'year'               => $year,
