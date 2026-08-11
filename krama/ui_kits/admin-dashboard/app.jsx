@@ -315,33 +315,40 @@
     React.useEffect(() => {
       adm.fetchStats().then(setStats).catch(function () {});
     }, []);
-    const fmt = (n) => n >= 1000 ? (n / 1000).toFixed(n >= 10000 ? 0 : 1) + "k" : String(n);
-    const fmtUsd = (n) => "$" + n.toLocaleString("en", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-    const max = Math.max(...BARS.map((b) => b[1]));
+    const fmt = (n) => (n == null ? "--" : (n >= 1000 ? (n / 1000).toFixed(n >= 10000 ? 0 : 1) + "k" : String(n)));
+    const fmtUsd = (n) => "$" + Number(n || 0).toLocaleString("en", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    const monthly = (stats && stats.monthly) || [];
+    const maxC = Math.max(1, ...monthly.map((x) => x.count || 0));
+    const curMonthIdx = stats ? (stats.current_month - 1) : -1;
     return (
       <div className="krm-page-pad" style={{ padding: 28, display: "flex", flexDirection: "column", gap: 24 }}>
         <div className="krm-stats-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16 }}>
-          <StatCard label="Total jobs" value={stats ? fmt(stats.totalJobs) : "--"} tone="brand" icon={I("briefcase", 22)} />
-          <StatCard label="Active jobs" value={stats ? fmt(stats.activeJobs) : "--"} tone="success" icon={I("circle-check-big", 22)} />
-          <StatCard label="Published jobs" value={stats ? String(stats.activeJobs || stats.pendingJobs) : "--"} tone="success" icon={I("circle-check-big", 22)} />
-          <StatCard label="Companies" value={stats ? fmt(stats.companies) : "--"} tone="info" icon={I("building-2", 22)} />
-          <StatCard label="Candidates" value="--" tone="brand" icon={I("users", 22)} />
-          <StatCard label="Revenue (MTD)" value={stats ? fmtUsd(stats.revenue) : "--"} tone="accent" icon={I("banknote", 22)} />
+          <StatCard label="Total jobs" value={stats ? fmt(stats.jobs_total) : "--"} tone="brand" icon={I("briefcase", 22)} />
+          <StatCard label="Active jobs" value={stats ? fmt(stats.jobs_published) : "--"} tone="success" icon={I("circle-check-big", 22)} />
+          <StatCard label="Pending approval" value={stats ? fmt(stats.jobs_pending) : "--"} tone="warning" icon={I("clock", 22)} />
+          <StatCard label="Companies" value={stats ? fmt(stats.companies_total) : "--"} tone="info" icon={I("building-2", 22)} />
+          <StatCard label="Candidates" value={stats ? fmt(stats.candidates) : "--"} tone="brand" icon={I("users", 22)} />
+          <StatCard label="Revenue (MTD)" value={stats ? fmtUsd(stats.revenue_mtd) : "--"} tone="accent" icon={I("banknote", 22)} />
         </div>
 
         <Card padding={24}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 22 }}>
             <h2 style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: "var(--text-strong)" }}>Monthly job posts</h2>
-            <Badge tone="brand">2026</Badge>
+            <Badge tone="brand">{stats ? String(stats.year) : "--"}</Badge>
           </div>
-          <div style={{ display: "flex", alignItems: "flex-end", gap: 12, height: 180 }}>
-            {BARS.map(([m, v], i) => (
-              <div key={m} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-                <div style={{ width: "100%", maxWidth: 36, height: (v / max) * 150, background: i === 10 ? "var(--accent)" : "var(--teal-500)", borderRadius: "var(--radius-sm) var(--radius-sm) 0 0", transition: "height var(--dur-slow) var(--ease-out)" }} />
-                <span style={{ fontSize: "var(--text-xs)", color: "var(--text-faint)" }}>{m}</span>
-              </div>
-            ))}
-          </div>
+          {monthly.length ? (
+            <div style={{ display: "flex", alignItems: "flex-end", gap: 12, height: 180 }}>
+              {monthly.map((x, i) => (
+                <div key={x.month} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }} title={x.count + " job" + (x.count === 1 ? "" : "s")}>
+                  <span style={{ fontSize: "var(--text-xs)", color: "var(--text-faint)" }}>{x.count || ""}</span>
+                  <div style={{ width: "100%", maxWidth: 36, height: Math.max(2, (x.count / maxC) * 130), background: i === curMonthIdx ? "var(--accent)" : "var(--teal-500)", borderRadius: "var(--radius-sm) var(--radius-sm) 0 0", transition: "height var(--dur-slow) var(--ease-out)" }} />
+                  <span style={{ fontSize: "var(--text-xs)", color: "var(--text-faint)" }}>{x.month}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ height: 180, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-faint)", fontSize: "var(--text-sm)" }}>Loading…</div>
+          )}
         </Card>
       </div>
     );

@@ -164,28 +164,9 @@
     },
 
     // Dashboard KPIs
-    fetchStats: function () {
-      return Promise.all([
-        req("GET", "/admin/jobs?per_page=1"),
-        req("GET", "/admin/jobs?status=published&per_page=1"),
-        req("GET", "/admin/jobs?status=pending&per_page=1"),
-        req("GET", "/admin/companies?per_page=1"),
-        req("GET", "/admin/payments"),
-      ]).then(function (results) {
-        var allJobs = results[0], pubJobs = results[1], pendJobs = results[2], companies = results[3], payments = results[4];
-        // Laravel LengthAwarePaginator puts `total` at root (not inside meta)
-        function getTotal(r) { return r.total || (r.meta && r.meta.total) || 0; }
-        var revenue = (payments.data || []).filter(function (p) { return p.status === "paid"; })
-          .reduce(function (sum, p) { return sum + parseFloat(p.amount || 0); }, 0);
-        return {
-          totalJobs: getTotal(allJobs),
-          activeJobs: getTotal(pubJobs),
-          pendingJobs: getTotal(pendJobs),
-          companies: getTotal(companies),
-          revenue: revenue,
-        };
-      });
-    },
+    // Accurate overview figures from a dedicated backend endpoint (exact COUNT/SUM, real
+    // month-to-date revenue in USD-equivalent, and a real monthly job-post series).
+    fetchStats: function () { return req("GET", "/admin/stats"); },
 
     // Jobs (admin listing — supports any status; public /jobs only returns published)
     fetchJobs: function (status, page) {
