@@ -566,7 +566,7 @@
   // (including on a live listing) without hunting down the employer.
   function PostJobModal({ open, onClose, onPosted, job }) {
     const isEdit = !!(job && job.id);
-    const BLANK = { company_id: "", title: "", category_id: "", location_id: "", job_type: "full_time", experience_level: "", salary_min: "", salary_max: "", salary_currency: "USD", salary_period: "month", is_remote: false, working_days: "", working_time: "", map_location: "", description: "", requirements: "", benefits: "" };
+    const BLANK = { company_id: "", title: "", category_id: "", location_id: "", job_type: "full_time", experience_level: "", salary_min: "", salary_max: "", salary_currency: "USD", salary_period: "month", is_remote: false, working_days: "", working_time: "", map_location: "", expires_at: "", description: "", requirements: "", benefits: "" };
     const fromJob = function (j) {
       return {
         company_id: j.company_id != null ? String(j.company_id) : "",
@@ -583,6 +583,7 @@
         working_days: j.working_days || "",
         working_time: j.working_time || "",
         map_location: j.map_location || "",
+        expires_at: j.expires_at ? String(j.expires_at).slice(0, 10) : "",
         description: j.description || "",
         requirements: j.requirements || "",
         benefits: j.benefits || "",
@@ -641,6 +642,7 @@
         category_name: form.category_id === "__new__" ? newCat.trim() : "",
         location_id: form.location_id ? Number(form.location_id) : null,
         experience_level: form.experience_level || null,
+        expires_at: form.expires_at || null,
       });
       var call = isEdit ? adm.adminUpdateJob(job.id, payload) : adm.adminCreateJob(payload);
       call
@@ -687,6 +689,10 @@
             <div className="krm-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
               <Input label="Working days" value={form.working_days} onChange={function (e) { set("working_days", e.target.value); }} placeholder="e.g. Monday to Friday" />
               <Input label="Working time" value={form.working_time} onChange={function (e) { set("working_time", e.target.value); }} placeholder="e.g. 8:00 AM – 5:00 PM" />
+            </div>
+            <div className="krm-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+              <Input label="Application deadline" type="date" value={form.expires_at} onChange={function (e) { set("expires_at", e.target.value); }} hint="Optional — the job auto-expires on this date." />
+              <div />
             </div>
             <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
               <Switch checked={form.is_remote} onChange={function (v) { set("is_remote", typeof v === "boolean" ? v : !form.is_remote); }} />
