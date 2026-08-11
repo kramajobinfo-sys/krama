@@ -157,8 +157,31 @@
     { id: "settings", label: "Settings", icon: "settings" },
   ];
 
-  function Sidebar({ page, onNav, badges, open, onClose }) {
+  // Which permission each nav item needs. Items without an entry require `site_settings`
+  // (the baseline admin-console permission). Gating hides features a role isn't allowed to
+  // use; the backend independently 403s the same actions. Dashboard is always visible.
+  const NAV_PERM = {
+    dashboard: null,
+    companies: "approve_companies",
+    jobs: "approve_jobs",
+    candidates: "suspend_users",
+    forum: "moderate_forum",
+    payments: "manage_payments",
+    coupons: "manage_plans",
+    reports: "view_reports",
+    audit: "view_audit",
+    settings: "manage_users",
+  };
+  function navAllowed(id, perms, isSuper) {
+    if (isSuper || id === "dashboard") return true;
+    var need = NAV_PERM.hasOwnProperty(id) ? NAV_PERM[id] : "site_settings";
+    return !need || (perms || []).indexOf(need) !== -1;
+  }
+
+  function Sidebar({ page, onNav, badges, open, onClose, perms, roleSlug }) {
     badges = badges || {};
+    var isSuper = roleSlug === "super_admin";
+    var items = NAV.filter(function (n) { return navAllowed(n.id, perms, isSuper); });
     return (
       <aside className={"krm-sidebar" + (open ? " open" : "")} style={{ width: 248, flexShrink: 0, background: "var(--teal-800)", display: "flex", flexDirection: "column", padding: "20px 14px", position: "sticky", top: 0, height: "100vh" }}>
         <a href="../public-website/index.html" style={{ display: "flex", alignItems: "center", gap: 10, margin: "4px 8px 8px", textDecoration: "none" }}>
@@ -167,7 +190,7 @@
         </a>
         <div style={{ margin: "0 8px 18px", fontSize: "var(--text-xs)", fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: "rgba(255,255,255,0.45)" }}>Admin console</div>
         <nav className="krm-sidebar-nav" style={{ display: "flex", flexDirection: "column", gap: 3, flex: 1, minHeight: 0, overflowY: "auto", overflowX: "hidden" }}>
-          {NAV.map((n) => {
+          {items.map((n) => {
             const active = page === n.id;
             return (
               <button key={n.id} onClick={() => { onNav(n.id); onClose && onClose(); }} style={{ display: "flex", alignItems: "center", gap: 11, border: "none", cursor: "pointer", padding: "10px 12px", borderRadius: "var(--radius-md)", textAlign: "left", background: active ? "rgba(255,255,255,0.15)" : "transparent", color: active ? "#fff" : "rgba(255,255,255,0.75)", fontFamily: "var(--font-sans)", fontWeight: active ? 700 : 500, fontSize: "var(--text-base)", flexShrink: 0 }}>
@@ -2519,7 +2542,7 @@
     return <Badge tone={r.tone}>{r.label}</Badge>;
   }
 
-  function PermissionDrawer({ user, onClose, onSaved, viewerRole, isSelf }) {
+  function PermissionDrawer({ user, onClose, onSaved, viewerRole, isSelf, rolePermsMap, catalog }) {
     const [role, setRole] = React.useState(user ? user.role : "candidate");
     const [perms, setPerms] = React.useState(user ? ROLE_PERMS[user.role] : []);
     const [saving, setSaving] = React.useState(false);
@@ -2618,26 +2641,28 @@
             )}
             <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", margin: "8px 0 22px" }}>{(ROLES[role] || {}).desc || ""}</p>
 
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-              <div style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-strong)" }}>Permissions</div>
-              <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>{perms.length} of {ALL_PERMS.length} enabled</span>
-            </div>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: 18, opacity: (locked || selfView) ? 0.55 : 1, pointerEvents: (locked || selfView) ? "none" : "auto" }}>
-              {PERM_GROUPS.map((g) => (
-                <div key={g.group}>
-                  <div style={{ fontSize: "var(--text-xs)", fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: "var(--text-faint)", marginBottom: 10 }}>{g.group}</div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                    {g.perms.map(([id, label]) => (
-                      <div key={id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                        <span style={{ fontSize: "var(--text-sm)", color: "var(--text-body)" }}>{label}</span>
-                        <Switch checked={perms.includes(id)} onChange={() => toggle(id)} />
-                      </div>
-                    ))}
+            {/* Role permissions are per-ROLE, set in the Roles & permissions tab — shown here read-only. */}
+            {(function () {
+              var rp = (rolePermsMap && rolePermsMap[role]) || [];
+              var flat = (catalog || []).reduce(function (acc, g) { return acc.concat(g.perms); }, []);
+              var allowed = flat.filter(function (p) { return rp.indexOf(p.slug) !== -1; });
+              return (
+                <React.Fragment>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                    <div style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-strong)" }}>What this role can do</div>
+                    <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>{rp.length} permission{rp.length === 1 ? "" : "s"}</span>
                   </div>
-                </div>
-              ))}
-            </div>
+                  <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginBottom: 12 }}>
+                    Permissions are set per <strong>role</strong>, not per user. Change them in the <strong>Roles &amp; permissions</strong> tab — it affects everyone with this role.
+                  </div>
+                  {(catalog && catalog.length)
+                    ? (allowed.length
+                        ? <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>{allowed.map(function (p) { return <span key={p.slug} style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "4px 10px", borderRadius: 999, background: "var(--success-subtle)", color: "var(--success)", fontSize: "var(--text-xs)", fontWeight: 600 }}>{I("check", 12)} {p.label}</span>; })}</div>
+                        : <span style={{ fontSize: "var(--text-sm)", color: "var(--text-faint)" }}>No special permissions.</span>)
+                    : <span style={{ fontSize: "var(--text-sm)", color: "var(--text-faint)" }}>Open the Roles &amp; permissions tab to view.</span>}
+                </React.Fragment>
+              );
+            })()}
 
             {err && <div style={{ marginTop: 18, padding: "10px 14px", background: "var(--danger-subtle)", color: "var(--danger)", borderRadius: "var(--radius-md)", fontSize: "var(--text-sm)" }}>{err}</div>}
 
@@ -3206,6 +3231,116 @@
     );
   }
 
+  // Editable per-role permission matrix. Data + catalog come from GET /admin/roles.
+  // Editing is only enabled for a Super Admin (manage_roles); the super_admin column is
+  // always full and locked. Each changed role has its own Save button.
+  function RolesEditor({ data, viewerSlug, counts, onSaved }) {
+    const [pending, setPending] = React.useState({});
+    const [savingId, setSavingId] = React.useState(null);
+    const [msg, setMsg] = React.useState(null);
+
+    React.useEffect(function () {
+      if (!data) return;
+      var p = {};
+      (data.roles || []).forEach(function (r) { p[r.slug] = (r.permissions || []).slice(); });
+      setPending(p);
+    }, [data]);
+
+    if (!data) return <div style={{ padding: 40, color: "var(--text-muted)" }}>Loading roles…</div>;
+
+    var roles = data.roles || [];
+    var catalog = data.catalog || [];
+    var canEdit = viewerSlug === "super_admin";
+    if (!roles.length) {
+      return (
+        <Card padding={20}>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+            <span style={{ color: "var(--warning)" }}>{I("shield-alert", 18)}</span>
+            <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>Only a <strong>Super Admin</strong> can view and manage roles &amp; permissions.</div>
+          </div>
+        </Card>
+      );
+    }
+
+    var origOf = function (slug) { var r = roles.find(function (x) { return x.slug === slug; }); return r ? (r.permissions || []) : []; };
+    var sortedEq = function (a, b) { return JSON.stringify((a || []).slice().sort()) === JSON.stringify((b || []).slice().sort()); };
+    var dirty = function (slug) { return !sortedEq(pending[slug], origOf(slug)); };
+    var has = function (slug, perm) { return (pending[slug] || []).indexOf(perm) !== -1; };
+    var editableRole = function (slug) { return canEdit && slug !== "super_admin"; };
+    var toggle = function (slug, perm) {
+      if (!editableRole(slug)) return;
+      setPending(function (s) {
+        var cur = (s[slug] || []).slice();
+        var i = cur.indexOf(perm);
+        if (i >= 0) cur.splice(i, 1); else cur.push(perm);
+        var n = {}; n[slug] = cur; return Object.assign({}, s, n);
+      });
+    };
+    var save = function (role) {
+      setSavingId(role.id); setMsg(null);
+      adm.updateRolePermissions(role.id, pending[role.slug] || []).then(function (res) {
+        setSavingId(null); setMsg({ ok: true, text: (role.name || role.slug) + " permissions saved." });
+        onSaved && onSaved(role.slug, res.permissions || []);
+      }).catch(function (e) { setSavingId(null); setMsg({ ok: false, text: (e && e.message) || "Save failed." }); });
+    };
+
+    var cols = "1.7fr repeat(" + roles.length + ", 1fr)";
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 16px", background: "var(--info-subtle)", border: "1px solid var(--info-border)", borderRadius: "var(--radius-md)" }}>
+          <span style={{ color: "var(--info)", flexShrink: 0 }}>{I("info", 16)}</span>
+          <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>
+            Permissions apply to <strong>every user with that role</strong> — turning one off hides its menu items and blocks the action for all of them.{!canEdit && <span> Only a <strong>Super Admin</strong> can change these.</span>}
+          </div>
+        </div>
+        {msg && <div style={{ padding: "10px 14px", borderRadius: "var(--radius-md)", fontSize: "var(--text-sm)", fontWeight: 600, background: msg.ok ? "var(--success-subtle)" : "var(--danger-subtle)", color: msg.ok ? "var(--success)" : "var(--danger)" }}>{msg.text}</div>}
+        <div className="krm-table-wrap"><Card padding={0}>
+          <div style={{ display: "grid", gridTemplateColumns: cols, padding: "14px 20px", borderBottom: "1px solid var(--border)", position: "sticky", top: 0, background: "var(--surface-card)", zIndex: 1 }}>
+            <span style={{ fontSize: "var(--text-xs)", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".04em", color: "var(--text-faint)", alignSelf: "center" }}>Permission</span>
+            {roles.map(function (r) {
+              return (
+                <div key={r.slug} style={{ textAlign: "center" }}>
+                  <div style={{ fontWeight: 700, fontSize: "var(--text-sm)", color: "var(--text-strong)" }}>{r.name || r.slug}</div>
+                  <div style={{ fontSize: "var(--text-xs)", color: "var(--text-faint)" }}>{counts && counts[r.slug] != null ? counts[r.slug] + " users" : ""}</div>
+                  {editableRole(r.slug) && dirty(r.slug) && (
+                    <Button variant="primary" size="sm" style={{ marginTop: 6 }} disabled={savingId === r.id} onClick={function () { save(r); }}>{savingId === r.id ? "Saving…" : "Save"}</Button>
+                  )}
+                  {r.slug === "super_admin" && <span title="Always full access" style={{ display: "inline-flex", marginTop: 6, color: "var(--text-faint)" }}>{I("lock", 13)}</span>}
+                </div>
+              );
+            })}
+          </div>
+          {catalog.map(function (g) {
+            return (
+              <React.Fragment key={g.group}>
+                <div style={{ gridColumn: "1 / -1", padding: "10px 20px", background: "var(--surface-sunken)", fontSize: "var(--text-xs)", fontWeight: 700, letterSpacing: ".05em", textTransform: "uppercase", color: "var(--text-muted)" }}>{g.group}</div>
+                {g.perms.map(function (p) {
+                  return (
+                    <div key={p.slug} style={{ display: "grid", gridTemplateColumns: cols, alignItems: "center", padding: "11px 20px", borderBottom: "1px solid var(--border-subtle)" }}>
+                      <span style={{ fontSize: "var(--text-sm)", color: "var(--text-body)" }}>{p.label}</span>
+                      {roles.map(function (r) {
+                        var on = r.slug === "super_admin" ? true : has(r.slug, p.slug);
+                        var canToggle = editableRole(r.slug);
+                        return (
+                          <div key={r.slug} style={{ display: "flex", justifyContent: "center" }}>
+                            <button onClick={function () { toggle(r.slug, p.slug); }} disabled={!canToggle} title={canToggle ? (on ? "Allowed — click to remove" : "Not allowed — click to grant") : (r.slug === "super_admin" ? "Super Admin always has full access" : "Read-only")}
+                              style={{ width: 26, height: 26, borderRadius: 7, border: "1px solid " + (on ? "var(--success)" : "var(--border-strong)"), background: on ? "var(--success)" : "transparent", color: on ? "#fff" : "var(--text-faint)", cursor: canToggle ? "pointer" : "default", display: "inline-flex", alignItems: "center", justifyContent: "center", opacity: canToggle ? 1 : 0.65, padding: 0 }}>
+                              {on ? I("check", 15) : null}
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })}
+              </React.Fragment>
+            );
+          })}
+        </Card></div>
+      </div>
+    );
+  }
+
   function Settings({ authUser }) {
     const [tab, setTab] = React.useState("users");
     const [filter, setFilter] = React.useState("all");
@@ -3215,6 +3350,8 @@
     const [searchInput, setSearchInput] = React.useState("");
     const [search, setSearch] = React.useState("");
     const [inviting, setInviting] = React.useState(false);
+    const [rolesData, setRolesData] = React.useState(null);   // { roles, catalog } from GET /admin/roles
+    React.useEffect(function () { adm.fetchRoles().then(setRolesData).catch(function () { setRolesData({ roles: [], catalog: [] }); }); }, []);
 
     // Derive the logged-in user's role slug and rank
     var viewerSlug = authUser && authUser.role ? (authUser.role.slug || authUser.role) : "admin";
@@ -3260,6 +3397,10 @@
     const filtered = filter === "all" ? users : users.filter((u) => u.role === filter);
     const counts = { all: users.length, super_admin: 0, admin: 0, employer: 0, candidate: 0 };
     users.forEach((u) => { if (u.role in counts) counts[u.role]++; });
+
+    // Real per-role permission slugs, for the read-only preview in the user drawer.
+    var rolePermsMap = {};
+    if (rolesData) (rolesData.roles || []).forEach(function (r) { rolePermsMap[r.slug] = r.permissions || []; });
 
     return (
       <div className="krm-page-pad" style={{ padding: 28 }}>
@@ -3331,42 +3472,9 @@
         )}
 
         {tab === "roles" && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            {/* role summary cards */}
-            <div className="krm-roles-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 14 }}>
-              {Object.keys(ROLES).map((k) => (
-                <Card key={k} padding={18}>
-                  <RoleBadge role={k} />
-                  <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", margin: "10px 0 12px", lineHeight: 1.5, minHeight: 42 }}>{ROLES[k].desc}</p>
-                  <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-xs)", color: "var(--text-faint)" }}>{ROLE_PERMS[k].length} permissions · {counts[k] || 0} users</div>
-                </Card>
-              ))}
-            </div>
-
-            {/* permission matrix */}
-            <div className="krm-table-wrap"><Card padding={0}>
-              <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--border)", fontWeight: 700, color: "var(--text-strong)" }}>Permission matrix</div>
-              <div style={{ display: "grid", gridTemplateColumns: "1.6fr repeat(4, 1fr)", padding: "10px 20px", fontSize: "var(--text-xs)", fontWeight: 700, letterSpacing: ".04em", textTransform: "uppercase", color: "var(--text-faint)", borderBottom: "1px solid var(--border)", position: "sticky", top: 0, background: "var(--surface-card)" }}>
-                <span>Permission</span>
-                {Object.keys(ROLES).map((k) => <span key={k} style={{ textAlign: "center" }}>{ROLES[k].label}</span>)}
-              </div>
-              {PERM_GROUPS.map((g) => (
-                <React.Fragment key={g.group}>
-                  <div style={{ padding: "10px 20px", background: "var(--surface-sunken)", fontSize: "var(--text-xs)", fontWeight: 700, letterSpacing: ".05em", textTransform: "uppercase", color: "var(--text-muted)" }}>{g.group}</div>
-                  {g.perms.map(([id, label]) => (
-                    <div key={id} style={{ display: "grid", gridTemplateColumns: "1.6fr repeat(4, 1fr)", alignItems: "center", padding: "11px 20px", borderBottom: "1px solid var(--border-subtle)" }}>
-                      <span style={{ fontSize: "var(--text-sm)", color: "var(--text-body)" }}>{label}</span>
-                      {Object.keys(ROLES).map((k) => (
-                        <span key={k} style={{ display: "flex", justifyContent: "center", color: ROLE_PERMS[k].includes(id) ? "var(--success)" : "var(--stone-300)" }}>
-                          {ROLE_PERMS[k].includes(id) ? I("check", 18) : I("minus", 16)}
-                        </span>
-                      ))}
-                    </div>
-                  ))}
-                </React.Fragment>
-              ))}
-            </Card></div>
-          </div>
+          <RolesEditor data={rolesData} viewerSlug={viewerSlug} counts={counts} onSaved={function (slug, perms) {
+            setRolesData(function (d) { if (!d) return d; return Object.assign({}, d, { roles: (d.roles || []).map(function (r) { return r.slug === slug ? Object.assign({}, r, { permissions: perms }) : r; }) }); });
+          }} />
         )}
 
         {tab === "locations" && <LocationsTab />}
@@ -3374,7 +3482,8 @@
         {tab === "categories" && <Categories />}
 
         <PermissionDrawer user={editing} onClose={() => setEditing(null)} onSaved={onUserSaved}
-          viewerRole={viewerSlug} isSelf={editing ? isSelfUser(editing) : false} />
+          viewerRole={viewerSlug} isSelf={editing ? isSelfUser(editing) : false}
+          rolePermsMap={rolePermsMap} catalog={rolesData ? rolesData.catalog : []} />
         <AddUserModal open={inviting} onClose={() => setInviting(false)} viewerRole={viewerSlug}
           onCreated={(newUser) => { setUsers((list) => [normalize(newUser), ...list]); }} />
       </div>
@@ -7548,7 +7657,7 @@
     return (
       <div style={{ display: "flex", minHeight: "100vh", background: "var(--surface-page)" }}>
         {sidebarOpen && <div className="krm-sidebar-backdrop open" onClick={() => setSidebarOpen(false)} />}
-        <Sidebar page={page} onNav={setPage} badges={badges} open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+        <Sidebar page={page} onNav={setPage} badges={badges} open={sidebarOpen} onClose={() => setSidebarOpen(false)} perms={authUser.permissions || []} roleSlug={authUser.role && (authUser.role.slug || authUser.role)} />
         <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
           <Topbar title={titles[page]} user={authUser} onLogout={handleLogout} onNav={setPage} onMenu={() => setSidebarOpen(o => !o)} />
           {page === "dashboard" && <Overview />}

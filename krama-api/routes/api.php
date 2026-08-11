@@ -350,6 +350,10 @@ Route::middleware(['auth:api', 'permission:site_settings'])->group(function () {
     Route::patch('admin/users/{id}',                [UserController::class, 'adminUpdateUser']);
     Route::delete('admin/users/{id}',               [UserController::class, 'adminDeleteUser']);
 
+    // Admin: per-role permissions (manage_roles-gated in the controller)
+    Route::get('admin/roles',                       [\App\Http\Controllers\RoleController::class, 'index']);
+    Route::put('admin/roles/{id}/permissions',      [\App\Http\Controllers\RoleController::class, 'updatePermissions']);
+
     // Admin: experience levels
     Route::get('admin/experience-levels',          [ExperienceLevelController::class, 'adminIndex']);
     Route::post('admin/experience-levels',         [ExperienceLevelController::class, 'store']);
