@@ -2,7 +2,9 @@
 
 namespace App\Exceptions;
 
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -36,6 +38,18 @@ class Handler extends ExceptionHandler
 
             if ($e instanceof AuthenticationException) {
                 return response()->json(['message' => 'Unauthenticated.'], 401);
+            }
+
+            // A failed findOrFail() / route-model-binding miss is a 404, not a 500. This also
+            // means a record that exists but belongs to another tenant reads as "not found"
+            // (our employer queries scope by company), so it never leaks existence.
+            if ($e instanceof ModelNotFoundException) {
+                return response()->json(['message' => 'Not found.'], 404);
+            }
+
+            // Policy/gate denials → 403.
+            if ($e instanceof AuthorizationException) {
+                return response()->json(['message' => $e->getMessage() ?: 'This action is unauthorized.'], 403);
             }
 
             if ($e instanceof HttpException) {

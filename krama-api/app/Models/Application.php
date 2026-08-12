@@ -31,4 +31,14 @@ class Application extends Model
     {
         return $this->belongsTo(Resume::class);
     }
+
+    public function notes()
+    {
+        return $this->hasMany(ApplicationNote::class)->orderByDesc('created_at');
+    }
+
+    public function tags()
+    {
+        return $this->hasMany(ApplicationTag::class)->orderBy('label');
+    }
 }

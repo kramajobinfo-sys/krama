@@ -210,6 +210,16 @@ Route::middleware('auth:api')->group(function () {
     Route::patch('applications/{id}/stage',         [ApplicationController::class, 'updateStage']);
     Route::get('applications/{id}/cv',              [ApplicationController::class, 'downloadCv']);
 
+    // Employer: ATS workspace — Kanban board + private notes + candidate tags
+    Route::get('employer/jobs/{id}/board',                  [\App\Http\Controllers\EmployerAtsController::class, 'board']);
+    Route::get('employer/applications/{id}/notes',          [\App\Http\Controllers\EmployerAtsController::class, 'notesIndex']);
+    Route::post('employer/applications/{id}/notes',         [\App\Http\Controllers\EmployerAtsController::class, 'noteStore'])->middleware('throttle:60,1');
+    Route::patch('employer/notes/{id}',                     [\App\Http\Controllers\EmployerAtsController::class, 'noteUpdate']);
+    Route::delete('employer/notes/{id}',                    [\App\Http\Controllers\EmployerAtsController::class, 'noteDestroy']);
+    Route::post('employer/applications/{id}/tags',          [\App\Http\Controllers\EmployerAtsController::class, 'tagStore'])->middleware('throttle:60,1');
+    Route::delete('employer/applications/{id}/tags/{tagId}',[\App\Http\Controllers\EmployerAtsController::class, 'tagDestroy']);
+    Route::get('employer/tags',                             [\App\Http\Controllers\EmployerAtsController::class, 'tags']);
+
     // Employer: own jobs
     // Note: 'verified' middleware removed — this is a JWT API (no verification.notice route),
     // and recruiters are created programmatically without email verification.

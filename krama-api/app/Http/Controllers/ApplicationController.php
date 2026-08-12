@@ -162,7 +162,7 @@ class ApplicationController extends Controller
             ->pluck('c', 'stage');
 
         $out = [];
-        foreach (['applied', 'reviewed', 'shortlisted', 'interview', 'offered', 'rejected'] as $s) {
+        foreach (['applied', 'reviewed', 'shortlisted', 'interview', 'offered', 'hired', 'rejected'] as $s) {
             $out[$s] = (int) ($rows[$s] ?? 0);
         }
         $out['total'] = array_sum($out);
@@ -233,7 +233,9 @@ class ApplicationController extends Controller
         $this->requirePermission('view_applicants');
 
         $data = $request->validate([
-            'stage' => 'required|in:reviewed,shortlisted,interview,offered,rejected',
+            // 'applied' is allowed so the employer can drag a card back to the first column
+            // during triage; 'hired' is the terminal success stage.
+            'stage' => 'required|in:applied,reviewed,shortlisted,interview,offered,hired,rejected',
         ]);
 
         // Verify the application's job belongs to this employer's company (owner or member)
@@ -244,8 +246,13 @@ class ApplicationController extends Controller
 
         $application->load(['candidate:id,name,email', 'job:id,title,company_id', 'job.company:id,name']);
 
-        // In-app notification to the candidate about the stage change
-        $STAGE_LABEL = ['reviewed' => 'reviewed', 'shortlisted' => 'shortlisted', 'interview' => 'invited to interview', 'offered' => 'made an offer', 'rejected' => 'not selected'];
+        // Notify the candidate only for meaningful forward moves — a drag back to 'applied'
+        // is internal triage and shouldn't email/notify the candidate.
+        $STAGE_LABEL = ['reviewed' => 'reviewed', 'shortlisted' => 'shortlisted', 'interview' => 'invited to interview', 'offered' => 'made an offer', 'hired' => 'hired', 'rejected' => 'not selected'];
+        if (! isset($STAGE_LABEL[$data['stage']])) {
+            return response()->json(['id' => $application->id, 'stage' => $application->stage]);
+        }
+
         \App\Models\Notification::record(
             $application->candidate_id,
             'application_stage',

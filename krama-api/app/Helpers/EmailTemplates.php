@@ -17,13 +17,14 @@ class EmailTemplates
             'shortlisted' => ['Shortlisted', 'Great news — you have been shortlisted for this role!'],
             'interview'   => ['Interview',   'You have been selected for an interview. The employer will be in touch with details.'],
             'offered'     => ['Offered',     'Congratulations! You have received a job offer for this position.'],
+            'hired'       => ['Hired',       'Congratulations — you have been hired for this role! The employer will follow up with next steps.'],
             'rejected'    => ['Not selected','Thank you for applying. Unfortunately you were not selected for this role this time.'],
         ];
 
         [$label, $detail] = $labels[$stage] ?? [$stage, ''];
 
         $subject = "Application update: {$jobTitle} at {$companyName}";
-        $color   = $stage === 'offered' ? '#16a34a' : ($stage === 'rejected' ? '#dc2626' : '#0369a1');
+        $color   = in_array($stage, ['offered', 'hired'], true) ? '#16a34a' : ($stage === 'rejected' ? '#dc2626' : '#0369a1');
         $html    = self::wrapper(
             "Application Update",
             "<p style='margin:0 0 12px'>Hello <strong>{$candidateName}</strong>,</p>
