@@ -3254,6 +3254,21 @@
           <Input label="Brand name" value={b.brandName || ""} onChange={(e) => set("brandName", e.target.value)} placeholder="KRAMA" style={{ maxWidth: 320 }} />
         </Card>
 
+        {/* Contact details */}
+        <Card padding={24} style={{ marginBottom: 20 }}>
+          <h3 style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: "var(--text-strong)", marginBottom: 4, display: "flex", alignItems: "center", gap: 8 }}>
+            {I("map-pin", 18)} Contact details
+          </h3>
+          <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginBottom: 16 }}>Shown in the public website footer and contact section.</p>
+          <div className="krm-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+            <Input label="Phone" value={b.phone || ""} onChange={(e) => set("phone", e.target.value)} placeholder="+855 …" iconLeft={I("phone", 16)} />
+            <Input label="Contact email" value={b.contactEmail || ""} onChange={(e) => set("contactEmail", e.target.value)} placeholder="hello@kramajob.com" iconLeft={I("mail", 16)} />
+          </div>
+          <div style={{ marginTop: 14 }}>
+            <Input label="Address" value={b.address || ""} onChange={(e) => set("address", e.target.value)} placeholder="Street, city, country" iconLeft={I("map-pin", 16)} />
+          </div>
+        </Card>
+
         {err && (
           <div style={{ marginBottom: 16, padding: "12px 16px", background: "var(--danger-subtle)", border: "1px solid var(--danger)", borderRadius: "var(--radius-md)", fontSize: "var(--text-sm)", color: "var(--danger)", display: "flex", gap: 8, alignItems: "flex-start" }}>
             {I("alert-circle", 16)}<span>{err}</span>

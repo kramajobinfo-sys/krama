@@ -98,6 +98,10 @@ class SettingController extends Controller
             'faviconUrl' => 'nullable|string|max:3000000',
             'primaryColor'   => 'nullable|string|max:20',
             'accentColor'    => 'nullable|string|max:20',
+            // Public contact details (shown in the site footer / contact section).
+            'phone'        => 'nullable|string|max:60',
+            'contactEmail' => 'nullable|string|max:120',
+            'address'      => 'nullable|string|max:300',
         ],
         'social' => [
             'google_enabled'      => 'boolean',
