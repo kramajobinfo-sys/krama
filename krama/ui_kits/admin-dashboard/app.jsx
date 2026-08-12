@@ -566,7 +566,7 @@
   // (including on a live listing) without hunting down the employer.
   function PostJobModal({ open, onClose, onPosted, job }) {
     const isEdit = !!(job && job.id);
-    const BLANK = { company_id: "", title: "", category_id: "", location_id: "", job_type: "full_time", experience_level: "", salary_min: "", salary_max: "", salary_currency: "USD", salary_period: "month", is_remote: false, working_days: "", working_time: "", map_location: "", expires_at: "", description: "", requirements: "", benefits: "" };
+    const BLANK = { company_id: "", title: "", category_id: "", location_id: "", job_type: "full_time", experience_level: "", salary_min: "", salary_max: "", salary_currency: "USD", salary_period: "month", is_remote: false, working_days: "", working_time: "", map_location: "", expires_at: "", share_social: true, social_image: "", description: "", requirements: "", benefits: "" };
     const fromJob = function (j) {
       return {
         company_id: j.company_id != null ? String(j.company_id) : "",
@@ -584,6 +584,8 @@
         working_time: j.working_time || "",
         map_location: j.map_location || "",
         expires_at: j.expires_at ? String(j.expires_at).slice(0, 10) : "",
+        share_social: j.share_social !== undefined ? !!j.share_social : true,
+        social_image: j.social_image || "",
         description: j.description || "",
         requirements: j.requirements || "",
         benefits: j.benefits || "",
@@ -599,7 +601,17 @@
     const set = (k, v) => setForm(function (f) { return Object.assign({}, f, { [k]: v }); });
     const [drafting, setDrafting] = React.useState(false);
     const [draftMsg, setDraftMsg] = React.useState("");
+    const [socialUploading, setSocialUploading] = React.useState(false);
     const [resetKey, setResetKey] = React.useState(0); // remounts the RichEditors on reset / AI draft
+
+    const onSocialImage = function (e) {
+      var file = e.target.files && e.target.files[0]; e.target.value = "";
+      if (!file) return;
+      setSocialUploading(true); setErr("");
+      adm.uploadImage(file)
+        .then(function (url) { set("social_image", url); setSocialUploading(false); })
+        .catch(function (er) { setSocialUploading(false); setErr((er && er.message) || "Image upload failed."); });
+    };
 
     const draftWithAI = function () {
       if (!form.title.trim()) { setErr("Enter a job title first, then draft with AI."); return; }
@@ -643,6 +655,8 @@
         location_id: form.location_id ? Number(form.location_id) : null,
         experience_level: form.experience_level || null,
         expires_at: form.expires_at || null,
+        share_social: !!form.share_social,
+        social_image: form.social_image || null,
       });
       var call = isEdit ? adm.adminUpdateJob(job.id, payload) : adm.adminCreateJob(payload);
       call
@@ -653,6 +667,7 @@
     const JOB_TYPES = [{ value: "full_time", label: "Full time" }, { value: "part_time", label: "Part time" }, { value: "contract", label: "Contract" }, { value: "internship", label: "Internship" }, { value: "temporary", label: "Temporary" }];
     const EXP = [{ value: "", label: "—" }, { value: "entry", label: "Entry" }, { value: "junior", label: "Junior" }, { value: "mid", label: "Mid" }, { value: "senior", label: "Senior" }, { value: "lead", label: "Lead" }, { value: "manager", label: "Manager" }, { value: "executive", label: "Executive" }];
     const PERIODS = [{ value: "month", label: "/ month" }, { value: "year", label: "/ year" }, { value: "day", label: "/ day" }, { value: "hour", label: "/ hour" }];
+    const CURRENCIES = [{ value: "USD", label: "USD" }, { value: "KHR", label: "KHR" }];
 
     return (
       <div style={{ position: "fixed", inset: 0, zIndex: 400, background: "var(--surface-overlay, rgba(0,0,0,0.5))", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "40px 16px", overflowY: "auto" }}>
@@ -681,9 +696,10 @@
                 <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: 6, display: "flex", alignItems: "center", gap: 5 }}>{I("info", 12)} Created as pending — it shows in public category filters once approved.</div>
               </div>
             )}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 14 }}>
               <Input label="Salary min" type="number" value={form.salary_min} onChange={function (e) { set("salary_min", e.target.value); }} />
               <Input label="Salary max" type="number" value={form.salary_max} onChange={function (e) { set("salary_max", e.target.value); }} />
+              <Select label="Currency" value={form.salary_currency} onChange={function (e) { set("salary_currency", e.target.value); }} options={CURRENCIES} />
               <Select label="Per" value={form.salary_period} onChange={function (e) { set("salary_period", e.target.value); }} options={PERIODS} />
             </div>
             <div className="krm-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
@@ -694,10 +710,36 @@
               <Input label="Application deadline" type="date" value={form.expires_at} onChange={function (e) { set("expires_at", e.target.value); }} hint="Optional — the job auto-expires on this date." />
               <div />
             </div>
+            <Input label="Location / map link (optional)" value={form.map_location} onChange={function (e) { set("map_location", e.target.value); }} placeholder="Address or Google Maps link" />
             <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
               <Switch checked={form.is_remote} onChange={function (v) { set("is_remote", typeof v === "boolean" ? v : !form.is_remote); }} />
               <span style={{ fontSize: "var(--text-sm)", color: "var(--text-body)" }}>Remote position</span>
             </label>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", border: "1px solid var(--border)", borderRadius: "var(--radius-md)" }}>
+              <div>
+                <div style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-strong)" }}>Share on social media</div>
+                <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>Auto-post this job to our social channels when it's published.</div>
+              </div>
+              <Switch checked={form.share_social} onChange={function (v) { set("share_social", typeof v === "boolean" ? v : !form.share_social); }} />
+            </div>
+            {form.share_social && (
+              <div style={{ padding: "12px 14px", border: "1px solid var(--border)", borderRadius: "var(--radius-md)" }}>
+                <div style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-strong)", marginBottom: 4 }}>Banner image for the social post <span style={{ fontWeight: 400, color: "var(--text-muted)" }}>(optional)</span></div>
+                <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginBottom: 10 }}>A hiring poster shared with the job (recommended ~1200 × 630). Without one, a text-only post is shared.</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                  {form.social_image
+                    ? <img src={form.social_image} alt="Banner preview" style={{ width: 132, height: 69, objectFit: "cover", borderRadius: "var(--radius-sm)", border: "1px solid var(--border)", flexShrink: 0 }} />
+                    : <div style={{ width: 132, height: 69, borderRadius: "var(--radius-sm)", border: "1px dashed var(--border-strong)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-faint)", flexShrink: 0 }}>{I("image", 22)}</div>}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-start" }}>
+                    <label style={{ display: "inline-flex", alignItems: "center", gap: 6, cursor: socialUploading ? "not-allowed" : "pointer", opacity: socialUploading ? 0.5 : 1, fontFamily: "var(--font-sans)", fontWeight: 600, color: "var(--text-brand)", fontSize: "var(--text-sm)" }}>
+                      {I("upload", 14)} {socialUploading ? "Uploading…" : (form.social_image ? "Replace image" : "Upload image")}
+                      <input type="file" accept="image/*" disabled={socialUploading} onChange={onSocialImage} style={{ display: "none" }} />
+                    </label>
+                    {form.social_image && <button type="button" onClick={function () { set("social_image", ""); }} style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--danger)", fontSize: "var(--text-xs)", fontWeight: 600, padding: 0 }}>Remove</button>}
+                  </div>
+                </div>
+              </div>
+            )}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap", padding: "8px 0 2px", borderTop: "1px solid var(--border-subtle)" }}>
               <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 5 }}>{I("sparkles", 13)} Draft the description, requirements &amp; benefits from the title.</span>
               <Button variant="secondary" size="sm" iconLeft={I("sparkles", 15)} disabled={drafting || !form.title.trim()} onClick={draftWithAI}>{drafting ? "Drafting…" : "Draft with AI"}</Button>
