@@ -40,27 +40,28 @@ class SocialPostService
         $text  = self::buildText($job);
         $url   = self::jobUrl($job);
         $image = self::imageForJob($job); // local file path (preferred), public URL, or null
+        $req   = self::requirementsBlock($job); // "\n\n📋 Requirements:\n…" or '' — placed AFTER the apply link
 
         $attempted = false;
 
         // Telegram channel — reuses the shared bot (telegram group bot_token).
         if (self::on($cfg['telegram_enabled'] ?? null) && ! empty($cfg['telegram_channel']) && TelegramService::botToken() !== '') {
             $attempted = true;
-            try { self::postTelegram(trim($cfg['telegram_channel']), $text, $url, $image); }
+            try { self::postTelegram(trim($cfg['telegram_channel']), $text, $url, $image, $req); }
             catch (\Throwable $e) { Log::warning('Social post (telegram) failed for job ' . $job->id . ': ' . $e->getMessage()); }
         }
 
         // Facebook Page — photo post when an image is present, else a feed link post.
         if (self::on($cfg['facebook_enabled'] ?? null) && ! empty($cfg['facebook_page_id']) && ! empty($cfg['facebook_page_token'])) {
             $attempted = true;
-            try { self::postFacebook($cfg['facebook_page_id'], $cfg['facebook_page_token'], $text, $url, $image); }
+            try { self::postFacebook($cfg['facebook_page_id'], $cfg['facebook_page_token'], $text, $url, $image, $req); }
             catch (\Throwable $e) { Log::warning('Social post (facebook) failed for job ' . $job->id . ': ' . $e->getMessage()); }
         }
 
         // LinkedIn — organization or member author URN.
         if (self::on($cfg['linkedin_enabled'] ?? null) && ! empty($cfg['linkedin_token']) && ! empty($cfg['linkedin_author_urn'])) {
             $attempted = true;
-            try { self::postLinkedIn($cfg['linkedin_token'], $cfg['linkedin_author_urn'], $text . "\n" . $url, $image); }
+            try { self::postLinkedIn($cfg['linkedin_token'], $cfg['linkedin_author_urn'], $text . "\n" . $url . $req, $image); }
             catch (\Throwable $e) { Log::warning('Social post (linkedin) failed for job ' . $job->id . ': ' . $e->getMessage()); }
         }
 
@@ -102,6 +103,34 @@ class SocialPostService
         return $sym . $fmt($job->salary_min) . '+' . $per;
     }
 
+    // The Requirements section for the social caption, shown BELOW the apply link.
+    // Returns '' when the job has no requirements. Leading blank line separates it from the CTA.
+    public static function requirementsBlock(Job $job): string
+    {
+        $req = self::htmlToText($job->requirements ?? '');
+        if ($req === '') return '';
+        // Keep the post readable and within caption limits (Telegram caps at 1024 total).
+        if (mb_strlen($req) > 600) $req = rtrim(mb_substr($req, 0, 600)) . '…';
+        return "\n\n📋 Requirements:\n" . $req;
+    }
+
+    // Convert stored rich-text (sanitized HTML) into plain text suitable for a social caption:
+    // list items become "• " bullets, block tags become line breaks, remaining tags are stripped.
+    private static function htmlToText(?string $html): string
+    {
+        $s = trim((string) $html);
+        if ($s === '') return '';
+        $s = preg_replace('#<li[^>]*>#i', "\n• ", $s);
+        $s = preg_replace('#<br\s*/?>#i', "\n", $s);
+        $s = preg_replace('#</(p|div|ul|ol|h[1-6]|tr)>#i', "\n", $s);
+        $s = strip_tags($s);
+        $s = html_entity_decode($s, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $s = preg_replace('/[ \t]+/', ' ', $s);          // collapse runs of spaces
+        $s = preg_replace('/ *\n */', "\n", $s);          // trim spaces around line breaks
+        $s = preg_replace('/\n{3,}/', "\n\n", $s);        // collapse blank-line runs
+        return trim($s);
+    }
+
     public static function jobUrl(Job $job): string
     {
         // Canonical shareable URL — the same one the SEO layer publishes in the canonical
@@ -120,7 +149,7 @@ class SocialPostService
 
     // ── Platform posters — throw on failure; shareJob() wraps each in try/catch ──
 
-    public static function postTelegram(string $channel, string $text, string $url = '', ?string $image = null): void
+    public static function postTelegram(string $channel, string $text, string $url = '', ?string $image = null, string $suffix = ''): void
     {
         $token = TelegramService::botToken();
         // Telegram rejects inline-button URLs that aren't a public http(s) address
@@ -132,7 +161,9 @@ class SocialPostService
             && ! preg_match('#^https?://(localhost|127\.0\.0\.1|0\.0\.0\.0|\[?::1\]?|[^/]+\.local\b|\d{1,3}(\.\d{1,3}){3})#i', $url);
         // The shared bot sends with parse_mode=HTML, so escape &, <, > in the (plain-text)
         // message/caption — otherwise a title like "Food & Beverage" triggers a parse error.
-        $body   = $publicUrl ? $text : trim($text . ($url !== '' ? "\n" . $url : ''));
+        // The apply URL is a tappable button for a public link, or appended in-text otherwise.
+        // The Requirements block ($suffix) always follows the call-to-action.
+        $body   = ($publicUrl ? $text : trim($text . ($url !== '' ? "\n" . $url : ''))) . $suffix;
         $safe   = htmlspecialchars($body, ENT_NOQUOTES, 'UTF-8');
         $markup = $publicUrl ? ['inline_keyboard' => [[['text' => '👉 View & Apply on Krama', 'url' => $url]]]] : null;
         // With a banner image, post it as a photo + caption (like a hiring poster);
@@ -143,12 +174,13 @@ class SocialPostService
         if (empty($res['ok'])) throw new \RuntimeException($res['error'] ?? 'telegram send failed');
     }
 
-    public static function postFacebook(string $pageId, string $token, string $message, string $link, ?string $image = null): void
+    public static function postFacebook(string $pageId, string $token, string $message, string $link, ?string $image = null, string $suffix = ''): void
     {
         // Photo post when an image is present (uploads the local file so it works even
         // when the URL isn't publicly reachable); otherwise a plain feed link post.
+        // The Requirements block ($suffix) follows the apply link.
         if ($image) {
-            $caption = $message . "\n" . $link;
+            $caption = $message . "\n" . $link . $suffix;
             $endpoint = 'https://graph.facebook.com/v19.0/' . $pageId . '/photos';
             if (is_file($image)) {
                 $resp = Http::timeout(20)->attach('source', file_get_contents($image), basename($image))
@@ -159,7 +191,7 @@ class SocialPostService
         } else {
             $resp = Http::timeout(12)->asForm()->post(
                 'https://graph.facebook.com/v19.0/' . $pageId . '/feed',
-                ['message' => $message . "\n" . $link, 'link' => $link, 'access_token' => $token]
+                ['message' => $message . "\n" . $link . $suffix, 'link' => $link, 'access_token' => $token]
             );
         }
         if (! $resp->successful()) throw new \RuntimeException('facebook http ' . $resp->status() . ' ' . $resp->body());
