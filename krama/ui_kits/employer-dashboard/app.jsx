@@ -1113,15 +1113,28 @@
     { key: "shortlisted", label: "Shortlisted", tone: "brand" },
     { key: "interview", label: "Interview", tone: "warning" },
     { key: "offered", label: "Offered", tone: "success" },
+    { key: "hired", label: "Hired", tone: "success" },
+    { key: "rejected", label: "Rejected", tone: "danger" },
   ];
-  const NEXT_STAGE = { applied: "reviewed", reviewed: "shortlisted", shortlisted: "interview", interview: "offered" };
+  const STLABEL = STAGES.reduce(function (m, s) { m[s.key] = s.label; return m; }, {});
 
   function Applicants({ jobs, onGoToMessages }) {
     const reviewable = jobs.filter((j) => j.status === "published" || j.status === "closed");
     const [jobId, setJobId] = React.useState("");
-    const [apps, setApps] = React.useState([]);
+    const [apps, setApps] = React.useState([]);           // flattened board items (each carries .stage/.tags/.notes_count)
     const [loading, setLoading] = React.useState(false);
     const [msg, setMsg] = React.useState("");
+    const [dragId, setDragId] = React.useState(null);
+    const [overCol, setOverCol] = React.useState("");
+    const [sel, setSel] = React.useState(null);           // selected card -> opens the drawer
+    const [detail, setDetail] = React.useState(null);     // full applicant detail (contact, cover note, notes)
+    const [notes, setNotes] = React.useState([]);
+    const [noteBody, setNoteBody] = React.useState("");
+    const [noteBusy, setNoteBusy] = React.useState(false);
+    const [editNote, setEditNote] = React.useState(null);
+    const [editBody, setEditBody] = React.useState("");
+    const [tagInput, setTagInput] = React.useState("");
+    const [allTags, setAllTags] = React.useState([]);
     const [msgModal, setMsgModal] = React.useState(null);
     const [msgBody, setMsgBody] = React.useState("");
     const [msgSending, setMsgSending] = React.useState(false);
@@ -1145,18 +1158,58 @@
     const load = React.useCallback(function () {
       if (!jobId) { setApps([]); return; }
       setLoading(true);
-      emp.fetchJobApplications(jobId).then(function (d) {
-        var list = (d.applications && d.applications.data) || [];
+      emp.fetchJobBoard(jobId).then(function (d) {
+        var b = d.board || {}, list = [];
+        STAGES.forEach(function (s) { ((b[s.key] && b[s.key].items) || []).forEach(function (it) { list.push(it); }); });
         setApps(list); setLoading(false);
       }).catch(function () { setLoading(false); });
     }, [jobId]);
     React.useEffect(function () { load(); }, [load]);
+    React.useEffect(function () { emp.fetchCompanyTags().then(setAllTags).catch(function () {}); }, []);
 
-    const move = (a, stage) => {
-      emp.updateApplicationStage(a.id, stage)
-        .then(function () { flash("Moved to " + stage + "."); load(); })
-        .catch(function (e) { flash("Error: " + (e && e.message)); });
+    // Load full detail + notes whenever the drawer target changes.
+    React.useEffect(function () {
+      if (!sel) { setDetail(null); setNotes([]); setEditNote(null); setTagInput(""); return; }
+      setDetail(null);
+      emp.fetchApplication(sel.id).then(function (d) { setDetail(d); setNotes(d.notes || []); }).catch(function () {});
+    }, [sel && sel.id]);
+
+    // Optimistic stage move (drag or drawer) — re-sync from the server on error.
+    const move = (a, toStage) => {
+      if (!a || a.stage === toStage) return;
+      setApps(function (prev) { return prev.map(function (x) { return x.id === a.id ? Object.assign({}, x, { stage: toStage }) : x; }); });
+      setSel(function (s) { return s && s.id === a.id ? Object.assign({}, s, { stage: toStage }) : s; });
+      emp.updateApplicationStage(a.id, toStage).then(function () { flash("Moved to " + (STLABEL[toStage] || toStage)); }).catch(function (e) { flash("Error: " + (e && e.message)); load(); });
     };
+
+    const patchCard = (id, fn) => { setApps(function (prev) { return prev.map(function (x) { return x.id === id ? fn(x) : x; }); }); };
+    const addTag = (label) => {
+      label = (label || "").trim(); if (!label || !sel) return;
+      emp.addAppTag(sel.id, label).then(function (t) {
+        setDetail(function (d) { if (!d) return d; var tags = (d.tags || []).filter(function (z) { return z.label !== t.label; }); return Object.assign({}, d, { tags: tags.concat([t]) }); });
+        patchCard(sel.id, function (x) { var tags = (x.tags || []).filter(function (z) { return z.label !== t.label; }); return Object.assign({}, x, { tags: tags.concat([t]) }); });
+        setAllTags(function (a) { return a.indexOf(t.label) === -1 ? a.concat([t.label]).sort() : a; });
+        setTagInput("");
+      }).catch(function (e) { flash("Error: " + (e && e.message)); });
+    };
+    const removeTag = (tagId) => {
+      if (!sel) return;
+      emp.removeAppTag(sel.id, tagId).then(function () {
+        setDetail(function (d) { return d ? Object.assign({}, d, { tags: (d.tags || []).filter(function (z) { return z.id !== tagId; }) }) : d; });
+        patchCard(sel.id, function (x) { return Object.assign({}, x, { tags: (x.tags || []).filter(function (z) { return z.id !== tagId; }) }); });
+      }).catch(function () {});
+    };
+    const bumpNotes = (id, delta) => patchCard(id, function (x) { return Object.assign({}, x, { notes_count: Math.max(0, (x.notes_count || 0) + delta) }); });
+    const submitNote = () => {
+      var b = noteBody.trim(); if (!b || noteBusy || !sel) return; setNoteBusy(true);
+      emp.addAppNote(sel.id, b).then(function (n) { setNotes(function (a) { return [n].concat(a); }); setNoteBody(""); setNoteBusy(false); bumpNotes(sel.id, 1); }).catch(function (e) { setNoteBusy(false); flash("Error: " + (e && e.message)); });
+    };
+    const saveEditNote = (n) => {
+      var b = editBody.trim(); if (!b) return;
+      emp.updateAppNote(n.id, b).then(function (u) { setNotes(function (a) { return a.map(function (x) { return x.id === n.id ? Object.assign({}, x, { body: u.body, updated_at: u.updated_at }) : x; }); }); setEditNote(null); }).catch(function (e) { flash("Error: " + (e && e.message)); });
+    };
+    const delNote = (n) => { emp.deleteAppNote(n.id).then(function () { setNotes(function (a) { return a.filter(function (x) { return x.id !== n.id; }); }); if (sel) bumpNotes(sel.id, -1); }).catch(function () {}); };
+    const fmtDay = (d) => { try { return new Date(d).toLocaleDateString(undefined, { day: "numeric", month: "short" }); } catch (e) { return ""; } };
 
     const byStage = {};
     STAGES.forEach((s) => { byStage[s.key] = []; });
@@ -1175,12 +1228,17 @@
               options={reviewable.map((j) => ({ value: String(j.id), label: j.title + " (" + (j.applications_count || 0) + ")" }))} />
           </div>
           <Badge tone="neutral">{apps.length} applicant{apps.length === 1 ? "" : "s"}</Badge>
+          <span style={{ fontSize: "var(--text-xs)", color: "var(--text-faint)" }}>Drag a card between columns, or open it to manage.</span>
           {msg && <span style={{ fontSize: "var(--text-sm)", color: "var(--success)", fontWeight: 600 }}>{msg}</span>}
         </div>
         {loading ? <div style={{ color: "var(--text-muted)", fontSize: "var(--text-sm)" }}>Loading…</div> : (
-        <div className="krm-pipeline" style={{ display: "grid", gridTemplateColumns: "repeat(5, minmax(190px, 1fr))", gap: 14, alignItems: "start", overflowX: "auto", paddingBottom: 6 }}>
+        <div className="krm-pipeline" style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(180px, 1fr))", gap: 12, alignItems: "start", overflowX: "auto", paddingBottom: 6 }}>
           {STAGES.map((s) => (
-            <div key={s.key} style={{ background: "var(--surface-sunken)", borderRadius: "var(--radius-lg)", padding: 10, minHeight: 200, minWidth: 0 }}>
+            <div key={s.key}
+              onDragOver={(e) => { e.preventDefault(); if (overCol !== s.key) setOverCol(s.key); }}
+              onDragLeave={() => setOverCol("")}
+              onDrop={(e) => { e.preventDefault(); setOverCol(""); var it = apps.find(function (x) { return x.id === dragId; }); if (it) move(it, s.key); setDragId(null); }}
+              style={{ background: "var(--surface-sunken)", borderRadius: "var(--radius-lg)", padding: 10, minHeight: 220, minWidth: 0, outline: overCol === s.key ? "2px dashed var(--brand)" : "none", outlineOffset: -2 }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 6px 10px" }}>
                 <Badge tone={s.tone}>{s.label}</Badge>
                 <span style={{ fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-muted)" }}>{byStage[s.key].length}</span>
@@ -1188,27 +1246,26 @@
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {byStage[s.key].map((a) => {
                   var c = a.candidate || {};
-                  var next = NEXT_STAGE[s.key];
                   return (
-                    <div key={a.id} style={{ background: "var(--surface-card)", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", padding: 12, boxShadow: "var(--shadow-xs)" }}>
+                    <div key={a.id} draggable onDragStart={() => setDragId(a.id)} onDragEnd={() => setDragId(null)} onClick={() => setSel(a)}
+                      style={{ background: "var(--surface-card)", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", padding: 11, boxShadow: "var(--shadow-xs)", cursor: "pointer", opacity: dragId === a.id ? 0.5 : 1 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
                         <Avatar src={c.avatar_url} name={c.name || "?"} size={32} />
                         <div style={{ minWidth: 0 }}>
                           <div style={{ fontWeight: 700, fontSize: "var(--text-sm)", color: "var(--text-strong)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.name || "Candidate"}</div>
-                          <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{(a.resume && a.resume.headline) || c.email || ""}</div>
+                          <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{a.headline || ""}</div>
                         </div>
                       </div>
-                      <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
-                        {a.resume && a.resume.has_cv
-                          ? (c.cv_visibility === "private"
-                            ? <Button variant="ghost" size="sm" style={{ flex: 1, height: 30 }} disabled title="Candidate has hidden their CV">{I("eye-off", 12)} Hidden</Button>
-                            : <Button variant="ghost" size="sm" style={{ flex: 1, height: 30 }} iconLeft={I("download", 13)} onClick={function() { emp.downloadCv(a.id).catch(function(e){ flash(e && e.message || "Download failed"); }); }}>CV</Button>)
-                          : <Button variant="ghost" size="sm" style={{ flex: 1, height: 30 }} disabled>No CV</Button>}
-                        {next
-                          ? <Button variant="secondary" size="sm" style={{ flex: 1, height: 30 }} onClick={() => move(a, next)}>→ {next}</Button>
-                          : <Button variant="ghost" size="sm" style={{ flex: 1, height: 30 }} disabled>Final</Button>}
+                      {a.tags && a.tags.length > 0 && (
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 8 }}>
+                          {a.tags.map(function (t) { return <span key={t.id} style={{ fontSize: 10, fontWeight: 600, color: "var(--text-brand)", background: "var(--brand-subtle)", borderRadius: 999, padding: "1px 7px" }}>{t.label}</span>; })}
+                        </div>
+                      )}
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 8, fontSize: 11, color: "var(--text-faint)" }}>
+                        {a.has_cv && <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}>{I("file-text", 11)} CV</span>}
+                        {a.notes_count > 0 && <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}>{I("sticky-note", 11)} {a.notes_count}</span>}
+                        <span style={{ marginLeft: "auto" }}>{fmtDay(a.created_at)}</span>
                       </div>
-                      <Button variant="ghost" size="sm" style={{ width: "100%", height: 30, marginTop: 6 }} iconLeft={I("message-square", 13)} onClick={() => openMessage(c)}>Message</Button>
                     </div>
                   );
                 })}
@@ -1217,6 +1274,90 @@
             </div>
           ))}
         </div>
+        )}
+        {sel && (
+          <div onClick={() => setSel(null)} style={{ position: "fixed", inset: 0, zIndex: 200, background: "var(--surface-overlay)", display: "flex", justifyContent: "flex-end" }}>
+            <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", maxWidth: 440, height: "100%", background: "var(--surface-card)", boxShadow: "var(--shadow-xl)", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+              <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: 12 }}>
+                <Avatar src={(sel.candidate || {}).avatar_url} name={(sel.candidate || {}).name || "?"} size={44} />
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ fontWeight: 700, color: "var(--text-strong)" }}>{(sel.candidate || {}).name || "Candidate"}</div>
+                  <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{detail ? (detail.headline || (detail.candidate && detail.candidate.email) || "") : "Loading…"}</div>
+                </div>
+                <Button variant="ghost" size="sm" onClick={() => setSel(null)}>{I("x", 18)}</Button>
+              </div>
+              <div style={{ padding: 20, overflowY: "auto", display: "flex", flexDirection: "column", gap: 18, flex: 1 }}>
+                <div>
+                  <label style={{ fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".04em" }}>Stage</label>
+                  <div style={{ marginTop: 6 }}>
+                    <Select value={sel.stage} onChange={(e) => move(sel, e.target.value)} options={STAGES.map(function (s) { return { value: s.key, label: s.label }; })} />
+                  </div>
+                </div>
+                {detail && detail.candidate && (detail.candidate.email || detail.candidate.phone) && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: "var(--text-sm)" }}>
+                    {detail.candidate.email && <div style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--text-body)" }}>{I("mail", 14)} <a href={"mailto:" + detail.candidate.email} style={{ color: "inherit", textDecoration: "none" }}>{detail.candidate.email}</a></div>}
+                    {detail.candidate.phone && <div style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--text-body)" }}>{I("phone", 14)} {detail.candidate.phone}</div>}
+                  </div>
+                )}
+                <div style={{ display: "flex", gap: 8 }}>
+                  {detail && detail.has_cv
+                    ? <Button variant="secondary" size="sm" iconLeft={I("download", 14)} onClick={() => emp.downloadCv(sel.id).catch(function (e) { flash(e && e.message || "Download failed"); })}>Download CV</Button>
+                    : <Button variant="ghost" size="sm" disabled>{detail && detail.cv_private ? "CV hidden" : "No CV"}</Button>}
+                  <Button variant="ghost" size="sm" iconLeft={I("message-square", 14)} onClick={() => detail && detail.candidate && openMessage(detail.candidate)}>Message</Button>
+                </div>
+                {detail && detail.cover_note && (
+                  <div>
+                    <label style={{ fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".04em" }}>Cover note</label>
+                    <div style={{ marginTop: 6, fontSize: "var(--text-sm)", color: "var(--text-body)", whiteSpace: "pre-wrap", background: "var(--surface-sunken)", borderRadius: "var(--radius-md)", padding: "10px 12px" }}>{detail.cover_note}</div>
+                  </div>
+                )}
+                <div>
+                  <label style={{ fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".04em" }}>Tags</label>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
+                    {(detail ? detail.tags : []).map(function (t) {
+                      return <span key={t.id} style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: "var(--text-xs)", fontWeight: 600, color: "var(--text-brand)", background: "var(--brand-subtle)", borderRadius: 999, padding: "3px 4px 3px 10px" }}>{t.label}<button onClick={() => removeTag(t.id)} style={{ border: "none", background: "none", cursor: "pointer", color: "var(--text-brand)", display: "inline-flex", padding: 2 }}>{I("x", 11)}</button></span>;
+                    })}
+                  </div>
+                  <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
+                    <input list="krm-tag-suggestions" value={tagInput} onChange={(e) => setTagInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addTag(tagInput); } }} placeholder="Add a tag…" maxLength={40}
+                      style={{ flex: 1, boxSizing: "border-box", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", padding: "7px 10px", fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)", color: "var(--text-body)", background: "var(--surface-page)", outline: "none" }} />
+                    <datalist id="krm-tag-suggestions">{allTags.map(function (l) { return <option key={l} value={l} />; })}</datalist>
+                    <Button variant="secondary" size="sm" disabled={!tagInput.trim()} onClick={() => addTag(tagInput)}>Add</Button>
+                  </div>
+                </div>
+                <div>
+                  <label style={{ fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".04em" }}>Private notes</label>
+                  <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 8 }}>
+                    <textarea value={noteBody} onChange={(e) => setNoteBody(e.target.value)} rows={2} placeholder="Add a private note (only your team can see this)…"
+                      style={{ width: "100%", boxSizing: "border-box", resize: "vertical", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", padding: "9px 11px", fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)", color: "var(--text-body)", background: "var(--surface-page)", outline: "none", lineHeight: 1.5 }} />
+                    <div><Button variant="primary" size="sm" disabled={noteBusy || !noteBody.trim()} onClick={submitNote}>{noteBusy ? "Saving…" : "Add note"}</Button></div>
+                    {notes.map(function (n) {
+                      return (
+                        <div key={n.id} style={{ background: "var(--surface-sunken)", borderRadius: "var(--radius-md)", padding: "10px 12px" }}>
+                          {editNote === n.id ? (
+                            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                              <textarea value={editBody} onChange={(e) => setEditBody(e.target.value)} rows={2} style={{ width: "100%", boxSizing: "border-box", resize: "vertical", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", padding: "7px 9px", fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)", color: "var(--text-body)", background: "var(--surface-card)", outline: "none" }} />
+                              <div style={{ display: "flex", gap: 6 }}><Button variant="primary" size="sm" onClick={() => saveEditNote(n)}>Save</Button><Button variant="ghost" size="sm" onClick={() => setEditNote(null)}>Cancel</Button></div>
+                            </div>
+                          ) : (
+                            <div>
+                              <div style={{ fontSize: "var(--text-sm)", color: "var(--text-body)", whiteSpace: "pre-wrap" }}>{n.body}</div>
+                              <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6, fontSize: 11, color: "var(--text-faint)" }}>
+                                <span>{n.author || "You"} · {fmtDay(n.created_at)}</span>
+                                {n.can_edit && <button onClick={() => { setEditNote(n.id); setEditBody(n.body); }} style={{ marginLeft: "auto", border: "none", background: "none", cursor: "pointer", color: "var(--text-brand)", fontWeight: 600 }}>Edit</button>}
+                                {n.can_edit && <button onClick={() => delNote(n)} style={{ border: "none", background: "none", cursor: "pointer", color: "var(--danger)", fontWeight: 600 }}>Delete</button>}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                    {notes.length === 0 && <div style={{ fontSize: "var(--text-xs)", color: "var(--text-faint)" }}>No notes yet.</div>}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         )}
         {msgModal && (
           <div onClick={() => setMsgModal(null)} style={{ position: "fixed", inset: 0, zIndex: 200, background: "var(--surface-overlay)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>

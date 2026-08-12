@@ -212,6 +212,7 @@ Route::middleware('auth:api')->group(function () {
 
     // Employer: ATS workspace — Kanban board + private notes + candidate tags
     Route::get('employer/jobs/{id}/board',                  [\App\Http\Controllers\EmployerAtsController::class, 'board']);
+    Route::get('employer/applications/{id}',                [\App\Http\Controllers\EmployerAtsController::class, 'show'])->where('id', '[0-9]+');
     Route::get('employer/applications/{id}/notes',          [\App\Http\Controllers\EmployerAtsController::class, 'notesIndex']);
     Route::post('employer/applications/{id}/notes',         [\App\Http\Controllers\EmployerAtsController::class, 'noteStore'])->middleware('throttle:60,1');
     Route::patch('employer/notes/{id}',                     [\App\Http\Controllers\EmployerAtsController::class, 'noteUpdate']);

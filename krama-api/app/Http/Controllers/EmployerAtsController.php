@@ -84,6 +84,51 @@ class EmployerAtsController extends Controller
         ]);
     }
 
+    // GET /employer/applications/{id} — full applicant detail for the ATS drawer
+    // (contact info per privacy, cover note, tags, and the notes thread in one call).
+    public function show(Request $request, $appId)
+    {
+        $user = $request->user();
+        $this->requirePermission('view_applicants');
+
+        $app = Application::with([
+            'candidate:id,name,email,phone,avatar_url,cv_visibility',
+            'resume:id,candidate_id,headline,file_url',
+            'tags:id,application_id,label',
+            'notes' => fn ($q) => $q->with('author:id,name'),
+        ])->whereHas('job', fn ($q) => $q->where('company_id', $this->employerCompanyId($user)))
+            ->findOrFail($appId);
+
+        $visibility = optional($app->candidate)->cv_visibility ?? 'employers';
+
+        return response()->json([
+            'id'         => $app->id,
+            'stage'      => $app->stage,
+            'cover_note' => $app->cover_note,
+            'created_at' => $app->created_at,
+            'candidate'  => $app->candidate ? [
+                'id'         => $app->candidate->id,
+                'name'       => $app->candidate->name,
+                'email'      => $app->candidate->email,
+                'phone'      => $app->candidate->phone,
+                'avatar_url' => $app->candidate->avatar_url,
+            ] : null,
+            'headline'   => optional($app->resume)->headline,
+            'has_cv'     => $app->resume && ! empty($app->resume->file_url) && $visibility !== 'private',
+            'cv_private' => $visibility === 'private',
+            'tags'       => $app->tags->map(fn ($t) => ['id' => $t->id, 'label' => $t->label])->values(),
+            'notes'      => $app->notes->map(fn ($n) => [
+                'id'         => $n->id,
+                'body'       => $n->body,
+                'author'     => optional($n->author)->name,
+                'author_id'  => $n->author_id,
+                'can_edit'   => $n->author_id === $user->id,
+                'created_at' => $n->created_at,
+                'updated_at' => $n->updated_at,
+            ])->values(),
+        ]);
+    }
+
     // ── Private notes ──────────────────────────────────────────────────────────
 
     // GET /employer/applications/{id}/notes

@@ -203,6 +203,17 @@
       return req("GET", "/employer/jobs/" + jobId + "/applications" + (stage ? "?stage=" + stage : ""));
     },
     updateApplicationStage: function (id, stage) { return req("PATCH", "/applications/" + id + "/stage", { stage: stage }); },
+
+    // ATS board + private notes + candidate tags
+    fetchJobBoard: function (jobId) { return req("GET", "/employer/jobs/" + jobId + "/board"); },
+    fetchApplication: function (appId) { return req("GET", "/employer/applications/" + appId); },
+    fetchAppNotes: function (appId) { return req("GET", "/employer/applications/" + appId + "/notes"); },
+    addAppNote: function (appId, body) { return req("POST", "/employer/applications/" + appId + "/notes", { body: body }); },
+    updateAppNote: function (noteId, body) { return req("PATCH", "/employer/notes/" + noteId, { body: body }); },
+    deleteAppNote: function (noteId) { return req("DELETE", "/employer/notes/" + noteId); },
+    addAppTag: function (appId, label) { return req("POST", "/employer/applications/" + appId + "/tags", { label: label }); },
+    removeAppTag: function (appId, tagId) { return req("DELETE", "/employer/applications/" + appId + "/tags/" + tagId); },
+    fetchCompanyTags: function () { return req("GET", "/employer/tags"); },
     downloadCv: function (applicationId) {
       var token = getToken();
       return fetch(BASE + "/applications/" + applicationId + "/cv", {

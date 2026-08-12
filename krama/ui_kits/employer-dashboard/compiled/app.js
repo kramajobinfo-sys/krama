@@ -3498,22 +3498,39 @@
     key: "offered",
     label: "Offered",
     tone: "success"
+  }, {
+    key: "hired",
+    label: "Hired",
+    tone: "success"
+  }, {
+    key: "rejected",
+    label: "Rejected",
+    tone: "danger"
   }];
-  const NEXT_STAGE = {
-    applied: "reviewed",
-    reviewed: "shortlisted",
-    shortlisted: "interview",
-    interview: "offered"
-  };
+  const STLABEL = STAGES.reduce(function (m, s) {
+    m[s.key] = s.label;
+    return m;
+  }, {});
   function Applicants({
     jobs,
     onGoToMessages
   }) {
     const reviewable = jobs.filter(j => j.status === "published" || j.status === "closed");
     const [jobId, setJobId] = React.useState("");
-    const [apps, setApps] = React.useState([]);
+    const [apps, setApps] = React.useState([]); // flattened board items (each carries .stage/.tags/.notes_count)
     const [loading, setLoading] = React.useState(false);
     const [msg, setMsg] = React.useState("");
+    const [dragId, setDragId] = React.useState(null);
+    const [overCol, setOverCol] = React.useState("");
+    const [sel, setSel] = React.useState(null); // selected card -> opens the drawer
+    const [detail, setDetail] = React.useState(null); // full applicant detail (contact, cover note, notes)
+    const [notes, setNotes] = React.useState([]);
+    const [noteBody, setNoteBody] = React.useState("");
+    const [noteBusy, setNoteBusy] = React.useState(false);
+    const [editNote, setEditNote] = React.useState(null);
+    const [editBody, setEditBody] = React.useState("");
+    const [tagInput, setTagInput] = React.useState("");
+    const [allTags, setAllTags] = React.useState([]);
     const [msgModal, setMsgModal] = React.useState(null);
     const [msgBody, setMsgBody] = React.useState("");
     const [msgSending, setMsgSending] = React.useState(false);
@@ -3559,8 +3576,14 @@
         return;
       }
       setLoading(true);
-      emp.fetchJobApplications(jobId).then(function (d) {
-        var list = d.applications && d.applications.data || [];
+      emp.fetchJobBoard(jobId).then(function (d) {
+        var b = d.board || {},
+          list = [];
+        STAGES.forEach(function (s) {
+          (b[s.key] && b[s.key].items || []).forEach(function (it) {
+            list.push(it);
+          });
+        });
         setApps(list);
         setLoading(false);
       }).catch(function () {
@@ -3570,13 +3593,160 @@
     React.useEffect(function () {
       load();
     }, [load]);
-    const move = (a, stage) => {
-      emp.updateApplicationStage(a.id, stage).then(function () {
-        flash("Moved to " + stage + ".");
+    React.useEffect(function () {
+      emp.fetchCompanyTags().then(setAllTags).catch(function () {});
+    }, []);
+
+    // Load full detail + notes whenever the drawer target changes.
+    React.useEffect(function () {
+      if (!sel) {
+        setDetail(null);
+        setNotes([]);
+        setEditNote(null);
+        setTagInput("");
+        return;
+      }
+      setDetail(null);
+      emp.fetchApplication(sel.id).then(function (d) {
+        setDetail(d);
+        setNotes(d.notes || []);
+      }).catch(function () {});
+    }, [sel && sel.id]);
+
+    // Optimistic stage move (drag or drawer) — re-sync from the server on error.
+    const move = (a, toStage) => {
+      if (!a || a.stage === toStage) return;
+      setApps(function (prev) {
+        return prev.map(function (x) {
+          return x.id === a.id ? Object.assign({}, x, {
+            stage: toStage
+          }) : x;
+        });
+      });
+      setSel(function (s) {
+        return s && s.id === a.id ? Object.assign({}, s, {
+          stage: toStage
+        }) : s;
+      });
+      emp.updateApplicationStage(a.id, toStage).then(function () {
+        flash("Moved to " + (STLABEL[toStage] || toStage));
+      }).catch(function (e) {
+        flash("Error: " + (e && e.message));
         load();
+      });
+    };
+    const patchCard = (id, fn) => {
+      setApps(function (prev) {
+        return prev.map(function (x) {
+          return x.id === id ? fn(x) : x;
+        });
+      });
+    };
+    const addTag = label => {
+      label = (label || "").trim();
+      if (!label || !sel) return;
+      emp.addAppTag(sel.id, label).then(function (t) {
+        setDetail(function (d) {
+          if (!d) return d;
+          var tags = (d.tags || []).filter(function (z) {
+            return z.label !== t.label;
+          });
+          return Object.assign({}, d, {
+            tags: tags.concat([t])
+          });
+        });
+        patchCard(sel.id, function (x) {
+          var tags = (x.tags || []).filter(function (z) {
+            return z.label !== t.label;
+          });
+          return Object.assign({}, x, {
+            tags: tags.concat([t])
+          });
+        });
+        setAllTags(function (a) {
+          return a.indexOf(t.label) === -1 ? a.concat([t.label]).sort() : a;
+        });
+        setTagInput("");
       }).catch(function (e) {
         flash("Error: " + (e && e.message));
       });
+    };
+    const removeTag = tagId => {
+      if (!sel) return;
+      emp.removeAppTag(sel.id, tagId).then(function () {
+        setDetail(function (d) {
+          return d ? Object.assign({}, d, {
+            tags: (d.tags || []).filter(function (z) {
+              return z.id !== tagId;
+            })
+          }) : d;
+        });
+        patchCard(sel.id, function (x) {
+          return Object.assign({}, x, {
+            tags: (x.tags || []).filter(function (z) {
+              return z.id !== tagId;
+            })
+          });
+        });
+      }).catch(function () {});
+    };
+    const bumpNotes = (id, delta) => patchCard(id, function (x) {
+      return Object.assign({}, x, {
+        notes_count: Math.max(0, (x.notes_count || 0) + delta)
+      });
+    });
+    const submitNote = () => {
+      var b = noteBody.trim();
+      if (!b || noteBusy || !sel) return;
+      setNoteBusy(true);
+      emp.addAppNote(sel.id, b).then(function (n) {
+        setNotes(function (a) {
+          return [n].concat(a);
+        });
+        setNoteBody("");
+        setNoteBusy(false);
+        bumpNotes(sel.id, 1);
+      }).catch(function (e) {
+        setNoteBusy(false);
+        flash("Error: " + (e && e.message));
+      });
+    };
+    const saveEditNote = n => {
+      var b = editBody.trim();
+      if (!b) return;
+      emp.updateAppNote(n.id, b).then(function (u) {
+        setNotes(function (a) {
+          return a.map(function (x) {
+            return x.id === n.id ? Object.assign({}, x, {
+              body: u.body,
+              updated_at: u.updated_at
+            }) : x;
+          });
+        });
+        setEditNote(null);
+      }).catch(function (e) {
+        flash("Error: " + (e && e.message));
+      });
+    };
+    const delNote = n => {
+      emp.deleteAppNote(n.id).then(function () {
+        setNotes(function (a) {
+          return a.filter(function (x) {
+            return x.id !== n.id;
+          });
+        });
+        if (sel) bumpNotes(sel.id, -1);
+      }).catch(function () {});
+    };
+    const fmtDay = d => {
+      try {
+        return new Date(d).toLocaleDateString(undefined, {
+          day: "numeric",
+          month: "short"
+        });
+      } catch (e) {
+        return "";
+      }
     };
     const byStage = {};
     STAGES.forEach(s => {
@@ -3631,7 +3801,12 @@
       }))
     })), /*#__PURE__*/React.createElement(Badge, {
       tone: "neutral"
-    }, apps.length, " applicant", apps.length === 1 ? "" : "s"), msg && /*#__PURE__*/React.createElement("span", {
+    }, apps.length, " applicant", apps.length === 1 ? "" : "s"), /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: "var(--text-xs)",
+        color: "var(--text-faint)"
+      }
+    }, "Drag a card between columns, or open it to manage."), msg && /*#__PURE__*/React.createElement("span", {
       style: {
         fontSize: "var(--text-sm)",
         color: "var(--success)",
@@ -3646,20 +3821,36 @@
       className: "krm-pipeline",
       style: {
         display: "grid",
-        gridTemplateColumns: "repeat(5, minmax(190px, 1fr))",
-        gap: 14,
+        gridTemplateColumns: "repeat(7, minmax(180px, 1fr))",
+        gap: 12,
         alignItems: "start",
         overflowX: "auto",
         paddingBottom: 6
       }
     }, STAGES.map(s => /*#__PURE__*/React.createElement("div", {
       key: s.key,
+      onDragOver: e => {
+        e.preventDefault();
+        if (overCol !== s.key) setOverCol(s.key);
+      },
+      onDragLeave: () => setOverCol(""),
+      onDrop: e => {
+        e.preventDefault();
+        setOverCol("");
+        var it = apps.find(function (x) {
+          return x.id === dragId;
+        });
+        if (it) move(it, s.key);
+        setDragId(null);
+      },
       style: {
         background: "var(--surface-sunken)",
         borderRadius: "var(--radius-lg)",
         padding: 10,
-        minHeight: 200,
-        minWidth: 0
+        minHeight: 220,
+        minWidth: 0,
+        outline: overCol === s.key ? "2px dashed var(--brand)" : "none",
+        outlineOffset: -2
       }
     }, /*#__PURE__*/React.createElement("div", {
       style: {
@@ -3684,15 +3875,20 @@
       }
     }, byStage[s.key].map(a => {
       var c = a.candidate || {};
-      var next = NEXT_STAGE[s.key];
       return /*#__PURE__*/React.createElement("div", {
         key: a.id,
+        draggable: true,
+        onDragStart: () => setDragId(a.id),
+        onDragEnd: () => setDragId(null),
+        onClick: () => setSel(a),
         style: {
           background: "var(--surface-card)",
           border: "1px solid var(--border)",
           borderRadius: "var(--radius-md)",
-          padding: 12,
-          boxShadow: "var(--shadow-xs)"
+          padding: 11,
+          boxShadow: "var(--shadow-xs)",
+          cursor: "pointer",
+          opacity: dragId === a.id ? 0.5 : 1
         }
       }, /*#__PURE__*/React.createElement("div", {
         style: {
@@ -3725,69 +3921,51 @@
           overflow: "hidden",
           textOverflow: "ellipsis"
         }
-      }, a.resume && a.resume.headline || c.email || ""))), /*#__PURE__*/React.createElement("div", {
+      }, a.headline || ""))), a.tags && a.tags.length > 0 && /*#__PURE__*/React.createElement("div", {
         style: {
           display: "flex",
-          gap: 6,
-          marginTop: 10
+          flexWrap: "wrap",
+          gap: 4,
+          marginTop: 8
         }
-      }, a.resume && a.resume.has_cv ? c.cv_visibility === "private" ? /*#__PURE__*/React.createElement(Button, {
-        variant: "ghost",
-        size: "sm",
+      }, a.tags.map(function (t) {
+        return /*#__PURE__*/React.createElement("span", {
+          key: t.id,
+          style: {
+            fontSize: 10,
+            fontWeight: 600,
+            color: "var(--text-brand)",
+            background: "var(--brand-subtle)",
+            borderRadius: 999,
+            padding: "1px 7px"
+          }
+        }, t.label);
+      })), /*#__PURE__*/React.createElement("div", {
         style: {
-          flex: 1,
-          height: 30
-        },
-        disabled: true,
-        title: "Candidate has hidden their CV"
-      }, I("eye-off", 12), " Hidden") : /*#__PURE__*/React.createElement(Button, {
-        variant: "ghost",
-        size: "sm",
-        style: {
-          flex: 1,
-          height: 30
-        },
-        iconLeft: I("download", 13),
-        onClick: function () {
-          emp.downloadCv(a.id).catch(function (e) {
-            flash(e && e.message || "Download failed");
-          });
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+          marginTop: 8,
+          fontSize: 11,
+          color: "var(--text-faint)"
         }
-      }, "CV") : /*#__PURE__*/React.createElement(Button, {
-        variant: "ghost",
-        size: "sm",
+      }, a.has_cv && /*#__PURE__*/React.createElement("span", {
         style: {
-          flex: 1,
-          height: 30
-        },
-        disabled: true
-      }, "No CV"), next ? /*#__PURE__*/React.createElement(Button, {
-        variant: "secondary",
-        size: "sm",
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 3
+        }
+      }, I("file-text", 11), " CV"), a.notes_count > 0 && /*#__PURE__*/React.createElement("span", {
         style: {
-          flex: 1,
-          height: 30
-        },
-        onClick: () => move(a, next)
-      }, "\u2192 ", next) : /*#__PURE__*/React.createElement(Button, {
-        variant: "ghost",
-        size: "sm",
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 3
+        }
+      }, I("sticky-note", 11), " ", a.notes_count), /*#__PURE__*/React.createElement("span", {
         style: {
-          flex: 1,
-          height: 30
-        },
-        disabled: true
-      }, "Final")), /*#__PURE__*/React.createElement(Button, {
-        variant: "ghost",
-        size: "sm",
-        style: {
-          width: "100%",
-          height: 30,
-          marginTop: 6
-        },
-        iconLeft: I("message-square", 13),
-        onClick: () => openMessage(c)
-      }, "Message"));
+          marginLeft: "auto"
+        }
+      }, fmtDay(a.created_at))));
     }), byStage[s.key].length === 0 && /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: "var(--text-xs)",
@@ -3795,7 +3973,367 @@
         textAlign: "center",
         padding: "10px 0"
       }
-    }, "\u2014"))))), msgModal && /*#__PURE__*/React.createElement("div", {
+    }, "\u2014"))))), sel && /*#__PURE__*/React.createElement("div", {
+      onClick: () => setSel(null),
+      style: {
+        position: "fixed",
+        inset: 0,
+        zIndex: 200,
+        background: "var(--surface-overlay)",
+        display: "flex",
+        justifyContent: "flex-end"
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      onClick: e => e.stopPropagation(),
+      style: {
+        width: "100%",
+        maxWidth: 440,
+        height: "100%",
+        background: "var(--surface-card)",
+        boxShadow: "var(--shadow-xl)",
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden"
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        padding: "16px 20px",
+        borderBottom: "1px solid var(--border)",
+        display: "flex",
+        alignItems: "center",
+        gap: 12
+      }
+    }, /*#__PURE__*/React.createElement(Avatar, {
+      src: (sel.candidate || {}).avatar_url,
+      name: (sel.candidate || {}).name || "?",
+      size: 44
+    }), /*#__PURE__*/React.createElement("div", {
+      style: {
+        minWidth: 0,
+        flex: 1
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontWeight: 700,
+        color: "var(--text-strong)"
+      }
+    }, (sel.candidate || {}).name || "Candidate"), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: "var(--text-xs)",
+        color: "var(--text-muted)",
+        whiteSpace: "nowrap",
+        overflow: "hidden",
+        textOverflow: "ellipsis"
+      }
+    }, detail ? detail.headline || detail.candidate && detail.candidate.email || "" : "Loading…")), /*#__PURE__*/React.createElement(Button, {
+      variant: "ghost",
+      size: "sm",
+      onClick: () => setSel(null)
+    }, I("x", 18))), /*#__PURE__*/React.createElement("div", {
+      style: {
+        padding: 20,
+        overflowY: "auto",
+        display: "flex",
+        flexDirection: "column",
+        gap: 18,
+        flex: 1
+      }
+    }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+      style: {
+        fontSize: "var(--text-xs)",
+        fontWeight: 700,
+        color: "var(--text-faint)",
+        textTransform: "uppercase",
+        letterSpacing: ".04em"
+      }
+    }, "Stage"), /*#__PURE__*/React.createElement("div", {
+      style: {
+        marginTop: 6
+      }
+    }, /*#__PURE__*/React.createElement(Select, {
+      value: sel.stage,
+      onChange: e => move(sel, e.target.value),
+      options: STAGES.map(function (s) {
+        return {
+          value: s.key,
+          label: s.label
+        };
+      })
+    }))), detail && detail.candidate && (detail.candidate.email || detail.candidate.phone) && /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        flexDirection: "column",
+        gap: 6,
+        fontSize: "var(--text-sm)"
+      }
+    }, detail.candidate.email && /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        color: "var(--text-body)"
+      }
+    }, I("mail", 14), " ", /*#__PURE__*/React.createElement("a", {
+      href: "mailto:" + detail.candidate.email,
+      style: {
+        color: "inherit",
+        textDecoration: "none"
+      }
+    }, detail.candidate.email)), detail.candidate.phone && /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        color: "var(--text-body)"
+      }
+    }, I("phone", 14), " ", detail.candidate.phone)), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        gap: 8
+      }
+    }, detail && detail.has_cv ? /*#__PURE__*/React.createElement(Button, {
+      variant: "secondary",
+      size: "sm",
+      iconLeft: I("download", 14),
+      onClick: () => emp.downloadCv(sel.id).catch(function (e) {
+        flash(e && e.message || "Download failed");
+      })
+    }, "Download CV") : /*#__PURE__*/React.createElement(Button, {
+      variant: "ghost",
+      size: "sm",
+      disabled: true
+    }, detail && detail.cv_private ? "CV hidden" : "No CV"), /*#__PURE__*/React.createElement(Button, {
+      variant: "ghost",
+      size: "sm",
+      iconLeft: I("message-square", 14),
+      onClick: () => detail && detail.candidate && openMessage(detail.candidate)
+    }, "Message")), detail && detail.cover_note && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+      style: {
+        fontSize: "var(--text-xs)",
+        fontWeight: 700,
+        color: "var(--text-faint)",
+        textTransform: "uppercase",
+        letterSpacing: ".04em"
+      }
+    }, "Cover note"), /*#__PURE__*/React.createElement("div", {
+      style: {
+        marginTop: 6,
+        fontSize: "var(--text-sm)",
+        color: "var(--text-body)",
+        whiteSpace: "pre-wrap",
+        background: "var(--surface-sunken)",
+        borderRadius: "var(--radius-md)",
+        padding: "10px 12px"
+      }
+    }, detail.cover_note)), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+      style: {
+        fontSize: "var(--text-xs)",
+        fontWeight: 700,
+        color: "var(--text-faint)",
+        textTransform: "uppercase",
+        letterSpacing: ".04em"
+      }
+    }, "Tags"), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        flexWrap: "wrap",
+        gap: 6,
+        marginTop: 8
+      }
+    }, (detail ? detail.tags : []).map(function (t) {
+      return /*#__PURE__*/React.createElement("span", {
+        key: t.id,
+        style: {
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 5,
+          fontSize: "var(--text-xs)",
+          fontWeight: 600,
+          color: "var(--text-brand)",
+          background: "var(--brand-subtle)",
+          borderRadius: 999,
+          padding: "3px 4px 3px 10px"
+        }
+      }, t.label, /*#__PURE__*/React.createElement("button", {
+        onClick: () => removeTag(t.id),
+        style: {
+          border: "none",
+          background: "none",
+          cursor: "pointer",
+          color: "var(--text-brand)",
+          display: "inline-flex",
+          padding: 2
+        }
+      }, I("x", 11)));
+    })), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        gap: 6,
+        marginTop: 8
+      }
+    }, /*#__PURE__*/React.createElement("input", {
+      list: "krm-tag-suggestions",
+      value: tagInput,
+      onChange: e => setTagInput(e.target.value),
+      onKeyDown: e => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          addTag(tagInput);
+        }
+      },
+      placeholder: "Add a tag\u2026",
+      maxLength: 40,
+      style: {
+        flex: 1,
+        boxSizing: "border-box",
+        border: "1px solid var(--border)",
+        borderRadius: "var(--radius-md)",
+        padding: "7px 10px",
+        fontFamily: "var(--font-sans)",
+        fontSize: "var(--text-sm)",
+        color: "var(--text-body)",
+        background: "var(--surface-page)",
+        outline: "none"
+      }
+    }), /*#__PURE__*/React.createElement("datalist", {
+      id: "krm-tag-suggestions"
+    }, allTags.map(function (l) {
+      return /*#__PURE__*/React.createElement("option", {
+        key: l,
+        value: l
+      });
+    })), /*#__PURE__*/React.createElement(Button, {
+      variant: "secondary",
+      size: "sm",
+      disabled: !tagInput.trim(),
+      onClick: () => addTag(tagInput)
+    }, "Add"))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+      style: {
+        fontSize: "var(--text-xs)",
+        fontWeight: 700,
+        color: "var(--text-faint)",
+        textTransform: "uppercase",
+        letterSpacing: ".04em"
+      }
+    }, "Private notes"), /*#__PURE__*/React.createElement("div", {
+      style: {
+        marginTop: 8,
+        display: "flex",
+        flexDirection: "column",
+        gap: 8
+      }
+    }, /*#__PURE__*/React.createElement("textarea", {
+      value: noteBody,
+      onChange: e => setNoteBody(e.target.value),
+      rows: 2,
+      placeholder: "Add a private note (only your team can see this)\u2026",
+      style: {
+        width: "100%",
+        boxSizing: "border-box",
+        resize: "vertical",
+        border: "1px solid var(--border)",
+        borderRadius: "var(--radius-md)",
+        padding: "9px 11px",
+        fontFamily: "var(--font-sans)",
+        fontSize: "var(--text-sm)",
+        color: "var(--text-body)",
+        background: "var(--surface-page)",
+        outline: "none",
+        lineHeight: 1.5
+      }
+    }), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(Button, {
+      variant: "primary",
+      size: "sm",
+      disabled: noteBusy || !noteBody.trim(),
+      onClick: submitNote
+    }, noteBusy ? "Saving…" : "Add note")), notes.map(function (n) {
+      return /*#__PURE__*/React.createElement("div", {
+        key: n.id,
+        style: {
+          background: "var(--surface-sunken)",
+          borderRadius: "var(--radius-md)",
+          padding: "10px 12px"
+        }
+      }, editNote === n.id ? /*#__PURE__*/React.createElement("div", {
+        style: {
+          display: "flex",
+          flexDirection: "column",
+          gap: 6
+        }
+      }, /*#__PURE__*/React.createElement("textarea", {
+        value: editBody,
+        onChange: e => setEditBody(e.target.value),
+        rows: 2,
+        style: {
+          width: "100%",
+          boxSizing: "border-box",
+          resize: "vertical",
+          border: "1px solid var(--border)",
+          borderRadius: "var(--radius-sm)",
+          padding: "7px 9px",
+          fontFamily: "var(--font-sans)",
+          fontSize: "var(--text-sm)",
+          color: "var(--text-body)",
+          background: "var(--surface-card)",
+          outline: "none"
+        }
+      }), /*#__PURE__*/React.createElement("div", {
+        style: {
+          display: "flex",
+          gap: 6
+        }
+      }, /*#__PURE__*/React.createElement(Button, {
+        variant: "primary",
+        size: "sm",
+        onClick: () => saveEditNote(n)
+      }, "Save"), /*#__PURE__*/React.createElement(Button, {
+        variant: "ghost",
+        size: "sm",
+        onClick: () => setEditNote(null)
+      }, "Cancel"))) : /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+        style: {
+          fontSize: "var(--text-sm)",
+          color: "var(--text-body)",
+          whiteSpace: "pre-wrap"
+        }
+      }, n.body), /*#__PURE__*/React.createElement("div", {
+        style: {
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          marginTop: 6,
+          fontSize: 11,
+          color: "var(--text-faint)"
+        }
+      }, /*#__PURE__*/React.createElement("span", null, n.author || "You", " \xB7 ", fmtDay(n.created_at)), n.can_edit && /*#__PURE__*/React.createElement("button", {
+        onClick: () => {
+          setEditNote(n.id);
+          setEditBody(n.body);
+        },
+        style: {
+          marginLeft: "auto",
+          border: "none",
+          background: "none",
+          cursor: "pointer",
+          color: "var(--text-brand)",
+          fontWeight: 600
+        }
+      }, "Edit"), n.can_edit && /*#__PURE__*/React.createElement("button", {
+        onClick: () => delNote(n),
+        style: {
+          border: "none",
+          background: "none",
+          cursor: "pointer",
+          color: "var(--danger)",
+          fontWeight: 600
+        }
+      }, "Delete"))));
+    }), notes.length === 0 && /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: "var(--text-xs)",
+        color: "var(--text-faint)"
+      }
+    }, "No notes yet.")))))), msgModal && /*#__PURE__*/React.createElement("div", {
       onClick: () => setMsgModal(null),
       style: {
         position: "fixed",
