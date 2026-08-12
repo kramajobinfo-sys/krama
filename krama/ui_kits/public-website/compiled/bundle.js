@@ -10518,82 +10518,99 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       eyebrow: "Contact",
       title: "We'd love to hear from you.",
       lead: "Questions, partnerships, or support -- reach the Krama team.",
-      render: () => /*#__PURE__*/React.createElement("div", {
-        className: "krm-info-grid",
-        style: {
-          display: "grid",
-          gridTemplateColumns: "1.2fr 1fr",
-          gap: 32,
-          alignItems: "start"
-        }
-      }, /*#__PURE__*/React.createElement(Card, {
-        padding: 28
-      }, /*#__PURE__*/React.createElement("div", {
-        style: {
-          display: "flex",
-          flexDirection: "column",
-          gap: 16
-        }
-      }, /*#__PURE__*/React.createElement("div", {
-        className: "krm-info-grid",
-        style: {
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gap: 14
-        }
-      }, /*#__PURE__*/React.createElement(Input, {
-        label: TR("Your name"),
-        placeholder: "Sok Dara"
-      }), /*#__PURE__*/React.createElement(Input, {
-        label: TR("Email"),
-        type: "email",
-        placeholder: "you@example.com"
-      })), /*#__PURE__*/React.createElement(Input, {
-        label: TR("Subject"),
-        placeholder: TR("How can we help?")
-      }), /*#__PURE__*/React.createElement(Textarea, {
-        label: TR("Message"),
-        rows: 5,
-        placeholder: TR("Tell us a little more…")
-      }), /*#__PURE__*/React.createElement(Button, {
-        variant: "primary"
-      }, TR("Send message")))), /*#__PURE__*/React.createElement("div", {
-        style: {
-          display: "flex",
-          flexDirection: "column",
-          gap: 16
-        }
-      }, [["map-pin", "Office", "Wat Samrong andet, Khan Sensok, Phnom Penh, Cambodia"], ["mail", "Email", "info@kramajob.com"], ["phone", "Phone", "087 767 272"], ["globe", "Website", "kramajob.com"], ["clock", "Hours", "Mon-Fri · 8:00-17:30"]].map(([ic, k, v]) => /*#__PURE__*/React.createElement("div", {
-        key: k,
-        style: {
-          display: "flex",
-          gap: 14,
-          alignItems: "flex-start"
-        }
-      }, /*#__PURE__*/React.createElement("span", {
-        style: {
-          display: "inline-flex",
-          alignItems: "center",
-          justifyContent: "center",
-          width: 42,
-          height: 42,
-          borderRadius: "var(--radius-md)",
-          background: "var(--brand-subtle)",
-          color: "var(--brand)",
-          flexShrink: 0
-        }
-      }, I(ic, 18)), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-        style: {
-          fontWeight: 700,
-          color: "var(--text-strong)"
-        }
-      }, TR(k)), /*#__PURE__*/React.createElement("div", {
-        style: {
-          fontSize: "var(--text-sm)",
-          color: "var(--text-muted)",
-          marginTop: 2
-        }
-      }, v))))))
+      render: () => {
+        // Office / Email / Phone come from Brand settings when set (see brand.js globals),
+        // falling back to Krama's own defaults so the page is never blank.
+        const addr = window.KRAMA_BRAND_ADDRESS || "Wat Samrong andet, Khan Sensok, Phnom Penh, Cambodia";
+        const email = window.KRAMA_BRAND_EMAIL || "info@kramajob.com";
+        const phone = window.KRAMA_BRAND_PHONE || "087 767 272";
+        const rows = [["map-pin", "Office", addr, null], ["mail", "Email", email, "mailto:" + email], ["phone", "Phone", phone, "tel:" + String(phone).replace(/[^+0-9]/g, "")], ["globe", "Website", "kramajob.com", null], ["clock", "Hours", "Mon-Fri · 8:00-17:30", null]];
+        return /*#__PURE__*/React.createElement("div", {
+          className: "krm-info-grid",
+          style: {
+            display: "grid",
+            gridTemplateColumns: "1.2fr 1fr",
+            gap: 32,
+            alignItems: "start"
+          }
+        }, /*#__PURE__*/React.createElement(Card, {
+          padding: 28
+        }, /*#__PURE__*/React.createElement("div", {
+          style: {
+            display: "flex",
+            flexDirection: "column",
+            gap: 16
+          }
+        }, /*#__PURE__*/React.createElement("div", {
+          className: "krm-info-grid",
+          style: {
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: 14
+          }
+        }, /*#__PURE__*/React.createElement(Input, {
+          label: TR("Your name"),
+          placeholder: "Sok Dara"
+        }), /*#__PURE__*/React.createElement(Input, {
+          label: TR("Email"),
+          type: "email",
+          placeholder: "you@example.com"
+        })), /*#__PURE__*/React.createElement(Input, {
+          label: TR("Subject"),
+          placeholder: TR("How can we help?")
+        }), /*#__PURE__*/React.createElement(Textarea, {
+          label: TR("Message"),
+          rows: 5,
+          placeholder: TR("Tell us a little more…")
+        }), /*#__PURE__*/React.createElement(Button, {
+          variant: "primary"
+        }, TR("Send message")))), /*#__PURE__*/React.createElement("div", {
+          style: {
+            display: "flex",
+            flexDirection: "column",
+            gap: 16
+          }
+        }, rows.map(([ic, k, v, href]) => /*#__PURE__*/React.createElement("div", {
+          key: k,
+          style: {
+            display: "flex",
+            gap: 14,
+            alignItems: "flex-start"
+          }
+        }, /*#__PURE__*/React.createElement("span", {
+          style: {
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: 42,
+            height: 42,
+            borderRadius: "var(--radius-md)",
+            background: "var(--brand-subtle)",
+            color: "var(--brand)",
+            flexShrink: 0
+          }
+        }, I(ic, 18)), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+          style: {
+            fontWeight: 700,
+            color: "var(--text-strong)"
+          }
+        }, TR(k)), href ? /*#__PURE__*/React.createElement("a", {
+          href: href,
+          style: {
+            fontSize: "var(--text-sm)",
+            color: "var(--text-muted)",
+            marginTop: 2,
+            display: "block",
+            textDecoration: "none"
+          }
+        }, v) : /*#__PURE__*/React.createElement("div", {
+          style: {
+            fontSize: "var(--text-sm)",
+            color: "var(--text-muted)",
+            marginTop: 2
+          }
+        }, v))))));
+      }
     },
     terms: {
       eyebrow: "Legal",

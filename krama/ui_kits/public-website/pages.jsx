@@ -375,7 +375,20 @@
     contact: {
       eyebrow: "Contact", title: "We'd love to hear from you.",
       lead: "Questions, partnerships, or support -- reach the Krama team.",
-      render: () => (
+      render: () => {
+        // Office / Email / Phone come from Brand settings when set (see brand.js globals),
+        // falling back to Krama's own defaults so the page is never blank.
+        const addr  = window.KRAMA_BRAND_ADDRESS || "Wat Samrong andet, Khan Sensok, Phnom Penh, Cambodia";
+        const email = window.KRAMA_BRAND_EMAIL || "info@kramajob.com";
+        const phone = window.KRAMA_BRAND_PHONE || "087 767 272";
+        const rows = [
+          ["map-pin", "Office", addr, null],
+          ["mail", "Email", email, "mailto:" + email],
+          ["phone", "Phone", phone, "tel:" + String(phone).replace(/[^+0-9]/g, "")],
+          ["globe", "Website", "kramajob.com", null],
+          ["clock", "Hours", "Mon-Fri · 8:00-17:30", null],
+        ];
+        return (
         <div className="krm-info-grid" style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 32, alignItems: "start" }}>
           <Card padding={28}>
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -389,18 +402,21 @@
             </div>
           </Card>
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            {[["map-pin", "Office", "Wat Samrong andet, Khan Sensok, Phnom Penh, Cambodia"], ["mail", "Email", "info@kramajob.com"], ["phone", "Phone", "087 767 272"], ["globe", "Website", "kramajob.com"], ["clock", "Hours", "Mon-Fri · 8:00-17:30"]].map(([ic, k, v]) => (
+            {rows.map(([ic, k, v, href]) => (
               <div key={k} style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
                 <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 42, height: 42, borderRadius: "var(--radius-md)", background: "var(--brand-subtle)", color: "var(--brand)", flexShrink: 0 }}>{I(ic, 18)}</span>
                 <div>
                   <div style={{ fontWeight: 700, color: "var(--text-strong)" }}>{TR(k)}</div>
-                  <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginTop: 2 }}>{v}</div>
+                  {href
+                    ? <a href={href} style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginTop: 2, display: "block", textDecoration: "none" }}>{v}</a>
+                    : <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginTop: 2 }}>{v}</div>}
                 </div>
               </div>
             ))}
           </div>
         </div>
-      ),
+        );
+      },
     },
     terms: {
       eyebrow: "Legal", title: "Terms of Service",
