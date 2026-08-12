@@ -2,14 +2,22 @@
 (function () {
   var BRAND_KEY = 'krama_brand_settings';
 
+  function applyContact(s) {
+    window.KRAMA_BRAND_PHONE   = (s && s.phone) || null;
+    window.KRAMA_BRAND_EMAIL   = (s && s.contactEmail) || null;
+    window.KRAMA_BRAND_ADDRESS = (s && s.address) || null;
+  }
+
   // 1. Sync-read localStorage for instant paint (avoids flash)
   try {
     var s = JSON.parse(localStorage.getItem(BRAND_KEY) || '{}');
     window.KRAMA_LOGO_SRC   = s.logoUrl   || null;
     window.KRAMA_BRAND_NAME = s.brandName || 'KRAMA';
+    applyContact(s);
   } catch (e) {
     window.KRAMA_LOGO_SRC   = null;
     window.KRAMA_BRAND_NAME = 'KRAMA';
+    applyContact(null);
   }
 
   // Helper so JSX components can always get the latest value
@@ -35,6 +43,7 @@
       // Update globals so any component that reads them after this gets fresh values
       if (data.logoUrl   !== undefined) window.KRAMA_LOGO_SRC   = data.logoUrl   || null;
       if (data.brandName !== undefined) window.KRAMA_BRAND_NAME = data.brandName || 'KRAMA';
+      applyContact(data);
       // Persist to localStorage so next load is instant
       try { localStorage.setItem(BRAND_KEY, JSON.stringify(data)); } catch (e) {}
     })

@@ -318,6 +318,13 @@
             <p style={{ color: "var(--text-on-dark-mut)", fontSize: "var(--text-sm)", marginTop: 16, maxWidth: 260, lineHeight: 1.6 }}>
               {t("Connecting talent and verified employers across Cambodia and Southeast Asia.")}
             </p>
+            {(window.KRAMA_BRAND_PHONE || window.KRAMA_BRAND_EMAIL || window.KRAMA_BRAND_ADDRESS) && (
+              <div style={{ marginTop: 18, display: "flex", flexDirection: "column", gap: 8, color: "var(--text-on-dark-mut)", fontSize: "var(--text-sm)", maxWidth: 260 }}>
+                {window.KRAMA_BRAND_ADDRESS && <div style={{ display: "flex", gap: 8, lineHeight: 1.5 }}><i data-lucide="map-pin" style={{ width: 14, height: 14, flexShrink: 0, marginTop: 2, opacity: 0.7 }}></i><span>{window.KRAMA_BRAND_ADDRESS}</span></div>}
+                {window.KRAMA_BRAND_PHONE && <a href={"tel:" + String(window.KRAMA_BRAND_PHONE).replace(/[^+0-9]/g, "")} style={{ display: "flex", gap: 8, alignItems: "center", color: "inherit", textDecoration: "none" }}><i data-lucide="phone" style={{ width: 14, height: 14, flexShrink: 0, opacity: 0.7 }}></i><span>{window.KRAMA_BRAND_PHONE}</span></a>}
+                {window.KRAMA_BRAND_EMAIL && <a href={"mailto:" + window.KRAMA_BRAND_EMAIL} style={{ display: "flex", gap: 8, alignItems: "center", color: "inherit", textDecoration: "none" }}><i data-lucide="mail" style={{ width: 14, height: 14, flexShrink: 0, opacity: 0.7 }}></i><span>{window.KRAMA_BRAND_EMAIL}</span></a>}
+              </div>
+            )}
           </div>
           {col("For candidates", [["Find jobs", "jobs"], ["Build résumé", "register"], ["Saved jobs", "login"], ["Community", "community"]])}
           {col("Employers", [["Employers", "employers"], ["Post a job", "register"], ["Pricing", "pricing"], ["Companies", "companies"]])}
