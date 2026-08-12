@@ -102,4 +102,32 @@ class Job extends Model
         }
         return $slug;
     }
+
+    /**
+     * Slug uniqueness is guaranteed two ways: generateSlug() picks a free slug before insert,
+     * and the DB unique index (jobs_slug_unique) is the hard backstop. Between that pre-check
+     * and the actual INSERT there is a millisecond race where two same-titled jobs could grab
+     * the same slug — the database then rejects the second row. Catch that here and retry the
+     * insert with a randomly-suffixed slug, so a collision never surfaces as a 500 to the
+     * person posting. Only INSERTs and only the slug-unique violation are retried.
+     */
+    public function save(array $options = [])
+    {
+        $inserting = ! $this->exists;
+        for ($attempt = 0; ; $attempt++) {
+            try {
+                return parent::save($options);
+            } catch (\Illuminate\Database\QueryException $e) {
+                $dupSlug = $inserting
+                    && $attempt < 3
+                    && (int) ($e->errorInfo[1] ?? 0) === 1062                 // MySQL ER_DUP_ENTRY
+                    && stripos((string) $e->getMessage(), 'slug') !== false;
+                if (! $dupSlug) {
+                    throw $e;
+                }
+                $base = Str::slug((string) $this->title) ?: 'job';
+                $this->slug = $base . '-' . Str::lower(Str::random(5));
+            }
+        }
+    }
 }
