@@ -93,15 +93,15 @@ class ScreeningService
                 return false;
 
             case 'number':
-                if (! isset($cfg['op'], $cfg['value']) || ! is_numeric($raw)) return false;
-                return self::compare((float) $raw, (string) $cfg['op'], (float) $cfg['value']);
+                if (! isset($cfg['value']) || ! is_numeric($raw) || ! is_numeric($cfg['value'])) return false;
+                return self::compare((float) $raw, (string) ($cfg['op'] ?? '>='), (float) $cfg['value']);
 
             case 'date':
-                if (! isset($cfg['op'], $cfg['value'])) return null;
+                if (! isset($cfg['value'])) return null;
                 $a = strtotime((string) $raw);
                 $b = strtotime((string) $cfg['value']);
                 if ($a === false || $b === false) return false;
-                return self::compare($a, (string) $cfg['op'], $b);
+                return self::compare($a, (string) ($cfg['op'] ?? '>='), $b);
 
             default:
                 return null; // text / textarea are never knockout

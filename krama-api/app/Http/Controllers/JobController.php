@@ -820,7 +820,7 @@ class JobController extends Controller
         $user    = $request->user();
         $company = $this->resolveCompany($user);
 
-        $q = Job::with(['category:id,name', 'location:id,name', 'poster:id,name,email,company_role'])
+        $q = Job::with(['category:id,name', 'location:id,name', 'poster:id,name,email,company_role', 'screeningQuestions'])
             ->withCount('applications')
             ->where('company_id', $company->id);
 

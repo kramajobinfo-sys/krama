@@ -1955,7 +1955,8 @@
       benefits: "",
       expires_at: "",
       share_social: true,
-      social_image: ""
+      social_image: "",
+      screening_questions: []
     };
     function jobToForm(j, isClone) {
       var _today = new Date();
@@ -1981,7 +1982,18 @@
         benefits: j.benefits || "",
         expires_at: _exp,
         share_social: j.share_social !== undefined ? !!j.share_social : true,
-        social_image: j.social_image || ""
+        social_image: j.social_image || "",
+        screening_questions: (j.screening_questions || []).map(function (q) {
+          return {
+            id: isClone ? undefined : q.id,
+            type: q.type,
+            label: q.label || "",
+            options: (q.options || []).slice(),
+            required: q.required !== undefined ? !!q.required : true,
+            knockout: !!q.knockout,
+            knockout_config: q.knockout_config || {}
+          };
+        })
       };
     }
     const [form, setForm] = React.useState(BLANK);
@@ -2012,6 +2024,38 @@
     const set = (k, v) => setForm(f => Object.assign({}, f, {
       [k]: v
     }));
+    // Screening-question builder helpers
+    const SQ = form.screening_questions || [];
+    const setSQ = arr => set("screening_questions", arr);
+    const addQ = () => setSQ(SQ.concat([{
+      type: "text",
+      label: "",
+      options: [],
+      required: true,
+      knockout: false,
+      knockout_config: {}
+    }]));
+    const updQ = (i, patch) => setSQ(SQ.map((q, idx) => idx === i ? Object.assign({}, q, patch) : q));
+    const rmQ = i => setSQ(SQ.filter((_, idx) => idx !== i));
+    const KO_TYPES = {
+      yes_no: 1,
+      single_choice: 1,
+      multi_choice: 1,
+      number: 1,
+      date: 1
+    };
+    const CHOICE_TYPES = {
+      single_choice: 1,
+      multi_choice: 1
+    };
+    // Seed a knockout rule with sensible defaults so an unchanged default (e.g. op ">=") persists.
+    const defaultKO = type => type === "number" || type === "date" ? {
+      op: ">="
+    } : type === "yes_no" ? {
+      equals: "yes"
+    } : CHOICE_TYPES[type] ? {
+      accept: []
+    } : {};
     const draftWithAI = function () {
       if (!form.title.trim()) {
         setError("Enter a job title first, then draft with AI.");
@@ -2098,7 +2142,21 @@
         description: form.description || null,
         requirements: form.requirements || null,
         benefits: form.benefits || null,
-        expires_at: form.expires_at || null
+        expires_at: form.expires_at || null,
+        screening_questions: (form.screening_questions || []).filter(function (q) {
+          return (q.label || "").trim();
+        }).map(function (q) {
+          var o = {
+            type: q.type,
+            label: q.label.trim(),
+            required: !!q.required,
+            knockout: !!q.knockout
+          };
+          if (q.id) o.id = q.id;
+          if (CHOICE_TYPES[q.type]) o.options = q.options || [];
+          if (q.knockout && KO_TYPES[q.type]) o.knockout_config = q.knockout_config || {};
+          return o;
+        })
       };
       var wantsPublish = publish && (!isEdit || canSubmit);
 
@@ -2526,7 +2584,310 @@
       value: form.benefits,
       onChange: v => set("benefits", v),
       placeholder: "Perks, insurance, bonuses\u2026"
-    }), /*#__PURE__*/React.createElement(Input, {
+    }), /*#__PURE__*/React.createElement("div", {
+      style: {
+        borderTop: "1px solid var(--border-subtle)",
+        paddingTop: 16
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        marginBottom: 4
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: "var(--text-sm)",
+        fontWeight: 700,
+        color: "var(--text-strong)"
+      }
+    }, "Screening questions"), /*#__PURE__*/React.createElement(Button, {
+      variant: "secondary",
+      size: "sm",
+      iconLeft: I("plus", 14),
+      onClick: addQ
+    }, "Add question")), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: "var(--text-xs)",
+        color: "var(--text-muted)",
+        marginBottom: 10
+      }
+    }, "Ask applicants custom questions. A ", /*#__PURE__*/React.createElement("b", null, "knockout"), " question flags anyone whose answer doesn't meet the rule."), SQ.length === 0 && /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: "var(--text-xs)",
+        color: "var(--text-faint)"
+      }
+    }, "No screening questions yet."), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        flexDirection: "column",
+        gap: 12
+      }
+    }, SQ.map(function (q, i) {
+      var is = {
+        width: "100%",
+        boxSizing: "border-box",
+        border: "1px solid var(--border)",
+        borderRadius: "var(--radius-sm)",
+        padding: "7px 10px",
+        fontFamily: "var(--font-sans)",
+        fontSize: "var(--text-sm)",
+        color: "var(--text-body)",
+        background: "var(--surface-card)",
+        outline: "none"
+      };
+      return /*#__PURE__*/React.createElement("div", {
+        key: i,
+        style: {
+          border: "1px solid var(--border)",
+          borderRadius: "var(--radius-md)",
+          padding: 12,
+          background: "var(--surface-sunken)"
+        }
+      }, /*#__PURE__*/React.createElement("div", {
+        style: {
+          display: "flex",
+          gap: 8,
+          alignItems: "flex-start"
+        }
+      }, /*#__PURE__*/React.createElement("input", {
+        value: q.label,
+        onChange: e => updQ(i, {
+          label: e.target.value
+        }),
+        placeholder: "Question\u2026",
+        maxLength: 300,
+        style: Object.assign({}, is, {
+          flex: 1,
+          minWidth: 0
+        })
+      }), /*#__PURE__*/React.createElement("div", {
+        style: {
+          width: 148,
+          flexShrink: 0
+        }
+      }, /*#__PURE__*/React.createElement(Select, {
+        value: q.type,
+        onChange: e => {
+          var nt = e.target.value;
+          var ko = KO_TYPES[nt] ? q.knockout : false;
+          updQ(i, {
+            type: nt,
+            knockout: ko,
+            knockout_config: ko ? defaultKO(nt) : {}
+          });
+        },
+        options: [{
+          value: "text",
+          label: "Short text"
+        }, {
+          value: "textarea",
+          label: "Long text"
+        }, {
+          value: "yes_no",
+          label: "Yes / No"
+        }, {
+          value: "single_choice",
+          label: "Single choice"
+        }, {
+          value: "multi_choice",
+          label: "Multi choice"
+        }, {
+          value: "number",
+          label: "Number"
+        }, {
+          value: "date",
+          label: "Date"
+        }]
+      })), /*#__PURE__*/React.createElement("button", {
+        type: "button",
+        onClick: () => rmQ(i),
+        title: "Remove",
+        style: {
+          border: "none",
+          background: "none",
+          cursor: "pointer",
+          color: "var(--danger)",
+          padding: 6,
+          display: "inline-flex",
+          flexShrink: 0
+        }
+      }, I("trash-2", 15))), CHOICE_TYPES[q.type] && /*#__PURE__*/React.createElement("input", {
+        value: (q.options || []).join(", "),
+        onChange: e => updQ(i, {
+          options: e.target.value.split(",").map(function (s) {
+            return s.trim();
+          }).filter(Boolean)
+        }),
+        placeholder: "Options, comma-separated (e.g. 1-2 years, 3-5 years, 5+ years)",
+        style: Object.assign({}, is, {
+          marginTop: 8
+        })
+      }), /*#__PURE__*/React.createElement("div", {
+        style: {
+          display: "flex",
+          alignItems: "center",
+          gap: 18,
+          marginTop: 10,
+          flexWrap: "wrap"
+        }
+      }, /*#__PURE__*/React.createElement("label", {
+        style: {
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          cursor: "pointer",
+          fontSize: "var(--text-xs)",
+          color: "var(--text-body)"
+        }
+      }, /*#__PURE__*/React.createElement(Switch, {
+        checked: !!q.required,
+        onChange: v => updQ(i, {
+          required: typeof v === "boolean" ? v : !q.required
+        })
+      }), " Required"), KO_TYPES[q.type] && /*#__PURE__*/React.createElement("label", {
+        style: {
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          cursor: "pointer",
+          fontSize: "var(--text-xs)",
+          color: "var(--text-body)"
+        }
+      }, /*#__PURE__*/React.createElement(Switch, {
+        checked: !!q.knockout,
+        onChange: v => {
+          var on = typeof v === "boolean" ? v : !q.knockout;
+          updQ(i, {
+            knockout: on,
+            knockout_config: on ? defaultKO(q.type) : {}
+          });
+        }
+      }), " Knockout")), q.knockout && KO_TYPES[q.type] && /*#__PURE__*/React.createElement("div", {
+        style: {
+          marginTop: 10,
+          padding: "8px 10px",
+          background: "var(--surface-card)",
+          borderRadius: "var(--radius-sm)",
+          border: "1px dashed var(--border-strong)"
+        }
+      }, /*#__PURE__*/React.createElement("div", {
+        style: {
+          fontSize: 11,
+          fontWeight: 700,
+          color: "var(--text-faint)",
+          textTransform: "uppercase",
+          letterSpacing: ".04em",
+          marginBottom: 6
+        }
+      }, "Passes when the answer\u2026"), q.type === "number" && /*#__PURE__*/React.createElement("div", {
+        style: {
+          display: "flex",
+          gap: 8
+        }
+      }, /*#__PURE__*/React.createElement("div", {
+        style: {
+          width: 150,
+          flexShrink: 0
+        }
+      }, /*#__PURE__*/React.createElement(Select, {
+        value: (q.knockout_config || {}).op || ">=",
+        onChange: e => updQ(i, {
+          knockout_config: Object.assign({}, q.knockout_config, {
+            op: e.target.value
+          })
+        }),
+        options: [{
+          value: ">=",
+          label: "is at least (≥)"
+        }, {
+          value: ">",
+          label: "is more than (>)"
+        }, {
+          value: "==",
+          label: "equals (=)"
+        }, {
+          value: "<=",
+          label: "is at most (≤)"
+        }, {
+          value: "<",
+          label: "is less than (<)"
+        }]
+      })), /*#__PURE__*/React.createElement("input", {
+        type: "number",
+        value: (q.knockout_config || {}).value != null ? (q.knockout_config || {}).value : "",
+        onChange: e => updQ(i, {
+          knockout_config: Object.assign({}, q.knockout_config, {
+            value: e.target.value
+          })
+        }),
+        placeholder: "e.g. 3",
+        style: is
+      })), q.type === "yes_no" && /*#__PURE__*/React.createElement("div", {
+        style: {
+          width: 160
+        }
+      }, /*#__PURE__*/React.createElement(Select, {
+        value: (q.knockout_config || {}).equals || "yes",
+        onChange: e => updQ(i, {
+          knockout_config: {
+            equals: e.target.value
+          }
+        }),
+        options: [{
+          value: "yes",
+          label: "is Yes"
+        }, {
+          value: "no",
+          label: "is No"
+        }]
+      })), CHOICE_TYPES[q.type] && /*#__PURE__*/React.createElement("input", {
+        value: ((q.knockout_config || {}).accept || []).join(", "),
+        onChange: e => updQ(i, {
+          knockout_config: {
+            accept: e.target.value.split(",").map(function (s) {
+              return s.trim();
+            }).filter(Boolean)
+          }
+        }),
+        placeholder: "Accepted answers, comma-separated",
+        style: is
+      }), q.type === "date" && /*#__PURE__*/React.createElement("div", {
+        style: {
+          display: "flex",
+          gap: 8
+        }
+      }, /*#__PURE__*/React.createElement("div", {
+        style: {
+          width: 150,
+          flexShrink: 0
+        }
+      }, /*#__PURE__*/React.createElement(Select, {
+        value: (q.knockout_config || {}).op || ">=",
+        onChange: e => updQ(i, {
+          knockout_config: Object.assign({}, q.knockout_config, {
+            op: e.target.value
+          })
+        }),
+        options: [{
+          value: ">=",
+          label: "on / after (≥)"
+        }, {
+          value: "<=",
+          label: "on / before (≤)"
+        }]
+      })), /*#__PURE__*/React.createElement("input", {
+        type: "date",
+        value: (q.knockout_config || {}).value || "",
+        onChange: e => updQ(i, {
+          knockout_config: Object.assign({}, q.knockout_config, {
+            value: e.target.value
+          })
+        }),
+        style: is
+      }))));
+    }))), /*#__PURE__*/React.createElement(Input, {
       label: "Application deadline",
       type: "date",
       value: form.expires_at,
