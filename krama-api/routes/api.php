@@ -221,6 +221,14 @@ Route::middleware('auth:api')->group(function () {
     Route::delete('employer/applications/{id}/tags/{tagId}',[\App\Http\Controllers\EmployerAtsController::class, 'tagDestroy']);
     Route::get('employer/tags',                             [\App\Http\Controllers\EmployerAtsController::class, 'tags']);
 
+    // Employer: interview scheduling + private scorecards
+    Route::get('employer/interviews/upcoming',              [\App\Http\Controllers\EmployerInterviewController::class, 'upcoming']);
+    Route::get('employer/applications/{id}/interviews',     [\App\Http\Controllers\EmployerInterviewController::class, 'index']);
+    Route::post('employer/applications/{id}/interviews',    [\App\Http\Controllers\EmployerInterviewController::class, 'store'])->middleware('throttle:60,1');
+    Route::patch('employer/interviews/{id}',                [\App\Http\Controllers\EmployerInterviewController::class, 'update'])->where('id', '[0-9]+');
+    Route::delete('employer/interviews/{id}',               [\App\Http\Controllers\EmployerInterviewController::class, 'destroy'])->where('id', '[0-9]+');
+    Route::put('employer/interviews/{id}/scorecard',        [\App\Http\Controllers\EmployerInterviewController::class, 'upsertScorecard'])->where('id', '[0-9]+');
+
     // Employer: own jobs
     // Note: 'verified' middleware removed — this is a JWT API (no verification.notice route),
     // and recruiters are created programmatically without email verification.

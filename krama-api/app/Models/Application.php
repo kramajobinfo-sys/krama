@@ -46,4 +46,9 @@ class Application extends Model
     {
         return $this->hasMany(ApplicationAnswer::class);
     }
+
+    public function interviews()
+    {
+        return $this->hasMany(Interview::class)->orderBy('scheduled_at');
+    }
 }

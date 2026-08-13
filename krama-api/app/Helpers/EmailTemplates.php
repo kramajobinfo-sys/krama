@@ -37,6 +37,30 @@ class EmailTemplates
         return [$subject, $html];
     }
 
+    public static function interviewScheduled(string $candidateName, string $jobTitle, $iv): array
+    {
+        $TYPE  = ['phone' => 'Phone interview', 'video' => 'Video interview', 'in_person' => 'In-person interview'];
+        $label = $TYPE[$iv->type] ?? 'Interview';
+        $when  = $iv->scheduled_at ? $iv->scheduled_at->format('l, j F Y \a\t H:i') : 'To be confirmed';
+        $tz    = $iv->timezone ? ' (' . $iv->timezone . ')' : '';
+        $where = $iv->type === 'in_person'
+            ? ($iv->location ? ('<p style=\'margin:0 0 8px;color:#374151\'>📍 ' . htmlspecialchars($iv->location) . '</p>') : '')
+            : ($iv->meeting_url ? ('<p style=\'margin:0 0 8px;color:#374151\'>🔗 <a href=\'' . htmlspecialchars($iv->meeting_url) . '\'>' . htmlspecialchars($iv->meeting_url) . '</a></p>') : '');
+
+        $subject = "Interview scheduled: {$jobTitle}";
+        $html = self::wrapper(
+            'Interview Scheduled',
+            "<p style='margin:0 0 12px'>Hello <strong>{$candidateName}</strong>,</p>
+            <p style='margin:0 0 18px'>You have been scheduled for an interview for <strong>{$jobTitle}</strong>.</p>
+            <div style='background:#0369a1;color:#fff;border-radius:8px;padding:14px 20px;display:inline-block;font-size:15px;font-weight:600;margin-bottom:18px'>{$label}</div>
+            <p style='margin:0 0 8px;color:#374151'>🗓 {$when}{$tz}</p>
+            {$where}
+            <p style='margin:14px 0 0;color:#6b7280;font-size:13px'>Log in to your account for the full details. The employer may contact you to confirm.</p>"
+        );
+
+        return [$subject, $html];
+    }
+
     // ── Employer emails ───────────────────────────────────────────────────────
 
     public static function newApplicationReceived(string $employerName, string $jobTitle, string $candidateName): array
