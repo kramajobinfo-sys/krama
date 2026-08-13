@@ -3924,8 +3924,12 @@
     }));
   }
   function TalentSearch({
+    jobs,
     onGoToMessages
   }) {
+    const publishedJobs = (jobs || []).filter(function (j) {
+      return j.status === "published";
+    });
     const [tab, setTab] = React.useState("search");
     const [kw, setKw] = React.useState("");
     const [skills, setSkills] = React.useState("");
@@ -3938,12 +3942,49 @@
     const [detail, setDetail] = React.useState(null);
     const [msgBody, setMsgBody] = React.useState("");
     const [composing, setComposing] = React.useState(false);
+    const [inviting, setInviting] = React.useState(false);
+    const [inviteJob, setInviteJob] = React.useState("");
+    const [inviteMsg, setInviteMsg] = React.useState("");
+    const [inviteBusy, setInviteBusy] = React.useState(false);
     const [msg, setMsg] = React.useState("");
     const flash = m => {
       setMsg(m);
       setTimeout(function () {
         setMsg("");
       }, 2500);
+    };
+    const sendInvite = function () {
+      if (!inviteJob || !sel) {
+        flash("Pick a job to invite them to.");
+        return;
+      }
+      setInviteBusy(true);
+      emp.inviteCandidate(sel, inviteJob, inviteMsg).then(function (r) {
+        setInviteBusy(false);
+        setInviting(false);
+        setInviteMsg("");
+        setInviteJob("");
+        flash("Invitation sent.");
+        setDetail(function (d) {
+          if (!d) return d;
+          var jt = (publishedJobs.find(function (j) {
+            return String(j.id) === String(r.job_id);
+          }) || {}).title;
+          var invs = (d.invitations || []).filter(function (x) {
+            return x.job_id !== r.job_id;
+          });
+          return Object.assign({}, d, {
+            invitations: invs.concat([{
+              job_id: r.job_id,
+              job: jt,
+              status: r.status
+            }])
+          });
+        });
+      }).catch(function (e) {
+        setInviteBusy(false);
+        flash("Error: " + (e && e.message || "Invite failed."));
+      });
     };
     const runSearch = function () {
       setLoading(true);
@@ -4390,7 +4431,119 @@
           return !v;
         });
       }
-    }, "Message")), composing && /*#__PURE__*/React.createElement("div", {
+    }, "Message"), publishedJobs.length > 0 && /*#__PURE__*/React.createElement(Button, {
+      variant: "ghost",
+      size: "sm",
+      iconLeft: I("send", 14),
+      onClick: function () {
+        setInviting(function (v) {
+          return !v;
+        });
+      }
+    }, "Invite")), inviting && /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        flexDirection: "column",
+        gap: 8,
+        border: "1px solid var(--border)",
+        borderRadius: "var(--radius-md)",
+        padding: 12
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: "var(--text-xs)",
+        fontWeight: 700,
+        color: "var(--text-faint)",
+        textTransform: "uppercase",
+        letterSpacing: ".04em"
+      }
+    }, "Invite to apply"), /*#__PURE__*/React.createElement(Select, {
+      value: inviteJob,
+      onChange: function (e) {
+        setInviteJob(e.target.value);
+      },
+      options: [{
+        value: "",
+        label: "— Select a published job —"
+      }].concat(publishedJobs.map(function (j) {
+        return {
+          value: String(j.id),
+          label: j.title
+        };
+      }))
+    }), /*#__PURE__*/React.createElement("textarea", {
+      value: inviteMsg,
+      onChange: function (e) {
+        setInviteMsg(e.target.value);
+      },
+      rows: 2,
+      placeholder: "Optional message to the candidate\u2026",
+      style: {
+        width: "100%",
+        boxSizing: "border-box",
+        resize: "vertical",
+        border: "1px solid var(--border)",
+        borderRadius: "var(--radius-md)",
+        padding: "8px 11px",
+        fontFamily: "var(--font-sans)",
+        fontSize: "var(--text-sm)",
+        background: "var(--surface-page)",
+        color: "var(--text-body)",
+        outline: "none"
+      }
+    }), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(Button, {
+      variant: "primary",
+      size: "sm",
+      disabled: inviteBusy || !inviteJob,
+      onClick: sendInvite
+    }, inviteBusy ? "Sending…" : "Send invitation"))), detail.invitations && detail.invitations.length > 0 && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: "var(--text-xs)",
+        fontWeight: 700,
+        color: "var(--text-faint)",
+        textTransform: "uppercase",
+        letterSpacing: ".04em",
+        marginBottom: 6
+      }
+    }, "Invitations sent"), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        flexDirection: "column",
+        gap: 4
+      }
+    }, detail.invitations.map(function (iv, i) {
+      var lbl = {
+        sent: "Sent",
+        viewed: "Viewed",
+        applied: "Applied ✓",
+        declined: "Declined",
+        expired: "Expired"
+      }[iv.status] || iv.status;
+      var col = iv.status === "applied" ? "var(--success)" : iv.status === "declined" || iv.status === "expired" ? "var(--text-muted)" : "var(--text-brand)";
+      return /*#__PURE__*/React.createElement("div", {
+        key: i,
+        style: {
+          fontSize: "var(--text-sm)",
+          color: "var(--text-body)",
+          display: "flex",
+          justifyContent: "space-between",
+          gap: 8
+        }
+      }, /*#__PURE__*/React.createElement("span", {
+        style: {
+          minWidth: 0,
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap"
+        }
+      }, iv.job), /*#__PURE__*/React.createElement("span", {
+        style: {
+          color: col,
+          fontWeight: 600,
+          flexShrink: 0
+        }
+      }, lbl));
+    }))), composing && /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
         flexDirection: "column",
@@ -12914,6 +13067,7 @@
       jobs: jobs,
       onGoToMessages: () => setPage("messages")
     }), page === "cvmatch" && /*#__PURE__*/React.createElement(EmployerCvMatch, null), page === "talent" && /*#__PURE__*/React.createElement(TalentSearch, {
+      jobs: jobs,
       onGoToMessages: () => setPage("messages")
     }), page === "team" && isCompanyAdmin(authUser) && /*#__PURE__*/React.createElement(Team, {
       user: authUser

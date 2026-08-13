@@ -116,6 +116,8 @@ var cand = (function () {
       return req("GET", "/candidate/applications/stage-counts");
     },
     withdrawApplication: function (id) { return req("DELETE", "/applications/" + id); },
+    fetchInvitations: function () { return req("GET", "/candidate/invitations"); },
+    declineInvitation: function (id) { return req("POST", "/candidate/invitations/" + id + "/decline", {}); },
 
     // Saved jobs
     fetchSavedJobs: function (page) {

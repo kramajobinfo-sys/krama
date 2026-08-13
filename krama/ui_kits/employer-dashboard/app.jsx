@@ -1211,7 +1211,8 @@
     );
   }
 
-  function TalentSearch({ onGoToMessages }) {
+  function TalentSearch({ jobs, onGoToMessages }) {
+    const publishedJobs = (jobs || []).filter(function (j) { return j.status === "published"; });
     const [tab, setTab] = React.useState("search");
     const [kw, setKw] = React.useState("");
     const [skills, setSkills] = React.useState("");
@@ -1224,8 +1225,21 @@
     const [detail, setDetail] = React.useState(null);
     const [msgBody, setMsgBody] = React.useState("");
     const [composing, setComposing] = React.useState(false);
+    const [inviting, setInviting] = React.useState(false);
+    const [inviteJob, setInviteJob] = React.useState("");
+    const [inviteMsg, setInviteMsg] = React.useState("");
+    const [inviteBusy, setInviteBusy] = React.useState(false);
     const [msg, setMsg] = React.useState("");
     const flash = (m) => { setMsg(m); setTimeout(function () { setMsg(""); }, 2500); };
+    const sendInvite = function () {
+      if (!inviteJob || !sel) { flash("Pick a job to invite them to."); return; }
+      setInviteBusy(true);
+      emp.inviteCandidate(sel, inviteJob, inviteMsg).then(function (r) {
+        setInviteBusy(false); setInviting(false); setInviteMsg(""); setInviteJob("");
+        flash("Invitation sent.");
+        setDetail(function (d) { if (!d) return d; var jt = (publishedJobs.find(function (j) { return String(j.id) === String(r.job_id); }) || {}).title; var invs = (d.invitations || []).filter(function (x) { return x.job_id !== r.job_id; }); return Object.assign({}, d, { invitations: invs.concat([{ job_id: r.job_id, job: jt, status: r.status }]) }); });
+      }).catch(function (e) { setInviteBusy(false); flash("Error: " + (e && e.message || "Invite failed.")); });
+    };
 
     const runSearch = function () {
       setLoading(true);
@@ -1339,7 +1353,28 @@
                       <Button variant={detail.saved ? "secondary" : "primary"} size="sm" iconLeft={I(detail.saved ? "bookmark-check" : "bookmark", 14)} onClick={function () { toggleSave(detail); }}>{detail.saved ? "Saved" : "Save to pool"}</Button>
                       {detail.has_cv && <Button variant="ghost" size="sm" iconLeft={I("download", 14)} onClick={function () { emp.downloadCandidateCv(detail.id).catch(function (e) { flash(e && e.message || "Download failed"); }); }}>CV</Button>}
                       <Button variant="ghost" size="sm" iconLeft={I("message-square", 14)} onClick={function () { setComposing(function (v) { return !v; }); }}>Message</Button>
+                      {publishedJobs.length > 0 && <Button variant="ghost" size="sm" iconLeft={I("send", 14)} onClick={function () { setInviting(function (v) { return !v; }); }}>Invite</Button>}
                     </div>
+                    {inviting && (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8, border: "1px solid var(--border)", borderRadius: "var(--radius-md)", padding: 12 }}>
+                        <div style={{ fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".04em" }}>Invite to apply</div>
+                        <Select value={inviteJob} onChange={function (e) { setInviteJob(e.target.value); }} options={[{ value: "", label: "— Select a published job —" }].concat(publishedJobs.map(function (j) { return { value: String(j.id), label: j.title }; }))} />
+                        <textarea value={inviteMsg} onChange={function (e) { setInviteMsg(e.target.value); }} rows={2} placeholder="Optional message to the candidate…" style={{ width: "100%", boxSizing: "border-box", resize: "vertical", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", padding: "8px 11px", fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)", background: "var(--surface-page)", color: "var(--text-body)", outline: "none" }} />
+                        <div><Button variant="primary" size="sm" disabled={inviteBusy || !inviteJob} onClick={sendInvite}>{inviteBusy ? "Sending…" : "Send invitation"}</Button></div>
+                      </div>
+                    )}
+                    {detail.invitations && detail.invitations.length > 0 && (
+                      <div>
+                        <div style={{ fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".04em", marginBottom: 6 }}>Invitations sent</div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                          {detail.invitations.map(function (iv, i) {
+                            var lbl = { sent: "Sent", viewed: "Viewed", applied: "Applied ✓", declined: "Declined", expired: "Expired" }[iv.status] || iv.status;
+                            var col = iv.status === "applied" ? "var(--success)" : (iv.status === "declined" || iv.status === "expired" ? "var(--text-muted)" : "var(--text-brand)");
+                            return <div key={i} style={{ fontSize: "var(--text-sm)", color: "var(--text-body)", display: "flex", justifyContent: "space-between", gap: 8 }}><span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{iv.job}</span><span style={{ color: col, fontWeight: 600, flexShrink: 0 }}>{lbl}</span></div>;
+                          })}
+                        </div>
+                      </div>
+                    )}
                     {composing && (
                       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                         <textarea value={msgBody} onChange={function (e) { setMsgBody(e.target.value); }} rows={3} placeholder="Write a message…" style={{ width: "100%", boxSizing: "border-box", resize: "vertical", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", padding: "9px 11px", fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)", background: "var(--surface-page)", color: "var(--text-body)", outline: "none" }} />
@@ -4311,7 +4346,7 @@
           {page === "jobs" && <JobsManage jobs={jobs} loading={jobsLoading} reload={loadJobs} onPost={handlePost} onPublish={publishJob} sub={sub} quota={quota} onBilling={() => setPage("billing")} onView={(j) => setViewingJob(j)} onEdit={(j) => setPosting({ mode: "edit", job: j })} onClone={(j) => setPosting({ mode: "clone", job: j })} user={authUser} />}
           {page === "applicants" && <Applicants jobs={jobs} onGoToMessages={() => setPage("messages")} />}
           {page === "cvmatch" && <EmployerCvMatch />}
-          {page === "talent" && <TalentSearch onGoToMessages={() => setPage("messages")} />}
+          {page === "talent" && <TalentSearch jobs={jobs} onGoToMessages={() => setPage("messages")} />}
           {page === "team" && isCompanyAdmin(authUser) && <Team user={authUser} />}
           {page === "company" && (!companyLoaded
             ? <div className="krm-page-pad" style={{ padding: 28, color: "var(--text-muted)" }}>Loading…</div>

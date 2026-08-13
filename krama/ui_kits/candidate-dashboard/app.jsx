@@ -13,6 +13,9 @@
     // Nav + shell
     "Dashboard": "ផ្ទាំងគ្រប់គ្រង", "My applications": "ពាក្យសុំការងាររបស់ខ្ញុំ", "Saved jobs": "ការងារបានរក្សាទុក",
     "Recommended": "បានណែនាំ", "Following": "កំពុងតាមដាន", "Job alerts": "ការជូនដំណឹងការងារ", "Messages": "សារ",
+    "Invitations": "ការអញ្ជើញ", "Employers who invited you to apply.": "និយោជកដែលបានអញ្ជើញអ្នកឱ្យដាក់ពាក្យ។",
+    "No invitations yet": "មិនទាន់មានការអញ្ជើញនៅឡើយ", "When an employer invites you to apply for a role, it will appear here.": "នៅពេលនិយោជកអញ្ជើញអ្នកឱ្យដាក់ពាក្យសុំតំណែងណាមួយ វានឹងបង្ហាញនៅទីនេះ។",
+    "New": "ថ្មី", "Decline": "បដិសេធ", "Already applied": "បានដាក់ពាក្យរួចហើយ", "Job closed": "ការងារបានបិទ",
     "Résumé builder": "បង្កើតប្រវត្តិរូប", "Profile": "ប្រវត្តិរូប", "Help & support": "ជំនួយ",
     "Profile strength": "កម្រិតប្រវត្តិរូប", "Profile complete": "ប្រវត្តិរូបពេញលេញ", "Sign out": "ចាកចេញ",
     "Welcome back": "សូមស្វាគមន៍ត្រឡប់មកវិញ", "Recommended for you": "បានណែនាំសម្រាប់អ្នក",
@@ -297,6 +300,7 @@
       { id: "applications", label: "My applications", icon: "send",      badge: badges.applications },
       { id: "saved",        label: "Saved jobs",       icon: "bookmark",  badge: badges.saved },
       { id: "recommended",  label: "Recommended",      icon: "sparkles" },
+      { id: "invitations",  label: "Invitations",      icon: "mail-plus" },
       { id: "following",    label: "Following",         icon: "heart" },
       { id: "alerts",       label: "Job alerts",       icon: "bell" },
       { id: "messages",     label: "Messages",          icon: "message-square", badge: badges.messages },
@@ -788,6 +792,59 @@
             </span>
           );
         })}
+      </div>
+    );
+  }
+
+  function Invitations() {
+    const [list, setList] = React.useState(null);
+    const [busy, setBusy] = React.useState(null);
+    React.useEffect(function () { cand.fetchInvitations().then(setList).catch(function () { setList([]); }); }, []);
+    const decline = function (id) {
+      setBusy(id);
+      cand.declineInvitation(id).then(function () { setList(function (l) { return (l || []).filter(function (x) { return x.id !== id; }); }); setBusy(null); }).catch(function () { setBusy(null); });
+    };
+    const jobLink = function (job) { return HOME_URL + "?job=" + job.id; };
+    const STLABEL = { sent: "New invitation", viewed: "Invitation", applied: "Applied", declined: "Declined", expired: "Expired" };
+    return (
+      <div className="krm-page-pad" style={{ padding: 28 }}>
+        <h1 style={{ fontSize: "var(--text-xl)", fontWeight: 700, color: "var(--text-strong)", marginBottom: 4 }}>{T("Invitations")}</h1>
+        <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginBottom: 20 }}>{T("Employers who invited you to apply.")}</p>
+        {list === null ? <div style={{ color: "var(--text-muted)", fontSize: "var(--text-sm)" }}>{T("Loading…")}</div> : (
+          list.length === 0
+            ? <EmptyState icon={I("mail-plus", 28)} title={T("No invitations yet")} description={T("When an employer invites you to apply for a role, it will appear here.")} />
+            : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 14, maxWidth: 640 }}>
+                {list.map(function (iv) {
+                  return (
+                    <Card key={iv.id} padding={18}>
+                      <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
+                        <Avatar src={iv.company && iv.company.logo_url} name={(iv.company && iv.company.name) || "?"} square size={44} />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                            <span style={{ fontWeight: 700, color: "var(--text-strong)" }}>{iv.job.title}</span>
+                            {iv.status === "applied"
+                              ? <Badge tone="success">{T("Applied")}</Badge>
+                              : (iv.status === "sent" ? <Badge tone="brand">{T("New")}</Badge> : null)}
+                          </div>
+                          <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginTop: 2 }}>{iv.company && iv.company.name}</div>
+                          {iv.message && <div style={{ fontSize: "var(--text-sm)", color: "var(--text-body)", marginTop: 10, background: "var(--surface-sunken)", borderRadius: "var(--radius-md)", padding: "10px 12px", whiteSpace: "pre-wrap" }}>{iv.message}</div>}
+                          <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
+                            {iv.status === "applied"
+                              ? <Button variant="secondary" size="sm" disabled>{T("Already applied")}</Button>
+                              : (iv.job.status === "published"
+                                ? <a href={jobLink(iv.job)} target="_blank" rel="noopener"><Button variant="primary" size="sm" iconRight={I("arrow-up-right", 14)}>{T("View & apply")}</Button></a>
+                                : <Button variant="secondary" size="sm" disabled>{T("Job closed")}</Button>)}
+                            {(iv.status === "sent" || iv.status === "viewed") && <Button variant="ghost" size="sm" disabled={busy === iv.id} onClick={function () { decline(iv.id); }}>{T("Decline")}</Button>}
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+                  );
+                })}
+              </div>
+            )
+        )}
       </div>
     );
   }
@@ -2136,7 +2193,7 @@
     if (authLoading) return <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", color: "var(--text-muted)" }}>{T("Loading…")}</div>;
     if (!authUser) return <CandidateLogin onLogin={function(u){ setAuthUser(u); }} />;
 
-    var titles = { dashboard: T("Welcome back") + ", " + (authUser.name.split(" ")[0]), cv: T("My Digital CV"), applications: T("My applications"), saved: T("Saved jobs"), recommended: T("Recommended for you"), following: T("Companies I follow"), alerts: T("Job alerts"), messages: T("Messages"), resume: T("Résumé builder"), support: T("Help & support"), profile: T("Profile") };
+    var titles = { dashboard: T("Welcome back") + ", " + (authUser.name.split(" ")[0]), cv: T("My Digital CV"), applications: T("My applications"), saved: T("Saved jobs"), recommended: T("Recommended for you"), invitations: T("Invitations"), following: T("Companies I follow"), alerts: T("Job alerts"), messages: T("Messages"), resume: T("Résumé builder"), support: T("Help & support"), profile: T("Profile") };
 
     return (
       <div style={{ display: "flex", minHeight: "100vh", background: "var(--surface-page)" }}>
@@ -2151,6 +2208,7 @@
             {page === "applications" && <Applications initialTab={appsInitialTab} onBadgeChange={function(n){ setBadges(function(b){ return Object.assign({}, b, { applications: n }); }); }} onGoToMessages={function(){ setPage("messages"); }} />}
             {page === "saved"        && <SavedJobs onBadgeChange={function(n){ setBadges(function(b){ return Object.assign({}, b, { saved: n }); }); }} />}
             {page === "recommended"  && <Recommended />}
+            {page === "invitations"  && <Invitations />}
             {page === "following"    && <Following />}
             {page === "alerts"       && <JobAlerts />}
             {page === "messages"     && <Messages user={authUser} />}

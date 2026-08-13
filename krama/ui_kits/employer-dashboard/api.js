@@ -231,6 +231,7 @@
     fetchCandidate: function (id) { return req("GET", "/employer/candidates/" + id); },
     saveCandidate: function (id, note) { return req("POST", "/employer/candidates/" + id + "/save", { note: note || null }); },
     unsaveCandidate: function (id) { return req("DELETE", "/employer/candidates/" + id + "/save"); },
+    inviteCandidate: function (id, jobId, message) { return req("POST", "/employer/candidates/" + id + "/invite", { job_id: jobId, message: message || null }); },
     fetchTalentPool: function (keyword) { return req("GET", "/employer/talent-pool" + (keyword ? "?keyword=" + encodeURIComponent(keyword) : "")); },
     downloadCandidateCv: function (id) {
       var token = getToken();

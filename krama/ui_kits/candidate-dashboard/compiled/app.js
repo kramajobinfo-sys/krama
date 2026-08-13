@@ -37,6 +37,14 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     "Following": "កំពុងតាមដាន",
     "Job alerts": "ការជូនដំណឹងការងារ",
     "Messages": "សារ",
+    "Invitations": "ការអញ្ជើញ",
+    "Employers who invited you to apply.": "និយោជកដែលបានអញ្ជើញអ្នកឱ្យដាក់ពាក្យ។",
+    "No invitations yet": "មិនទាន់មានការអញ្ជើញនៅឡើយ",
+    "When an employer invites you to apply for a role, it will appear here.": "នៅពេលនិយោជកអញ្ជើញអ្នកឱ្យដាក់ពាក្យសុំតំណែងណាមួយ វានឹងបង្ហាញនៅទីនេះ។",
+    "New": "ថ្មី",
+    "Decline": "បដិសេធ",
+    "Already applied": "បានដាក់ពាក្យរួចហើយ",
+    "Job closed": "ការងារបានបិទ",
     "Résumé builder": "បង្កើតប្រវត្តិរូប",
     "Profile": "ប្រវត្តិរូប",
     "Help & support": "ជំនួយ",
@@ -775,6 +783,10 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       id: "recommended",
       label: "Recommended",
       icon: "sparkles"
+    }, {
+      id: "invitations",
+      label: "Invitations",
+      icon: "mail-plus"
     }, {
       id: "following",
       label: "Following",
@@ -2224,6 +2236,155 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         }
       }, I("sparkles", 11), " ", T(labels[r] || r));
     }));
+  }
+  function Invitations() {
+    const [list, setList] = React.useState(null);
+    const [busy, setBusy] = React.useState(null);
+    React.useEffect(function () {
+      cand.fetchInvitations().then(setList).catch(function () {
+        setList([]);
+      });
+    }, []);
+    const decline = function (id) {
+      setBusy(id);
+      cand.declineInvitation(id).then(function () {
+        setList(function (l) {
+          return (l || []).filter(function (x) {
+            return x.id !== id;
+          });
+        });
+        setBusy(null);
+      }).catch(function () {
+        setBusy(null);
+      });
+    };
+    const jobLink = function (job) {
+      return HOME_URL + "?job=" + job.id;
+    };
+    const STLABEL = {
+      sent: "New invitation",
+      viewed: "Invitation",
+      applied: "Applied",
+      declined: "Declined",
+      expired: "Expired"
+    };
+    return /*#__PURE__*/React.createElement("div", {
+      className: "krm-page-pad",
+      style: {
+        padding: 28
+      }
+    }, /*#__PURE__*/React.createElement("h1", {
+      style: {
+        fontSize: "var(--text-xl)",
+        fontWeight: 700,
+        color: "var(--text-strong)",
+        marginBottom: 4
+      }
+    }, T("Invitations")), /*#__PURE__*/React.createElement("p", {
+      style: {
+        fontSize: "var(--text-sm)",
+        color: "var(--text-muted)",
+        marginBottom: 20
+      }
+    }, T("Employers who invited you to apply.")), list === null ? /*#__PURE__*/React.createElement("div", {
+      style: {
+        color: "var(--text-muted)",
+        fontSize: "var(--text-sm)"
+      }
+    }, T("Loading…")) : list.length === 0 ? /*#__PURE__*/React.createElement(EmptyState, {
+      icon: I("mail-plus", 28),
+      title: T("No invitations yet"),
+      description: T("When an employer invites you to apply for a role, it will appear here.")
+    }) : /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        flexDirection: "column",
+        gap: 14,
+        maxWidth: 640
+      }
+    }, list.map(function (iv) {
+      return /*#__PURE__*/React.createElement(Card, {
+        key: iv.id,
+        padding: 18
+      }, /*#__PURE__*/React.createElement("div", {
+        style: {
+          display: "flex",
+          alignItems: "flex-start",
+          gap: 14
+        }
+      }, /*#__PURE__*/React.createElement(Avatar, {
+        src: iv.company && iv.company.logo_url,
+        name: iv.company && iv.company.name || "?",
+        square: true,
+        size: 44
+      }), /*#__PURE__*/React.createElement("div", {
+        style: {
+          flex: 1,
+          minWidth: 0
+        }
+      }, /*#__PURE__*/React.createElement("div", {
+        style: {
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          flexWrap: "wrap"
+        }
+      }, /*#__PURE__*/React.createElement("span", {
+        style: {
+          fontWeight: 700,
+          color: "var(--text-strong)"
+        }
+      }, iv.job.title), iv.status === "applied" ? /*#__PURE__*/React.createElement(Badge, {
+        tone: "success"
+      }, T("Applied")) : iv.status === "sent" ? /*#__PURE__*/React.createElement(Badge, {
+        tone: "brand"
+      }, T("New")) : null), /*#__PURE__*/React.createElement("div", {
+        style: {
+          fontSize: "var(--text-sm)",
+          color: "var(--text-muted)",
+          marginTop: 2
+        }
+      }, iv.company && iv.company.name), iv.message && /*#__PURE__*/React.createElement("div", {
+        style: {
+          fontSize: "var(--text-sm)",
+          color: "var(--text-body)",
+          marginTop: 10,
+          background: "var(--surface-sunken)",
+          borderRadius: "var(--radius-md)",
+          padding: "10px 12px",
+          whiteSpace: "pre-wrap"
+        }
+      }, iv.message), /*#__PURE__*/React.createElement("div", {
+        style: {
+          display: "flex",
+          gap: 10,
+          marginTop: 12
+        }
+      }, iv.status === "applied" ? /*#__PURE__*/React.createElement(Button, {
+        variant: "secondary",
+        size: "sm",
+        disabled: true
+      }, T("Already applied")) : iv.job.status === "published" ? /*#__PURE__*/React.createElement("a", {
+        href: jobLink(iv.job),
+        target: "_blank",
+        rel: "noopener"
+      }, /*#__PURE__*/React.createElement(Button, {
+        variant: "primary",
+        size: "sm",
+        iconRight: I("arrow-up-right", 14)
+      }, T("View & apply"))) : /*#__PURE__*/React.createElement(Button, {
+        variant: "secondary",
+        size: "sm",
+        disabled: true
+      }, T("Job closed")), (iv.status === "sent" || iv.status === "viewed") && /*#__PURE__*/React.createElement(Button, {
+        variant: "ghost",
+        size: "sm",
+        disabled: busy === iv.id,
+        onClick: function () {
+          decline(iv.id);
+        }
+      }, T("Decline"))))));
+    })));
   }
   function Recommended() {
     var [jobs, setJobs] = React.useState([]);
@@ -5366,6 +5527,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       applications: T("My applications"),
       saved: T("Saved jobs"),
       recommended: T("Recommended for you"),
+      invitations: T("Invitations"),
       following: T("Companies I follow"),
       alerts: T("Job alerts"),
       messages: T("Messages"),
@@ -5454,7 +5616,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
           });
         });
       }
-    }), page === "recommended" && /*#__PURE__*/React.createElement(Recommended, null), page === "following" && /*#__PURE__*/React.createElement(Following, null), page === "alerts" && /*#__PURE__*/React.createElement(JobAlerts, null), page === "messages" && /*#__PURE__*/React.createElement(Messages, {
+    }), page === "recommended" && /*#__PURE__*/React.createElement(Recommended, null), page === "invitations" && /*#__PURE__*/React.createElement(Invitations, null), page === "following" && /*#__PURE__*/React.createElement(Following, null), page === "alerts" && /*#__PURE__*/React.createElement(JobAlerts, null), page === "messages" && /*#__PURE__*/React.createElement(Messages, {
       user: authUser
     }), page === "resume" && /*#__PURE__*/React.createElement(ResumeBuilder, {
       onResumeSaved: reloadResume
