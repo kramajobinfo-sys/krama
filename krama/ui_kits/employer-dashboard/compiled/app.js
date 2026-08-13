@@ -19,6 +19,529 @@
     Switch
   } = NS;
   const emp = window.KRAMA_EMPLOYER_API;
+
+  // ── i18n ──────────────────────────────────────────────────────────────────────────────
+  // Dictionaries live in EMP_KM / EMP_ZH below (loaded from emp-i18n.js) and merge into the
+  // shared KRAMA_I18N. KIT_LANGS is the guard: this kit is translated SCREEN BY SCREEN, and
+  // a language is only listed here once its dictionary exists, otherwise KRAMA_T would
+  // resolve the handful of strings that happen to live in the shared public-site dictionary
+  // and leave the rest English — a half-translated dashboard. See project-i18n-languages.
+  // Employer-dashboard strings. Keys already carried by the shared public-site dictionary
+  // are deliberately ABSENT here and inherit from it — these merge into the SAME
+  // KRAMA_I18N objects, so redefining one would re-translate the public site too. (That is
+  // why the note button says "Save note" and the interview type "Phone call": bare "Save"
+  // and "Phone" already mean "bookmark" and "phone number" in the shared dictionary.)
+  var EMP_KM = {
+    "Moved to": "បានផ្លាស់ទៅ",
+    "Awaiting payment confirmation from admin. Your plan will activate automatically once confirmed.": "កំពុងរង់ចាំការបញ្ជាក់ការទូទាត់ពីអ្នកគ្រប់គ្រង។ គម្រោងរបស់អ្នកនឹងចាប់ដំណើរការដោយស្វ័យប្រវត្តិនៅពេលបញ្ជាក់រួច។",
+    "Doesn't meet requirements": "មិនត្រូវតាមលក្ខខណ្ឌ",
+    "Free boosts included in your active plan": "ការលើកកម្ពស់ឥតគិតថ្លៃរួមបញ្ចូលក្នុងគម្រោងសកម្មរបស់អ្នក",
+    "Job posting requires an active plan.": "ការប្រកាសការងារត្រូវការគម្រោងសកម្ម។",
+    "Meets requirements": "ត្រូវតាមលក្ខខណ្ឌ",
+    "Payment pending admin confirmation. Job posting will be unlocked once your subscription is activated.": "ការទូទាត់កំពុងរង់ចាំការបញ្ជាក់ពីអ្នកគ្រប់គ្រង។ ការប្រកាសការងារនឹងបើកនៅពេលការជាវរបស់អ្នកសកម្ម។",
+    "Unlimited": "គ្មានដែនកំណត់",
+    "Use a credit to feature a job free. After they run out, featuring costs the pay-per-boost price.": "ប្រើឥណទានដើម្បីធ្វើឱ្យការងារលេចធ្លោដោយឥតគិតថ្លៃ។ ពេលអស់ឥណទាន ការធ្វើឱ្យលេចធ្លោនឹងគិតតាមតម្លៃបង់ក្នុងមួយលើក។",
+    "Verified": "បានផ្ទៀងផ្ទាត់",
+    "Temporary": "បណ្តោះអាសន្ន",
+    "e.g. 8:00 AM – 5:00 PM": "ឧ. ៨:០០ ព្រឹក – ៥:០០ ល្ងាច",
+    "A logo, description and culture help candidates trust and choose you.": "ឡូហ្គូ ការពិពណ៌នា និងវប្បធម៌ ជួយឱ្យបេក្ខជនទុកចិត្ត និងជ្រើសរើសអ្នក។",
+    "AI draft failed.": "ការព្រាងដោយ AI បរាជ័យ។",
+    "Activates on": "ចាប់ដំណើរការនៅ",
+    "Add note": "បន្ថែមកំណត់ចំណាំ",
+    "Add scorecard": "បន្ថែមសន្លឹកវាយតម្លៃ",
+    "All used": "បានប្រើអស់",
+    "Already used": "បានប្រើរួចហើយ",
+    "Banner preview": "មើលបដាជាមុន",
+    "CV hidden": "CV ត្រូវបានលាក់",
+    "Candidate": "បេក្ខជន",
+    "Clone job": "ចម្លងការងារ",
+    "Complete your company profile": "បំពេញប្រវត្តិក្រុមហ៊ុនរបស់អ្នក",
+    "Connect a feed": "ភ្ជាប់មតិព័ត៌មាន",
+    "Could not save job.": "មិនអាចរក្សាទុកការងារបានទេ។",
+    "Could not send message.": "មិនអាចផ្ញើសារបានទេ។",
+    "Download failed": "ការទាញយកបរាជ័យ",
+    "Draft added below — review and edit before posting.": "សេចក្តីព្រាងត្រូវបានបន្ថែមខាងក្រោម — សូមពិនិត្យ និងកែមុនប្រកាស។",
+    "Draft saved.": "បានរក្សាទុកសេចក្តីព្រាង។",
+    "Draft with AI": "ព្រាងដោយ AI",
+    "Drafting…": "កំពុងព្រាង…",
+    "Edit job": "កែការងារ",
+    "Edit profile": "កែប្រវត្តិរូប",
+    "Enter a job title first, then draft with AI.": "បញ្ចូលឈ្មោះការងារជាមុនសិន បន្ទាប់មកព្រាងដោយ AI។",
+    "Enterprise plan inquiry": "សំណួរអំពីគម្រោងសហគ្រាស",
+    "Expired on": "ផុតកំណត់នៅ",
+    "Freelance": "ការងារឯករាជ្យ",
+    "Hide scorecard": "លាក់សន្លឹកវាយតម្លៃ",
+    "Image upload failed.": "ការផ្ទុករូបភាពបរាជ័យ។",
+    "Import in bulk": "នាំចូលជាដុំ",
+    "Interview scheduled — candidate notified.": "បានកំណត់ការសម្ភាសន៍ — បានជូនដំណឹងបេក្ខជន។",
+    "Job approved and published.": "ការងារត្រូវបានអនុម័ត និងផ្សាយ។",
+    "Job closed.": "ការងារត្រូវបានបិទ។",
+    "Job deleted.": "ការងារត្រូវបានលុប។",
+    "Job published!": "ការងារត្រូវបានផ្សាយ!",
+    "Job rejected.": "ការងារត្រូវបានបដិសេធ។",
+    "Job submitted for company approval.": "ការងារត្រូវបានដាក់ស្នើសុំការអនុម័តពីក្រុមហ៊ុន។",
+    "Job title is required.": "ត្រូវការឈ្មោះការងារ។",
+    "Job updated.": "ការងារត្រូវបានធ្វើបច្ចុប្បន្នភាព។",
+    "Limit reached": "ដល់ដែនកំណត់",
+    "Location / map": "ទីតាំង / ផែនទី",
+    "Max salary must be greater than or equal to min salary.": "ប្រាក់ខែអតិបរមាត្រូវធំជាង ឬស្មើប្រាក់ខែអប្បបរមា។",
+    "Needs approval": "ត្រូវការការអនុម័ត",
+    "Negotiable": "អាចចរចា",
+    "No CV": "គ្មាន CV",
+    "No active subscription.": "គ្មានការជាវសកម្ម។",
+    "No expiry": "គ្មានថ្ងៃផុតកំណត់",
+    "Pick a date & time first.": "សូមជ្រើសកាលបរិច្ឆេទ និងម៉ោងជាមុនសិន។",
+    "Plan": "គម្រោង",
+    "Publish": "ផ្សាយ",
+    "Publish job": "ផ្សាយការងារ",
+    "Renews": "បន្តជាថ្មី",
+    "Replace image": "ជំនួសរូបភាព",
+    "Save changes": "រក្សាទុកការផ្លាស់ប្តូរ",
+    "Save draft": "រក្សាទុកសេចក្តីព្រាង",
+    "Save scorecard": "រក្សាទុកសន្លឹកវាយតម្លៃ",
+    "Saving…": "កំពុងរក្សាទុក…",
+    "Schedule": "កំណត់ពេល",
+    "Schedule interview": "កំណត់ការសម្ភាសន៍",
+    "Scheduling…": "កំពុងកំណត់ពេល…",
+    "Scorecard saved.": "បានរក្សាទុកសន្លឹកវាយតម្លៃ។",
+    "Sending…": "កំពុងផ្ញើ…",
+    "Submit": "ដាក់ស្នើ",
+    "Submit for approval": "ដាក់ស្នើសុំការអនុម័ត",
+    "Submitted for company review.": "បានដាក់ស្នើសុំការពិនិត្យពីក្រុមហ៊ុន។",
+    "Upgrade": "ដំឡើងកម្រិត",
+    "Upload image": "ផ្ទុករូបភាព",
+    "Uploading…": "កំពុងផ្ទុក…",
+    "Yes": "បាទ/ចាស",
+    "You": "អ្នក",
+    "Your subscription has expired. Jobs are hidden from the public website.": "ការជាវរបស់អ្នកបានផុតកំណត់។ ការងារត្រូវបានលាក់ពីគេហទំព័រសាធារណៈ។",
+    "Approved": "បានអនុម័ត",
+    "Suspended": "ត្រូវបានផ្អាក",
+    "Applicant tracking": "ការតាមដានបេក្ខជន",
+    "Job postings": "ការងារដែលបានប្រកាស",
+    "Applicants": "បេក្ខជន",
+    "CV Match": "ផ្គូផ្គង CV",
+    "Find candidates": "ស្វែងរកបេក្ខជន",
+    "Messages": "សារ",
+    "Team": "ក្រុមការងារ",
+    "Company profile": "ប្រវត្តិក្រុមហ៊ុន",
+    "Plan & billing": "គម្រោង និងវិក្កយបត្រ",
+    "Help & support": "ជំនួយ",
+    "Unverified": "មិនទាន់ផ្ទៀងផ្ទាត់",
+    "Post": "ប្រកាស",
+    "My Profile": "ប្រវត្តិរូបរបស់ខ្ញុំ",
+    "Sign out": "ចាកចេញ",
+    "Welcome — let’s get your first job live": "សូមស្វាគមន៍ — តោះប្រកាសការងារដំបូងរបស់អ្នក",
+    "Your dashboard is empty because you haven’t posted yet. Three quick ways to fill it:": "ផ្ទាំងគ្រប់គ្រងរបស់អ្នកនៅទទេ ព្រោះអ្នកមិនទាន់ប្រកាសការងារ។ មានវិធីរហ័សបីយ៉ាង៖",
+    "Active jobs": "ការងារកំពុងដំណើរការ",
+    "Pending approval": "រង់ចាំការអនុម័ត",
+    "Total applications": "ពាក្យសុំសរុប",
+    "Total job views": "ចំនួនមើលការងារសរុប",
+    "Your job postings": "ការងារដែលអ្នកបានប្រកាស",
+    "Manage jobs": "គ្រប់គ្រងការងារ",
+    "Job title": "ឈ្មោះការងារ",
+    "Status": "ស្ថានភាព",
+    "Views": "ចំនួនមើល",
+    "Loading…": "កំពុងផ្ទុក…",
+    "No jobs yet. Click “Post a job” to create your first listing.": "មិនទាន់មានការងារ។ ចុច “ដាក់ការងារ” ដើម្បីបង្កើតការងារដំបូង។",
+    "Upcoming interviews": "ការសម្ភាសន៍ខាងមុខ",
+    "Open": "បើក",
+    "Close": "បិទ",
+    "e.g. Senior Accountant": "ឧ. គណនេយ្យករជាន់ខ្ពស់",
+    "— Select —": "— ជ្រើសរើស —",
+    "+ Add a new category…": "+ បន្ថែមប្រភេទថ្មី…",
+    "New category name": "ឈ្មោះប្រភេទថ្មី",
+    "e.g. Renewable Energy": "ឧ. ថាមពលកកើតឡើងវិញ",
+    "Salary min": "ប្រាក់ខែអប្បបរមា",
+    "Salary max": "ប្រាក់ខែអតិបរមា",
+    "Currency": "រូបិយប័ណ្ណ",
+    "Per": "ក្នុងមួយ",
+    "Hour": "ម៉ោង",
+    "Day": "ថ្ងៃ",
+    "Month": "ខែ",
+    "Year": "ឆ្នាំ",
+    "Remote-friendly": "អាចធ្វើការពីចម្ងាយ",
+    "Candidates can work remotely.": "បេក្ខជនអាចធ្វើការពីចម្ងាយបាន។",
+    "Working days": "ថ្ងៃធ្វើការ",
+    "e.g. Monday to Friday": "ឧ. ច័ន្ទ ដល់ សុក្រ",
+    "Working time": "ម៉ោងធ្វើការ",
+    "Location / map link (optional)": "ទីតាំង / តំណផែនទី (មិនចាំបាច់)",
+    "Address or Google Maps link": "អាសយដ្ឋាន ឬតំណ Google Maps",
+    "Share on social media": "ចែករំលែកលើបណ្តាញសង្គម",
+    "Auto-post this job to our social channels when it's published.": "ប្រកាសការងារនេះដោយស្វ័យប្រវត្តិទៅបណ្តាញសង្គមរបស់យើង នៅពេលវាផ្សាយ។",
+    "Banner image for the social post": "រូបភាពបដាសម្រាប់ការប្រកាសលើបណ្តាញសង្គម",
+    "Remove": "លុបចេញ",
+    "Description": "ការពិពណ៌នា",
+    "Describe the role and what the team does…": "ពិពណ៌នាអំពីតួនាទី និងអ្វីដែលក្រុមធ្វើ…",
+    "Skills, qualifications, experience…": "ជំនាញ សញ្ញាបត្រ បទពិសោធន៍…",
+    "Perks, insurance, bonuses…": "អត្ថប្រយោជន៍ ធានារ៉ាប់រង ប្រាក់រង្វាន់…",
+    "Screening questions": "សំណួរជ្រើសរើស",
+    "Add question": "បន្ថែមសំណួរ",
+    "Ask applicants custom questions. A knockout question flags anyone whose answer doesn't meet the rule.": "សួរបេក្ខជននូវសំណួរផ្ទាល់ខ្លួន។ សំណួរច្រានចោលនឹងសម្គាល់អ្នកដែលចម្លើយមិនត្រូវតាមលក្ខខណ្ឌ។",
+    "No screening questions yet.": "មិនទាន់មានសំណួរជ្រើសរើស។",
+    "Question…": "សំណួរ…",
+    "Short text": "អត្ថបទខ្លី",
+    "Long text": "អត្ថបទវែង",
+    "Yes / No": "បាទ/ចាស ឬ ទេ",
+    "Single choice": "ជម្រើសតែមួយ",
+    "Multi choice": "ជម្រើសច្រើន",
+    "Number": "លេខ",
+    "Date": "កាលបរិច្ឆេទ",
+    "Options, comma-separated (e.g. 1-2 years, 3-5 years, 5+ years)": "ជម្រើស បំបែកដោយសញ្ញាក្បៀស (ឧ. ១-២ឆ្នាំ, ៣-៥ឆ្នាំ, ៥ឆ្នាំឡើង)",
+    "Passes when the answer…": "ជាប់នៅពេលចម្លើយ…",
+    "is at least (≥)": "យ៉ាងតិច (≥)",
+    "is more than (>)": "ច្រើនជាង (>)",
+    "equals (=)": "ស្មើ (=)",
+    "is at most (≤)": "យ៉ាងច្រើន (≤)",
+    "is less than (<)": "តិចជាង (<)",
+    "is Yes": "គឺ បាទ/ចាស",
+    "Accepted answers, comma-separated": "ចម្លើយដែលទទួលយក បំបែកដោយសញ្ញាក្បៀស",
+    "on / after (≥)": "នៅ / ក្រោយ (≥)",
+    "on / before (≤)": "នៅ / មុន (≤)",
+    "Application deadline": "ថ្ងៃផុតកំណត់ដាក់ពាក្យ",
+    "Edit": "កែសម្រួល",
+    "Clone": "ចម្លង",
+    "Approve": "អនុម័ត",
+    "Reject": "បដិសេធ",
+    "Awaiting review": "រង់ចាំការពិនិត្យ",
+    "Feature": "ធ្វើឱ្យលេចធ្លោ",
+    "Delete": "លុប",
+    "All": "ទាំងអស់",
+    "Published": "បានផ្សាយ",
+    "Draft": "សេចក្តីព្រាង",
+    "Rejected": "បានបដិសេធ",
+    "Closed": "បានបិទ",
+    "Create, submit, close, and remove your listings.": "បង្កើត ដាក់ស្នើ បិទ និងលុបការងាររបស់អ្នក។",
+    "Import from a job feed": "នាំចូលពីមតិព័ត៌មានការងារ",
+    "Subscribe now →": "ជាវឥឡូវនេះ →",
+    "Actions": "សកម្មភាព",
+    "No jobs in this tab.": "គ្មានការងារក្នុងផ្ទាំងនេះ។",
+    "Reject job posting": "បដិសេធការប្រកាសការងារ",
+    "Tell the recruiter why this job was rejected.": "ប្រាប់អ្នកជ្រើសរើសពីមូលហេតុដែលការងារនេះត្រូវបានបដិសេធ។",
+    "Reason": "មូលហេតុ",
+    "e.g. Job description is incomplete…": "ឧ. ការពិពណ៌នាការងារមិនពេញលេញ…",
+    "Notes…": "កំណត់ចំណាំ…",
+    "Interviews": "ការសម្ភាសន៍",
+    "Video": "វីដេអូ",
+    "Phone call": "ការហៅទូរស័ព្ទ",
+    "In-person": "ជួបផ្ទាល់",
+    "Duration (minutes)": "រយៈពេល (នាទី)",
+    "Location / address": "ទីតាំង / អាសយដ្ឋាន",
+    "Meeting link (https://…)": "តំណប្រជុំ (https://…)",
+    "Notes (optional)…": "កំណត់ចំណាំ (មិនចាំបាច់)…",
+    "No interviews scheduled.": "មិនទាន់មានការសម្ភាសន៍។",
+    "Reviewed": "បានពិនិត្យ",
+    "Shortlisted": "បានជ្រើសរើស",
+    "Interview": "សម្ភាសន៍",
+    "Offered": "បានផ្តល់ជូន",
+    "Hired": "បានជ្រើសរើសយក",
+    "No applicants yet": "មិនទាន់មានបេក្ខជន",
+    "Publish a job to start receiving applications.": "ផ្សាយការងារដើម្បីចាប់ផ្តើមទទួលពាក្យសុំ។",
+    "Pipeline": "ដំណើរការ",
+    "Drag a card between columns, or open it to manage.": "អូសកាតរវាងជួរឈរ ឬបើកវាដើម្បីគ្រប់គ្រង។",
+    "Doesn't meet a screening requirement": "មិនត្រូវតាមលក្ខខណ្ឌជ្រើសរើស",
+    "Stage": "ដំណាក់កាល",
+    "Download CV": "ទាញយក CV",
+    "Cover note": "លិខិតបញ្ជាក់",
+    "Screening answers": "ចម្លើយជ្រើសរើស",
+    "Meets requirement": "ត្រូវតាមលក្ខខណ្ឌ",
+    "Does not meet requirement": "មិនត្រូវតាមលក្ខខណ្ឌ",
+    "Tags": "ស្លាក",
+    "Add a tag…": "បន្ថែមស្លាក…",
+    "Add": "បន្ថែម",
+    "Private notes": "កំណត់ចំណាំឯកជន",
+    "Add a private note (only your team can see this)…": "បន្ថែមកំណត់ចំណាំឯកជន (មានតែក្រុមរបស់អ្នកទេដែលឃើញ)…",
+    "Save note": "រក្សាទុកកំណត់ចំណាំ",
+    "No notes yet.": "មិនទាន់មានកំណត់ចំណាំ។",
+    "Write your message…": "សរសេរសាររបស់អ្នក…",
+    "Manage your subscription and billing history.": "គ្រប់គ្រងការជាវ និងប្រវត្តិវិក្កយបត្ររបស់អ្នក។",
+    "Current plan": "គម្រោងបច្ចុប្បន្ន",
+    "Started": "បានចាប់ផ្តើម",
+    "Live job posts": "ការងារកំពុងផ្សាយ",
+    "Close a job to free a slot, or upgrade your plan for more.": "បិទការងារមួយដើម្បីទំនេរកន្លែង ឬដំឡើងគម្រោងដើម្បីបានច្រើនជាង។",
+    "Featured credits": "ឥណទានលេចធ្លោ",
+    "Check now": "ពិនិត្យឥឡូវនេះ",
+    "Popular": "ពេញនិយម",
+    "Current": "បច្ចុប្បន្ន",
+    "Billing history": "ប្រវត្តិវិក្កយបត្រ",
+    "Invoice": "វិក្កយបត្រ",
+    "Amount": "ចំនួនទឹកប្រាក់",
+    "Type": "ប្រភេទ",
+    "Method": "វិធីទូទាត់",
+    "No payments yet.": "មិនទាន់មានការទូទាត់។",
+    "Tax invoice": "វិក្កយបត្រពន្ធ",
+    "Download invoice": "ទាញយកវិក្កយបត្រ"
+  };
+  var EMP_ZH = {
+    "Moved to": "已移至",
+    "Awaiting payment confirmation from admin. Your plan will activate automatically once confirmed.": "等待管理员确认付款。确认后你的套餐将自动生效。",
+    "Doesn't meet requirements": "不符合条件",
+    "Free boosts included in your active plan": "你的有效套餐已包含免费推广额度",
+    "Job posting requires an active plan.": "发布职位需要有效套餐。",
+    "Meets requirements": "符合条件",
+    "Payment pending admin confirmation. Job posting will be unlocked once your subscription is activated.": "付款待管理员确认。订阅生效后即可发布职位。",
+    "Unlimited": "无限制",
+    "Use a credit to feature a job free. After they run out, featuring costs the pay-per-boost price.": "使用额度可免费将职位设为精选。额度用完后，设为精选将按单次推广价格计费。",
+    "Verified": "已认证",
+    "Temporary": "临时",
+    "e.g. 8:00 AM – 5:00 PM": "例如：上午 8:00 – 下午 5:00",
+    "A logo, description and culture help candidates trust and choose you.": "logo、公司介绍和企业文化能让候选人更信任并选择你。",
+    "AI draft failed.": "AI 生成草稿失败。",
+    "Activates on": "生效日期",
+    "Add note": "添加备注",
+    "Add scorecard": "添加评分表",
+    "All used": "已用完",
+    "Already used": "已使用",
+    "Banner preview": "横幅预览",
+    "CV hidden": "简历已隐藏",
+    "Candidate": "候选人",
+    "Clone job": "复制职位",
+    "Complete your company profile": "完善你的公司主页",
+    "Connect a feed": "连接职位源",
+    "Could not save job.": "无法保存职位。",
+    "Could not send message.": "消息发送失败。",
+    "Download failed": "下载失败",
+    "Draft added below — review and edit before posting.": "草稿已添加到下方——请在发布前检查并修改。",
+    "Draft saved.": "草稿已保存。",
+    "Draft with AI": "用 AI 生成草稿",
+    "Drafting…": "生成中…",
+    "Edit job": "编辑职位",
+    "Edit profile": "编辑主页",
+    "Enter a job title first, then draft with AI.": "请先填写职位名称，再使用 AI 生成草稿。",
+    "Enterprise plan inquiry": "企业套餐咨询",
+    "Expired on": "到期于",
+    "Freelance": "自由职业",
+    "Hide scorecard": "隐藏评分表",
+    "Image upload failed.": "图片上传失败。",
+    "Import in bulk": "批量导入",
+    "Interview scheduled — candidate notified.": "面试已安排——已通知候选人。",
+    "Job approved and published.": "职位已批准并发布。",
+    "Job closed.": "职位已关闭。",
+    "Job deleted.": "职位已删除。",
+    "Job published!": "职位已发布！",
+    "Job rejected.": "职位已驳回。",
+    "Job submitted for company approval.": "职位已提交公司审批。",
+    "Job title is required.": "请填写职位名称。",
+    "Job updated.": "职位已更新。",
+    "Limit reached": "已达上限",
+    "Location / map": "地点 / 地图",
+    "Max salary must be greater than or equal to min salary.": "最高薪资必须大于或等于最低薪资。",
+    "Needs approval": "待审批",
+    "Negotiable": "面议",
+    "No CV": "无简历",
+    "No active subscription.": "没有生效中的订阅。",
+    "No expiry": "无到期日",
+    "Pick a date & time first.": "请先选择日期和时间。",
+    "Plan": "套餐",
+    "Publish": "发布",
+    "Publish job": "发布职位",
+    "Renews": "续订于",
+    "Replace image": "更换图片",
+    "Save changes": "保存更改",
+    "Save draft": "保存草稿",
+    "Save scorecard": "保存评分表",
+    "Saving…": "保存中…",
+    "Schedule": "安排",
+    "Schedule interview": "安排面试",
+    "Scheduling…": "安排中…",
+    "Scorecard saved.": "评分表已保存。",
+    "Sending…": "发送中…",
+    "Submit": "提交",
+    "Submit for approval": "提交审批",
+    "Submitted for company review.": "已提交公司审核。",
+    "Upgrade": "升级",
+    "Upload image": "上传图片",
+    "Uploading…": "上传中…",
+    "Yes": "是",
+    "You": "你",
+    "Your subscription has expired. Jobs are hidden from the public website.": "你的订阅已到期。职位已从公开网站隐藏。",
+    "Approved": "已批准",
+    "Suspended": "已暂停",
+    "Applicant tracking": "申请者跟踪",
+    "Job postings": "职位发布",
+    "Applicants": "申请者",
+    "CV Match": "简历匹配",
+    "Find candidates": "寻找候选人",
+    "Messages": "消息",
+    "Team": "团队",
+    "Company profile": "公司主页",
+    "Plan & billing": "套餐与账单",
+    "Help & support": "帮助与支持",
+    "Unverified": "未认证",
+    "Post": "发布",
+    "My Profile": "我的资料",
+    "Sign out": "退出登录",
+    "Welcome — let’s get your first job live": "欢迎——来发布你的第一个职位吧",
+    "Your dashboard is empty because you haven’t posted yet. Three quick ways to fill it:": "你的控制台还是空的，因为尚未发布职位。三种快捷方式：",
+    "Active jobs": "在招职位",
+    "Pending approval": "待审核",
+    "Total applications": "申请总数",
+    "Total job views": "职位浏览总数",
+    "Your job postings": "你发布的职位",
+    "Manage jobs": "管理职位",
+    "Job title": "职位名称",
+    "Status": "状态",
+    "Views": "浏览量",
+    "Loading…": "加载中…",
+    "No jobs yet. Click “Post a job” to create your first listing.": "还没有职位。点击「发布职位」创建你的第一个职位。",
+    "Upcoming interviews": "即将进行的面试",
+    "Open": "打开",
+    "Close": "关闭",
+    "e.g. Senior Accountant": "例如：高级会计",
+    "— Select —": "— 请选择 —",
+    "+ Add a new category…": "+ 添加新类别…",
+    "New category name": "新类别名称",
+    "e.g. Renewable Energy": "例如：可再生能源",
+    "Salary min": "最低薪资",
+    "Salary max": "最高薪资",
+    "Currency": "币种",
+    "Per": "每",
+    "Hour": "小时",
+    "Day": "天",
+    "Month": "月",
+    "Year": "年",
+    "Remote-friendly": "支持远程",
+    "Candidates can work remotely.": "候选人可远程办公。",
+    "Working days": "工作日",
+    "e.g. Monday to Friday": "例如：周一至周五",
+    "Working time": "工作时间",
+    "Location / map link (optional)": "地点 / 地图链接（选填）",
+    "Address or Google Maps link": "地址或 Google 地图链接",
+    "Share on social media": "分享到社交媒体",
+    "Auto-post this job to our social channels when it's published.": "职位发布时自动同步到我们的社交渠道。",
+    "Banner image for the social post": "社交帖子的横幅图片",
+    "Remove": "移除",
+    "Description": "职位描述",
+    "Describe the role and what the team does…": "介绍该职位以及团队的工作内容…",
+    "Skills, qualifications, experience…": "技能、学历、经验…",
+    "Perks, insurance, bonuses…": "福利、保险、奖金…",
+    "Screening questions": "筛选问题",
+    "Add question": "添加问题",
+    "Ask applicants custom questions. A knockout question flags anyone whose answer doesn't meet the rule.": "向申请者提出自定义问题。淘汰型问题会标记出回答不符合条件的人。",
+    "No screening questions yet.": "尚未添加筛选问题。",
+    "Question…": "问题…",
+    "Short text": "短文本",
+    "Long text": "长文本",
+    "Yes / No": "是 / 否",
+    "Single choice": "单选",
+    "Multi choice": "多选",
+    "Number": "数字",
+    "Date": "日期",
+    "Options, comma-separated (e.g. 1-2 years, 3-5 years, 5+ years)": "选项，用逗号分隔（例如：1-2 年、3-5 年、5 年以上）",
+    "Passes when the answer…": "当回答满足以下条件时通过…",
+    "is at least (≥)": "不少于 (≥)",
+    "is more than (>)": "大于 (>)",
+    "equals (=)": "等于 (=)",
+    "is at most (≤)": "不超过 (≤)",
+    "is less than (<)": "小于 (<)",
+    "is Yes": "为「是」",
+    "Accepted answers, comma-separated": "可接受的答案，用逗号分隔",
+    "on / after (≥)": "在该日期或之后 (≥)",
+    "on / before (≤)": "在该日期或之前 (≤)",
+    "Application deadline": "申请截止日期",
+    "Edit": "编辑",
+    "Clone": "复制",
+    "Approve": "批准",
+    "Reject": "驳回",
+    "Awaiting review": "等待审核",
+    "Feature": "设为精选",
+    "Delete": "删除",
+    "All": "全部",
+    "Published": "已发布",
+    "Draft": "草稿",
+    "Rejected": "已驳回",
+    "Closed": "已关闭",
+    "Create, submit, close, and remove your listings.": "创建、提交、关闭和删除你的职位。",
+    "Import from a job feed": "从职位源导入",
+    "Subscribe now →": "立即订阅 →",
+    "Actions": "操作",
+    "No jobs in this tab.": "此标签下暂无职位。",
+    "Reject job posting": "驳回职位发布",
+    "Tell the recruiter why this job was rejected.": "告知招聘人员此职位被驳回的原因。",
+    "Reason": "原因",
+    "e.g. Job description is incomplete…": "例如：职位描述不完整…",
+    "Notes…": "备注…",
+    "Interviews": "面试",
+    "Video": "视频",
+    "Phone call": "电话面试",
+    "In-person": "现场面试",
+    "Duration (minutes)": "时长（分钟）",
+    "Location / address": "地点 / 地址",
+    "Meeting link (https://…)": "会议链接（https://…）",
+    "Notes (optional)…": "备注（选填）…",
+    "No interviews scheduled.": "尚未安排面试。",
+    "Reviewed": "已查看",
+    "Shortlisted": "已入围",
+    "Interview": "面试",
+    "Offered": "已发录用",
+    "Hired": "已录用",
+    "No applicants yet": "暂无申请者",
+    "Publish a job to start receiving applications.": "发布职位即可开始接收申请。",
+    "Pipeline": "招聘流程",
+    "Drag a card between columns, or open it to manage.": "在各列之间拖动卡片，或打开卡片进行管理。",
+    "Doesn't meet a screening requirement": "不符合筛选条件",
+    "Stage": "阶段",
+    "Download CV": "下载简历",
+    "Cover note": "求职附言",
+    "Screening answers": "筛选问题回答",
+    "Meets requirement": "符合条件",
+    "Does not meet requirement": "不符合条件",
+    "Tags": "标签",
+    "Add a tag…": "添加标签…",
+    "Add": "添加",
+    "Private notes": "内部备注",
+    "Add a private note (only your team can see this)…": "添加内部备注（仅你的团队可见）…",
+    "Save note": "保存备注",
+    "No notes yet.": "暂无备注。",
+    "Write your message…": "写下你的消息…",
+    "Manage your subscription and billing history.": "管理你的订阅与账单记录。",
+    "Current plan": "当前套餐",
+    "Started": "开始于",
+    "Live job posts": "在线职位数",
+    "Close a job to free a slot, or upgrade your plan for more.": "关闭一个职位以释放名额，或升级套餐以获得更多。",
+    "Featured credits": "精选额度",
+    "Check now": "立即查看",
+    "Popular": "热门",
+    "Current": "当前",
+    "Billing history": "账单记录",
+    "Invoice": "发票",
+    "Amount": "金额",
+    "Type": "类型",
+    "Method": "支付方式",
+    "No payments yet.": "暂无付款记录。",
+    "Tax invoice": "税务发票",
+    "Download invoice": "下载发票"
+  };
+  try {
+    if (window.KRAMA_I18N) {
+      window.KRAMA_I18N.km = Object.assign(window.KRAMA_I18N.km || {}, EMP_KM);
+      window.KRAMA_I18N.zh = Object.assign(window.KRAMA_I18N.zh || {}, EMP_ZH);
+    }
+  } catch (e) {}
+  // The DS StatusBadge hardcodes English labels, but it renders `children || label` — so we
+  // can pass a translated child instead of editing _ds_bundle.js, which has no rebuild
+  // pipeline and would have to be hand-patched. Keys mirror the DS map.
+  const STATUS_LABEL = {
+    draft: "Draft",
+    pending: "Pending approval",
+    company_pending: "Awaiting review",
+    published: "Published",
+    approved: "Approved",
+    rejected: "Rejected",
+    closed: "Closed",
+    suspended: "Suspended"
+  };
+  const statusText = function (s) {
+    return T(STATUS_LABEL[s] || "Draft");
+  };
+  const KIT_LANGS = {
+    en: 1,
+    km: 1,
+    zh: 1
+  };
+  const T = function (s) {
+    if (typeof window.KRAMA_T !== "function") return s;
+    return KIT_LANGS[window.KRAMA_LANG] ? window.KRAMA_T(s) : s;
+  };
   // Home page target: clean "/" in production, relative path in local dev (same host check as api.js).
   const HOME_URL = /^(localhost|127\.0\.0\.1|::1|192\.168\.|10\.)/.test(location.hostname) ? "../public-website/index.html" : "/";
   if (!document.getElementById('kre-css')) {
@@ -293,7 +816,9 @@
     badges,
     open,
     onClose,
-    user
+    user,
+    lang,
+    onLang
   }) {
     badges = badges || {};
     return /*#__PURE__*/React.createElement("aside", {
@@ -371,7 +896,7 @@
         style: {
           flex: 1
         }
-      }, n.label), badges[n.id] > 0 && /*#__PURE__*/React.createElement(Badge, {
+      }, T(n.label)), badges[n.id] > 0 && /*#__PURE__*/React.createElement(Badge, {
         tone: n.id === "billing" ? "warning" : active ? "brand" : "neutral"
       }, badges[n.id]));
     })), /*#__PURE__*/React.createElement("div", {
@@ -409,12 +934,47 @@
         alignItems: "center",
         gap: 4
       }
-    }, I("badge-check", 12), " Verified") : /*#__PURE__*/React.createElement("div", {
+    }, I("badge-check", 12), " ", T("Verified")) : /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: "var(--text-xs)",
         color: "var(--text-muted)"
       }
-    }, "Unverified"))));
+    }, T("Unverified")))), onLang && /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        gap: 6,
+        padding: "0 8px 10px"
+      }
+    }, [{
+      v: "en",
+      l: "EN"
+    }, {
+      v: "km",
+      l: "ខ្មែរ"
+    }, {
+      v: "zh",
+      l: "中文"
+    }].map(function (o) {
+      var on = (lang || "en") === o.v;
+      return /*#__PURE__*/React.createElement("button", {
+        key: o.v,
+        onClick: function () {
+          onLang(o.v);
+        },
+        style: {
+          flex: 1,
+          padding: "6px 8px",
+          borderRadius: "var(--radius-md)",
+          border: "1px solid " + (on ? "var(--brand)" : "var(--border)"),
+          background: on ? "var(--brand-subtle)" : "transparent",
+          color: on ? "var(--text-brand)" : "var(--text-muted)",
+          fontFamily: "var(--font-sans)",
+          fontSize: "var(--text-sm)",
+          fontWeight: 700,
+          cursor: "pointer"
+        }
+      }, o.l);
+    })));
   }
   function NotificationBell({
     onNav
@@ -727,7 +1287,7 @@
       style: {
         whiteSpace: "nowrap"
       }
-    }, "Post"), /*#__PURE__*/React.createElement("div", {
+    }, T("Post")), /*#__PURE__*/React.createElement("div", {
       style: {
         position: "relative"
       }
@@ -813,7 +1373,7 @@
         fontSize: "var(--text-sm)",
         color: "var(--text-body)"
       }
-    }, "My Profile"), /*#__PURE__*/React.createElement("div", {
+    }, T("My Profile")), /*#__PURE__*/React.createElement("div", {
       style: {
         borderTop: "1px solid var(--border)",
         marginTop: 4
@@ -835,7 +1395,7 @@
         fontSize: "var(--text-sm)",
         color: "var(--danger)"
       }
-    }, "Sign out")))))));
+    }, T("Sign out"))))))));
   }
   function MyProfile({
     user,
@@ -1504,29 +2064,29 @@
         color: "var(--text-strong)",
         margin: 0
       }
-    }, "Welcome \u2014 let\u2019s get your first job live")), /*#__PURE__*/React.createElement("p", {
+    }, T("Welcome — let’s get your first job live"))), /*#__PURE__*/React.createElement("p", {
       style: {
         fontSize: "var(--text-sm)",
         color: "var(--text-muted)",
         margin: "6px 0 0 32px"
       }
-    }, "Your dashboard is empty because you haven\u2019t posted yet. Three quick ways to fill it:")), [{
+    }, T("Your dashboard is empty because you haven’t posted yet. Three quick ways to fill it:"))), [{
       icon: "pen-line",
-      title: "Post a job",
+      title: T("Post a job"),
       body: "Write it yourself — or click “Draft with AI” to generate the description, requirements & benefits from just a job title.",
-      cta: "Post a job",
+      cta: T("Post a job"),
       nav: "jobs"
     }, {
       icon: "rss",
-      title: "Import in bulk",
+      title: T("Import in bulk"),
       body: "Connect your careers page or ATS feed (Greenhouse, Lever, or RSS) to import all your open roles as drafts to review and publish.",
-      cta: "Connect a feed",
+      cta: T("Connect a feed"),
       nav: "jobs"
     }, {
       icon: "building-2",
-      title: "Complete your company profile",
-      body: "A logo, description and culture help candidates trust and choose you.",
-      cta: "Edit profile",
+      title: T("Complete your company profile"),
+      body: T("A logo, description and culture help candidates trust and choose you."),
+      cta: T("Edit profile"),
       nav: "company"
     }].map(function (s, i) {
       return /*#__PURE__*/React.createElement("div", {
@@ -1584,22 +2144,22 @@
         gap: 16
       }
     }, /*#__PURE__*/React.createElement(StatCard, {
-      label: "Active jobs",
+      label: T("Active jobs"),
       value: loading ? "—" : String(active),
       tone: "brand",
       icon: I("briefcase", 22)
     }), /*#__PURE__*/React.createElement(StatCard, {
-      label: "Pending approval",
+      label: T("Pending approval"),
       value: loading ? "—" : String(pending),
       tone: "warning",
       icon: I("clock", 22)
     }), /*#__PURE__*/React.createElement(StatCard, {
-      label: "Total applications",
+      label: T("Total applications"),
       value: loading ? "—" : String(totalApps),
       tone: "info",
       icon: I("users", 22)
     }), /*#__PURE__*/React.createElement(StatCard, {
-      label: "Total job views",
+      label: T("Total job views"),
       value: loading ? "—" : totalViews.toLocaleString(),
       tone: "success",
       icon: I("eye", 22)
@@ -1621,12 +2181,12 @@
         fontWeight: 700,
         color: "var(--text-strong)"
       }
-    }, "Your job postings"), /*#__PURE__*/React.createElement(Button, {
+    }, T("Your job postings")), /*#__PURE__*/React.createElement(Button, {
       variant: "ghost",
       size: "sm",
       iconRight: I("arrow-right", 14),
       onClick: () => onNav("jobs")
-    }, "Manage jobs")), /*#__PURE__*/React.createElement("div", {
+    }, T("Manage jobs"))), /*#__PURE__*/React.createElement("div", {
       style: {
         display: "grid",
         gridTemplateColumns: "1.6fr 1fr 0.7fr 0.7fr 0.8fr",
@@ -1638,21 +2198,21 @@
         color: "var(--text-faint)",
         borderBottom: "1px solid var(--border-subtle)"
       }
-    }, /*#__PURE__*/React.createElement("span", null, "Job title"), /*#__PURE__*/React.createElement("span", null, "Status"), /*#__PURE__*/React.createElement("span", null, "Applicants"), /*#__PURE__*/React.createElement("span", null, "Views"), /*#__PURE__*/React.createElement("span", null, "Posted")), loading && /*#__PURE__*/React.createElement("div", {
+    }, /*#__PURE__*/React.createElement("span", null, T("Job title")), /*#__PURE__*/React.createElement("span", null, T("Status")), /*#__PURE__*/React.createElement("span", null, T("Applicants")), /*#__PURE__*/React.createElement("span", null, T("Views")), /*#__PURE__*/React.createElement("span", null, T("Posted"))), loading && /*#__PURE__*/React.createElement("div", {
       style: {
         padding: "26px 22px",
         color: "var(--text-muted)",
         fontSize: "var(--text-sm)",
         textAlign: "center"
       }
-    }, "Loading\u2026"), !loading && recent.length === 0 && /*#__PURE__*/React.createElement("div", {
+    }, T("Loading…")), !loading && recent.length === 0 && /*#__PURE__*/React.createElement("div", {
       style: {
         padding: "26px 22px",
         color: "var(--text-muted)",
         fontSize: "var(--text-sm)",
         textAlign: "center"
       }
-    }, "No jobs yet. Click \u201CPost a job\u201D to create your first listing."), !loading && recent.map((j, i) => /*#__PURE__*/React.createElement("div", {
+    }, T("No jobs yet. Click “Post a job” to create your first listing.")), !loading && recent.map((j, i) => /*#__PURE__*/React.createElement("div", {
       key: j.id,
       style: {
         display: "grid",
@@ -1668,7 +2228,7 @@
       }
     }, j.title), /*#__PURE__*/React.createElement("span", null, /*#__PURE__*/React.createElement(StatusBadge, {
       status: j.status
-    })), /*#__PURE__*/React.createElement("span", {
+    }, statusText(j.status))), /*#__PURE__*/React.createElement("span", {
       style: {
         fontFamily: "var(--font-mono)",
         fontSize: "var(--text-sm)",
@@ -1708,7 +2268,7 @@
         fontWeight: 700,
         color: "var(--text-strong)"
       }
-    }, "Upcoming interviews")), upcoming.map(function (iv, i) {
+    }, T("Upcoming interviews"))), upcoming.map(function (iv, i) {
       return /*#__PURE__*/React.createElement("div", {
         key: iv.id,
         style: {
@@ -1738,7 +2298,7 @@
           overflow: "hidden",
           textOverflow: "ellipsis"
         }
-      }, iv.candidate || "Candidate", " \xB7 ", iv.job || ""), /*#__PURE__*/React.createElement("div", {
+      }, iv.candidate || T("Candidate"), " \xB7 ", iv.job || ""), /*#__PURE__*/React.createElement("div", {
         style: {
           fontSize: "var(--text-xs)",
           color: "var(--text-muted)"
@@ -1757,7 +2317,7 @@
         style: {
           flexShrink: 0
         }
-      }, "Open"));
+      }, T("Open")));
     }))));
   }
 
@@ -2142,7 +2702,7 @@
     } : {};
     const draftWithAI = function () {
       if (!form.title.trim()) {
-        setError("Enter a job title first, then draft with AI.");
+        setError(T("Enter a job title first, then draft with AI."));
         return;
       }
       setDrafting(true);
@@ -2170,10 +2730,10 @@
         setResetKey(function (k) {
           return k + 1;
         }); // remount RichEditors so they show the drafted content
-        setDraftMsg("Draft added below — review and edit before posting.");
+        setDraftMsg(T("Draft added below — review and edit before posting."));
       }).catch(function (e) {
         setDrafting(false);
-        setError(e && e.message || "AI draft failed.");
+        setError(e && e.message || T("AI draft failed."));
       });
     };
     const onSocialImage = e => {
@@ -2187,21 +2747,21 @@
         setSocialUploading(false);
       }).catch(function (err) {
         setSocialUploading(false);
-        setError(err && err.message || "Image upload failed.");
+        setError(err && err.message || T("Image upload failed."));
       });
     };
     const isEdit = mode === "edit";
     const canSubmit = !isEdit || job && (job.status === "draft" || job.status === "rejected");
-    const modalTitle = isEdit ? "Edit job" : mode === "clone" ? "Clone job" : "Post a job";
+    const modalTitle = isEdit ? T("Edit job") : mode === "clone" ? T("Clone job") : T("Post a job");
     const isRecruiter = user && user.company_role === "recruitment";
-    const submitLabel = isRecruiter ? "Submit for approval" : "Publish job";
+    const submitLabel = isRecruiter ? T("Submit for approval") : T("Publish job");
     const submit = publish => {
       if (!form.title.trim()) {
-        setError("Job title is required.");
+        setError(T("Job title is required."));
         return;
       }
       if (form.salary_min && form.salary_max && Number(form.salary_max) < Number(form.salary_min)) {
-        setError("Max salary must be greater than or equal to min salary.");
+        setError(T("Max salary must be greater than or equal to min salary."));
         return;
       }
       setError("");
@@ -2255,24 +2815,24 @@
         if (wantsPublish && !isRecruiter && onPublishRequest) {
           setSaving(false);
           onClose();
-          onPublishRequest(jobId, "Job published!");
+          onPublishRequest(jobId, T("Job published!"));
           return;
         }
         // Recruiter publishing → submit for company approval (no slot consumed yet).
         if (wantsPublish && isRecruiter) {
           return emp.submitJob(jobId).then(function () {
             setSaving(false);
-            onCreated("Job submitted for company approval.");
+            onCreated(T("Job submitted for company approval."));
             onClose();
           });
         }
         // Draft save, or edit without publishing.
         setSaving(false);
-        onCreated(isEdit ? "Job updated." : "Draft saved.");
+        onCreated(isEdit ? T("Job updated.") : T("Draft saved."));
         onClose();
       }).catch(function (e) {
         setSaving(false);
-        setError(e && e.message || "Could not save job.");
+        setError(e && e.message || T("Could not save job."));
       });
     };
     return /*#__PURE__*/React.createElement("div", {
@@ -2312,7 +2872,7 @@
       }
     }, modalTitle), /*#__PURE__*/React.createElement("button", {
       onClick: onClose,
-      "aria-label": "Close",
+      "aria-label": T("Close"),
       style: {
         border: "none",
         background: "transparent",
@@ -2330,10 +2890,10 @@
         overflowY: "auto"
       }
     }, /*#__PURE__*/React.createElement(Input, {
-      label: "Job title",
+      label: T("Job title"),
       value: form.title,
       onChange: e => set("title", e.target.value),
-      placeholder: "e.g. Senior Accountant"
+      placeholder: T("e.g. Senior Accountant")
     }), /*#__PURE__*/React.createElement("div", {
       className: "krm-form-grid",
       style: {
@@ -2342,20 +2902,20 @@
         gap: 16
       }
     }, /*#__PURE__*/React.createElement(Select, {
-      label: "Job type",
+      label: T("Job type"),
       value: form.job_type,
       onChange: e => set("job_type", e.target.value),
       options: Object.keys(JOB_TYPE_LABELS).map(k => ({
         value: k,
-        label: JOB_TYPE_LABELS[k]
+        label: T(JOB_TYPE_LABELS[k])
       }))
     }), /*#__PURE__*/React.createElement(Select, {
-      label: "Experience level",
+      label: T("Experience level"),
       value: form.experience_level,
       onChange: e => set("experience_level", e.target.value),
       options: [{
         value: "",
-        label: "— Select —"
+        label: T("— Select —")
       }].concat(expLevels.map(function (l) {
         return {
           value: l.slug,
@@ -2370,35 +2930,35 @@
         gap: 16
       }
     }, /*#__PURE__*/React.createElement(Select, {
-      label: "Category",
+      label: T("Category"),
       value: form.category_id,
       onChange: e => set("category_id", e.target.value),
       options: [{
         value: "",
-        label: "— Select —"
+        label: T("— Select —")
       }].concat(cats.map(c => ({
         value: String(c.id),
         label: c.name
       }))).concat([{
         value: "__new__",
-        label: "+ Add a new category…"
+        label: T("+ Add a new category…")
       }])
     }), /*#__PURE__*/React.createElement(Select, {
-      label: "Location",
+      label: T("Location"),
       value: form.location_id,
       onChange: e => set("location_id", e.target.value),
       options: [{
         value: "",
-        label: "— Select —"
+        label: T("— Select —")
       }].concat(locs.map(l => ({
         value: String(l.id),
         label: l.name
       })))
     })), form.category_id === "__new__" && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(Input, {
-      label: "New category name",
+      label: T("New category name"),
       value: newCat,
       onChange: e => setNewCat(e.target.value),
-      placeholder: "e.g. Renewable Energy"
+      placeholder: T("e.g. Renewable Energy")
     }), /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: "var(--text-xs)",
@@ -2415,19 +2975,19 @@
         gap: 12
       }
     }, /*#__PURE__*/React.createElement(Input, {
-      label: "Salary min",
+      label: T("Salary min"),
       type: "number",
       value: form.salary_min,
       onChange: e => set("salary_min", e.target.value),
       placeholder: "800"
     }), /*#__PURE__*/React.createElement(Input, {
-      label: "Salary max",
+      label: T("Salary max"),
       type: "number",
       value: form.salary_max,
       onChange: e => set("salary_max", e.target.value),
       placeholder: "1500"
     }), /*#__PURE__*/React.createElement(Select, {
-      label: "Currency",
+      label: T("Currency"),
       value: form.salary_currency,
       onChange: e => set("salary_currency", e.target.value),
       options: [{
@@ -2438,21 +2998,21 @@
         label: "KHR"
       }]
     }), /*#__PURE__*/React.createElement(Select, {
-      label: "Per",
+      label: T("Per"),
       value: form.salary_period,
       onChange: e => set("salary_period", e.target.value),
       options: [{
         value: "hour",
-        label: "Hour"
+        label: T("Hour")
       }, {
         value: "day",
-        label: "Day"
+        label: T("Day")
       }, {
         value: "month",
-        label: "Month"
+        label: T("Month")
       }, {
         value: "year",
-        label: "Year"
+        label: T("Year")
       }]
     })), /*#__PURE__*/React.createElement("div", {
       style: {
@@ -2469,12 +3029,12 @@
         fontWeight: 600,
         color: "var(--text-strong)"
       }
-    }, "Remote-friendly"), /*#__PURE__*/React.createElement("div", {
+    }, T("Remote-friendly")), /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: "var(--text-xs)",
         color: "var(--text-muted)"
       }
-    }, "Candidates can work remotely.")), /*#__PURE__*/React.createElement(Switch, {
+    }, T("Candidates can work remotely."))), /*#__PURE__*/React.createElement(Switch, {
       checked: form.is_remote,
       onChange: v => set("is_remote", typeof v === "boolean" ? v : !form.is_remote)
     })), /*#__PURE__*/React.createElement("div", {
@@ -2485,20 +3045,20 @@
         gap: 16
       }
     }, /*#__PURE__*/React.createElement(Input, {
-      label: "Working days",
+      label: T("Working days"),
       value: form.working_days,
       onChange: e => set("working_days", e.target.value),
-      placeholder: "e.g. Monday to Friday"
+      placeholder: T("e.g. Monday to Friday")
     }), /*#__PURE__*/React.createElement(Input, {
-      label: "Working time",
+      label: T("Working time"),
       value: form.working_time,
       onChange: e => set("working_time", e.target.value),
-      placeholder: "e.g. 8:00 AM \u2013 5:00 PM"
+      placeholder: T("e.g. 8:00 AM – 5:00 PM")
     })), /*#__PURE__*/React.createElement(Input, {
-      label: "Location / map link (optional)",
+      label: T("Location / map link (optional)"),
       value: form.map_location,
       onChange: e => set("map_location", e.target.value),
-      placeholder: "Address or Google Maps link"
+      placeholder: T("Address or Google Maps link")
     }), /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
@@ -2514,12 +3074,12 @@
         fontWeight: 600,
         color: "var(--text-strong)"
       }
-    }, "Share on social media"), /*#__PURE__*/React.createElement("div", {
+    }, T("Share on social media")), /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: "var(--text-xs)",
         color: "var(--text-muted)"
       }
-    }, "Auto-post this job to our social channels when it's published.")), /*#__PURE__*/React.createElement(Switch, {
+    }, T("Auto-post this job to our social channels when it's published."))), /*#__PURE__*/React.createElement(Switch, {
       checked: form.share_social,
       onChange: v => set("share_social", typeof v === "boolean" ? v : !form.share_social)
     })), form.share_social && /*#__PURE__*/React.createElement("div", {
@@ -2535,7 +3095,7 @@
         color: "var(--text-strong)",
         marginBottom: 4
       }
-    }, "Banner image for the social post ", /*#__PURE__*/React.createElement("span", {
+    }, T("Banner image for the social post"), /*#__PURE__*/React.createElement("span", {
       style: {
         fontWeight: 400,
         color: "var(--text-muted)"
@@ -2554,7 +3114,7 @@
       }
     }, form.social_image ? /*#__PURE__*/React.createElement("img", {
       src: form.social_image,
-      alt: "Banner preview",
+      alt: T("Banner preview"),
       style: {
         width: 132,
         height: 69,
@@ -2594,7 +3154,7 @@
         color: "var(--text-brand)",
         fontSize: "var(--text-sm)"
       }
-    }, I("upload", 14), " ", socialUploading ? "Uploading…" : form.social_image ? "Replace image" : "Upload image", /*#__PURE__*/React.createElement("input", {
+    }, I("upload", 14), " ", socialUploading ? T("Uploading…") : form.social_image ? T("Replace image") : T("Upload image"), /*#__PURE__*/React.createElement("input", {
       type: "file",
       accept: "image/*",
       disabled: socialUploading,
@@ -2614,7 +3174,7 @@
         fontWeight: 600,
         padding: 0
       }
-    }, "Remove")))), /*#__PURE__*/React.createElement("div", {
+    }, T("Remove"))))), /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
         alignItems: "center",
@@ -2638,7 +3198,7 @@
       iconLeft: I("sparkles", 15),
       disabled: drafting || !form.title.trim(),
       onClick: draftWithAI
-    }, drafting ? "Drafting…" : "Draft with AI")), draftMsg && /*#__PURE__*/React.createElement("div", {
+    }, drafting ? T("Drafting…") : T("Draft with AI"))), draftMsg && /*#__PURE__*/React.createElement("div", {
       style: {
         padding: "7px 12px",
         background: "var(--success-subtle)",
@@ -2649,25 +3209,25 @@
       }
     }, draftMsg), /*#__PURE__*/React.createElement(RichEditor, {
       key: "d" + resetKey,
-      label: "Description",
+      label: T("Description"),
       rows: 4,
       value: form.description,
       onChange: v => set("description", v),
-      placeholder: "Describe the role and what the team does\u2026"
+      placeholder: T("Describe the role and what the team does…")
     }), /*#__PURE__*/React.createElement(RichEditor, {
       key: "r" + resetKey,
-      label: "Requirements",
+      label: T("Requirements"),
       rows: 3,
       value: form.requirements,
       onChange: v => set("requirements", v),
-      placeholder: "Skills, qualifications, experience\u2026"
+      placeholder: T("Skills, qualifications, experience…")
     }), /*#__PURE__*/React.createElement(RichEditor, {
       key: "b" + resetKey,
-      label: "Benefits",
+      label: T("Benefits"),
       rows: 3,
       value: form.benefits,
       onChange: v => set("benefits", v),
-      placeholder: "Perks, insurance, bonuses\u2026"
+      placeholder: T("Perks, insurance, bonuses…")
     }), /*#__PURE__*/React.createElement("div", {
       style: {
         borderTop: "1px solid var(--border-subtle)",
@@ -2686,23 +3246,23 @@
         fontWeight: 700,
         color: "var(--text-strong)"
       }
-    }, "Screening questions"), /*#__PURE__*/React.createElement(Button, {
+    }, T("Screening questions")), /*#__PURE__*/React.createElement(Button, {
       variant: "secondary",
       size: "sm",
       iconLeft: I("plus", 14),
       onClick: addQ
-    }, "Add question")), /*#__PURE__*/React.createElement("div", {
+    }, T("Add question"))), /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: "var(--text-xs)",
         color: "var(--text-muted)",
         marginBottom: 10
       }
-    }, "Ask applicants custom questions. A ", /*#__PURE__*/React.createElement("b", null, "knockout"), " question flags anyone whose answer doesn't meet the rule."), SQ.length === 0 && /*#__PURE__*/React.createElement("div", {
+    }, T("Ask applicants custom questions. A knockout question flags anyone whose answer doesn't meet the rule.")), SQ.length === 0 && /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: "var(--text-xs)",
         color: "var(--text-faint)"
       }
-    }, "No screening questions yet."), /*#__PURE__*/React.createElement("div", {
+    }, T("No screening questions yet.")), /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
         flexDirection: "column",
@@ -2740,7 +3300,7 @@
         onChange: e => updQ(i, {
           label: e.target.value
         }),
-        placeholder: "Question\u2026",
+        placeholder: T("Question…"),
         maxLength: 300,
         style: Object.assign({}, is, {
           flex: 1,
@@ -2764,30 +3324,30 @@
         },
         options: [{
           value: "text",
-          label: "Short text"
+          label: T("Short text")
         }, {
           value: "textarea",
-          label: "Long text"
+          label: T("Long text")
         }, {
           value: "yes_no",
-          label: "Yes / No"
+          label: T("Yes / No")
         }, {
           value: "single_choice",
-          label: "Single choice"
+          label: T("Single choice")
         }, {
           value: "multi_choice",
-          label: "Multi choice"
+          label: T("Multi choice")
         }, {
           value: "number",
-          label: "Number"
+          label: T("Number")
         }, {
           value: "date",
-          label: "Date"
+          label: T("Date")
         }]
       })), /*#__PURE__*/React.createElement("button", {
         type: "button",
         onClick: () => rmQ(i),
-        title: "Remove",
+        title: T("Remove"),
         style: {
           border: "none",
           background: "none",
@@ -2804,7 +3364,7 @@
             return s.trim();
           }).filter(Boolean)
         }),
-        placeholder: "Options, comma-separated (e.g. 1-2 years, 3-5 years, 5+ years)",
+        placeholder: T("Options, comma-separated (e.g. 1-2 years, 3-5 years, 5+ years)"),
         style: Object.assign({}, is, {
           marginTop: 8
         })
@@ -2865,7 +3425,7 @@
           letterSpacing: ".04em",
           marginBottom: 6
         }
-      }, "Passes when the answer\u2026"), q.type === "number" && /*#__PURE__*/React.createElement("div", {
+      }, T("Passes when the answer…")), q.type === "number" && /*#__PURE__*/React.createElement("div", {
         style: {
           display: "flex",
           gap: 8
@@ -2884,19 +3444,19 @@
         }),
         options: [{
           value: ">=",
-          label: "is at least (≥)"
+          label: T("is at least (≥)")
         }, {
           value: ">",
-          label: "is more than (>)"
+          label: T("is more than (>)")
         }, {
           value: "==",
-          label: "equals (=)"
+          label: T("equals (=)")
         }, {
           value: "<=",
-          label: "is at most (≤)"
+          label: T("is at most (≤)")
         }, {
           value: "<",
-          label: "is less than (<)"
+          label: T("is less than (<)")
         }]
       })), /*#__PURE__*/React.createElement("input", {
         type: "number",
@@ -2921,7 +3481,7 @@
         }),
         options: [{
           value: "yes",
-          label: "is Yes"
+          label: T("is Yes")
         }, {
           value: "no",
           label: "is No"
@@ -2935,7 +3495,7 @@
             }).filter(Boolean)
           }
         }),
-        placeholder: "Accepted answers, comma-separated",
+        placeholder: T("Accepted answers, comma-separated"),
         style: is
       }), q.type === "date" && /*#__PURE__*/React.createElement("div", {
         style: {
@@ -2956,10 +3516,10 @@
         }),
         options: [{
           value: ">=",
-          label: "on / after (≥)"
+          label: T("on / after (≥)")
         }, {
           value: "<=",
-          label: "on / before (≤)"
+          label: T("on / before (≤)")
         }]
       })), /*#__PURE__*/React.createElement("input", {
         type: "date",
@@ -2972,7 +3532,7 @@
         style: is
       }))));
     }))), /*#__PURE__*/React.createElement(Input, {
-      label: "Application deadline",
+      label: T("Application deadline"),
       type: "date",
       value: form.expires_at,
       onChange: e => set("expires_at", e.target.value)
@@ -2997,21 +3557,21 @@
       style: {
         flex: 1
       }
-    }, "Cancel"), /*#__PURE__*/React.createElement(Button, {
+    }, T("Cancel")), /*#__PURE__*/React.createElement(Button, {
       variant: "secondary",
       onClick: () => submit(false),
       disabled: saving,
       style: {
         flex: 1
       }
-    }, isEdit ? "Save changes" : "Save draft"), canSubmit && /*#__PURE__*/React.createElement(Button, {
+    }, isEdit ? T("Save changes") : T("Save draft")), canSubmit && /*#__PURE__*/React.createElement(Button, {
       variant: "primary",
       onClick: () => submit(true),
       disabled: saving,
       style: {
         flex: 1
       }
-    }, saving ? "Saving…" : submitLabel))));
+    }, saving ? T("Saving…") : submitLabel))));
   }
   function JobViewModal({
     job,
@@ -3019,11 +3579,11 @@
   }) {
     if (!job) return null;
     const JTL = {
-      full_time: "Full-time",
-      part_time: "Part-time",
-      contract: "Contract",
-      freelance: "Freelance",
-      internship: "Internship"
+      full_time: T("Full-time"),
+      part_time: T("Part-time"),
+      contract: T("Contract"),
+      freelance: T("Freelance"),
+      internship: T("Internship")
     };
     const fmtDate = iso => {
       if (!iso) return "—";
@@ -3031,7 +3591,7 @@
       return ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][d.getMonth()] + " " + d.getDate() + ", " + d.getFullYear();
     };
     const fmtSalary = j => {
-      if (!j.salary_min && !j.salary_max) return "Negotiable";
+      if (!j.salary_min && !j.salary_max) return T("Negotiable");
       var cur = j.salary_currency || "USD";
       var per = j.salary_period || "month";
       var range = j.salary_min && j.salary_max ? j.salary_min + " – " + j.salary_max : j.salary_min || j.salary_max;
@@ -3123,7 +3683,7 @@
       }
     }, job.title), /*#__PURE__*/React.createElement("button", {
       onClick: onClose,
-      "aria-label": "Close",
+      "aria-label": T("Close"),
       style: {
         border: "none",
         background: "transparent",
@@ -3143,44 +3703,44 @@
       }
     }, /*#__PURE__*/React.createElement(StatusBadge, {
       status: job.status
-    })), /*#__PURE__*/React.createElement(Row, {
-      label: "Job type",
+    }, statusText(job.status))), /*#__PURE__*/React.createElement(Row, {
+      label: T("Job type"),
       value: JTL[job.job_type] || job.job_type
     }), /*#__PURE__*/React.createElement(Row, {
-      label: "Salary",
+      label: T("Salary"),
       value: fmtSalary(job)
     }), /*#__PURE__*/React.createElement(Row, {
-      label: "Remote",
-      value: job.is_remote ? "Yes" : "No"
+      label: T("Remote"),
+      value: job.is_remote ? T("Yes") : "No"
     }), /*#__PURE__*/React.createElement(Row, {
-      label: "Working days",
+      label: T("Working days"),
       value: job.working_days
     }), /*#__PURE__*/React.createElement(Row, {
-      label: "Working time",
+      label: T("Working time"),
       value: job.working_time
     }), /*#__PURE__*/React.createElement(Row, {
-      label: "Location / map",
+      label: T("Location / map"),
       value: job.map_location
     }), /*#__PURE__*/React.createElement(Row, {
-      label: "Posted",
+      label: T("Posted"),
       value: fmtDate(job.created_at)
     }), /*#__PURE__*/React.createElement(Row, {
-      label: "Deadline",
+      label: T("Deadline"),
       value: fmtDate(job.expires_at)
     }), /*#__PURE__*/React.createElement(Row, {
-      label: "Applicants",
+      label: T("Applicants"),
       value: String(job.applications_count || 0)
     }), /*#__PURE__*/React.createElement(Row, {
-      label: "Views",
+      label: T("Views"),
       value: String(job.views || 0)
     }), /*#__PURE__*/React.createElement(Section, {
-      title: "Description",
+      title: T("Description"),
       text: job.description
     }), /*#__PURE__*/React.createElement(Section, {
-      title: "Requirements",
+      title: T("Requirements"),
       text: job.requirements
     }), /*#__PURE__*/React.createElement(Section, {
-      title: "Benefits",
+      title: T("Benefits"),
       text: job.benefits
     })), /*#__PURE__*/React.createElement("div", {
       style: {
@@ -3192,7 +3752,7 @@
     }, /*#__PURE__*/React.createElement(Button, {
       variant: "secondary",
       onClick: onClose
-    }, "Close"))));
+    }, T("Close")))));
   }
 
   // Reusable client-side pager — shows "Showing X–Y of Z" + Previous/Next.
@@ -3234,12 +3794,12 @@
       size: "sm",
       disabled: safe <= 1,
       onClick: () => onPage(safe - 1)
-    }, "Previous"), /*#__PURE__*/React.createElement(Button, {
+    }, T("Previous")), /*#__PURE__*/React.createElement(Button, {
       variant: "secondary",
       size: "sm",
       disabled: safe >= pages,
       onClick: () => onPage(safe + 1)
-    }, "Next")));
+    }, T("Next"))));
   }
   function JobsManage({
     jobs,
@@ -3331,11 +3891,11 @@
       flash("Error: " + (e && e.message));
     });
     const del = j => {
-      if (window.confirm('Delete "' + j.title + '"? This cannot be undone.')) act(() => emp.deleteJob(j.id), "Job deleted.");
+      if (window.confirm('Delete "' + j.title + '"? This cannot be undone.')) act(() => emp.deleteJob(j.id), T("Job deleted."));
     };
     const doCompanyReject = () => {
       if (!rejectReason.trim()) return;
-      act(() => emp.companyRejectJob(rejectModal.id, rejectReason), "Job rejected.");
+      act(() => emp.companyRejectJob(rejectModal.id, rejectReason), T("Job rejected."));
       setRejectModal(null);
       setRejectReason("");
     };
@@ -3343,7 +3903,7 @@
     // Per-job action buttons — shared by the desktop table row and the mobile card so they never drift.
     const jobActions = j => /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("button", {
       onClick: () => onView && onView(j),
-      title: "View",
+      title: T("View"),
       style: {
         border: "none",
         background: "transparent",
@@ -3356,7 +3916,7 @@
       }
     }, I("eye", 15)), /*#__PURE__*/React.createElement("button", {
       onClick: () => onEdit && onEdit(j),
-      title: "Edit",
+      title: T("Edit"),
       style: {
         border: "none",
         background: "transparent",
@@ -3369,7 +3929,7 @@
       }
     }, I("pencil", 15)), /*#__PURE__*/React.createElement("button", {
       onClick: () => onClone && onClone(j),
-      title: "Clone",
+      title: T("Clone"),
       style: {
         border: "none",
         background: "transparent",
@@ -3391,63 +3951,63 @@
     }), (j.status === "draft" || j.status === "rejected") && /*#__PURE__*/React.createElement(Button, {
       variant: "primary",
       size: "sm",
-      onClick: () => isRecruiter ? act(() => emp.submitJob(j.id), "Submitted for company review.") : onPublish(j.id, "Job published!")
-    }, isRecruiter ? "Submit" : "Publish"), j.status === "company_pending" && isAdmin && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(Button, {
+      onClick: () => isRecruiter ? act(() => emp.submitJob(j.id), T("Submitted for company review.")) : onPublish(j.id, T("Job published!"))
+    }, isRecruiter ? T("Submit") : T("Publish")), j.status === "company_pending" && isAdmin && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(Button, {
       variant: "primary",
       size: "sm",
-      onClick: () => act(() => emp.companyApproveJob(j.id), "Job approved and published.")
-    }, "Approve"), /*#__PURE__*/React.createElement(Button, {
+      onClick: () => act(() => emp.companyApproveJob(j.id), T("Job approved and published."))
+    }, T("Approve")), /*#__PURE__*/React.createElement(Button, {
       variant: "ghost",
       size: "sm",
       onClick: () => {
         setRejectModal(j);
         setRejectReason("");
       }
-    }, "Reject")), j.status === "company_pending" && isRecruiter && /*#__PURE__*/React.createElement("span", {
+    }, T("Reject"))), j.status === "company_pending" && isRecruiter && /*#__PURE__*/React.createElement("span", {
       style: {
         fontSize: "var(--text-xs)",
         color: "var(--warning, #b45309)",
         padding: "0 4px"
       }
-    }, "Awaiting review"), j.status === "published" && !j.is_featured && /*#__PURE__*/React.createElement(Button, {
+    }, T("Awaiting review")), j.status === "published" && !j.is_featured && /*#__PURE__*/React.createElement(Button, {
       variant: "ghost",
       size: "sm",
       iconLeft: I("star", 13),
       onClick: () => setBoostTarget(j)
-    }, "Feature"), j.status === "published" && /*#__PURE__*/React.createElement(Button, {
+    }, T("Feature")), j.status === "published" && /*#__PURE__*/React.createElement(Button, {
       variant: "secondary",
       size: "sm",
-      onClick: () => act(() => emp.closeJob(j.id), "Job closed.")
-    }, "Close"), (j.status === "draft" || j.status === "rejected" || j.status === "closed" || j.status === "company_pending") && /*#__PURE__*/React.createElement(Button, {
+      onClick: () => act(() => emp.closeJob(j.id), T("Job closed."))
+    }, T("Close")), (j.status === "draft" || j.status === "rejected" || j.status === "closed" || j.status === "company_pending") && /*#__PURE__*/React.createElement(Button, {
       variant: "ghost",
       size: "sm",
       onClick: () => del(j)
-    }, "Delete"));
+    }, T("Delete")));
 
     // Status filters — shared by the desktop Tabs and the mobile scrollable pill bar.
     const TAB_DEFS = [{
       value: "all",
-      label: "All",
+      label: T("All"),
       count: counts.all
     }, {
       value: "published",
-      label: "Published",
+      label: T("Published"),
       count: counts.published
     }, {
       value: "company_pending",
-      label: isAdmin ? "Needs approval" : "Awaiting review",
+      label: isAdmin ? T("Needs approval") : T("Awaiting review"),
       count: counts.company_pending
     }, {
       value: "draft",
-      label: "Draft",
+      label: T("Draft"),
       count: counts.draft
     }, {
       value: "rejected",
-      label: "Rejected",
+      label: T("Rejected"),
       count: counts.rejected
     }, {
       value: "closed",
-      label: "Closed",
+      label: T("Closed"),
       count: counts.closed
     }];
     return /*#__PURE__*/React.createElement("div", {
@@ -3456,8 +4016,8 @@
         padding: 28
       }
     }, /*#__PURE__*/React.createElement(ScreenHead, {
-      title: "Job postings",
-      sub: "Create, submit, close, and remove your listings.",
+      title: T("Job postings"),
+      sub: T("Create, submit, close, and remove your listings."),
       action: subActive && q.limit !== null ? /*#__PURE__*/React.createElement("div", {
         style: {
           display: "flex",
@@ -3482,7 +4042,7 @@
       size: "sm",
       iconLeft: I("rss", 15),
       onClick: () => setFeedOpen(true)
-    }, "Import from a job feed")), /*#__PURE__*/React.createElement(JobFeedModal, {
+    }, T("Import from a job feed"))), /*#__PURE__*/React.createElement(JobFeedModal, {
       open: feedOpen,
       onClose: () => setFeedOpen(false),
       onImported: reload
@@ -3500,7 +4060,7 @@
         fontSize: "var(--text-sm)",
         marginBottom: 18
       }
-    }, I("clock", 16), /*#__PURE__*/React.createElement("span", null, "Payment pending admin confirmation. Job posting will be unlocked once your subscription is activated.")) : /*#__PURE__*/React.createElement("div", {
+    }, I("clock", 16), /*#__PURE__*/React.createElement("span", null, T("Payment pending admin confirmation. Job posting will be unlocked once your subscription is activated."))) : /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
         alignItems: "center",
@@ -3514,7 +4074,7 @@
         fontSize: "var(--text-sm)",
         marginBottom: 18
       }
-    }, I("alert-circle", 16), /*#__PURE__*/React.createElement("span", null, sub && sub.plan ? "Your subscription has expired. Jobs are hidden from the public website." : "No active subscription.", " Job posting requires an active plan.", " ", /*#__PURE__*/React.createElement("button", {
+    }, I("alert-circle", 16), /*#__PURE__*/React.createElement("span", null, sub && sub.plan ? T("Your subscription has expired. Jobs are hidden from the public website.") : T("No active subscription."), " ", T("Job posting requires an active plan."), " ", /*#__PURE__*/React.createElement("button", {
       onClick: onBilling,
       style: {
         background: "none",
@@ -3527,7 +4087,7 @@
         fontSize: "inherit",
         padding: 0
       }
-    }, "Subscribe now \u2192")))), subActive && quotaFull && /*#__PURE__*/React.createElement("div", {
+    }, T("Subscribe now →"))))), subActive && quotaFull && /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
         alignItems: "center",
@@ -3600,25 +4160,25 @@
         color: "var(--text-faint)",
         borderBottom: "1px solid var(--border-subtle)"
       }
-    }, /*#__PURE__*/React.createElement("span", null, "Job title"), /*#__PURE__*/React.createElement("span", null, "Status"), /*#__PURE__*/React.createElement("span", null, "Applicants"), /*#__PURE__*/React.createElement("span", null, "Views"), /*#__PURE__*/React.createElement("span", null, "Posted"), /*#__PURE__*/React.createElement("span", {
+    }, /*#__PURE__*/React.createElement("span", null, T("Job title")), /*#__PURE__*/React.createElement("span", null, T("Status")), /*#__PURE__*/React.createElement("span", null, T("Applicants")), /*#__PURE__*/React.createElement("span", null, T("Views")), /*#__PURE__*/React.createElement("span", null, T("Posted")), /*#__PURE__*/React.createElement("span", {
       style: {
         textAlign: "right"
       }
-    }, "Actions")), loading && /*#__PURE__*/React.createElement("div", {
+    }, T("Actions"))), loading && /*#__PURE__*/React.createElement("div", {
       style: {
         padding: "26px 22px",
         color: "var(--text-muted)",
         fontSize: "var(--text-sm)",
         textAlign: "center"
       }
-    }, "Loading\u2026"), !loading && filtered.length === 0 && /*#__PURE__*/React.createElement("div", {
+    }, T("Loading…")), !loading && filtered.length === 0 && /*#__PURE__*/React.createElement("div", {
       style: {
         padding: "26px 22px",
         color: "var(--text-muted)",
         fontSize: "var(--text-sm)",
         textAlign: "center"
       }
-    }, "No jobs in this tab."), !loading && shown.map((j, i) => /*#__PURE__*/React.createElement("div", {
+    }, T("No jobs in this tab.")), !loading && shown.map((j, i) => /*#__PURE__*/React.createElement("div", {
       key: j.id,
       style: {
         display: "grid",
@@ -3664,7 +4224,7 @@
       }
     }, I("user", 11), " ", j.poster.name)), /*#__PURE__*/React.createElement("span", null, /*#__PURE__*/React.createElement(StatusBadge, {
       status: j.status
-    })), /*#__PURE__*/React.createElement("span", {
+    }, statusText(j.status))), /*#__PURE__*/React.createElement("span", {
       style: {
         fontFamily: "var(--font-mono)",
         fontSize: "var(--text-sm)",
@@ -3705,7 +4265,7 @@
         fontSize: "var(--text-sm)",
         textAlign: "center"
       }
-    }, "Loading\u2026")), !loading && filtered.length === 0 && /*#__PURE__*/React.createElement(Card, {
+    }, T("Loading…"))), !loading && filtered.length === 0 && /*#__PURE__*/React.createElement(Card, {
       padding: 0
     }, /*#__PURE__*/React.createElement("div", {
       style: {
@@ -3714,7 +4274,7 @@
         fontSize: "var(--text-sm)",
         textAlign: "center"
       }
-    }, "No jobs in this tab.")), !loading && filtered.length > 0 && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    }, T("No jobs in this tab."))), !loading && filtered.length > 0 && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
       className: "krm-jobs-list"
     }, mobileShown.map(j => /*#__PURE__*/React.createElement("div", {
       className: "krm-jobs-card",
@@ -3747,7 +4307,7 @@
       }
     }, /*#__PURE__*/React.createElement(StatusBadge, {
       status: j.status
-    }))), j.is_featured ? /*#__PURE__*/React.createElement("div", {
+    }, statusText(j.status)))), j.is_featured ? /*#__PURE__*/React.createElement("div", {
       style: {
         marginBottom: 10
       }
@@ -3775,15 +4335,15 @@
     }, [{
       icon: "users",
       val: j.applications_count || 0,
-      label: "Applicants"
+      label: T("Applicants")
     }, {
       icon: "eye",
       val: j.views || 0,
-      label: "Views"
+      label: T("Views")
     }, {
       icon: "calendar",
       val: fmtDate(j.created_at),
-      label: "Posted"
+      label: T("Posted")
     }].map(function (s, si) {
       return /*#__PURE__*/React.createElement("div", {
         key: si,
@@ -3877,7 +4437,7 @@
         fontSize: "var(--text-md)",
         color: "var(--text-strong)"
       }
-    }, "Reject job posting"), /*#__PURE__*/React.createElement("div", {
+    }, T("Reject job posting")), /*#__PURE__*/React.createElement("div", {
       style: {
         padding: "18px 22px"
       }
@@ -3887,11 +4447,11 @@
         color: "var(--text-muted)",
         marginBottom: 12
       }
-    }, "Tell the recruiter why this job was rejected."), /*#__PURE__*/React.createElement(Input, {
-      label: "Reason",
+    }, T("Tell the recruiter why this job was rejected.")), /*#__PURE__*/React.createElement(Input, {
+      label: T("Reason"),
       value: rejectReason,
       onChange: e => setRejectReason(e.target.value),
-      placeholder: "e.g. Job description is incomplete\u2026"
+      placeholder: T("e.g. Job description is incomplete…")
     })), /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
@@ -3905,7 +4465,7 @@
       style: {
         flex: 1
       }
-    }, "Cancel"), /*#__PURE__*/React.createElement(Button, {
+    }, T("Cancel")), /*#__PURE__*/React.createElement(Button, {
       variant: "primary",
       style: {
         background: "var(--danger)",
@@ -3913,7 +4473,7 @@
       },
       disabled: !rejectReason.trim(),
       onClick: doCompanyReject
-    }, "Reject")))), /*#__PURE__*/React.createElement(BoostModal, {
+    }, T("Reject"))))), /*#__PURE__*/React.createElement(BoostModal, {
       job: boostTarget,
       onClose: () => setBoostTarget(null),
       onDone: m => {
@@ -4842,7 +5402,7 @@
         comment: comment || null
       }).then(function () {
         setBusy(false);
-        flash("Scorecard saved.");
+        flash(T("Scorecard saved."));
         if (onSaved) onSaved();
       }).catch(function (e) {
         setBusy(false);
@@ -4922,7 +5482,7 @@
         setComment(e.target.value);
       },
       rows: 2,
-      placeholder: "Notes\u2026",
+      placeholder: T("Notes…"),
       style: Object.assign({}, ivInput, {
         marginTop: 6,
         resize: "vertical",
@@ -4937,7 +5497,7 @@
       size: "sm",
       disabled: busy,
       onClick: save
-    }, busy ? "Saving…" : "Save scorecard")));
+    }, busy ? T("Saving…") : T("Save scorecard"))));
   }
   function InterviewsPanel({
     appId,
@@ -4979,7 +5539,7 @@
     }, [load]);
     const schedule = function () {
       if (!form.scheduled_at) {
-        flash("Pick a date & time first.");
+        flash(T("Pick a date & time first."));
         return;
       }
       setBusy(true);
@@ -4987,7 +5547,7 @@
         setBusy(false);
         setOpen(false);
         setForm(IVBLANK);
-        flash("Interview scheduled — candidate notified.");
+        flash(T("Interview scheduled — candidate notified."));
         load();
       }).catch(function (e) {
         setBusy(false);
@@ -5018,7 +5578,7 @@
         textTransform: "uppercase",
         letterSpacing: ".04em"
       }
-    }, "Interviews"), /*#__PURE__*/React.createElement(Button, {
+    }, T("Interviews")), /*#__PURE__*/React.createElement(Button, {
       variant: "ghost",
       size: "sm",
       iconLeft: I("calendar-plus", 14),
@@ -5027,7 +5587,7 @@
           return !o;
         });
       }
-    }, open ? "Close" : "Schedule")), open && /*#__PURE__*/React.createElement("div", {
+    }, open ? T("Close") : T("Schedule"))), open && /*#__PURE__*/React.createElement("div", {
       style: {
         border: "1px solid var(--border)",
         borderRadius: "var(--radius-md)",
@@ -5053,13 +5613,13 @@
       },
       options: [{
         value: "video",
-        label: "Video"
+        label: T("Video")
       }, {
         value: "phone",
-        label: "Phone"
+        label: T("Phone call")
       }, {
         value: "in_person",
-        label: "In-person"
+        label: T("In-person")
       }]
     })), /*#__PURE__*/React.createElement("input", {
       type: "number",
@@ -5068,7 +5628,7 @@
       onChange: function (e) {
         set("duration_min", e.target.value);
       },
-      title: "Duration (minutes)",
+      title: T("Duration (minutes)"),
       style: ivInput
     })), /*#__PURE__*/React.createElement("input", {
       type: "datetime-local",
@@ -5082,14 +5642,14 @@
       onChange: function (e) {
         set("location", e.target.value);
       },
-      placeholder: "Location / address",
+      placeholder: T("Location / address"),
       style: ivInput
     }) : /*#__PURE__*/React.createElement("input", {
       value: form.meeting_url,
       onChange: function (e) {
         set("meeting_url", e.target.value);
       },
-      placeholder: "Meeting link (https://\u2026)",
+      placeholder: T("Meeting link (https://…)"),
       style: ivInput
     }), /*#__PURE__*/React.createElement("textarea", {
       value: form.notes,
@@ -5097,7 +5657,7 @@
         set("notes", e.target.value);
       },
       rows: 2,
-      placeholder: "Notes (optional)\u2026",
+      placeholder: T("Notes (optional)…"),
       style: Object.assign({}, ivInput, {
         resize: "vertical"
       })
@@ -5106,17 +5666,17 @@
       size: "sm",
       disabled: busy,
       onClick: schedule
-    }, busy ? "Scheduling…" : "Schedule interview"))), loading ? /*#__PURE__*/React.createElement("div", {
+    }, busy ? T("Scheduling…") : T("Schedule interview")))), loading ? /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: "var(--text-xs)",
         color: "var(--text-faint)"
       }
-    }, "Loading\u2026") : list.length === 0 ? /*#__PURE__*/React.createElement("div", {
+    }, T("Loading…")) : list.length === 0 ? /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: "var(--text-xs)",
         color: "var(--text-faint)"
       }
-    }, "No interviews scheduled.") : /*#__PURE__*/React.createElement("div", {
+    }, T("No interviews scheduled.")) : /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
         flexDirection: "column",
@@ -5172,7 +5732,7 @@
         onClick: function () {
           del(iv);
         },
-        title: "Remove",
+        title: T("Remove"),
         style: {
           border: "none",
           background: "none",
@@ -5220,7 +5780,7 @@
           fontSize: 12,
           padding: 0
         }
-      }, scOpen === iv.id ? "Hide scorecard" : iv.scorecards && iv.scorecards.length ? "Scorecard (" + iv.scorecards.length + ")" : "Add scorecard"), scOpen === iv.id && /*#__PURE__*/React.createElement(ScorecardEditor, {
+      }, scOpen === iv.id ? T("Hide scorecard") : iv.scorecards && iv.scorecards.length ? "Scorecard (" + iv.scorecards.length + ")" : T("Add scorecard")), scOpen === iv.id && /*#__PURE__*/React.createElement(ScorecardEditor, {
         iv: iv,
         flash: flash,
         onSaved: load
@@ -5313,7 +5873,7 @@
         if (onGoToMessages) onGoToMessages();
       }).catch(function (e) {
         setMsgSending(false);
-        setMsgErr(e && e.message || "Could not send message.");
+        setMsgErr(e && e.message || T("Could not send message."));
       });
     };
     React.useEffect(function () {
@@ -5378,7 +5938,7 @@
         }) : s;
       });
       emp.updateApplicationStage(a.id, toStage).then(function () {
-        flash("Moved to " + (STLABEL[toStage] || toStage));
+        flash(T("Moved to") + " " + T(STLABEL[toStage] || toStage));
       }).catch(function (e) {
         flash("Error: " + (e && e.message));
         load();
@@ -5514,8 +6074,8 @@
         }
       }, /*#__PURE__*/React.createElement(EmptyState, {
         icon: I("users", 28),
-        title: "No applicants yet",
-        description: "Publish a job to start receiving applications."
+        title: T("No applicants yet"),
+        description: T("Publish a job to start receiving applications.")
       }));
     }
     return /*#__PURE__*/React.createElement("div", {
@@ -5537,7 +6097,7 @@
         color: "var(--text-strong)",
         fontSize: "var(--text-md)"
       }
-    }, "Pipeline"), /*#__PURE__*/React.createElement("div", {
+    }, T("Pipeline")), /*#__PURE__*/React.createElement("div", {
       style: {
         width: 280
       }
@@ -5555,7 +6115,7 @@
         fontSize: "var(--text-xs)",
         color: "var(--text-faint)"
       }
-    }, "Drag a card between columns, or open it to manage."), msg && /*#__PURE__*/React.createElement("span", {
+    }, T("Drag a card between columns, or open it to manage.")), msg && /*#__PURE__*/React.createElement("span", {
       style: {
         fontSize: "var(--text-sm)",
         color: "var(--success)",
@@ -5566,7 +6126,7 @@
         color: "var(--text-muted)",
         fontSize: "var(--text-sm)"
       }
-    }, "Loading\u2026") : /*#__PURE__*/React.createElement("div", {
+    }, T("Loading…")) : /*#__PURE__*/React.createElement("div", {
       className: "krm-pipeline",
       style: {
         display: "grid",
@@ -5610,7 +6170,7 @@
       }
     }, /*#__PURE__*/React.createElement(Badge, {
       tone: s.tone
-    }, s.label), /*#__PURE__*/React.createElement("span", {
+    }, T(s.label)), /*#__PURE__*/React.createElement("span", {
       style: {
         fontSize: "var(--text-xs)",
         fontWeight: 700,
@@ -5662,7 +6222,7 @@
           overflow: "hidden",
           textOverflow: "ellipsis"
         }
-      }, c.name || "Candidate"), /*#__PURE__*/React.createElement("div", {
+      }, c.name || T("Candidate")), /*#__PURE__*/React.createElement("div", {
         style: {
           fontSize: "var(--text-xs)",
           color: "var(--text-muted)",
@@ -5699,7 +6259,7 @@
           color: "var(--text-faint)"
         }
       }, a.flagged && /*#__PURE__*/React.createElement("span", {
-        title: "Doesn't meet a screening requirement",
+        title: T("Doesn't meet a screening requirement"),
         style: {
           display: "inline-flex",
           alignItems: "center",
@@ -5775,7 +6335,7 @@
         fontWeight: 700,
         color: "var(--text-strong)"
       }
-    }, (sel.candidate || {}).name || "Candidate"), /*#__PURE__*/React.createElement("div", {
+    }, (sel.candidate || {}).name || T("Candidate")), /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: "var(--text-xs)",
         color: "var(--text-muted)",
@@ -5783,7 +6343,7 @@
         overflow: "hidden",
         textOverflow: "ellipsis"
       }
-    }, detail ? detail.headline || detail.candidate && detail.candidate.email || "" : "Loading…")), /*#__PURE__*/React.createElement(Button, {
+    }, detail ? detail.headline || detail.candidate && detail.candidate.email || "" : T("Loading…"))), /*#__PURE__*/React.createElement(Button, {
       variant: "ghost",
       size: "sm",
       onClick: () => setSel(null)
@@ -5804,7 +6364,7 @@
         textTransform: "uppercase",
         letterSpacing: ".04em"
       }
-    }, "Stage"), /*#__PURE__*/React.createElement("div", {
+    }, T("Stage")), /*#__PURE__*/React.createElement("div", {
       style: {
         marginTop: 6
       }
@@ -5814,7 +6374,7 @@
       options: STAGES.map(function (s) {
         return {
           value: s.key,
-          label: s.label
+          label: T(s.label)
         };
       })
     }))), detail && detail.candidate && (detail.candidate.email || detail.candidate.phone) && /*#__PURE__*/React.createElement("div", {
@@ -5854,18 +6414,18 @@
       size: "sm",
       iconLeft: I("download", 14),
       onClick: () => emp.downloadCv(sel.id).catch(function (e) {
-        flash(e && e.message || "Download failed");
+        flash(e && e.message || T("Download failed"));
       })
-    }, "Download CV") : /*#__PURE__*/React.createElement(Button, {
+    }, T("Download CV")) : /*#__PURE__*/React.createElement(Button, {
       variant: "ghost",
       size: "sm",
       disabled: true
-    }, detail && detail.cv_private ? "CV hidden" : "No CV"), /*#__PURE__*/React.createElement(Button, {
+    }, detail && detail.cv_private ? T("CV hidden") : T("No CV")), /*#__PURE__*/React.createElement(Button, {
       variant: "ghost",
       size: "sm",
       iconLeft: I("message-square", 14),
       onClick: () => detail && detail.candidate && openMessage(detail.candidate)
-    }, "Message")), detail && detail.cover_note && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    }, T("Message"))), detail && detail.cover_note && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
       style: {
         fontSize: "var(--text-xs)",
         fontWeight: 700,
@@ -5873,7 +6433,7 @@
         textTransform: "uppercase",
         letterSpacing: ".04em"
       }
-    }, "Cover note"), /*#__PURE__*/React.createElement("div", {
+    }, T("Cover note")), /*#__PURE__*/React.createElement("div", {
       style: {
         marginTop: 6,
         fontSize: "var(--text-sm)",
@@ -5898,7 +6458,7 @@
         textTransform: "uppercase",
         letterSpacing: ".04em"
       }
-    }, "Screening answers"), detail.meets_requirements === false ? /*#__PURE__*/React.createElement("span", {
+    }, T("Screening answers")), detail.meets_requirements === false ? /*#__PURE__*/React.createElement("span", {
       style: {
         display: "inline-flex",
         alignItems: "center",
@@ -5910,7 +6470,7 @@
         borderRadius: 999,
         padding: "2px 9px"
       }
-    }, I("alert-triangle", 11), " Doesn't meet requirements") : /*#__PURE__*/React.createElement("span", {
+    }, I("alert-triangle", 11), " ", T("Doesn't meet requirements")) : /*#__PURE__*/React.createElement("span", {
       style: {
         display: "inline-flex",
         alignItems: "center",
@@ -5922,7 +6482,7 @@
         borderRadius: 999,
         padding: "2px 9px"
       }
-    }, I("check", 11), " Meets requirements")), /*#__PURE__*/React.createElement("div", {
+    }, I("check", 11), " ", T("Meets requirements"))), /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
         flexDirection: "column",
@@ -5959,13 +6519,13 @@
           display: "inline-flex",
           color: "var(--success)"
         },
-        title: "Meets requirement"
+        title: T("Meets requirement")
       }, I("check-circle", 14)), a.knockout && a.passed === false && /*#__PURE__*/React.createElement("span", {
         style: {
           display: "inline-flex",
           color: "var(--danger)"
         },
-        title: "Does not meet requirement"
+        title: T("Does not meet requirement")
       }, I("x-circle", 14))));
     }))), /*#__PURE__*/React.createElement(InterviewsPanel, {
       key: "iv" + sel.id,
@@ -5979,7 +6539,7 @@
         textTransform: "uppercase",
         letterSpacing: ".04em"
       }
-    }, "Tags"), /*#__PURE__*/React.createElement("div", {
+    }, T("Tags")), /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
         flexWrap: "wrap",
@@ -6027,7 +6587,7 @@
           addTag(tagInput);
         }
       },
-      placeholder: "Add a tag\u2026",
+      placeholder: T("Add a tag…"),
       maxLength: 40,
       style: {
         flex: 1,
@@ -6053,7 +6613,7 @@
       size: "sm",
       disabled: !tagInput.trim(),
       onClick: () => addTag(tagInput)
-    }, "Add"))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    }, T("Add")))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
       style: {
         fontSize: "var(--text-xs)",
         fontWeight: 700,
@@ -6061,7 +6621,7 @@
         textTransform: "uppercase",
         letterSpacing: ".04em"
       }
-    }, "Private notes"), /*#__PURE__*/React.createElement("div", {
+    }, T("Private notes")), /*#__PURE__*/React.createElement("div", {
       style: {
         marginTop: 8,
         display: "flex",
@@ -6072,7 +6632,7 @@
       value: noteBody,
       onChange: e => setNoteBody(e.target.value),
       rows: 2,
-      placeholder: "Add a private note (only your team can see this)\u2026",
+      placeholder: T("Add a private note (only your team can see this)…"),
       style: {
         width: "100%",
         boxSizing: "border-box",
@@ -6092,7 +6652,7 @@
       size: "sm",
       disabled: noteBusy || !noteBody.trim(),
       onClick: submitNote
-    }, noteBusy ? "Saving…" : "Add note")), notes.map(function (n) {
+    }, noteBusy ? T("Saving…") : T("Add note"))), notes.map(function (n) {
       return /*#__PURE__*/React.createElement("div", {
         key: n.id,
         style: {
@@ -6132,11 +6692,11 @@
         variant: "primary",
         size: "sm",
         onClick: () => saveEditNote(n)
-      }, "Save"), /*#__PURE__*/React.createElement(Button, {
+      }, T("Save note")), /*#__PURE__*/React.createElement(Button, {
         variant: "ghost",
         size: "sm",
         onClick: () => setEditNote(null)
-      }, "Cancel"))) : /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+      }, T("Cancel")))) : /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
         style: {
           fontSize: "var(--text-sm)",
           color: "var(--text-body)",
@@ -6151,7 +6711,7 @@
           fontSize: 11,
           color: "var(--text-faint)"
         }
-      }, /*#__PURE__*/React.createElement("span", null, n.author || "You", " \xB7 ", fmtDay(n.created_at)), n.can_edit && /*#__PURE__*/React.createElement("button", {
+      }, /*#__PURE__*/React.createElement("span", null, n.author || T("You"), " \xB7 ", fmtDay(n.created_at)), n.can_edit && /*#__PURE__*/React.createElement("button", {
         onClick: () => {
           setEditNote(n.id);
           setEditBody(n.body);
@@ -6164,7 +6724,7 @@
           color: "var(--text-brand)",
           fontWeight: 600
         }
-      }, "Edit"), n.can_edit && /*#__PURE__*/React.createElement("button", {
+      }, T("Edit")), n.can_edit && /*#__PURE__*/React.createElement("button", {
         onClick: () => delNote(n),
         style: {
           border: "none",
@@ -6173,13 +6733,13 @@
           color: "var(--danger)",
           fontWeight: 600
         }
-      }, "Delete"))));
+      }, T("Delete")))));
     }), notes.length === 0 && /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: "var(--text-xs)",
         color: "var(--text-faint)"
       }
-    }, "No notes yet.")))))), msgModal && /*#__PURE__*/React.createElement("div", {
+    }, T("No notes yet."))))))), msgModal && /*#__PURE__*/React.createElement("div", {
       onClick: () => setMsgModal(null),
       style: {
         position: "fixed",
@@ -6223,7 +6783,7 @@
         color: "var(--text-strong)",
         fontSize: "var(--text-sm)"
       }
-    }, "Message ", msgModal.candidate.name || "candidate"), /*#__PURE__*/React.createElement("div", {
+    }, T("Message"), " ", msgModal.candidate.name || "candidate"), /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: "var(--text-xs)",
         color: "var(--text-muted)",
@@ -6240,7 +6800,7 @@
       onChange: e => setMsgBody(e.target.value),
       rows: 5,
       autoFocus: true,
-      placeholder: "Write your message\u2026",
+      placeholder: T("Write your message…"),
       onKeyDown: e => {
         if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
           e.preventDefault();
@@ -6277,15 +6837,15 @@
     }, /*#__PURE__*/React.createElement(Button, {
       variant: "secondary",
       onClick: () => setMsgModal(null)
-    }, "Cancel"), /*#__PURE__*/React.createElement(Button, {
+    }, T("Cancel")), /*#__PURE__*/React.createElement(Button, {
       variant: "primary",
       disabled: msgSending || !msgBody.trim(),
       onClick: sendNewMessage
-    }, msgSending ? "Sending…" : "Send message")))));
+    }, msgSending ? T("Sending…") : T("Send message"))))));
   }
 
   // Shown when the employer has no company yet — lets them create one instead of
-  // getting stuck on a "Loading…" screen. After creating, the full profile appears.
+  // getting stuck on a T("Loading…") screen. After creating, the full profile appears.
   function CreateCompanyForm({
     onCreated
   }) {
@@ -7564,7 +8124,7 @@
       }
     }, j.title), /*#__PURE__*/React.createElement("span", null, /*#__PURE__*/React.createElement(StatusBadge, {
       status: j.status
-    })), /*#__PURE__*/React.createElement("span", {
+    }, statusText(j.status))), /*#__PURE__*/React.createElement("span", {
       style: {
         fontFamily: "var(--font-mono)",
         fontSize: "var(--text-sm)",
@@ -10513,14 +11073,14 @@
         padding: 28
       }
     }, /*#__PURE__*/React.createElement(ScreenHead, {
-      title: "Plan & billing",
-      sub: "Manage your subscription and billing history."
+      title: T("Plan & billing"),
+      sub: T("Manage your subscription and billing history.")
     }), /*#__PURE__*/React.createElement(ReferralCard, null), loading ? /*#__PURE__*/React.createElement("div", {
       style: {
         color: "var(--text-muted)",
         fontSize: "var(--text-sm)"
       }
-    }, "Loading\u2026") : /*#__PURE__*/React.createElement(React.Fragment, null, sub && sub.plan && /*#__PURE__*/React.createElement("div", {
+    }, T("Loading…")) : /*#__PURE__*/React.createElement(React.Fragment, null, sub && sub.plan && /*#__PURE__*/React.createElement("div", {
       className: "krm-stats-grid",
       style: {
         marginBottom: 24,
@@ -10549,7 +11109,7 @@
         letterSpacing: ".05em",
         marginBottom: 6
       }
-    }, "Current plan"), /*#__PURE__*/React.createElement("div", {
+    }, T("Current plan")), /*#__PURE__*/React.createElement("div", {
       style: {
         fontWeight: 700,
         color: "var(--text-strong)",
@@ -10570,7 +11130,7 @@
         letterSpacing: ".05em",
         marginBottom: 6
       }
-    }, "Status"), /*#__PURE__*/React.createElement(Badge, {
+    }, T("Status")), /*#__PURE__*/React.createElement(Badge, {
       tone: SUB_STATUS_TONE[sub.status] || "neutral"
     }, (sub.status || "").replace("_", " "))), /*#__PURE__*/React.createElement("div", {
       style: {
@@ -10587,7 +11147,7 @@
         letterSpacing: ".05em",
         marginBottom: 6
       }
-    }, "Started"), /*#__PURE__*/React.createElement("div", {
+    }, T("Started")), /*#__PURE__*/React.createElement("div", {
       style: {
         fontWeight: 600,
         color: "var(--text-body)",
@@ -10607,7 +11167,7 @@
         letterSpacing: ".05em",
         marginBottom: 6
       }
-    }, sub.status === "expired" ? "Expired on" : sub.status === "pending" ? "Activates on" : "Renews"), /*#__PURE__*/React.createElement("div", {
+    }, sub.status === "expired" ? T("Expired on") : sub.status === "pending" ? T("Activates on") : T("Renews")), /*#__PURE__*/React.createElement("div", {
       style: {
         fontWeight: 600,
         color: sub.status === "expired" ? "var(--danger)" : "var(--text-body)",
@@ -10618,7 +11178,7 @@
       var used = s.jobs_used || 0;
       var rem = s.jobs_remaining;
       var full = lim !== null && rem <= 0;
-      var planName = s.plan ? s.plan.name : "Plan";
+      var planName = s.plan ? s.plan.name : T("Plan");
       var isCustom = s.job_post_limit != null;
       var label = isCustom ? planName + " · Custom slots (Admin assigned)" : planName;
       var statusTone = {
@@ -10657,7 +11217,7 @@
           textTransform: "uppercase",
           letterSpacing: ".05em"
         }
-      }, "Live job posts"), /*#__PURE__*/React.createElement("span", {
+      }, T("Live job posts")), /*#__PURE__*/React.createElement("span", {
         style: {
           fontSize: "var(--text-xs)",
           color: statusTone[s.status] || "var(--text-muted)",
@@ -10672,14 +11232,14 @@
           fontSize: "var(--text-xs)",
           color: "var(--text-muted)"
         }
-      }, "Close a job to free a slot, or upgrade your plan for more.")), lim !== null ? /*#__PURE__*/React.createElement("span", {
+      }, T("Close a job to free a slot, or upgrade your plan for more."))), lim !== null ? /*#__PURE__*/React.createElement("span", {
         style: {
           fontSize: "var(--text-sm)",
           fontWeight: 700,
           color: full ? "var(--danger)" : "var(--text-body)",
           whiteSpace: "nowrap"
         }
-      }, used, " / ", lim, " \xB7 ", full ? "Limit reached" : rem + " remaining") : /*#__PURE__*/React.createElement("span", {
+      }, used, " / ", lim, " \xB7 ", full ? T("Limit reached") : rem + " remaining") : /*#__PURE__*/React.createElement("span", {
         style: {
           fontSize: "var(--text-xs)",
           color: "var(--text-muted)",
@@ -10687,7 +11247,7 @@
           alignItems: "center",
           gap: 4
         }
-      }, I("infinity", 13), " Unlimited")), /*#__PURE__*/React.createElement("div", {
+      }, I("infinity", 13), " ", T("Unlimited"))), /*#__PURE__*/React.createElement("div", {
         style: {
           fontSize: "var(--text-xs)",
           color: "var(--text-muted)",
@@ -10704,7 +11264,7 @@
         style: {
           color: s.status === "expired" ? "var(--danger)" : "var(--text-muted)"
         }
-      }, s.renews_at ? "Expires " + fmtDate(s.renews_at) : "No expiry")), lim !== null && /*#__PURE__*/React.createElement("div", {
+      }, s.renews_at ? "Expires " + fmtDate(s.renews_at) : T("No expiry"))), lim !== null && /*#__PURE__*/React.createElement("div", {
         style: {
           height: 5,
           borderRadius: 99,
@@ -10746,19 +11306,19 @@
         textTransform: "uppercase",
         letterSpacing: ".05em"
       }
-    }, "Featured credits"), /*#__PURE__*/React.createElement("span", {
+    }, T("Featured credits")), /*#__PURE__*/React.createElement("span", {
       style: {
         fontSize: "var(--text-xs)",
         color: "var(--text-muted)"
       }
-    }, "Free boosts included in your active plan", allSubs.length > 1 ? "s" : "")), /*#__PURE__*/React.createElement("span", {
+    }, T("Free boosts included in your active plan"), allSubs.length > 1 ? "s" : "")), /*#__PURE__*/React.createElement("span", {
       style: {
         fontSize: "var(--text-sm)",
         fontWeight: 700,
         color: featured.remaining <= 0 ? "var(--text-muted)" : "var(--text-body)",
         whiteSpace: "nowrap"
       }
-    }, featured.used, " / ", featured.pool, " \xB7 ", featured.remaining <= 0 ? "All used" : featured.remaining + " remaining")), /*#__PURE__*/React.createElement("div", {
+    }, featured.used, " / ", featured.pool, " \xB7 ", featured.remaining <= 0 ? T("All used") : featured.remaining + " remaining")), /*#__PURE__*/React.createElement("div", {
       style: {
         height: 5,
         borderRadius: 99,
@@ -10781,7 +11341,7 @@
         alignItems: "center",
         gap: 5
       }
-    }, I("star", 12), /*#__PURE__*/React.createElement("span", null, "Use a credit to feature a job free. After they run out, featuring costs the pay-per-boost price."))), allSubs.length === 0 && quota.limit === null && sub.status !== "expired" && /*#__PURE__*/React.createElement("div", {
+    }, I("star", 12), /*#__PURE__*/React.createElement("span", null, T("Use a credit to feature a job free. After they run out, featuring costs the pay-per-boost price.")))), allSubs.length === 0 && quota.limit === null && sub.status !== "expired" && /*#__PURE__*/React.createElement("div", {
       style: {
         padding: "10px 20px",
         borderTop: "1px solid var(--border)",
@@ -10810,11 +11370,11 @@
         alignItems: "center",
         gap: 8
       }
-    }, I("clock", 16), " Awaiting payment confirmation from admin. Your plan will activate automatically once confirmed."), /*#__PURE__*/React.createElement(Button, {
+    }, I("clock", 16), " ", T("Awaiting payment confirmation from admin. Your plan will activate automatically once confirmed.")), /*#__PURE__*/React.createElement(Button, {
       variant: "secondary",
       size: "sm",
       onClick: load
-    }, "Check now")), sub && sub.status === "expired" && /*#__PURE__*/React.createElement("div", {
+    }, T("Check now"))), sub && sub.status === "expired" && /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
         alignItems: "center",
@@ -10849,7 +11409,7 @@
       const isFree = planIsFree(p);
       const isTrialPlan = planIsTrial(p);
       // A $0 plan (free OR trial) is one-time per company — gate it client-side so the card
-      // shows "Already used" (disabled) instead of letting the employer click through to a 422.
+      // shows T("Already used") (disabled) instead of letting the employer click through to a 422.
       const zeroCostUsed = (isFree || isTrialPlan) && usedPlanIds.indexOf(p.id) !== -1;
       const dark = isCustom;
       const textStrong = dark ? "var(--text-on-dark, #fff)" : "var(--text-strong)";
@@ -10879,9 +11439,9 @@
         }
       }, p.name), popular && /*#__PURE__*/React.createElement(Badge, {
         tone: "accent"
-      }, "Popular"), current && /*#__PURE__*/React.createElement(Badge, {
+      }, T("Popular")), current && /*#__PURE__*/React.createElement(Badge, {
         tone: "brand"
-      }, "Current"), !isCustom && planHasDiscount(p) && /*#__PURE__*/React.createElement("span", {
+      }, T("Current")), !isCustom && planHasDiscount(p) && /*#__PURE__*/React.createElement("span", {
         style: {
           fontSize: "var(--text-xs)",
           fontWeight: 700,
@@ -10905,7 +11465,7 @@
           fontWeight: 800,
           color: textStrong
         }
-      }, "Custom") : isTrialPlan ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("span", {
+      }, T("Custom")) : isTrialPlan ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("span", {
         style: {
           fontFamily: "var(--font-display)",
           fontSize: "var(--text-4xl)",
@@ -10924,7 +11484,7 @@
           fontWeight: 800,
           color: textStrong
         }
-      }, "Free") : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("span", {
+      }, T("Free")) : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("span", {
         style: {
           fontFamily: "var(--font-display)",
           fontSize: "var(--text-4xl)",
@@ -10990,12 +11550,12 @@
         onClick: () => {
           if (current || zeroCostUsed) return;
           if (isCustom) {
-            window.location.href = "mailto:sales@krama.com?subject=" + encodeURIComponent("Enterprise plan inquiry");
+            window.location.href = "mailto:sales@krama.com?subject=" + encodeURIComponent(T("Enterprise plan inquiry"));
             return;
           }
           setCheckout(p);
         }
-      }, current ? "Current plan" : zeroCostUsed ? "Already used" : isCustom ? "Contact sales" : isTrialPlan ? "Start " + (p.trial_days || 7) + "-Day Trial" : isFree ? "Get started" : "Upgrade"));
+      }, current ? T("Current plan") : zeroCostUsed ? T("Already used") : isCustom ? T("Contact sales") : isTrialPlan ? "Start " + (p.trial_days || 7) + "-Day Trial" : isFree ? T("Get started") : T("Upgrade")));
     })), plans.length > 1 && /*#__PURE__*/React.createElement("div", {
       className: "krm-plans-dots"
     }, plans.map(function (_, i) {
@@ -11017,7 +11577,7 @@
         fontWeight: 700,
         color: "var(--text-strong)"
       }
-    }, "Billing history"), /*#__PURE__*/React.createElement("div", {
+    }, T("Billing history")), /*#__PURE__*/React.createElement("div", {
       style: {
         display: "grid",
         gridTemplateColumns: "1.2fr 1fr 0.9fr 1fr 1fr 0.8fr 44px",
@@ -11029,14 +11589,14 @@
         color: "var(--text-faint)",
         borderBottom: "1px solid var(--border-subtle)"
       }
-    }, /*#__PURE__*/React.createElement("span", null, "Invoice"), /*#__PURE__*/React.createElement("span", null, "Date"), /*#__PURE__*/React.createElement("span", null, "Amount"), /*#__PURE__*/React.createElement("span", null, "Type"), /*#__PURE__*/React.createElement("span", null, "Method"), /*#__PURE__*/React.createElement("span", null, "Status"), /*#__PURE__*/React.createElement("span", null)), invSlice.length === 0 && /*#__PURE__*/React.createElement("div", {
+    }, /*#__PURE__*/React.createElement("span", null, T("Invoice")), /*#__PURE__*/React.createElement("span", null, T("Date")), /*#__PURE__*/React.createElement("span", null, T("Amount")), /*#__PURE__*/React.createElement("span", null, T("Type")), /*#__PURE__*/React.createElement("span", null, T("Method")), /*#__PURE__*/React.createElement("span", null, T("Status")), /*#__PURE__*/React.createElement("span", null)), invSlice.length === 0 && /*#__PURE__*/React.createElement("div", {
       style: {
         padding: "24px 22px",
         color: "var(--text-muted)",
         fontSize: "var(--text-sm)",
         textAlign: "center"
       }
-    }, "No payments yet."), invSlice.map((inv, i) => /*#__PURE__*/React.createElement("div", {
+    }, T("No payments yet.")), invSlice.map((inv, i) => /*#__PURE__*/React.createElement("div", {
       key: inv.id,
       style: {
         display: "grid",
@@ -11070,9 +11630,9 @@
       }
     }, "incl. $", Number(inv.vat_amount).toLocaleString(), " VAT")), /*#__PURE__*/React.createElement("span", null, inv.is_tax_invoice ? /*#__PURE__*/React.createElement(Badge, {
       tone: "brand"
-    }, "Tax invoice") : /*#__PURE__*/React.createElement(Badge, {
+    }, T("Tax invoice")) : /*#__PURE__*/React.createElement(Badge, {
       tone: "neutral"
-    }, "Invoice")), /*#__PURE__*/React.createElement("span", {
+    }, T("Invoice"))), /*#__PURE__*/React.createElement("span", {
       style: {
         fontSize: "var(--text-sm)",
         color: "var(--text-body)",
@@ -11081,7 +11641,7 @@
     }, inv.method), /*#__PURE__*/React.createElement("span", null, /*#__PURE__*/React.createElement(Badge, {
       tone: inv.status === "paid" ? "success" : inv.status === "refunded" ? "neutral" : "warning"
     }, inv.status)), /*#__PURE__*/React.createElement("span", null, inv.status === "paid" && /*#__PURE__*/React.createElement("button", {
-      title: "Download invoice",
+      title: T("Download invoice"),
       onClick: () => emp.downloadInvoice(inv.id),
       style: {
         display: "inline-flex",
@@ -11108,7 +11668,7 @@
         fontSize: "var(--text-sm)",
         color: "var(--text-muted)"
       }
-    }, payMeta.total > 0 ? "Showing " + ((invSafe - 1) * INV_PER + 1) + "–" + ((invSafe - 1) * INV_PER + invSlice.length) + " of " + payMeta.total : "No payments yet."), /*#__PURE__*/React.createElement("div", {
+    }, payMeta.total > 0 ? "Showing " + ((invSafe - 1) * INV_PER + 1) + "–" + ((invSafe - 1) * INV_PER + invSlice.length) + " of " + payMeta.total : T("No payments yet.")), /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
         gap: 8
@@ -11122,7 +11682,7 @@
         setInvPage(p);
         fetchPayHistory(p);
       }
-    }, "Previous"), /*#__PURE__*/React.createElement(Button, {
+    }, T("Previous")), /*#__PURE__*/React.createElement(Button, {
       variant: "secondary",
       size: "sm",
       disabled: invSafe >= invPages || payLoading,
@@ -11131,7 +11691,7 @@
         setInvPage(p);
         fetchPayHistory(p);
       }
-    }, "Next")))))), /*#__PURE__*/React.createElement(CheckoutModal, {
+    }, T("Next"))))))), /*#__PURE__*/React.createElement(CheckoutModal, {
       plan: checkout,
       onClose: () => setCheckout(null),
       onPaid: load
@@ -12821,6 +13381,14 @@
   }
   function App() {
     const [page, setPage] = React.useState("dashboard");
+    // Language lives in App state purely so changing it re-renders the tree — T() reads the
+    // global, so without a state change the new strings would not appear until a reload.
+    // Seeded through KIT_LANGS so a language this kit has no dictionary for shows as English.
+    const [lang, setLang] = React.useState(KIT_LANGS[window.KRAMA_LANG] ? window.KRAMA_LANG : "en");
+    const selectLang = function (code) {
+      if (window.KRAMA_SET_LANG) window.KRAMA_SET_LANG(code);
+      setLang(window.KRAMA_LANG);
+    };
     const [authUser, setAuthUser] = React.useState(null);
     const [authLoading, setAuthLoading] = React.useState(true);
     const [company, setCompany] = React.useState(null);
@@ -13014,17 +13582,17 @@
       billing: sub && sub.status === "pending" ? 1 : 0
     };
     const titles = {
-      dashboard: "Dashboard",
-      jobs: "Job postings",
-      applicants: "Applicant tracking",
-      cvmatch: "CV Match",
-      talent: "Find candidates",
-      messages: "Messages",
-      team: "Team",
-      company: "Company profile",
-      billing: "Plan & billing",
-      support: "Help & support",
-      profile: "My Profile"
+      dashboard: T("Dashboard"),
+      jobs: T("Job postings"),
+      applicants: T("Applicant tracking"),
+      cvmatch: T("CV Match"),
+      talent: T("Find candidates"),
+      messages: T("Messages"),
+      team: T("Team"),
+      company: T("Company profile"),
+      billing: T("Plan & billing"),
+      support: T("Help & support"),
+      profile: T("My Profile")
     };
     return /*#__PURE__*/React.createElement("div", {
       style: {
@@ -13042,7 +13610,9 @@
       badges: badges,
       open: sidebarOpen,
       onClose: () => setSidebarOpen(false),
-      user: authUser
+      user: authUser,
+      lang: lang,
+      onLang: selectLang
     }), /*#__PURE__*/React.createElement("div", {
       style: {
         flex: 1,

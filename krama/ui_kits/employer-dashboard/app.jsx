@@ -4,6 +4,519 @@
   const NS = window.KramaDesignSystem_1a6f65;
   const { Button, Badge, StatusBadge, Avatar, Card, StatCard, Tabs, EmptyState, Input, Textarea, Select, Switch } = NS;
   const emp = window.KRAMA_EMPLOYER_API;
+
+  // ── i18n ──────────────────────────────────────────────────────────────────────────────
+  // Dictionaries live in EMP_KM / EMP_ZH below (loaded from emp-i18n.js) and merge into the
+  // shared KRAMA_I18N. KIT_LANGS is the guard: this kit is translated SCREEN BY SCREEN, and
+  // a language is only listed here once its dictionary exists, otherwise KRAMA_T would
+  // resolve the handful of strings that happen to live in the shared public-site dictionary
+  // and leave the rest English — a half-translated dashboard. See project-i18n-languages.
+  // Employer-dashboard strings. Keys already carried by the shared public-site dictionary
+  // are deliberately ABSENT here and inherit from it — these merge into the SAME
+  // KRAMA_I18N objects, so redefining one would re-translate the public site too. (That is
+  // why the note button says "Save note" and the interview type "Phone call": bare "Save"
+  // and "Phone" already mean "bookmark" and "phone number" in the shared dictionary.)
+  var EMP_KM = {
+    "Moved to": "បានផ្លាស់ទៅ",
+    "Awaiting payment confirmation from admin. Your plan will activate automatically once confirmed.": "កំពុងរង់ចាំការបញ្ជាក់ការទូទាត់ពីអ្នកគ្រប់គ្រង។ គម្រោងរបស់អ្នកនឹងចាប់ដំណើរការដោយស្វ័យប្រវត្តិនៅពេលបញ្ជាក់រួច។",
+    "Doesn't meet requirements": "មិនត្រូវតាមលក្ខខណ្ឌ",
+    "Free boosts included in your active plan": "ការលើកកម្ពស់ឥតគិតថ្លៃរួមបញ្ចូលក្នុងគម្រោងសកម្មរបស់អ្នក",
+    "Job posting requires an active plan.": "ការប្រកាសការងារត្រូវការគម្រោងសកម្ម។",
+    "Meets requirements": "ត្រូវតាមលក្ខខណ្ឌ",
+    "Payment pending admin confirmation. Job posting will be unlocked once your subscription is activated.": "ការទូទាត់កំពុងរង់ចាំការបញ្ជាក់ពីអ្នកគ្រប់គ្រង។ ការប្រកាសការងារនឹងបើកនៅពេលការជាវរបស់អ្នកសកម្ម។",
+    "Unlimited": "គ្មានដែនកំណត់",
+    "Use a credit to feature a job free. After they run out, featuring costs the pay-per-boost price.": "ប្រើឥណទានដើម្បីធ្វើឱ្យការងារលេចធ្លោដោយឥតគិតថ្លៃ។ ពេលអស់ឥណទាន ការធ្វើឱ្យលេចធ្លោនឹងគិតតាមតម្លៃបង់ក្នុងមួយលើក។",
+    "Verified": "បានផ្ទៀងផ្ទាត់",
+    "Temporary": "បណ្តោះអាសន្ន",
+    "e.g. 8:00 AM – 5:00 PM": "ឧ. ៨:០០ ព្រឹក – ៥:០០ ល្ងាច",
+    "A logo, description and culture help candidates trust and choose you.": "ឡូហ្គូ ការពិពណ៌នា និងវប្បធម៌ ជួយឱ្យបេក្ខជនទុកចិត្ត និងជ្រើសរើសអ្នក។",
+    "AI draft failed.": "ការព្រាងដោយ AI បរាជ័យ។",
+    "Activates on": "ចាប់ដំណើរការនៅ",
+    "Add note": "បន្ថែមកំណត់ចំណាំ",
+    "Add scorecard": "បន្ថែមសន្លឹកវាយតម្លៃ",
+    "All used": "បានប្រើអស់",
+    "Already used": "បានប្រើរួចហើយ",
+    "Banner preview": "មើលបដាជាមុន",
+    "CV hidden": "CV ត្រូវបានលាក់",
+    "Candidate": "បេក្ខជន",
+    "Clone job": "ចម្លងការងារ",
+    "Complete your company profile": "បំពេញប្រវត្តិក្រុមហ៊ុនរបស់អ្នក",
+    "Connect a feed": "ភ្ជាប់មតិព័ត៌មាន",
+    "Could not save job.": "មិនអាចរក្សាទុកការងារបានទេ។",
+    "Could not send message.": "មិនអាចផ្ញើសារបានទេ។",
+    "Download failed": "ការទាញយកបរាជ័យ",
+    "Draft added below — review and edit before posting.": "សេចក្តីព្រាងត្រូវបានបន្ថែមខាងក្រោម — សូមពិនិត្យ និងកែមុនប្រកាស។",
+    "Draft saved.": "បានរក្សាទុកសេចក្តីព្រាង។",
+    "Draft with AI": "ព្រាងដោយ AI",
+    "Drafting…": "កំពុងព្រាង…",
+    "Edit job": "កែការងារ",
+    "Edit profile": "កែប្រវត្តិរូប",
+    "Enter a job title first, then draft with AI.": "បញ្ចូលឈ្មោះការងារជាមុនសិន បន្ទាប់មកព្រាងដោយ AI។",
+    "Enterprise plan inquiry": "សំណួរអំពីគម្រោងសហគ្រាស",
+    "Expired on": "ផុតកំណត់នៅ",
+    "Freelance": "ការងារឯករាជ្យ",
+    "Hide scorecard": "លាក់សន្លឹកវាយតម្លៃ",
+    "Image upload failed.": "ការផ្ទុករូបភាពបរាជ័យ។",
+    "Import in bulk": "នាំចូលជាដុំ",
+    "Interview scheduled — candidate notified.": "បានកំណត់ការសម្ភាសន៍ — បានជូនដំណឹងបេក្ខជន។",
+    "Job approved and published.": "ការងារត្រូវបានអនុម័ត និងផ្សាយ។",
+    "Job closed.": "ការងារត្រូវបានបិទ។",
+    "Job deleted.": "ការងារត្រូវបានលុប។",
+    "Job published!": "ការងារត្រូវបានផ្សាយ!",
+    "Job rejected.": "ការងារត្រូវបានបដិសេធ។",
+    "Job submitted for company approval.": "ការងារត្រូវបានដាក់ស្នើសុំការអនុម័តពីក្រុមហ៊ុន។",
+    "Job title is required.": "ត្រូវការឈ្មោះការងារ។",
+    "Job updated.": "ការងារត្រូវបានធ្វើបច្ចុប្បន្នភាព។",
+    "Limit reached": "ដល់ដែនកំណត់",
+    "Location / map": "ទីតាំង / ផែនទី",
+    "Max salary must be greater than or equal to min salary.": "ប្រាក់ខែអតិបរមាត្រូវធំជាង ឬស្មើប្រាក់ខែអប្បបរមា។",
+    "Needs approval": "ត្រូវការការអនុម័ត",
+    "Negotiable": "អាចចរចា",
+    "No CV": "គ្មាន CV",
+    "No active subscription.": "គ្មានការជាវសកម្ម។",
+    "No expiry": "គ្មានថ្ងៃផុតកំណត់",
+    "Pick a date & time first.": "សូមជ្រើសកាលបរិច្ឆេទ និងម៉ោងជាមុនសិន។",
+    "Plan": "គម្រោង",
+    "Publish": "ផ្សាយ",
+    "Publish job": "ផ្សាយការងារ",
+    "Renews": "បន្តជាថ្មី",
+    "Replace image": "ជំនួសរូបភាព",
+    "Save changes": "រក្សាទុកការផ្លាស់ប្តូរ",
+    "Save draft": "រក្សាទុកសេចក្តីព្រាង",
+    "Save scorecard": "រក្សាទុកសន្លឹកវាយតម្លៃ",
+    "Saving…": "កំពុងរក្សាទុក…",
+    "Schedule": "កំណត់ពេល",
+    "Schedule interview": "កំណត់ការសម្ភាសន៍",
+    "Scheduling…": "កំពុងកំណត់ពេល…",
+    "Scorecard saved.": "បានរក្សាទុកសន្លឹកវាយតម្លៃ។",
+    "Sending…": "កំពុងផ្ញើ…",
+    "Submit": "ដាក់ស្នើ",
+    "Submit for approval": "ដាក់ស្នើសុំការអនុម័ត",
+    "Submitted for company review.": "បានដាក់ស្នើសុំការពិនិត្យពីក្រុមហ៊ុន។",
+    "Upgrade": "ដំឡើងកម្រិត",
+    "Upload image": "ផ្ទុករូបភាព",
+    "Uploading…": "កំពុងផ្ទុក…",
+    "Yes": "បាទ/ចាស",
+    "You": "អ្នក",
+    "Your subscription has expired. Jobs are hidden from the public website.": "ការជាវរបស់អ្នកបានផុតកំណត់។ ការងារត្រូវបានលាក់ពីគេហទំព័រសាធារណៈ។",
+    "Approved": "បានអនុម័ត",
+    "Suspended": "ត្រូវបានផ្អាក",
+    "Applicant tracking": "ការតាមដានបេក្ខជន",
+    "Job postings": "ការងារដែលបានប្រកាស",
+    "Applicants": "បេក្ខជន",
+    "CV Match": "ផ្គូផ្គង CV",
+    "Find candidates": "ស្វែងរកបេក្ខជន",
+    "Messages": "សារ",
+    "Team": "ក្រុមការងារ",
+    "Company profile": "ប្រវត្តិក្រុមហ៊ុន",
+    "Plan & billing": "គម្រោង និងវិក្កយបត្រ",
+    "Help & support": "ជំនួយ",
+    "Unverified": "មិនទាន់ផ្ទៀងផ្ទាត់",
+    "Post": "ប្រកាស",
+    "My Profile": "ប្រវត្តិរូបរបស់ខ្ញុំ",
+    "Sign out": "ចាកចេញ",
+    "Welcome — let’s get your first job live": "សូមស្វាគមន៍ — តោះប្រកាសការងារដំបូងរបស់អ្នក",
+    "Your dashboard is empty because you haven’t posted yet. Three quick ways to fill it:": "ផ្ទាំងគ្រប់គ្រងរបស់អ្នកនៅទទេ ព្រោះអ្នកមិនទាន់ប្រកាសការងារ។ មានវិធីរហ័សបីយ៉ាង៖",
+    "Active jobs": "ការងារកំពុងដំណើរការ",
+    "Pending approval": "រង់ចាំការអនុម័ត",
+    "Total applications": "ពាក្យសុំសរុប",
+    "Total job views": "ចំនួនមើលការងារសរុប",
+    "Your job postings": "ការងារដែលអ្នកបានប្រកាស",
+    "Manage jobs": "គ្រប់គ្រងការងារ",
+    "Job title": "ឈ្មោះការងារ",
+    "Status": "ស្ថានភាព",
+    "Views": "ចំនួនមើល",
+    "Loading…": "កំពុងផ្ទុក…",
+    "No jobs yet. Click “Post a job” to create your first listing.": "មិនទាន់មានការងារ។ ចុច “ដាក់ការងារ” ដើម្បីបង្កើតការងារដំបូង។",
+    "Upcoming interviews": "ការសម្ភាសន៍ខាងមុខ",
+    "Open": "បើក",
+    "Close": "បិទ",
+    "e.g. Senior Accountant": "ឧ. គណនេយ្យករជាន់ខ្ពស់",
+    "— Select —": "— ជ្រើសរើស —",
+    "+ Add a new category…": "+ បន្ថែមប្រភេទថ្មី…",
+    "New category name": "ឈ្មោះប្រភេទថ្មី",
+    "e.g. Renewable Energy": "ឧ. ថាមពលកកើតឡើងវិញ",
+    "Salary min": "ប្រាក់ខែអប្បបរមា",
+    "Salary max": "ប្រាក់ខែអតិបរមា",
+    "Currency": "រូបិយប័ណ្ណ",
+    "Per": "ក្នុងមួយ",
+    "Hour": "ម៉ោង",
+    "Day": "ថ្ងៃ",
+    "Month": "ខែ",
+    "Year": "ឆ្នាំ",
+    "Remote-friendly": "អាចធ្វើការពីចម្ងាយ",
+    "Candidates can work remotely.": "បេក្ខជនអាចធ្វើការពីចម្ងាយបាន។",
+    "Working days": "ថ្ងៃធ្វើការ",
+    "e.g. Monday to Friday": "ឧ. ច័ន្ទ ដល់ សុក្រ",
+    "Working time": "ម៉ោងធ្វើការ",
+    "Location / map link (optional)": "ទីតាំង / តំណផែនទី (មិនចាំបាច់)",
+    "Address or Google Maps link": "អាសយដ្ឋាន ឬតំណ Google Maps",
+    "Share on social media": "ចែករំលែកលើបណ្តាញសង្គម",
+    "Auto-post this job to our social channels when it's published.": "ប្រកាសការងារនេះដោយស្វ័យប្រវត្តិទៅបណ្តាញសង្គមរបស់យើង នៅពេលវាផ្សាយ។",
+    "Banner image for the social post": "រូបភាពបដាសម្រាប់ការប្រកាសលើបណ្តាញសង្គម",
+    "Remove": "លុបចេញ",
+    "Description": "ការពិពណ៌នា",
+    "Describe the role and what the team does…": "ពិពណ៌នាអំពីតួនាទី និងអ្វីដែលក្រុមធ្វើ…",
+    "Skills, qualifications, experience…": "ជំនាញ សញ្ញាបត្រ បទពិសោធន៍…",
+    "Perks, insurance, bonuses…": "អត្ថប្រយោជន៍ ធានារ៉ាប់រង ប្រាក់រង្វាន់…",
+    "Screening questions": "សំណួរជ្រើសរើស",
+    "Add question": "បន្ថែមសំណួរ",
+    "Ask applicants custom questions. A knockout question flags anyone whose answer doesn't meet the rule.": "សួរបេក្ខជននូវសំណួរផ្ទាល់ខ្លួន។ សំណួរច្រានចោលនឹងសម្គាល់អ្នកដែលចម្លើយមិនត្រូវតាមលក្ខខណ្ឌ។",
+    "No screening questions yet.": "មិនទាន់មានសំណួរជ្រើសរើស។",
+    "Question…": "សំណួរ…",
+    "Short text": "អត្ថបទខ្លី",
+    "Long text": "អត្ថបទវែង",
+    "Yes / No": "បាទ/ចាស ឬ ទេ",
+    "Single choice": "ជម្រើសតែមួយ",
+    "Multi choice": "ជម្រើសច្រើន",
+    "Number": "លេខ",
+    "Date": "កាលបរិច្ឆេទ",
+    "Options, comma-separated (e.g. 1-2 years, 3-5 years, 5+ years)": "ជម្រើស បំបែកដោយសញ្ញាក្បៀស (ឧ. ១-២ឆ្នាំ, ៣-៥ឆ្នាំ, ៥ឆ្នាំឡើង)",
+    "Passes when the answer…": "ជាប់នៅពេលចម្លើយ…",
+    "is at least (≥)": "យ៉ាងតិច (≥)",
+    "is more than (>)": "ច្រើនជាង (>)",
+    "equals (=)": "ស្មើ (=)",
+    "is at most (≤)": "យ៉ាងច្រើន (≤)",
+    "is less than (<)": "តិចជាង (<)",
+    "is Yes": "គឺ បាទ/ចាស",
+    "Accepted answers, comma-separated": "ចម្លើយដែលទទួលយក បំបែកដោយសញ្ញាក្បៀស",
+    "on / after (≥)": "នៅ / ក្រោយ (≥)",
+    "on / before (≤)": "នៅ / មុន (≤)",
+    "Application deadline": "ថ្ងៃផុតកំណត់ដាក់ពាក្យ",
+    "Edit": "កែសម្រួល",
+    "Clone": "ចម្លង",
+    "Approve": "អនុម័ត",
+    "Reject": "បដិសេធ",
+    "Awaiting review": "រង់ចាំការពិនិត្យ",
+    "Feature": "ធ្វើឱ្យលេចធ្លោ",
+    "Delete": "លុប",
+    "All": "ទាំងអស់",
+    "Published": "បានផ្សាយ",
+    "Draft": "សេចក្តីព្រាង",
+    "Rejected": "បានបដិសេធ",
+    "Closed": "បានបិទ",
+    "Create, submit, close, and remove your listings.": "បង្កើត ដាក់ស្នើ បិទ និងលុបការងាររបស់អ្នក។",
+    "Import from a job feed": "នាំចូលពីមតិព័ត៌មានការងារ",
+    "Subscribe now →": "ជាវឥឡូវនេះ →",
+    "Actions": "សកម្មភាព",
+    "No jobs in this tab.": "គ្មានការងារក្នុងផ្ទាំងនេះ។",
+    "Reject job posting": "បដិសេធការប្រកាសការងារ",
+    "Tell the recruiter why this job was rejected.": "ប្រាប់អ្នកជ្រើសរើសពីមូលហេតុដែលការងារនេះត្រូវបានបដិសេធ។",
+    "Reason": "មូលហេតុ",
+    "e.g. Job description is incomplete…": "ឧ. ការពិពណ៌នាការងារមិនពេញលេញ…",
+    "Notes…": "កំណត់ចំណាំ…",
+    "Interviews": "ការសម្ភាសន៍",
+    "Video": "វីដេអូ",
+    "Phone call": "ការហៅទូរស័ព្ទ",
+    "In-person": "ជួបផ្ទាល់",
+    "Duration (minutes)": "រយៈពេល (នាទី)",
+    "Location / address": "ទីតាំង / អាសយដ្ឋាន",
+    "Meeting link (https://…)": "តំណប្រជុំ (https://…)",
+    "Notes (optional)…": "កំណត់ចំណាំ (មិនចាំបាច់)…",
+    "No interviews scheduled.": "មិនទាន់មានការសម្ភាសន៍។",
+    "Reviewed": "បានពិនិត្យ",
+    "Shortlisted": "បានជ្រើសរើស",
+    "Interview": "សម្ភាសន៍",
+    "Offered": "បានផ្តល់ជូន",
+    "Hired": "បានជ្រើសរើសយក",
+    "No applicants yet": "មិនទាន់មានបេក្ខជន",
+    "Publish a job to start receiving applications.": "ផ្សាយការងារដើម្បីចាប់ផ្តើមទទួលពាក្យសុំ។",
+    "Pipeline": "ដំណើរការ",
+    "Drag a card between columns, or open it to manage.": "អូសកាតរវាងជួរឈរ ឬបើកវាដើម្បីគ្រប់គ្រង។",
+    "Doesn't meet a screening requirement": "មិនត្រូវតាមលក្ខខណ្ឌជ្រើសរើស",
+    "Stage": "ដំណាក់កាល",
+    "Download CV": "ទាញយក CV",
+    "Cover note": "លិខិតបញ្ជាក់",
+    "Screening answers": "ចម្លើយជ្រើសរើស",
+    "Meets requirement": "ត្រូវតាមលក្ខខណ្ឌ",
+    "Does not meet requirement": "មិនត្រូវតាមលក្ខខណ្ឌ",
+    "Tags": "ស្លាក",
+    "Add a tag…": "បន្ថែមស្លាក…",
+    "Add": "បន្ថែម",
+    "Private notes": "កំណត់ចំណាំឯកជន",
+    "Add a private note (only your team can see this)…": "បន្ថែមកំណត់ចំណាំឯកជន (មានតែក្រុមរបស់អ្នកទេដែលឃើញ)…",
+    "Save note": "រក្សាទុកកំណត់ចំណាំ",
+    "No notes yet.": "មិនទាន់មានកំណត់ចំណាំ។",
+    "Write your message…": "សរសេរសាររបស់អ្នក…",
+    "Manage your subscription and billing history.": "គ្រប់គ្រងការជាវ និងប្រវត្តិវិក្កយបត្ររបស់អ្នក។",
+    "Current plan": "គម្រោងបច្ចុប្បន្ន",
+    "Started": "បានចាប់ផ្តើម",
+    "Live job posts": "ការងារកំពុងផ្សាយ",
+    "Close a job to free a slot, or upgrade your plan for more.": "បិទការងារមួយដើម្បីទំនេរកន្លែង ឬដំឡើងគម្រោងដើម្បីបានច្រើនជាង។",
+    "Featured credits": "ឥណទានលេចធ្លោ",
+    "Check now": "ពិនិត្យឥឡូវនេះ",
+    "Popular": "ពេញនិយម",
+    "Current": "បច្ចុប្បន្ន",
+    "Billing history": "ប្រវត្តិវិក្កយបត្រ",
+    "Invoice": "វិក្កយបត្រ",
+    "Amount": "ចំនួនទឹកប្រាក់",
+    "Type": "ប្រភេទ",
+    "Method": "វិធីទូទាត់",
+    "No payments yet.": "មិនទាន់មានការទូទាត់។",
+    "Tax invoice": "វិក្កយបត្រពន្ធ",
+    "Download invoice": "ទាញយកវិក្កយបត្រ"
+  };
+  var EMP_ZH = {
+    "Moved to": "已移至",
+    "Awaiting payment confirmation from admin. Your plan will activate automatically once confirmed.": "等待管理员确认付款。确认后你的套餐将自动生效。",
+    "Doesn't meet requirements": "不符合条件",
+    "Free boosts included in your active plan": "你的有效套餐已包含免费推广额度",
+    "Job posting requires an active plan.": "发布职位需要有效套餐。",
+    "Meets requirements": "符合条件",
+    "Payment pending admin confirmation. Job posting will be unlocked once your subscription is activated.": "付款待管理员确认。订阅生效后即可发布职位。",
+    "Unlimited": "无限制",
+    "Use a credit to feature a job free. After they run out, featuring costs the pay-per-boost price.": "使用额度可免费将职位设为精选。额度用完后，设为精选将按单次推广价格计费。",
+    "Verified": "已认证",
+    "Temporary": "临时",
+    "e.g. 8:00 AM – 5:00 PM": "例如：上午 8:00 – 下午 5:00",
+    "A logo, description and culture help candidates trust and choose you.": "logo、公司介绍和企业文化能让候选人更信任并选择你。",
+    "AI draft failed.": "AI 生成草稿失败。",
+    "Activates on": "生效日期",
+    "Add note": "添加备注",
+    "Add scorecard": "添加评分表",
+    "All used": "已用完",
+    "Already used": "已使用",
+    "Banner preview": "横幅预览",
+    "CV hidden": "简历已隐藏",
+    "Candidate": "候选人",
+    "Clone job": "复制职位",
+    "Complete your company profile": "完善你的公司主页",
+    "Connect a feed": "连接职位源",
+    "Could not save job.": "无法保存职位。",
+    "Could not send message.": "消息发送失败。",
+    "Download failed": "下载失败",
+    "Draft added below — review and edit before posting.": "草稿已添加到下方——请在发布前检查并修改。",
+    "Draft saved.": "草稿已保存。",
+    "Draft with AI": "用 AI 生成草稿",
+    "Drafting…": "生成中…",
+    "Edit job": "编辑职位",
+    "Edit profile": "编辑主页",
+    "Enter a job title first, then draft with AI.": "请先填写职位名称，再使用 AI 生成草稿。",
+    "Enterprise plan inquiry": "企业套餐咨询",
+    "Expired on": "到期于",
+    "Freelance": "自由职业",
+    "Hide scorecard": "隐藏评分表",
+    "Image upload failed.": "图片上传失败。",
+    "Import in bulk": "批量导入",
+    "Interview scheduled — candidate notified.": "面试已安排——已通知候选人。",
+    "Job approved and published.": "职位已批准并发布。",
+    "Job closed.": "职位已关闭。",
+    "Job deleted.": "职位已删除。",
+    "Job published!": "职位已发布！",
+    "Job rejected.": "职位已驳回。",
+    "Job submitted for company approval.": "职位已提交公司审批。",
+    "Job title is required.": "请填写职位名称。",
+    "Job updated.": "职位已更新。",
+    "Limit reached": "已达上限",
+    "Location / map": "地点 / 地图",
+    "Max salary must be greater than or equal to min salary.": "最高薪资必须大于或等于最低薪资。",
+    "Needs approval": "待审批",
+    "Negotiable": "面议",
+    "No CV": "无简历",
+    "No active subscription.": "没有生效中的订阅。",
+    "No expiry": "无到期日",
+    "Pick a date & time first.": "请先选择日期和时间。",
+    "Plan": "套餐",
+    "Publish": "发布",
+    "Publish job": "发布职位",
+    "Renews": "续订于",
+    "Replace image": "更换图片",
+    "Save changes": "保存更改",
+    "Save draft": "保存草稿",
+    "Save scorecard": "保存评分表",
+    "Saving…": "保存中…",
+    "Schedule": "安排",
+    "Schedule interview": "安排面试",
+    "Scheduling…": "安排中…",
+    "Scorecard saved.": "评分表已保存。",
+    "Sending…": "发送中…",
+    "Submit": "提交",
+    "Submit for approval": "提交审批",
+    "Submitted for company review.": "已提交公司审核。",
+    "Upgrade": "升级",
+    "Upload image": "上传图片",
+    "Uploading…": "上传中…",
+    "Yes": "是",
+    "You": "你",
+    "Your subscription has expired. Jobs are hidden from the public website.": "你的订阅已到期。职位已从公开网站隐藏。",
+    "Approved": "已批准",
+    "Suspended": "已暂停",
+    "Applicant tracking": "申请者跟踪",
+    "Job postings": "职位发布",
+    "Applicants": "申请者",
+    "CV Match": "简历匹配",
+    "Find candidates": "寻找候选人",
+    "Messages": "消息",
+    "Team": "团队",
+    "Company profile": "公司主页",
+    "Plan & billing": "套餐与账单",
+    "Help & support": "帮助与支持",
+    "Unverified": "未认证",
+    "Post": "发布",
+    "My Profile": "我的资料",
+    "Sign out": "退出登录",
+    "Welcome — let’s get your first job live": "欢迎——来发布你的第一个职位吧",
+    "Your dashboard is empty because you haven’t posted yet. Three quick ways to fill it:": "你的控制台还是空的，因为尚未发布职位。三种快捷方式：",
+    "Active jobs": "在招职位",
+    "Pending approval": "待审核",
+    "Total applications": "申请总数",
+    "Total job views": "职位浏览总数",
+    "Your job postings": "你发布的职位",
+    "Manage jobs": "管理职位",
+    "Job title": "职位名称",
+    "Status": "状态",
+    "Views": "浏览量",
+    "Loading…": "加载中…",
+    "No jobs yet. Click “Post a job” to create your first listing.": "还没有职位。点击「发布职位」创建你的第一个职位。",
+    "Upcoming interviews": "即将进行的面试",
+    "Open": "打开",
+    "Close": "关闭",
+    "e.g. Senior Accountant": "例如：高级会计",
+    "— Select —": "— 请选择 —",
+    "+ Add a new category…": "+ 添加新类别…",
+    "New category name": "新类别名称",
+    "e.g. Renewable Energy": "例如：可再生能源",
+    "Salary min": "最低薪资",
+    "Salary max": "最高薪资",
+    "Currency": "币种",
+    "Per": "每",
+    "Hour": "小时",
+    "Day": "天",
+    "Month": "月",
+    "Year": "年",
+    "Remote-friendly": "支持远程",
+    "Candidates can work remotely.": "候选人可远程办公。",
+    "Working days": "工作日",
+    "e.g. Monday to Friday": "例如：周一至周五",
+    "Working time": "工作时间",
+    "Location / map link (optional)": "地点 / 地图链接（选填）",
+    "Address or Google Maps link": "地址或 Google 地图链接",
+    "Share on social media": "分享到社交媒体",
+    "Auto-post this job to our social channels when it's published.": "职位发布时自动同步到我们的社交渠道。",
+    "Banner image for the social post": "社交帖子的横幅图片",
+    "Remove": "移除",
+    "Description": "职位描述",
+    "Describe the role and what the team does…": "介绍该职位以及团队的工作内容…",
+    "Skills, qualifications, experience…": "技能、学历、经验…",
+    "Perks, insurance, bonuses…": "福利、保险、奖金…",
+    "Screening questions": "筛选问题",
+    "Add question": "添加问题",
+    "Ask applicants custom questions. A knockout question flags anyone whose answer doesn't meet the rule.": "向申请者提出自定义问题。淘汰型问题会标记出回答不符合条件的人。",
+    "No screening questions yet.": "尚未添加筛选问题。",
+    "Question…": "问题…",
+    "Short text": "短文本",
+    "Long text": "长文本",
+    "Yes / No": "是 / 否",
+    "Single choice": "单选",
+    "Multi choice": "多选",
+    "Number": "数字",
+    "Date": "日期",
+    "Options, comma-separated (e.g. 1-2 years, 3-5 years, 5+ years)": "选项，用逗号分隔（例如：1-2 年、3-5 年、5 年以上）",
+    "Passes when the answer…": "当回答满足以下条件时通过…",
+    "is at least (≥)": "不少于 (≥)",
+    "is more than (>)": "大于 (>)",
+    "equals (=)": "等于 (=)",
+    "is at most (≤)": "不超过 (≤)",
+    "is less than (<)": "小于 (<)",
+    "is Yes": "为「是」",
+    "Accepted answers, comma-separated": "可接受的答案，用逗号分隔",
+    "on / after (≥)": "在该日期或之后 (≥)",
+    "on / before (≤)": "在该日期或之前 (≤)",
+    "Application deadline": "申请截止日期",
+    "Edit": "编辑",
+    "Clone": "复制",
+    "Approve": "批准",
+    "Reject": "驳回",
+    "Awaiting review": "等待审核",
+    "Feature": "设为精选",
+    "Delete": "删除",
+    "All": "全部",
+    "Published": "已发布",
+    "Draft": "草稿",
+    "Rejected": "已驳回",
+    "Closed": "已关闭",
+    "Create, submit, close, and remove your listings.": "创建、提交、关闭和删除你的职位。",
+    "Import from a job feed": "从职位源导入",
+    "Subscribe now →": "立即订阅 →",
+    "Actions": "操作",
+    "No jobs in this tab.": "此标签下暂无职位。",
+    "Reject job posting": "驳回职位发布",
+    "Tell the recruiter why this job was rejected.": "告知招聘人员此职位被驳回的原因。",
+    "Reason": "原因",
+    "e.g. Job description is incomplete…": "例如：职位描述不完整…",
+    "Notes…": "备注…",
+    "Interviews": "面试",
+    "Video": "视频",
+    "Phone call": "电话面试",
+    "In-person": "现场面试",
+    "Duration (minutes)": "时长（分钟）",
+    "Location / address": "地点 / 地址",
+    "Meeting link (https://…)": "会议链接（https://…）",
+    "Notes (optional)…": "备注（选填）…",
+    "No interviews scheduled.": "尚未安排面试。",
+    "Reviewed": "已查看",
+    "Shortlisted": "已入围",
+    "Interview": "面试",
+    "Offered": "已发录用",
+    "Hired": "已录用",
+    "No applicants yet": "暂无申请者",
+    "Publish a job to start receiving applications.": "发布职位即可开始接收申请。",
+    "Pipeline": "招聘流程",
+    "Drag a card between columns, or open it to manage.": "在各列之间拖动卡片，或打开卡片进行管理。",
+    "Doesn't meet a screening requirement": "不符合筛选条件",
+    "Stage": "阶段",
+    "Download CV": "下载简历",
+    "Cover note": "求职附言",
+    "Screening answers": "筛选问题回答",
+    "Meets requirement": "符合条件",
+    "Does not meet requirement": "不符合条件",
+    "Tags": "标签",
+    "Add a tag…": "添加标签…",
+    "Add": "添加",
+    "Private notes": "内部备注",
+    "Add a private note (only your team can see this)…": "添加内部备注（仅你的团队可见）…",
+    "Save note": "保存备注",
+    "No notes yet.": "暂无备注。",
+    "Write your message…": "写下你的消息…",
+    "Manage your subscription and billing history.": "管理你的订阅与账单记录。",
+    "Current plan": "当前套餐",
+    "Started": "开始于",
+    "Live job posts": "在线职位数",
+    "Close a job to free a slot, or upgrade your plan for more.": "关闭一个职位以释放名额，或升级套餐以获得更多。",
+    "Featured credits": "精选额度",
+    "Check now": "立即查看",
+    "Popular": "热门",
+    "Current": "当前",
+    "Billing history": "账单记录",
+    "Invoice": "发票",
+    "Amount": "金额",
+    "Type": "类型",
+    "Method": "支付方式",
+    "No payments yet.": "暂无付款记录。",
+    "Tax invoice": "税务发票",
+    "Download invoice": "下载发票"
+  };
+  try {
+    if (window.KRAMA_I18N) {
+      window.KRAMA_I18N.km = Object.assign(window.KRAMA_I18N.km || {}, EMP_KM);
+      window.KRAMA_I18N.zh = Object.assign(window.KRAMA_I18N.zh || {}, EMP_ZH);
+    }
+  } catch (e) {}
+  // The DS StatusBadge hardcodes English labels, but it renders `children || label` — so we
+  // can pass a translated child instead of editing _ds_bundle.js, which has no rebuild
+  // pipeline and would have to be hand-patched. Keys mirror the DS map.
+  const STATUS_LABEL = {
+    draft: "Draft", pending: "Pending approval", company_pending: "Awaiting review",
+    published: "Published", approved: "Approved", rejected: "Rejected",
+    closed: "Closed", suspended: "Suspended",
+  };
+  const statusText = function (s) { return T(STATUS_LABEL[s] || "Draft"); };
+
+  const KIT_LANGS = { en: 1, km: 1, zh: 1 };
+  const T = function (s) {
+    if (typeof window.KRAMA_T !== "function") return s;
+    return KIT_LANGS[window.KRAMA_LANG] ? window.KRAMA_T(s) : s;
+  };
   // Home page target: clean "/" in production, relative path in local dev (same host check as api.js).
   const HOME_URL = /^(localhost|127\.0\.0\.1|::1|192\.168\.|10\.)/.test(location.hostname) ? "../public-website/index.html" : "/";
   if (!document.getElementById('kre-css')) { var _krecss = document.createElement('style'); _krecss.id = 'kre-css'; _krecss.textContent = '.krama-rich-body:empty:before{content:attr(data-placeholder);color:var(--text-faint,#bbb);pointer-events:none;display:block}.krama-rich-body ul,.krama-rich-body ol{margin:6px 0;padding-left:22px}.krama-rich-body li{margin-bottom:3px}'; document.head.appendChild(_krecss); }
@@ -114,7 +627,7 @@
     return !user || user.company_role !== "recruitment";
   }
 
-  function Sidebar({ page, onNav, company, badges, open, onClose, user }) {
+  function Sidebar({ page, onNav, company, badges, open, onClose, user, lang, onLang }) {
     badges = badges || {};
     return (
       <aside className={"krm-sidebar" + (open ? " open" : "")} style={{ width: 248, flexShrink: 0, background: "var(--surface-card)", borderRight: "1px solid var(--border)", display: "flex", flexDirection: "column", padding: "20px 14px", position: "sticky", top: 0, height: "100vh" }}>
@@ -128,7 +641,7 @@
             return (
               <button key={n.id} onClick={() => { onNav(n.id); onClose && onClose(); }} style={{ display: "flex", alignItems: "center", gap: 11, border: "none", cursor: "pointer", padding: "10px 12px", borderRadius: "var(--radius-md)", textAlign: "left", background: active ? "var(--brand-subtle)" : "transparent", color: active ? "var(--text-brand)" : "var(--text-body)", fontFamily: "var(--font-sans)", fontWeight: active ? 700 : 500, fontSize: "var(--text-base)" }}>
                 <span style={{ display: "inline-flex", color: active ? "var(--brand)" : "var(--text-muted)" }}>{I(n.icon, 19)}</span>
-                <span style={{ flex: 1 }}>{n.label}</span>
+                <span style={{ flex: 1 }}>{T(n.label)}</span>
                 {badges[n.id] > 0 && <Badge tone={n.id === "billing" ? "warning" : (active ? "brand" : "neutral")}>{badges[n.id]}</Badge>}
               </button>
             );
@@ -139,10 +652,20 @@
           <div style={{ minWidth: 0 }}>
             <div style={{ fontWeight: 700, fontSize: "var(--text-sm)", color: "var(--text-strong)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{(company && company.name) || "Company"}</div>
             {company && company.is_verified
-              ? <div style={{ fontSize: "var(--text-xs)", color: "var(--success)", display: "flex", alignItems: "center", gap: 4 }}>{I("badge-check", 12)} Verified</div>
-              : <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>Unverified</div>}
+              ? <div style={{ fontSize: "var(--text-xs)", color: "var(--success)", display: "flex", alignItems: "center", gap: 4 }}>{I("badge-check", 12)} {T("Verified")}</div>
+              : <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>{T("Unverified")}</div>}
           </div>
         </div>
+        {onLang && (
+          <div style={{ display: "flex", gap: 6, padding: "0 8px 10px" }}>
+            {[{ v: "en", l: "EN" }, { v: "km", l: "ខ្មែរ" }, { v: "zh", l: "中文" }].map(function (o) {
+              var on = (lang || "en") === o.v;
+              return (
+                <button key={o.v} onClick={function () { onLang(o.v); }} style={{ flex: 1, padding: "6px 8px", borderRadius: "var(--radius-md)", border: "1px solid " + (on ? "var(--brand)" : "var(--border)"), background: on ? "var(--brand-subtle)" : "transparent", color: on ? "var(--text-brand)" : "var(--text-muted)", fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)", fontWeight: 700, cursor: "pointer" }}>{o.l}</button>
+              );
+            })}
+          </div>
+        )}
       </aside>
     );
   }
@@ -211,7 +734,7 @@
         <h1 style={{ fontSize: "var(--text-xl)", fontWeight: 700, color: "var(--text-strong)" }}>{title}</h1>
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 14 }}>
           <NotificationBell onNav={onNav} />
-          <Button variant="primary" iconLeft={I("plus", 16)} onClick={onPost} style={{ whiteSpace: "nowrap" }}>Post</Button>
+          <Button variant="primary" iconLeft={I("plus", 16)} onClick={onPost} style={{ whiteSpace: "nowrap" }}>{T("Post")}</Button>
           <div style={{ position: "relative" }}>
             <button onClick={() => setOpen(o => !o)} style={{ width: 38, height: 38, borderRadius: "50%", background: "var(--brand)", color: "#fff", border: "2px solid var(--border)", cursor: "pointer", fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: 14, display: "inline-flex", alignItems: "center", justifyContent: "center", overflow: "hidden", padding: 0 }}>
               {user && user.avatar_url
@@ -225,9 +748,9 @@
                   <div style={{ fontWeight: 700, fontSize: "var(--text-sm)", color: "var(--text-strong)" }}>{user ? user.name : "Employer"}</div>
                   <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>{user ? user.email : ""}</div>
                 </div>
-                <button onClick={() => { setOpen(false); onNav && onNav("profile"); }} style={{ display: "block", width: "100%", textAlign: "left", border: "none", background: "transparent", padding: "9px 14px", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)", color: "var(--text-body)" }}>My Profile</button>
+                <button onClick={() => { setOpen(false); onNav && onNav("profile"); }} style={{ display: "block", width: "100%", textAlign: "left", border: "none", background: "transparent", padding: "9px 14px", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)", color: "var(--text-body)" }}>{T("My Profile")}</button>
                 <div style={{ borderTop: "1px solid var(--border)", marginTop: 4 }}>
-                  <button onClick={() => { setOpen(false); onLogout && onLogout(); }} style={{ display: "block", width: "100%", textAlign: "left", border: "none", background: "transparent", padding: "9px 14px", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)", color: "var(--danger)" }}>Sign out</button>
+                  <button onClick={() => { setOpen(false); onLogout && onLogout(); }} style={{ display: "block", width: "100%", textAlign: "left", border: "none", background: "transparent", padding: "9px 14px", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)", color: "var(--danger)" }}>{T("Sign out")}</button>
                 </div>
               </div>
             </>}
@@ -458,14 +981,14 @@
             <div style={{ padding: "18px 24px", background: "var(--brand-subtle, rgba(12,126,107,0.07))", borderBottom: "1px solid var(--border-subtle)" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <span style={{ color: "var(--brand)", display: "inline-flex" }}>{I("rocket", 22)}</span>
-                <h2 style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: "var(--text-strong)", margin: 0 }}>Welcome — let’s get your first job live</h2>
+                <h2 style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: "var(--text-strong)", margin: 0 }}>{T("Welcome — let’s get your first job live")}</h2>
               </div>
-              <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", margin: "6px 0 0 32px" }}>Your dashboard is empty because you haven’t posted yet. Three quick ways to fill it:</p>
+              <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", margin: "6px 0 0 32px" }}>{T("Your dashboard is empty because you haven’t posted yet. Three quick ways to fill it:")}</p>
             </div>
             {[
-              { icon: "pen-line", title: "Post a job", body: "Write it yourself — or click “Draft with AI” to generate the description, requirements & benefits from just a job title.", cta: "Post a job", nav: "jobs" },
-              { icon: "rss", title: "Import in bulk", body: "Connect your careers page or ATS feed (Greenhouse, Lever, or RSS) to import all your open roles as drafts to review and publish.", cta: "Connect a feed", nav: "jobs" },
-              { icon: "building-2", title: "Complete your company profile", body: "A logo, description and culture help candidates trust and choose you.", cta: "Edit profile", nav: "company" },
+              { icon: "pen-line", title: T("Post a job"), body: "Write it yourself — or click “Draft with AI” to generate the description, requirements & benefits from just a job title.", cta: T("Post a job"), nav: "jobs" },
+              { icon: "rss", title: T("Import in bulk"), body: "Connect your careers page or ATS feed (Greenhouse, Lever, or RSS) to import all your open roles as drafts to review and publish.", cta: T("Connect a feed"), nav: "jobs" },
+              { icon: "building-2", title: T("Complete your company profile"), body: T("A logo, description and culture help candidates trust and choose you."), cta: T("Edit profile"), nav: "company" },
             ].map(function (s, i) {
               return (
                 <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 14, padding: "16px 24px", borderBottom: i < 2 ? "1px solid var(--border-subtle)" : "none" }}>
@@ -481,26 +1004,26 @@
           </Card>
         )}
         <div className="krm-stats-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16 }}>
-          <StatCard label="Active jobs" value={loading ? "—" : String(active)} tone="brand" icon={I("briefcase", 22)} />
-          <StatCard label="Pending approval" value={loading ? "—" : String(pending)} tone="warning" icon={I("clock", 22)} />
-          <StatCard label="Total applications" value={loading ? "—" : String(totalApps)} tone="info" icon={I("users", 22)} />
-          <StatCard label="Total job views" value={loading ? "—" : totalViews.toLocaleString()} tone="success" icon={I("eye", 22)} />
+          <StatCard label={T("Active jobs")} value={loading ? "—" : String(active)} tone="brand" icon={I("briefcase", 22)} />
+          <StatCard label={T("Pending approval")} value={loading ? "—" : String(pending)} tone="warning" icon={I("clock", 22)} />
+          <StatCard label={T("Total applications")} value={loading ? "—" : String(totalApps)} tone="info" icon={I("users", 22)} />
+          <StatCard label={T("Total job views")} value={loading ? "—" : totalViews.toLocaleString()} tone="success" icon={I("eye", 22)} />
         </div>
 
         <div className="krm-table-wrap"><Card padding={0}>
           <div style={{ padding: "18px 22px", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <h2 style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: "var(--text-strong)" }}>Your job postings</h2>
-            <Button variant="ghost" size="sm" iconRight={I("arrow-right", 14)} onClick={() => onNav("jobs")}>Manage jobs</Button>
+            <h2 style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: "var(--text-strong)" }}>{T("Your job postings")}</h2>
+            <Button variant="ghost" size="sm" iconRight={I("arrow-right", 14)} onClick={() => onNav("jobs")}>{T("Manage jobs")}</Button>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1.6fr 1fr 0.7fr 0.7fr 0.8fr", padding: "10px 22px", fontSize: "var(--text-xs)", fontWeight: 700, letterSpacing: ".04em", textTransform: "uppercase", color: "var(--text-faint)", borderBottom: "1px solid var(--border-subtle)" }}>
-            <span>Job title</span><span>Status</span><span>Applicants</span><span>Views</span><span>Posted</span>
+            <span>{T("Job title")}</span><span>{T("Status")}</span><span>{T("Applicants")}</span><span>{T("Views")}</span><span>{T("Posted")}</span>
           </div>
-          {loading && <div style={{ padding: "26px 22px", color: "var(--text-muted)", fontSize: "var(--text-sm)", textAlign: "center" }}>Loading…</div>}
-          {!loading && recent.length === 0 && <div style={{ padding: "26px 22px", color: "var(--text-muted)", fontSize: "var(--text-sm)", textAlign: "center" }}>No jobs yet. Click “Post a job” to create your first listing.</div>}
+          {loading && <div style={{ padding: "26px 22px", color: "var(--text-muted)", fontSize: "var(--text-sm)", textAlign: "center" }}>{T("Loading…")}</div>}
+          {!loading && recent.length === 0 && <div style={{ padding: "26px 22px", color: "var(--text-muted)", fontSize: "var(--text-sm)", textAlign: "center" }}>{T("No jobs yet. Click “Post a job” to create your first listing.")}</div>}
           {!loading && recent.map((j, i) => (
             <div key={j.id} style={{ display: "grid", gridTemplateColumns: "1.6fr 1fr 0.7fr 0.7fr 0.8fr", alignItems: "center", padding: "14px 22px", borderBottom: i < recent.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>
               <span style={{ fontWeight: 600, color: "var(--text-strong)" }}>{j.title}</span>
-              <span><StatusBadge status={j.status} /></span>
+              <span><StatusBadge status={j.status}>{statusText(j.status)}</StatusBadge></span>
               <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-sm)", color: "var(--text-body)" }}>{j.applications_count || 0}</span>
               <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-sm)", color: "var(--text-body)" }}>{j.views || 0}</span>
               <span style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>{fmtDate(j.created_at)}</span>
@@ -512,18 +1035,18 @@
           <div className="krm-table-wrap"><Card padding={0}>
             <div style={{ padding: "18px 22px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: 8 }}>
               <span style={{ display: "inline-flex", color: "var(--text-brand)" }}>{I("calendar-clock", 18)}</span>
-              <h2 style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: "var(--text-strong)" }}>Upcoming interviews</h2>
+              <h2 style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: "var(--text-strong)" }}>{T("Upcoming interviews")}</h2>
             </div>
             {upcoming.map(function (iv, i) {
               return (
                 <div key={iv.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "13px 22px", borderBottom: i < upcoming.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>
                   <span style={{ display: "inline-flex", color: "var(--text-muted)", flexShrink: 0 }}>{I(iv.type === "phone" ? "phone" : iv.type === "in_person" ? "map-pin" : "video", 16)}</span>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-strong)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{iv.candidate || "Candidate"} · {iv.job || ""}</div>
+                    <div style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-strong)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{iv.candidate || T("Candidate")} · {iv.job || ""}</div>
                     <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>{IV_TYPE[iv.type]} · {iv.duration_min} min{iv.interviewer ? " · " + iv.interviewer : ""}</div>
                   </div>
                   <div style={{ fontSize: "var(--text-sm)", color: "var(--text-body)", fontWeight: 600, flexShrink: 0 }}>{fmtDT(iv.scheduled_at)}</div>
-                  <Button variant="ghost" size="sm" onClick={() => onNav("applicants")} style={{ flexShrink: 0 }}>Open</Button>
+                  <Button variant="ghost" size="sm" onClick={() => onNav("applicants")} style={{ flexShrink: 0 }}>{T("Open")}</Button>
                 </div>
               );
             })}
@@ -662,7 +1185,7 @@
     // Seed a knockout rule with sensible defaults so an unchanged default (e.g. op ">=") persists.
     const defaultKO = (type) => (type === "number" || type === "date") ? { op: ">=" } : (type === "yes_no" ? { equals: "yes" } : (CHOICE_TYPES[type] ? { accept: [] } : {}));
     const draftWithAI = function () {
-      if (!form.title.trim()) { setError("Enter a job title first, then draft with AI."); return; }
+      if (!form.title.trim()) { setError(T("Enter a job title first, then draft with AI.")); return; }
       setDrafting(true); setError(""); setDraftMsg("");
       var lc = locs.find(function (l) { return String(l.id) === String(form.location_id); });
       var companyName = (user && (user.company_name || (user.company && user.company.name))) || "";
@@ -676,8 +1199,8 @@
         setDrafting(false);
         setForm(function (f) { return Object.assign({}, f, { description: d.description || f.description, requirements: d.requirements || f.requirements, benefits: d.benefits || f.benefits }); });
         setResetKey(function (k) { return k + 1; }); // remount RichEditors so they show the drafted content
-        setDraftMsg("Draft added below — review and edit before posting.");
-      }).catch(function (e) { setDrafting(false); setError((e && e.message) || "AI draft failed."); });
+        setDraftMsg(T("Draft added below — review and edit before posting."));
+      }).catch(function (e) { setDrafting(false); setError((e && e.message) || T("AI draft failed.")); });
     };
     const onSocialImage = (e) => {
       var file = e.target.files && e.target.files[0]; e.target.value = "";
@@ -685,17 +1208,17 @@
       setSocialUploading(true); setError("");
       emp.uploadJobImage(file)
         .then(function (url) { set("social_image", url); setSocialUploading(false); })
-        .catch(function (err) { setSocialUploading(false); setError((err && err.message) || "Image upload failed."); });
+        .catch(function (err) { setSocialUploading(false); setError((err && err.message) || T("Image upload failed.")); });
     };
     const isEdit = mode === "edit";
     const canSubmit = !isEdit || (job && (job.status === "draft" || job.status === "rejected"));
-    const modalTitle = isEdit ? "Edit job" : mode === "clone" ? "Clone job" : "Post a job";
+    const modalTitle = isEdit ? T("Edit job") : mode === "clone" ? T("Clone job") : T("Post a job");
     const isRecruiter = user && user.company_role === "recruitment";
-    const submitLabel = isRecruiter ? "Submit for approval" : "Publish job";
+    const submitLabel = isRecruiter ? T("Submit for approval") : T("Publish job");
 
     const submit = (publish) => {
-      if (!form.title.trim()) { setError("Job title is required."); return; }
-      if (form.salary_min && form.salary_max && Number(form.salary_max) < Number(form.salary_min)) { setError("Max salary must be greater than or equal to min salary."); return; }
+      if (!form.title.trim()) { setError(T("Job title is required.")); return; }
+      if (form.salary_min && form.salary_max && Number(form.salary_max) < Number(form.salary_min)) { setError(T("Max salary must be greater than or equal to min salary.")); return; }
       setError(""); setSaving(true);
       var payload = {
         title: form.title.trim(),
@@ -737,16 +1260,16 @@
         // Company admin publishing → hand off to the plan picker (publishes directly if only one plan).
         if (wantsPublish && !isRecruiter && onPublishRequest) {
           setSaving(false); onClose();
-          onPublishRequest(jobId, "Job published!");
+          onPublishRequest(jobId, T("Job published!"));
           return;
         }
         // Recruiter publishing → submit for company approval (no slot consumed yet).
         if (wantsPublish && isRecruiter) {
-          return emp.submitJob(jobId).then(function () { setSaving(false); onCreated("Job submitted for company approval."); onClose(); });
+          return emp.submitJob(jobId).then(function () { setSaving(false); onCreated(T("Job submitted for company approval.")); onClose(); });
         }
         // Draft save, or edit without publishing.
-        setSaving(false); onCreated(isEdit ? "Job updated." : "Draft saved."); onClose();
-      }).catch(function (e) { setSaving(false); setError((e && e.message) || "Could not save job."); });
+        setSaving(false); onCreated(isEdit ? T("Job updated.") : T("Draft saved.")); onClose();
+      }).catch(function (e) { setSaving(false); setError((e && e.message) || T("Could not save job.")); });
     };
 
     return (
@@ -754,103 +1277,103 @@
         <div style={{ width: "100%", maxWidth: 560, background: "var(--surface-card)", borderRadius: "var(--radius-xl)", boxShadow: "var(--shadow-xl)", overflow: "hidden" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 22px", borderBottom: "1px solid var(--border)" }}>
             <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "var(--text-lg)", color: "var(--text-strong)" }}>{modalTitle}</div>
-            <button onClick={onClose} aria-label="Close" style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--text-muted)", display: "inline-flex" }}>{I("x", 18)}</button>
+            <button onClick={onClose} aria-label={T("Close")} style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--text-muted)", display: "inline-flex" }}>{I("x", 18)}</button>
           </div>
           <div style={{ padding: 22, display: "flex", flexDirection: "column", gap: 16, maxHeight: "68vh", overflowY: "auto" }}>
-            <Input label="Job title" value={form.title} onChange={(e) => set("title", e.target.value)} placeholder="e.g. Senior Accountant" />
+            <Input label={T("Job title")} value={form.title} onChange={(e) => set("title", e.target.value)} placeholder={T("e.g. Senior Accountant")} />
             <div className="krm-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-              <Select label="Job type" value={form.job_type} onChange={(e) => set("job_type", e.target.value)}
-                options={Object.keys(JOB_TYPE_LABELS).map((k) => ({ value: k, label: JOB_TYPE_LABELS[k] }))} />
-              <Select label="Experience level" value={form.experience_level} onChange={(e) => set("experience_level", e.target.value)}
-                options={[{ value: "", label: "— Select —" }].concat(expLevels.map(function(l) { return { value: l.slug, label: l.name }; }))} />
+              <Select label={T("Job type")} value={form.job_type} onChange={(e) => set("job_type", e.target.value)}
+                options={Object.keys(JOB_TYPE_LABELS).map((k) => ({ value: k, label: T(JOB_TYPE_LABELS[k]) }))} />
+              <Select label={T("Experience level")} value={form.experience_level} onChange={(e) => set("experience_level", e.target.value)}
+                options={[{ value: "", label: T("— Select —") }].concat(expLevels.map(function(l) { return { value: l.slug, label: l.name }; }))} />
             </div>
             <div className="krm-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-              <Select label="Category" value={form.category_id} onChange={(e) => set("category_id", e.target.value)}
-                options={[{ value: "", label: "— Select —" }].concat(cats.map((c) => ({ value: String(c.id), label: c.name }))).concat([{ value: "__new__", label: "+ Add a new category…" }])} />
-              <Select label="Location" value={form.location_id} onChange={(e) => set("location_id", e.target.value)}
-                options={[{ value: "", label: "— Select —" }].concat(locs.map((l) => ({ value: String(l.id), label: l.name })))} />
+              <Select label={T("Category")} value={form.category_id} onChange={(e) => set("category_id", e.target.value)}
+                options={[{ value: "", label: T("— Select —") }].concat(cats.map((c) => ({ value: String(c.id), label: c.name }))).concat([{ value: "__new__", label: T("+ Add a new category…") }])} />
+              <Select label={T("Location")} value={form.location_id} onChange={(e) => set("location_id", e.target.value)}
+                options={[{ value: "", label: T("— Select —") }].concat(locs.map((l) => ({ value: String(l.id), label: l.name })))} />
             </div>
             {form.category_id === "__new__" && (
               <div>
-                <Input label="New category name" value={newCat} onChange={(e) => setNewCat(e.target.value)} placeholder="e.g. Renewable Energy" />
+                <Input label={T("New category name")} value={newCat} onChange={(e) => setNewCat(e.target.value)} placeholder={T("e.g. Renewable Energy")} />
                 <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: 6, display: "flex", alignItems: "center", gap: 5 }}>{I("info", 12)} Added to your job now; it appears in public category filters once an admin approves it.</div>
               </div>
             )}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 12 }}>
-              <Input label="Salary min" type="number" value={form.salary_min} onChange={(e) => set("salary_min", e.target.value)} placeholder="800" />
-              <Input label="Salary max" type="number" value={form.salary_max} onChange={(e) => set("salary_max", e.target.value)} placeholder="1500" />
-              <Select label="Currency" value={form.salary_currency} onChange={(e) => set("salary_currency", e.target.value)}
+              <Input label={T("Salary min")} type="number" value={form.salary_min} onChange={(e) => set("salary_min", e.target.value)} placeholder="800" />
+              <Input label={T("Salary max")} type="number" value={form.salary_max} onChange={(e) => set("salary_max", e.target.value)} placeholder="1500" />
+              <Select label={T("Currency")} value={form.salary_currency} onChange={(e) => set("salary_currency", e.target.value)}
                 options={[{ value: "USD", label: "USD" }, { value: "KHR", label: "KHR" }]} />
-              <Select label="Per" value={form.salary_period} onChange={(e) => set("salary_period", e.target.value)}
-                options={[{ value: "hour", label: "Hour" }, { value: "day", label: "Day" }, { value: "month", label: "Month" }, { value: "year", label: "Year" }]} />
+              <Select label={T("Per")} value={form.salary_period} onChange={(e) => set("salary_period", e.target.value)}
+                options={[{ value: "hour", label: T("Hour") }, { value: "day", label: T("Day") }, { value: "month", label: T("Month") }, { value: "year", label: T("Year") }]} />
             </div>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", border: "1px solid var(--border)", borderRadius: "var(--radius-md)" }}>
               <div>
-                <div style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-strong)" }}>Remote-friendly</div>
-                <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>Candidates can work remotely.</div>
+                <div style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-strong)" }}>{T("Remote-friendly")}</div>
+                <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>{T("Candidates can work remotely.")}</div>
               </div>
               <Switch checked={form.is_remote} onChange={(v) => set("is_remote", typeof v === "boolean" ? v : !form.is_remote)} />
             </div>
             <div className="krm-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-              <Input label="Working days" value={form.working_days} onChange={(e) => set("working_days", e.target.value)} placeholder="e.g. Monday to Friday" />
-              <Input label="Working time" value={form.working_time} onChange={(e) => set("working_time", e.target.value)} placeholder="e.g. 8:00 AM – 5:00 PM" />
+              <Input label={T("Working days")} value={form.working_days} onChange={(e) => set("working_days", e.target.value)} placeholder={T("e.g. Monday to Friday")} />
+              <Input label={T("Working time")} value={form.working_time} onChange={(e) => set("working_time", e.target.value)} placeholder={T("e.g. 8:00 AM – 5:00 PM")} />
             </div>
-            <Input label="Location / map link (optional)" value={form.map_location} onChange={(e) => set("map_location", e.target.value)} placeholder="Address or Google Maps link" />
+            <Input label={T("Location / map link (optional)")} value={form.map_location} onChange={(e) => set("map_location", e.target.value)} placeholder={T("Address or Google Maps link")} />
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", border: "1px solid var(--border)", borderRadius: "var(--radius-md)" }}>
               <div>
-                <div style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-strong)" }}>Share on social media</div>
-                <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>Auto-post this job to our social channels when it's published.</div>
+                <div style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-strong)" }}>{T("Share on social media")}</div>
+                <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>{T("Auto-post this job to our social channels when it's published.")}</div>
               </div>
               <Switch checked={form.share_social} onChange={(v) => set("share_social", typeof v === "boolean" ? v : !form.share_social)} />
             </div>
             {form.share_social && (
               <div style={{ padding: "12px 14px", border: "1px solid var(--border)", borderRadius: "var(--radius-md)" }}>
-                <div style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-strong)", marginBottom: 4 }}>Banner image for the social post <span style={{ fontWeight: 400, color: "var(--text-muted)" }}>(optional)</span></div>
+                <div style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-strong)", marginBottom: 4 }}>{T("Banner image for the social post")}<span style={{ fontWeight: 400, color: "var(--text-muted)" }}>(optional)</span></div>
                 <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginBottom: 10 }}>A hiring poster shared with the job (recommended ~1200 × 630). Without one, a text-only post is shared.</div>
                 <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
                   {form.social_image
-                    ? <img src={form.social_image} alt="Banner preview" style={{ width: 132, height: 69, objectFit: "cover", borderRadius: "var(--radius-sm)", border: "1px solid var(--border)", flexShrink: 0 }} />
+                    ? <img src={form.social_image} alt={T("Banner preview")} style={{ width: 132, height: 69, objectFit: "cover", borderRadius: "var(--radius-sm)", border: "1px solid var(--border)", flexShrink: 0 }} />
                     : <div style={{ width: 132, height: 69, borderRadius: "var(--radius-sm)", border: "1px dashed var(--border-strong)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-faint)", flexShrink: 0 }}>{I("image", 22)}</div>}
                   <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-start" }}>
                     <label style={{ display: "inline-flex", alignItems: "center", gap: 6, cursor: socialUploading ? "not-allowed" : "pointer", opacity: socialUploading ? 0.5 : 1, fontFamily: "var(--font-sans)", fontWeight: 600, color: "var(--text-brand)", fontSize: "var(--text-sm)" }}>
-                      {I("upload", 14)} {socialUploading ? "Uploading…" : (form.social_image ? "Replace image" : "Upload image")}
+                      {I("upload", 14)} {socialUploading ? T("Uploading…") : (form.social_image ? T("Replace image") : T("Upload image"))}
                       <input type="file" accept="image/*" disabled={socialUploading} onChange={onSocialImage} style={{ display: "none" }} />
                     </label>
-                    {form.social_image && <button type="button" onClick={() => set("social_image", "")} style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--danger)", fontSize: "var(--text-xs)", fontWeight: 600, padding: 0 }}>Remove</button>}
+                    {form.social_image && <button type="button" onClick={() => set("social_image", "")} style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--danger)", fontSize: "var(--text-xs)", fontWeight: 600, padding: 0 }}>{T("Remove")}</button>}
                   </div>
                 </div>
               </div>
             )}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap", paddingTop: 6, borderTop: "1px solid var(--border-subtle)" }}>
               <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 5 }}>{I("sparkles", 13)} Let AI draft the description, requirements &amp; benefits from your title.</span>
-              <Button variant="secondary" size="sm" iconLeft={I("sparkles", 15)} disabled={drafting || !form.title.trim()} onClick={draftWithAI}>{drafting ? "Drafting…" : "Draft with AI"}</Button>
+              <Button variant="secondary" size="sm" iconLeft={I("sparkles", 15)} disabled={drafting || !form.title.trim()} onClick={draftWithAI}>{drafting ? T("Drafting…") : T("Draft with AI")}</Button>
             </div>
             {draftMsg && <div style={{ padding: "7px 12px", background: "var(--success-subtle)", color: "var(--success)", borderRadius: "var(--radius-md)", fontSize: "var(--text-xs)", fontWeight: 600 }}>{draftMsg}</div>}
-            <RichEditor key={"d" + resetKey} label="Description" rows={4} value={form.description} onChange={(v) => set("description", v)} placeholder="Describe the role and what the team does…" />
-            <RichEditor key={"r" + resetKey} label="Requirements" rows={3} value={form.requirements} onChange={(v) => set("requirements", v)} placeholder="Skills, qualifications, experience…" />
-            <RichEditor key={"b" + resetKey} label="Benefits" rows={3} value={form.benefits} onChange={(v) => set("benefits", v)} placeholder="Perks, insurance, bonuses…" />
+            <RichEditor key={"d" + resetKey} label={T("Description")} rows={4} value={form.description} onChange={(v) => set("description", v)} placeholder={T("Describe the role and what the team does…")} />
+            <RichEditor key={"r" + resetKey} label={T("Requirements")} rows={3} value={form.requirements} onChange={(v) => set("requirements", v)} placeholder={T("Skills, qualifications, experience…")} />
+            <RichEditor key={"b" + resetKey} label={T("Benefits")} rows={3} value={form.benefits} onChange={(v) => set("benefits", v)} placeholder={T("Perks, insurance, bonuses…")} />
             <div style={{ borderTop: "1px solid var(--border-subtle)", paddingTop: 16 }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-                <div style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-strong)" }}>Screening questions</div>
-                <Button variant="secondary" size="sm" iconLeft={I("plus", 14)} onClick={addQ}>Add question</Button>
+                <div style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-strong)" }}>{T("Screening questions")}</div>
+                <Button variant="secondary" size="sm" iconLeft={I("plus", 14)} onClick={addQ}>{T("Add question")}</Button>
               </div>
-              <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginBottom: 10 }}>Ask applicants custom questions. A <b>knockout</b> question flags anyone whose answer doesn't meet the rule.</div>
-              {SQ.length === 0 && <div style={{ fontSize: "var(--text-xs)", color: "var(--text-faint)" }}>No screening questions yet.</div>}
+              <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginBottom: 10 }}>{T("Ask applicants custom questions. A knockout question flags anyone whose answer doesn't meet the rule.")}</div>
+              {SQ.length === 0 && <div style={{ fontSize: "var(--text-xs)", color: "var(--text-faint)" }}>{T("No screening questions yet.")}</div>}
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 {SQ.map(function (q, i) {
                   var is = { width: "100%", boxSizing: "border-box", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", padding: "7px 10px", fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)", color: "var(--text-body)", background: "var(--surface-card)", outline: "none" };
                   return (
                     <div key={i} style={{ border: "1px solid var(--border)", borderRadius: "var(--radius-md)", padding: 12, background: "var(--surface-sunken)" }}>
                       <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
-                        <input value={q.label} onChange={(e) => updQ(i, { label: e.target.value })} placeholder="Question…" maxLength={300} style={Object.assign({}, is, { flex: 1, minWidth: 0 })} />
+                        <input value={q.label} onChange={(e) => updQ(i, { label: e.target.value })} placeholder={T("Question…")} maxLength={300} style={Object.assign({}, is, { flex: 1, minWidth: 0 })} />
                         <div style={{ width: 148, flexShrink: 0 }}>
                           <Select value={q.type} onChange={(e) => { var nt = e.target.value; var ko = KO_TYPES[nt] ? q.knockout : false; updQ(i, { type: nt, knockout: ko, knockout_config: ko ? defaultKO(nt) : {} }); }}
-                            options={[{ value: "text", label: "Short text" }, { value: "textarea", label: "Long text" }, { value: "yes_no", label: "Yes / No" }, { value: "single_choice", label: "Single choice" }, { value: "multi_choice", label: "Multi choice" }, { value: "number", label: "Number" }, { value: "date", label: "Date" }]} />
+                            options={[{ value: "text", label: T("Short text") }, { value: "textarea", label: T("Long text") }, { value: "yes_no", label: T("Yes / No") }, { value: "single_choice", label: T("Single choice") }, { value: "multi_choice", label: T("Multi choice") }, { value: "number", label: T("Number") }, { value: "date", label: T("Date") }]} />
                         </div>
-                        <button type="button" onClick={() => rmQ(i)} title="Remove" style={{ border: "none", background: "none", cursor: "pointer", color: "var(--danger)", padding: 6, display: "inline-flex", flexShrink: 0 }}>{I("trash-2", 15)}</button>
+                        <button type="button" onClick={() => rmQ(i)} title={T("Remove")} style={{ border: "none", background: "none", cursor: "pointer", color: "var(--danger)", padding: 6, display: "inline-flex", flexShrink: 0 }}>{I("trash-2", 15)}</button>
                       </div>
                       {CHOICE_TYPES[q.type] && (
-                        <input value={(q.options || []).join(", ")} onChange={(e) => updQ(i, { options: e.target.value.split(",").map(function (s) { return s.trim(); }).filter(Boolean) })} placeholder="Options, comma-separated (e.g. 1-2 years, 3-5 years, 5+ years)" style={Object.assign({}, is, { marginTop: 8 })} />
+                        <input value={(q.options || []).join(", ")} onChange={(e) => updQ(i, { options: e.target.value.split(",").map(function (s) { return s.trim(); }).filter(Boolean) })} placeholder={T("Options, comma-separated (e.g. 1-2 years, 3-5 years, 5+ years)")} style={Object.assign({}, is, { marginTop: 8 })} />
                       )}
                       <div style={{ display: "flex", alignItems: "center", gap: 18, marginTop: 10, flexWrap: "wrap" }}>
                         <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: "var(--text-xs)", color: "var(--text-body)" }}>
@@ -864,22 +1387,22 @@
                       </div>
                       {q.knockout && KO_TYPES[q.type] && (
                         <div style={{ marginTop: 10, padding: "8px 10px", background: "var(--surface-card)", borderRadius: "var(--radius-sm)", border: "1px dashed var(--border-strong)" }}>
-                          <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".04em", marginBottom: 6 }}>Passes when the answer…</div>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".04em", marginBottom: 6 }}>{T("Passes when the answer…")}</div>
                           {q.type === "number" && (
                             <div style={{ display: "flex", gap: 8 }}>
-                              <div style={{ width: 150, flexShrink: 0 }}><Select value={(q.knockout_config || {}).op || ">="} onChange={(e) => updQ(i, { knockout_config: Object.assign({}, q.knockout_config, { op: e.target.value }) })} options={[{ value: ">=", label: "is at least (≥)" }, { value: ">", label: "is more than (>)" }, { value: "==", label: "equals (=)" }, { value: "<=", label: "is at most (≤)" }, { value: "<", label: "is less than (<)" }]} /></div>
+                              <div style={{ width: 150, flexShrink: 0 }}><Select value={(q.knockout_config || {}).op || ">="} onChange={(e) => updQ(i, { knockout_config: Object.assign({}, q.knockout_config, { op: e.target.value }) })} options={[{ value: ">=", label: T("is at least (≥)") }, { value: ">", label: T("is more than (>)") }, { value: "==", label: T("equals (=)") }, { value: "<=", label: T("is at most (≤)") }, { value: "<", label: T("is less than (<)") }]} /></div>
                               <input type="number" value={(q.knockout_config || {}).value != null ? (q.knockout_config || {}).value : ""} onChange={(e) => updQ(i, { knockout_config: Object.assign({}, q.knockout_config, { value: e.target.value }) })} placeholder="e.g. 3" style={is} />
                             </div>
                           )}
                           {q.type === "yes_no" && (
-                            <div style={{ width: 160 }}><Select value={(q.knockout_config || {}).equals || "yes"} onChange={(e) => updQ(i, { knockout_config: { equals: e.target.value } })} options={[{ value: "yes", label: "is Yes" }, { value: "no", label: "is No" }]} /></div>
+                            <div style={{ width: 160 }}><Select value={(q.knockout_config || {}).equals || "yes"} onChange={(e) => updQ(i, { knockout_config: { equals: e.target.value } })} options={[{ value: "yes", label: T("is Yes") }, { value: "no", label: "is No" }]} /></div>
                           )}
                           {CHOICE_TYPES[q.type] && (
-                            <input value={((q.knockout_config || {}).accept || []).join(", ")} onChange={(e) => updQ(i, { knockout_config: { accept: e.target.value.split(",").map(function (s) { return s.trim(); }).filter(Boolean) } })} placeholder="Accepted answers, comma-separated" style={is} />
+                            <input value={((q.knockout_config || {}).accept || []).join(", ")} onChange={(e) => updQ(i, { knockout_config: { accept: e.target.value.split(",").map(function (s) { return s.trim(); }).filter(Boolean) } })} placeholder={T("Accepted answers, comma-separated")} style={is} />
                           )}
                           {q.type === "date" && (
                             <div style={{ display: "flex", gap: 8 }}>
-                              <div style={{ width: 150, flexShrink: 0 }}><Select value={(q.knockout_config || {}).op || ">="} onChange={(e) => updQ(i, { knockout_config: Object.assign({}, q.knockout_config, { op: e.target.value }) })} options={[{ value: ">=", label: "on / after (≥)" }, { value: "<=", label: "on / before (≤)" }]} /></div>
+                              <div style={{ width: 150, flexShrink: 0 }}><Select value={(q.knockout_config || {}).op || ">="} onChange={(e) => updQ(i, { knockout_config: Object.assign({}, q.knockout_config, { op: e.target.value }) })} options={[{ value: ">=", label: T("on / after (≥)") }, { value: "<=", label: T("on / before (≤)") }]} /></div>
                               <input type="date" value={(q.knockout_config || {}).value || ""} onChange={(e) => updQ(i, { knockout_config: Object.assign({}, q.knockout_config, { value: e.target.value }) })} style={is} />
                             </div>
                           )}
@@ -890,13 +1413,13 @@
                 })}
               </div>
             </div>
-            <Input label="Application deadline" type="date" value={form.expires_at} onChange={(e) => set("expires_at", e.target.value)} />
+            <Input label={T("Application deadline")} type="date" value={form.expires_at} onChange={(e) => set("expires_at", e.target.value)} />
             {error && <div style={{ padding: "10px 14px", background: "var(--danger-subtle)", color: "var(--danger)", borderRadius: "var(--radius-md)", fontSize: "var(--text-sm)" }}>{error}</div>}
           </div>
           <div style={{ display: "flex", gap: 10, padding: "16px 22px", borderTop: "1px solid var(--border)" }}>
-            <Button variant="ghost" onClick={onClose} style={{ flex: 1 }}>Cancel</Button>
-            <Button variant="secondary" onClick={() => submit(false)} disabled={saving} style={{ flex: 1 }}>{isEdit ? "Save changes" : "Save draft"}</Button>
-            {canSubmit && <Button variant="primary" onClick={() => submit(true)} disabled={saving} style={{ flex: 1 }}>{saving ? "Saving…" : submitLabel}</Button>}
+            <Button variant="ghost" onClick={onClose} style={{ flex: 1 }}>{T("Cancel")}</Button>
+            <Button variant="secondary" onClick={() => submit(false)} disabled={saving} style={{ flex: 1 }}>{isEdit ? T("Save changes") : T("Save draft")}</Button>
+            {canSubmit && <Button variant="primary" onClick={() => submit(true)} disabled={saving} style={{ flex: 1 }}>{saving ? T("Saving…") : submitLabel}</Button>}
           </div>
         </div>
       </div>
@@ -905,9 +1428,9 @@
 
   function JobViewModal({ job, onClose }) {
     if (!job) return null;
-    const JTL = { full_time: "Full-time", part_time: "Part-time", contract: "Contract", freelance: "Freelance", internship: "Internship" };
+    const JTL = { full_time: T("Full-time"), part_time: T("Part-time"), contract: T("Contract"), freelance: T("Freelance"), internship: T("Internship") };
     const fmtDate = (iso) => { if (!iso) return "—"; var d = new Date(iso); return ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][d.getMonth()] + " " + d.getDate() + ", " + d.getFullYear(); };
-    const fmtSalary = (j) => { if (!j.salary_min && !j.salary_max) return "Negotiable"; var cur = j.salary_currency || "USD"; var per = j.salary_period || "month"; var range = j.salary_min && j.salary_max ? j.salary_min + " – " + j.salary_max : (j.salary_min || j.salary_max); return cur + " " + range + " / " + per; };
+    const fmtSalary = (j) => { if (!j.salary_min && !j.salary_max) return T("Negotiable"); var cur = j.salary_currency || "USD"; var per = j.salary_period || "month"; var range = j.salary_min && j.salary_max ? j.salary_min + " – " + j.salary_max : (j.salary_min || j.salary_max); return cur + " " + range + " / " + per; };
     const Row = ({ label, value }) => value ? (<div style={{ display: "flex", gap: 8, marginBottom: 10 }}><span style={{ minWidth: 130, fontSize: "var(--text-sm)", color: "var(--text-muted)", fontWeight: 600 }}>{label}</span><span style={{ fontSize: "var(--text-sm)", color: "var(--text-body)" }}>{value}</span></div>) : null;
     const Section = ({ title, text }) => text ? (<div style={{ marginTop: 18 }}><div style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-strong)", marginBottom: 6 }}>{title}</div><div className="krama-rich-body" style={{ fontSize: "var(--text-sm)", color: "var(--text-body)", lineHeight: 1.65 }} dangerouslySetInnerHTML={{ __html: text }} /></div>) : null;
     return (
@@ -915,26 +1438,26 @@
         <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", maxWidth: 580, background: "var(--surface-card)", borderRadius: "var(--radius-xl)", boxShadow: "var(--shadow-xl)", overflow: "hidden" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 22px", borderBottom: "1px solid var(--border)" }}>
             <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "var(--text-lg)", color: "var(--text-strong)" }}>{job.title}</div>
-            <button onClick={onClose} aria-label="Close" style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--text-muted)", display: "inline-flex" }}>{I("x", 18)}</button>
+            <button onClick={onClose} aria-label={T("Close")} style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--text-muted)", display: "inline-flex" }}>{I("x", 18)}</button>
           </div>
           <div style={{ padding: "20px 22px", maxHeight: "70vh", overflowY: "auto" }}>
-            <div style={{ marginBottom: 12 }}><StatusBadge status={job.status} /></div>
-            <Row label="Job type" value={JTL[job.job_type] || job.job_type} />
-            <Row label="Salary" value={fmtSalary(job)} />
-            <Row label="Remote" value={job.is_remote ? "Yes" : "No"} />
-            <Row label="Working days" value={job.working_days} />
-            <Row label="Working time" value={job.working_time} />
-            <Row label="Location / map" value={job.map_location} />
-            <Row label="Posted" value={fmtDate(job.created_at)} />
-            <Row label="Deadline" value={fmtDate(job.expires_at)} />
-            <Row label="Applicants" value={String(job.applications_count || 0)} />
-            <Row label="Views" value={String(job.views || 0)} />
-            <Section title="Description" text={job.description} />
-            <Section title="Requirements" text={job.requirements} />
-            <Section title="Benefits" text={job.benefits} />
+            <div style={{ marginBottom: 12 }}><StatusBadge status={job.status}>{statusText(job.status)}</StatusBadge></div>
+            <Row label={T("Job type")} value={JTL[job.job_type] || job.job_type} />
+            <Row label={T("Salary")} value={fmtSalary(job)} />
+            <Row label={T("Remote")} value={job.is_remote ? T("Yes") : "No"} />
+            <Row label={T("Working days")} value={job.working_days} />
+            <Row label={T("Working time")} value={job.working_time} />
+            <Row label={T("Location / map")} value={job.map_location} />
+            <Row label={T("Posted")} value={fmtDate(job.created_at)} />
+            <Row label={T("Deadline")} value={fmtDate(job.expires_at)} />
+            <Row label={T("Applicants")} value={String(job.applications_count || 0)} />
+            <Row label={T("Views")} value={String(job.views || 0)} />
+            <Section title={T("Description")} text={job.description} />
+            <Section title={T("Requirements")} text={job.requirements} />
+            <Section title={T("Benefits")} text={job.benefits} />
           </div>
           <div style={{ padding: "14px 22px", borderTop: "1px solid var(--border)", display: "flex", justifyContent: "flex-end" }}>
-            <Button variant="secondary" onClick={onClose}>Close</Button>
+            <Button variant="secondary" onClick={onClose}>{T("Close")}</Button>
           </div>
         </div>
       </div>
@@ -953,8 +1476,8 @@
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 22px", borderTop: "1px solid var(--border-subtle)", flexWrap: "wrap", gap: 10 }}>
         <span style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>Showing {from}–{to} of {total}{label ? " " + label : ""}</span>
         <div style={{ display: "flex", gap: 8 }}>
-          <Button variant="secondary" size="sm" disabled={safe <= 1} onClick={() => onPage(safe - 1)}>Previous</Button>
-          <Button variant="secondary" size="sm" disabled={safe >= pages} onClick={() => onPage(safe + 1)}>Next</Button>
+          <Button variant="secondary" size="sm" disabled={safe <= 1} onClick={() => onPage(safe - 1)}>{T("Previous")}</Button>
+          <Button variant="secondary" size="sm" disabled={safe >= pages} onClick={() => onPage(safe + 1)}>{T("Next")}</Button>
         </div>
       </div>
     );
@@ -1005,53 +1528,53 @@
     }, [visible, filtered.length]);
 
     const act = (fn, m) => fn().then(function () { flash(m); reload(); }).catch(function (e) { flash("Error: " + (e && e.message)); });
-    const del = (j) => { if (window.confirm('Delete "' + j.title + '"? This cannot be undone.')) act(() => emp.deleteJob(j.id), "Job deleted."); };
+    const del = (j) => { if (window.confirm('Delete "' + j.title + '"? This cannot be undone.')) act(() => emp.deleteJob(j.id), T("Job deleted.")); };
     const doCompanyReject = () => {
       if (!rejectReason.trim()) return;
-      act(() => emp.companyRejectJob(rejectModal.id, rejectReason), "Job rejected.");
+      act(() => emp.companyRejectJob(rejectModal.id, rejectReason), T("Job rejected."));
       setRejectModal(null); setRejectReason("");
     };
 
     // Per-job action buttons — shared by the desktop table row and the mobile card so they never drift.
     const jobActions = (j) => (
       <React.Fragment>
-        <button onClick={() => onView && onView(j)} title="View" style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--text-muted)", padding: "4px 6px", borderRadius: "var(--radius-sm)", display: "inline-flex", alignItems: "center" }}>{I("eye", 15)}</button>
-        <button onClick={() => onEdit && onEdit(j)} title="Edit" style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--text-muted)", padding: "4px 6px", borderRadius: "var(--radius-sm)", display: "inline-flex", alignItems: "center" }}>{I("pencil", 15)}</button>
-        <button onClick={() => onClone && onClone(j)} title="Clone" style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--text-muted)", padding: "4px 6px", borderRadius: "var(--radius-sm)", display: "inline-flex", alignItems: "center" }}>{I("copy", 15)}</button>
+        <button onClick={() => onView && onView(j)} title={T("View")} style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--text-muted)", padding: "4px 6px", borderRadius: "var(--radius-sm)", display: "inline-flex", alignItems: "center" }}>{I("eye", 15)}</button>
+        <button onClick={() => onEdit && onEdit(j)} title={T("Edit")} style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--text-muted)", padding: "4px 6px", borderRadius: "var(--radius-sm)", display: "inline-flex", alignItems: "center" }}>{I("pencil", 15)}</button>
+        <button onClick={() => onClone && onClone(j)} title={T("Clone")} style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--text-muted)", padding: "4px 6px", borderRadius: "var(--radius-sm)", display: "inline-flex", alignItems: "center" }}>{I("copy", 15)}</button>
         <span style={{ display: "inline-block", width: 1, height: 16, background: "var(--border)", margin: "0 3px" }} />
         {(j.status === "draft" || j.status === "rejected") && (
-          <Button variant="primary" size="sm" onClick={() => isRecruiter ? act(() => emp.submitJob(j.id), "Submitted for company review.") : onPublish(j.id, "Job published!")}>
-            {isRecruiter ? "Submit" : "Publish"}
+          <Button variant="primary" size="sm" onClick={() => isRecruiter ? act(() => emp.submitJob(j.id), T("Submitted for company review.")) : onPublish(j.id, T("Job published!"))}>
+            {isRecruiter ? T("Submit") : T("Publish")}
           </Button>
         )}
         {j.status === "company_pending" && isAdmin && (
           <React.Fragment>
-            <Button variant="primary" size="sm" onClick={() => act(() => emp.companyApproveJob(j.id), "Job approved and published.")}>Approve</Button>
-            <Button variant="ghost" size="sm" onClick={() => { setRejectModal(j); setRejectReason(""); }}>Reject</Button>
+            <Button variant="primary" size="sm" onClick={() => act(() => emp.companyApproveJob(j.id), T("Job approved and published."))}>{T("Approve")}</Button>
+            <Button variant="ghost" size="sm" onClick={() => { setRejectModal(j); setRejectReason(""); }}>{T("Reject")}</Button>
           </React.Fragment>
         )}
         {j.status === "company_pending" && isRecruiter && (
-          <span style={{ fontSize: "var(--text-xs)", color: "var(--warning, #b45309)", padding: "0 4px" }}>Awaiting review</span>
+          <span style={{ fontSize: "var(--text-xs)", color: "var(--warning, #b45309)", padding: "0 4px" }}>{T("Awaiting review")}</span>
         )}
-        {j.status === "published" && !j.is_featured && <Button variant="ghost" size="sm" iconLeft={I("star", 13)} onClick={() => setBoostTarget(j)}>Feature</Button>}
-        {j.status === "published" && <Button variant="secondary" size="sm" onClick={() => act(() => emp.closeJob(j.id), "Job closed.")}>Close</Button>}
-        {(j.status === "draft" || j.status === "rejected" || j.status === "closed" || j.status === "company_pending") && <Button variant="ghost" size="sm" onClick={() => del(j)}>Delete</Button>}
+        {j.status === "published" && !j.is_featured && <Button variant="ghost" size="sm" iconLeft={I("star", 13)} onClick={() => setBoostTarget(j)}>{T("Feature")}</Button>}
+        {j.status === "published" && <Button variant="secondary" size="sm" onClick={() => act(() => emp.closeJob(j.id), T("Job closed."))}>{T("Close")}</Button>}
+        {(j.status === "draft" || j.status === "rejected" || j.status === "closed" || j.status === "company_pending") && <Button variant="ghost" size="sm" onClick={() => del(j)}>{T("Delete")}</Button>}
       </React.Fragment>
     );
 
     // Status filters — shared by the desktop Tabs and the mobile scrollable pill bar.
     const TAB_DEFS = [
-      { value: "all", label: "All", count: counts.all },
-      { value: "published", label: "Published", count: counts.published },
-      { value: "company_pending", label: isAdmin ? "Needs approval" : "Awaiting review", count: counts.company_pending },
-      { value: "draft", label: "Draft", count: counts.draft },
-      { value: "rejected", label: "Rejected", count: counts.rejected },
-      { value: "closed", label: "Closed", count: counts.closed },
+      { value: "all", label: T("All"), count: counts.all },
+      { value: "published", label: T("Published"), count: counts.published },
+      { value: "company_pending", label: isAdmin ? T("Needs approval") : T("Awaiting review"), count: counts.company_pending },
+      { value: "draft", label: T("Draft"), count: counts.draft },
+      { value: "rejected", label: T("Rejected"), count: counts.rejected },
+      { value: "closed", label: T("Closed"), count: counts.closed },
     ];
 
     return (
       <div className="krm-page-pad" style={{ padding: 28 }}>
-        <ScreenHead title="Job postings" sub="Create, submit, close, and remove your listings."
+        <ScreenHead title={T("Job postings")} sub={T("Create, submit, close, and remove your listings.")}
           action={subActive && q.limit !== null ? (
             <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "var(--text-sm)", color: quotaFull ? "var(--danger)" : q.used / q.limit > 0.8 ? "var(--warning, #b45309)" : "var(--text-muted)" }}>
               {I(quotaFull ? "alert-circle" : "bar-chart-2", 15)}
@@ -1062,7 +1585,7 @@
         />
         {isAdmin && (
           <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
-            <Button variant="secondary" size="sm" iconLeft={I("rss", 15)} onClick={() => setFeedOpen(true)}>Import from a job feed</Button>
+            <Button variant="secondary" size="sm" iconLeft={I("rss", 15)} onClick={() => setFeedOpen(true)}>{T("Import from a job feed")}</Button>
           </div>
         )}
         <JobFeedModal open={feedOpen} onClose={() => setFeedOpen(false)} onImported={reload} />
@@ -1071,13 +1594,13 @@
             ? (
               <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", background: "var(--warning-subtle)", border: "1px solid var(--warning-border, #fcd34d)", borderRadius: "var(--radius-md)", color: "var(--warning, #b45309)", fontWeight: 600, fontSize: "var(--text-sm)", marginBottom: 18 }}>
                 {I("clock", 16)}
-                <span>Payment pending admin confirmation. Job posting will be unlocked once your subscription is activated.</span>
+                <span>{T("Payment pending admin confirmation. Job posting will be unlocked once your subscription is activated.")}</span>
               </div>
             ) : (
               <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", background: "var(--danger-subtle)", border: "1px solid var(--danger-border, #fca5a5)", borderRadius: "var(--radius-md)", color: "var(--danger)", fontWeight: 600, fontSize: "var(--text-sm)", marginBottom: 18 }}>
                 {I("alert-circle", 16)}
-                <span>{sub && sub.plan ? "Your subscription has expired. Jobs are hidden from the public website." : "No active subscription."} Job posting requires an active plan.{" "}
-                  <button onClick={onBilling} style={{ background: "none", border: "none", color: "inherit", fontWeight: 700, cursor: "pointer", textDecoration: "underline", fontFamily: "var(--font-sans)", fontSize: "inherit", padding: 0 }}>Subscribe now →</button>
+                <span>{sub && sub.plan ? T("Your subscription has expired. Jobs are hidden from the public website.") : T("No active subscription.")} {T("Job posting requires an active plan.")}{" "}
+                  <button onClick={onBilling} style={{ background: "none", border: "none", color: "inherit", fontWeight: 700, cursor: "pointer", textDecoration: "underline", fontFamily: "var(--font-sans)", fontSize: "inherit", padding: 0 }}>{T("Subscribe now →")}</button>
                 </span>
               </div>
             )
@@ -1106,10 +1629,10 @@
         {/* Desktop: dense table (unchanged) */}
         <div className="krm-jobs-desktop"><div className="krm-table-wrap"><Card padding={0}>
           <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1.6fr) 130px 96px 80px 96px 264px", padding: "10px 22px", fontSize: "var(--text-xs)", fontWeight: 700, letterSpacing: ".04em", textTransform: "uppercase", color: "var(--text-faint)", borderBottom: "1px solid var(--border-subtle)" }}>
-            <span>Job title</span><span>Status</span><span>Applicants</span><span>Views</span><span>Posted</span><span style={{ textAlign: "right" }}>Actions</span>
+            <span>{T("Job title")}</span><span>{T("Status")}</span><span>{T("Applicants")}</span><span>{T("Views")}</span><span>{T("Posted")}</span><span style={{ textAlign: "right" }}>{T("Actions")}</span>
           </div>
-          {loading && <div style={{ padding: "26px 22px", color: "var(--text-muted)", fontSize: "var(--text-sm)", textAlign: "center" }}>Loading…</div>}
-          {!loading && filtered.length === 0 && <div style={{ padding: "26px 22px", color: "var(--text-muted)", fontSize: "var(--text-sm)", textAlign: "center" }}>No jobs in this tab.</div>}
+          {loading && <div style={{ padding: "26px 22px", color: "var(--text-muted)", fontSize: "var(--text-sm)", textAlign: "center" }}>{T("Loading…")}</div>}
+          {!loading && filtered.length === 0 && <div style={{ padding: "26px 22px", color: "var(--text-muted)", fontSize: "var(--text-sm)", textAlign: "center" }}>{T("No jobs in this tab.")}</div>}
           {!loading && shown.map((j, i) => (
             <div key={j.id} style={{ display: "grid", gridTemplateColumns: "minmax(0,1.6fr) 130px 96px 80px 96px 264px", alignItems: "center", padding: "14px 22px", borderBottom: i < shown.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>
               <div style={{ minWidth: 0 }}>
@@ -1123,7 +1646,7 @@
                   </div>
                 )}
               </div>
-              <span><StatusBadge status={j.status} /></span>
+              <span><StatusBadge status={j.status}>{statusText(j.status)}</StatusBadge></span>
               <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-sm)", color: "var(--text-body)" }}>{j.applications_count || 0}</span>
               <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-sm)", color: "var(--text-body)" }}>{j.views || 0}</span>
               <span style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>{fmtDate(j.created_at)}</span>
@@ -1137,8 +1660,8 @@
 
         {/* Mobile: vertical card list with infinite scroll (loads more as you reach the bottom) */}
         <div className="krm-jobs-mobile">
-          {loading && <Card padding={0}><div style={{ padding: "26px 22px", color: "var(--text-muted)", fontSize: "var(--text-sm)", textAlign: "center" }}>Loading…</div></Card>}
-          {!loading && filtered.length === 0 && <Card padding={0}><div style={{ padding: "26px 22px", color: "var(--text-muted)", fontSize: "var(--text-sm)", textAlign: "center" }}>No jobs in this tab.</div></Card>}
+          {loading && <Card padding={0}><div style={{ padding: "26px 22px", color: "var(--text-muted)", fontSize: "var(--text-sm)", textAlign: "center" }}>{T("Loading…")}</div></Card>}
+          {!loading && filtered.length === 0 && <Card padding={0}><div style={{ padding: "26px 22px", color: "var(--text-muted)", fontSize: "var(--text-sm)", textAlign: "center" }}>{T("No jobs in this tab.")}</div></Card>}
           {!loading && filtered.length > 0 && (
             <React.Fragment>
               <div className="krm-jobs-list">
@@ -1148,7 +1671,7 @@
                       <div style={{ padding: 16 }}>
                         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10, marginBottom: 10 }}>
                           <div style={{ fontWeight: 700, color: "var(--text-strong)", fontSize: "var(--text-md)", lineHeight: 1.3, minWidth: 0 }}>{j.title}</div>
-                          <span style={{ flexShrink: 0 }}><StatusBadge status={j.status} /></span>
+                          <span style={{ flexShrink: 0 }}><StatusBadge status={j.status}>{statusText(j.status)}</StatusBadge></span>
                         </div>
                         {j.is_featured ? <div style={{ marginBottom: 10 }}><Badge tone="accent">{I("star", 11)} Featured{featuredDaysLeft(j) != null ? " · " + featuredDaysLeft(j) + "d left" : ""}</Badge></div> : null}
                         {isAdmin && j.poster && j.poster.company_role === "recruitment" && (
@@ -1156,9 +1679,9 @@
                         )}
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, padding: "12px 0", borderTop: "1px solid var(--border-subtle)", borderBottom: "1px solid var(--border-subtle)", marginBottom: 14 }}>
                           {[
-                            { icon: "users", val: j.applications_count || 0, label: "Applicants" },
-                            { icon: "eye", val: j.views || 0, label: "Views" },
-                            { icon: "calendar", val: fmtDate(j.created_at), label: "Posted" },
+                            { icon: "users", val: j.applications_count || 0, label: T("Applicants") },
+                            { icon: "eye", val: j.views || 0, label: T("Views") },
+                            { icon: "calendar", val: fmtDate(j.created_at), label: T("Posted") },
                           ].map(function (s, si) { return (
                             <div key={si} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -1194,14 +1717,14 @@
         {rejectModal && (
           <div onClick={() => setRejectModal(null)} style={{ position: "fixed", inset: 0, zIndex: 300, background: "var(--surface-overlay)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
             <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", maxWidth: 400, background: "var(--surface-card)", borderRadius: "var(--radius-xl)", boxShadow: "var(--shadow-xl)", overflow: "hidden" }}>
-              <div style={{ padding: "18px 22px", borderBottom: "1px solid var(--border)", fontWeight: 700, fontSize: "var(--text-md)", color: "var(--text-strong)" }}>Reject job posting</div>
+              <div style={{ padding: "18px 22px", borderBottom: "1px solid var(--border)", fontWeight: 700, fontSize: "var(--text-md)", color: "var(--text-strong)" }}>{T("Reject job posting")}</div>
               <div style={{ padding: "18px 22px" }}>
-                <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginBottom: 12 }}>Tell the recruiter why this job was rejected.</div>
-                <Input label="Reason" value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} placeholder="e.g. Job description is incomplete…" />
+                <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginBottom: 12 }}>{T("Tell the recruiter why this job was rejected.")}</div>
+                <Input label={T("Reason")} value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} placeholder={T("e.g. Job description is incomplete…")} />
               </div>
               <div style={{ display: "flex", gap: 10, padding: "14px 22px", borderTop: "1px solid var(--border)" }}>
-                <Button variant="ghost" onClick={() => setRejectModal(null)} style={{ flex: 1 }}>Cancel</Button>
-                <Button variant="primary" style={{ background: "var(--danger)", flex: 1 }} disabled={!rejectReason.trim()} onClick={doCompanyReject}>Reject</Button>
+                <Button variant="ghost" onClick={() => setRejectModal(null)} style={{ flex: 1 }}>{T("Cancel")}</Button>
+                <Button variant="primary" style={{ background: "var(--danger)", flex: 1 }} disabled={!rejectReason.trim()} onClick={doCompanyReject}>{T("Reject")}</Button>
               </div>
             </div>
           </div>
@@ -1447,7 +1970,7 @@
     const save = function () {
       setBusy(true);
       emp.saveScorecard(iv.id, { ratings: ratings, recommendation: rec || null, comment: comment || null })
-        .then(function () { setBusy(false); flash("Scorecard saved."); if (onSaved) onSaved(); })
+        .then(function () { setBusy(false); flash(T("Scorecard saved.")); if (onSaved) onSaved(); })
         .catch(function (e) { setBusy(false); flash("Error: " + (e && e.message)); });
     };
     return (
@@ -1469,8 +1992,8 @@
           })}
         </div>
         <div style={{ marginTop: 8 }}><Select value={rec} onChange={function (e) { setRec(e.target.value); }} options={SC_REC} /></div>
-        <textarea value={comment} onChange={function (e) { setComment(e.target.value); }} rows={2} placeholder="Notes…" style={Object.assign({}, ivInput, { marginTop: 6, resize: "vertical", background: "var(--surface-page)" })} />
-        <div style={{ marginTop: 6 }}><Button variant="secondary" size="sm" disabled={busy} onClick={save}>{busy ? "Saving…" : "Save scorecard"}</Button></div>
+        <textarea value={comment} onChange={function (e) { setComment(e.target.value); }} rows={2} placeholder={T("Notes…")} style={Object.assign({}, ivInput, { marginTop: 6, resize: "vertical", background: "var(--surface-page)" })} />
+        <div style={{ marginTop: 6 }}><Button variant="secondary" size="sm" disabled={busy} onClick={save}>{busy ? T("Saving…") : T("Save scorecard")}</Button></div>
       </div>
     );
   }
@@ -1487,9 +2010,9 @@
     const load = React.useCallback(function () { setLoading(true); emp.fetchInterviews(appId).then(function (d) { setList(d || []); setLoading(false); }).catch(function () { setLoading(false); }); }, [appId]);
     React.useEffect(function () { load(); }, [load]);
     const schedule = function () {
-      if (!form.scheduled_at) { flash("Pick a date & time first."); return; }
+      if (!form.scheduled_at) { flash(T("Pick a date & time first.")); return; }
       setBusy(true);
-      emp.scheduleInterview(appId, form).then(function () { setBusy(false); setOpen(false); setForm(IVBLANK); flash("Interview scheduled — candidate notified."); load(); }).catch(function (e) { setBusy(false); flash("Error: " + (e && e.message)); });
+      emp.scheduleInterview(appId, form).then(function () { setBusy(false); setOpen(false); setForm(IVBLANK); flash(T("Interview scheduled — candidate notified.")); load(); }).catch(function (e) { setBusy(false); flash("Error: " + (e && e.message)); });
     };
     const setStatus = function (iv, status) { emp.updateInterview(iv.id, { status: status }).then(load).catch(function () {}); };
     const del = function (iv) { emp.deleteInterview(iv.id).then(load).catch(function () {}); };
@@ -1497,25 +2020,25 @@
     return (
       <div>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-          <label style={{ fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".04em" }}>Interviews</label>
-          <Button variant="ghost" size="sm" iconLeft={I("calendar-plus", 14)} onClick={function () { setOpen(function (o) { return !o; }); }}>{open ? "Close" : "Schedule"}</Button>
+          <label style={{ fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".04em" }}>{T("Interviews")}</label>
+          <Button variant="ghost" size="sm" iconLeft={I("calendar-plus", 14)} onClick={function () { setOpen(function (o) { return !o; }); }}>{open ? T("Close") : T("Schedule")}</Button>
         </div>
         {open && (
           <div style={{ border: "1px solid var(--border)", borderRadius: "var(--radius-md)", padding: 12, marginBottom: 10, display: "flex", flexDirection: "column", gap: 8 }}>
             <div style={{ display: "flex", gap: 8 }}>
-              <div style={{ width: 130 }}><Select value={form.type} onChange={function (e) { set("type", e.target.value); }} options={[{ value: "video", label: "Video" }, { value: "phone", label: "Phone" }, { value: "in_person", label: "In-person" }]} /></div>
-              <input type="number" min="5" value={form.duration_min} onChange={function (e) { set("duration_min", e.target.value); }} title="Duration (minutes)" style={ivInput} />
+              <div style={{ width: 130 }}><Select value={form.type} onChange={function (e) { set("type", e.target.value); }} options={[{ value: "video", label: T("Video") }, { value: "phone", label: T("Phone call") }, { value: "in_person", label: T("In-person") }]} /></div>
+              <input type="number" min="5" value={form.duration_min} onChange={function (e) { set("duration_min", e.target.value); }} title={T("Duration (minutes)")} style={ivInput} />
             </div>
             <input type="datetime-local" value={form.scheduled_at} onChange={function (e) { set("scheduled_at", e.target.value); }} style={ivInput} />
             {form.type === "in_person"
-              ? <input value={form.location} onChange={function (e) { set("location", e.target.value); }} placeholder="Location / address" style={ivInput} />
-              : <input value={form.meeting_url} onChange={function (e) { set("meeting_url", e.target.value); }} placeholder="Meeting link (https://…)" style={ivInput} />}
-            <textarea value={form.notes} onChange={function (e) { set("notes", e.target.value); }} rows={2} placeholder="Notes (optional)…" style={Object.assign({}, ivInput, { resize: "vertical" })} />
-            <div><Button variant="primary" size="sm" disabled={busy} onClick={schedule}>{busy ? "Scheduling…" : "Schedule interview"}</Button></div>
+              ? <input value={form.location} onChange={function (e) { set("location", e.target.value); }} placeholder={T("Location / address")} style={ivInput} />
+              : <input value={form.meeting_url} onChange={function (e) { set("meeting_url", e.target.value); }} placeholder={T("Meeting link (https://…)")} style={ivInput} />}
+            <textarea value={form.notes} onChange={function (e) { set("notes", e.target.value); }} rows={2} placeholder={T("Notes (optional)…")} style={Object.assign({}, ivInput, { resize: "vertical" })} />
+            <div><Button variant="primary" size="sm" disabled={busy} onClick={schedule}>{busy ? T("Scheduling…") : T("Schedule interview")}</Button></div>
           </div>
         )}
-        {loading ? <div style={{ fontSize: "var(--text-xs)", color: "var(--text-faint)" }}>Loading…</div> : (
-          list.length === 0 ? <div style={{ fontSize: "var(--text-xs)", color: "var(--text-faint)" }}>No interviews scheduled.</div> : (
+        {loading ? <div style={{ fontSize: "var(--text-xs)", color: "var(--text-faint)" }}>{T("Loading…")}</div> : (
+          list.length === 0 ? <div style={{ fontSize: "var(--text-xs)", color: "var(--text-faint)" }}>{T("No interviews scheduled.")}</div> : (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {list.map(function (iv) {
                 return (
@@ -1527,12 +2050,12 @@
                         <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{IV_TYPE[iv.type]} · {iv.duration_min} min{iv.timezone ? " · " + iv.timezone : ""}</div>
                       </div>
                       <div style={{ width: 124, flexShrink: 0 }}><Select value={iv.status} onChange={function (e) { setStatus(iv, e.target.value); }} options={IV_STATUS} /></div>
-                      <button onClick={function () { del(iv); }} title="Remove" style={{ border: "none", background: "none", cursor: "pointer", color: "var(--danger)", display: "inline-flex", padding: 4, flexShrink: 0 }}>{I("trash-2", 14)}</button>
+                      <button onClick={function () { del(iv); }} title={T("Remove")} style={{ border: "none", background: "none", cursor: "pointer", color: "var(--danger)", display: "inline-flex", padding: 4, flexShrink: 0 }}>{I("trash-2", 14)}</button>
                     </div>
                     {iv.meeting_url && <a href={iv.meeting_url} target="_blank" rel="noopener" style={{ fontSize: 12, color: "var(--text-brand)", display: "inline-block", marginTop: 4, wordBreak: "break-all" }}>{iv.meeting_url}</a>}
                     {iv.location && <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 4 }}>{iv.location}</div>}
                     {iv.notes && <div style={{ fontSize: 12, color: "var(--text-body)", marginTop: 4, whiteSpace: "pre-wrap" }}>{iv.notes}</div>}
-                    <button onClick={function () { setScOpen(scOpen === iv.id ? null : iv.id); }} style={{ marginTop: 6, border: "none", background: "none", cursor: "pointer", color: "var(--text-brand)", fontWeight: 600, fontSize: 12, padding: 0 }}>{scOpen === iv.id ? "Hide scorecard" : ((iv.scorecards && iv.scorecards.length) ? "Scorecard (" + iv.scorecards.length + ")" : "Add scorecard")}</button>
+                    <button onClick={function () { setScOpen(scOpen === iv.id ? null : iv.id); }} style={{ marginTop: 6, border: "none", background: "none", cursor: "pointer", color: "var(--text-brand)", fontWeight: 600, fontSize: 12, padding: 0 }}>{scOpen === iv.id ? T("Hide scorecard") : ((iv.scorecards && iv.scorecards.length) ? "Scorecard (" + iv.scorecards.length + ")" : T("Add scorecard"))}</button>
                     {scOpen === iv.id && <ScorecardEditor iv={iv} flash={flash} onSaved={load} />}
                   </div>
                 );
@@ -1585,7 +2108,7 @@
       var job = reviewable.find((j) => String(j.id) === String(msgModal.jobId));
       emp.startConversation({ other_user_id: msgModal.candidate.id, job_id: msgModal.jobId || null, subject: job ? job.title : null, message: msgBody.trim() })
         .then(function () { setMsgSending(false); setMsgModal(null); setMsgBody(""); if (onGoToMessages) onGoToMessages(); })
-        .catch(function (e) { setMsgSending(false); setMsgErr((e && e.message) || "Could not send message."); });
+        .catch(function (e) { setMsgSending(false); setMsgErr((e && e.message) || T("Could not send message.")); });
     };
 
     React.useEffect(function () {
@@ -1616,7 +2139,7 @@
       if (!a || a.stage === toStage) return;
       setApps(function (prev) { return prev.map(function (x) { return x.id === a.id ? Object.assign({}, x, { stage: toStage }) : x; }); });
       setSel(function (s) { return s && s.id === a.id ? Object.assign({}, s, { stage: toStage }) : s; });
-      emp.updateApplicationStage(a.id, toStage).then(function () { flash("Moved to " + (STLABEL[toStage] || toStage)); }).catch(function (e) { flash("Error: " + (e && e.message)); load(); });
+      emp.updateApplicationStage(a.id, toStage).then(function () { flash(T("Moved to") + " " + T(STLABEL[toStage] || toStage)); }).catch(function (e) { flash("Error: " + (e && e.message)); load(); });
     };
 
     const patchCard = (id, fn) => { setApps(function (prev) { return prev.map(function (x) { return x.id === id ? fn(x) : x; }); }); };
@@ -1653,22 +2176,22 @@
     apps.forEach((a) => { var k = a.stage || "applied"; if (!byStage[k]) byStage[k] = []; byStage[k].push(a); });
 
     if (reviewable.length === 0) {
-      return <div className="krm-page-pad" style={{ padding: 28 }}><EmptyState icon={I("users", 28)} title="No applicants yet" description="Publish a job to start receiving applications." /></div>;
+      return <div className="krm-page-pad" style={{ padding: 28 }}><EmptyState icon={I("users", 28)} title={T("No applicants yet")} description={T("Publish a job to start receiving applications.")} /></div>;
     }
 
     return (
       <div className="krm-page-pad" style={{ padding: 28 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 20, flexWrap: "wrap" }}>
-          <span style={{ fontWeight: 700, color: "var(--text-strong)", fontSize: "var(--text-md)" }}>Pipeline</span>
+          <span style={{ fontWeight: 700, color: "var(--text-strong)", fontSize: "var(--text-md)" }}>{T("Pipeline")}</span>
           <div style={{ width: 280 }}>
             <Select value={jobId} onChange={(e) => setJobId(e.target.value)}
               options={reviewable.map((j) => ({ value: String(j.id), label: j.title + " (" + (j.applications_count || 0) + ")" }))} />
           </div>
           <Badge tone="neutral">{apps.length} applicant{apps.length === 1 ? "" : "s"}</Badge>
-          <span style={{ fontSize: "var(--text-xs)", color: "var(--text-faint)" }}>Drag a card between columns, or open it to manage.</span>
+          <span style={{ fontSize: "var(--text-xs)", color: "var(--text-faint)" }}>{T("Drag a card between columns, or open it to manage.")}</span>
           {msg && <span style={{ fontSize: "var(--text-sm)", color: "var(--success)", fontWeight: 600 }}>{msg}</span>}
         </div>
-        {loading ? <div style={{ color: "var(--text-muted)", fontSize: "var(--text-sm)" }}>Loading…</div> : (
+        {loading ? <div style={{ color: "var(--text-muted)", fontSize: "var(--text-sm)" }}>{T("Loading…")}</div> : (
         <div className="krm-pipeline" style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(180px, 1fr))", gap: 12, alignItems: "start", overflowX: "auto", paddingBottom: 6 }}>
           {STAGES.map((s) => (
             <div key={s.key}
@@ -1677,7 +2200,7 @@
               onDrop={(e) => { e.preventDefault(); setOverCol(""); var it = apps.find(function (x) { return x.id === dragId; }); if (it) move(it, s.key); setDragId(null); }}
               style={{ background: "var(--surface-sunken)", borderRadius: "var(--radius-lg)", padding: 10, minHeight: 220, minWidth: 0, outline: overCol === s.key ? "2px dashed var(--brand)" : "none", outlineOffset: -2 }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 6px 10px" }}>
-                <Badge tone={s.tone}>{s.label}</Badge>
+                <Badge tone={s.tone}>{T(s.label)}</Badge>
                 <span style={{ fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-muted)" }}>{byStage[s.key].length}</span>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -1689,7 +2212,7 @@
                       <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
                         <Avatar src={c.avatar_url} name={c.name || "?"} size={32} />
                         <div style={{ minWidth: 0 }}>
-                          <div style={{ fontWeight: 700, fontSize: "var(--text-sm)", color: "var(--text-strong)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.name || "Candidate"}</div>
+                          <div style={{ fontWeight: 700, fontSize: "var(--text-sm)", color: "var(--text-strong)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.name || T("Candidate")}</div>
                           <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{a.headline || ""}</div>
                         </div>
                       </div>
@@ -1699,7 +2222,7 @@
                         </div>
                       )}
                       <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 8, fontSize: 11, color: "var(--text-faint)" }}>
-                        {a.flagged && <span title="Doesn't meet a screening requirement" style={{ display: "inline-flex", alignItems: "center", gap: 3, color: "var(--danger)", fontWeight: 700 }}>{I("alert-triangle", 11)} Flag</span>}
+                        {a.flagged && <span title={T("Doesn't meet a screening requirement")} style={{ display: "inline-flex", alignItems: "center", gap: 3, color: "var(--danger)", fontWeight: 700 }}>{I("alert-triangle", 11)} Flag</span>}
                         {a.has_cv && <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}>{I("file-text", 11)} CV</span>}
                         {a.notes_count > 0 && <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}>{I("sticky-note", 11)} {a.notes_count}</span>}
                         <span style={{ marginLeft: "auto" }}>{fmtDay(a.created_at)}</span>
@@ -1719,16 +2242,16 @@
               <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: 12 }}>
                 <Avatar src={(sel.candidate || {}).avatar_url} name={(sel.candidate || {}).name || "?"} size={44} />
                 <div style={{ minWidth: 0, flex: 1 }}>
-                  <div style={{ fontWeight: 700, color: "var(--text-strong)" }}>{(sel.candidate || {}).name || "Candidate"}</div>
-                  <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{detail ? (detail.headline || (detail.candidate && detail.candidate.email) || "") : "Loading…"}</div>
+                  <div style={{ fontWeight: 700, color: "var(--text-strong)" }}>{(sel.candidate || {}).name || T("Candidate")}</div>
+                  <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{detail ? (detail.headline || (detail.candidate && detail.candidate.email) || "") : T("Loading…")}</div>
                 </div>
                 <Button variant="ghost" size="sm" onClick={() => setSel(null)}>{I("x", 18)}</Button>
               </div>
               <div style={{ padding: 20, overflowY: "auto", display: "flex", flexDirection: "column", gap: 18, flex: 1 }}>
                 <div>
-                  <label style={{ fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".04em" }}>Stage</label>
+                  <label style={{ fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".04em" }}>{T("Stage")}</label>
                   <div style={{ marginTop: 6 }}>
-                    <Select value={sel.stage} onChange={(e) => move(sel, e.target.value)} options={STAGES.map(function (s) { return { value: s.key, label: s.label }; })} />
+                    <Select value={sel.stage} onChange={(e) => move(sel, e.target.value)} options={STAGES.map(function (s) { return { value: s.key, label: T(s.label) }; })} />
                   </div>
                 </div>
                 {detail && detail.candidate && (detail.candidate.email || detail.candidate.phone) && (
@@ -1739,23 +2262,23 @@
                 )}
                 <div style={{ display: "flex", gap: 8 }}>
                   {detail && detail.has_cv
-                    ? <Button variant="secondary" size="sm" iconLeft={I("download", 14)} onClick={() => emp.downloadCv(sel.id).catch(function (e) { flash(e && e.message || "Download failed"); })}>Download CV</Button>
-                    : <Button variant="ghost" size="sm" disabled>{detail && detail.cv_private ? "CV hidden" : "No CV"}</Button>}
-                  <Button variant="ghost" size="sm" iconLeft={I("message-square", 14)} onClick={() => detail && detail.candidate && openMessage(detail.candidate)}>Message</Button>
+                    ? <Button variant="secondary" size="sm" iconLeft={I("download", 14)} onClick={() => emp.downloadCv(sel.id).catch(function (e) { flash(e && e.message || T("Download failed")); })}>{T("Download CV")}</Button>
+                    : <Button variant="ghost" size="sm" disabled>{detail && detail.cv_private ? T("CV hidden") : T("No CV")}</Button>}
+                  <Button variant="ghost" size="sm" iconLeft={I("message-square", 14)} onClick={() => detail && detail.candidate && openMessage(detail.candidate)}>{T("Message")}</Button>
                 </div>
                 {detail && detail.cover_note && (
                   <div>
-                    <label style={{ fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".04em" }}>Cover note</label>
+                    <label style={{ fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".04em" }}>{T("Cover note")}</label>
                     <div style={{ marginTop: 6, fontSize: "var(--text-sm)", color: "var(--text-body)", whiteSpace: "pre-wrap", background: "var(--surface-sunken)", borderRadius: "var(--radius-md)", padding: "10px 12px" }}>{detail.cover_note}</div>
                   </div>
                 )}
                 {detail && detail.answers && detail.answers.length > 0 && (
                   <div>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                      <label style={{ fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".04em" }}>Screening answers</label>
+                      <label style={{ fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".04em" }}>{T("Screening answers")}</label>
                       {detail.meets_requirements === false
-                        ? <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 700, color: "var(--danger)", background: "var(--danger-subtle)", borderRadius: 999, padding: "2px 9px" }}>{I("alert-triangle", 11)} Doesn't meet requirements</span>
-                        : <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 700, color: "var(--success)", background: "var(--success-subtle)", borderRadius: 999, padding: "2px 9px" }}>{I("check", 11)} Meets requirements</span>}
+                        ? <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 700, color: "var(--danger)", background: "var(--danger-subtle)", borderRadius: 999, padding: "2px 9px" }}>{I("alert-triangle", 11)} {T("Doesn't meet requirements")}</span>
+                        : <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 700, color: "var(--success)", background: "var(--success-subtle)", borderRadius: 999, padding: "2px 9px" }}>{I("check", 11)} {T("Meets requirements")}</span>}
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                       {detail.answers.map(function (a, i) {
@@ -1764,8 +2287,8 @@
                             <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginBottom: 3 }}>{a.question}</div>
                             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                               <span style={{ fontSize: "var(--text-sm)", color: "var(--text-body)", fontWeight: 600 }}>{a.answer}</span>
-                              {a.knockout && a.passed === true && <span style={{ display: "inline-flex", color: "var(--success)" }} title="Meets requirement">{I("check-circle", 14)}</span>}
-                              {a.knockout && a.passed === false && <span style={{ display: "inline-flex", color: "var(--danger)" }} title="Does not meet requirement">{I("x-circle", 14)}</span>}
+                              {a.knockout && a.passed === true && <span style={{ display: "inline-flex", color: "var(--success)" }} title={T("Meets requirement")}>{I("check-circle", 14)}</span>}
+                              {a.knockout && a.passed === false && <span style={{ display: "inline-flex", color: "var(--danger)" }} title={T("Does not meet requirement")}>{I("x-circle", 14)}</span>}
                             </div>
                           </div>
                         );
@@ -1775,47 +2298,47 @@
                 )}
                 <InterviewsPanel key={"iv" + sel.id} appId={sel.id} flash={flash} />
                 <div>
-                  <label style={{ fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".04em" }}>Tags</label>
+                  <label style={{ fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".04em" }}>{T("Tags")}</label>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
                     {(detail ? detail.tags : []).map(function (t) {
                       return <span key={t.id} style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: "var(--text-xs)", fontWeight: 600, color: "var(--text-brand)", background: "var(--brand-subtle)", borderRadius: 999, padding: "3px 4px 3px 10px" }}>{t.label}<button onClick={() => removeTag(t.id)} style={{ border: "none", background: "none", cursor: "pointer", color: "var(--text-brand)", display: "inline-flex", padding: 2 }}>{I("x", 11)}</button></span>;
                     })}
                   </div>
                   <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
-                    <input list="krm-tag-suggestions" value={tagInput} onChange={(e) => setTagInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addTag(tagInput); } }} placeholder="Add a tag…" maxLength={40}
+                    <input list="krm-tag-suggestions" value={tagInput} onChange={(e) => setTagInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addTag(tagInput); } }} placeholder={T("Add a tag…")} maxLength={40}
                       style={{ flex: 1, boxSizing: "border-box", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", padding: "7px 10px", fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)", color: "var(--text-body)", background: "var(--surface-page)", outline: "none" }} />
                     <datalist id="krm-tag-suggestions">{allTags.map(function (l) { return <option key={l} value={l} />; })}</datalist>
-                    <Button variant="secondary" size="sm" disabled={!tagInput.trim()} onClick={() => addTag(tagInput)}>Add</Button>
+                    <Button variant="secondary" size="sm" disabled={!tagInput.trim()} onClick={() => addTag(tagInput)}>{T("Add")}</Button>
                   </div>
                 </div>
                 <div>
-                  <label style={{ fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".04em" }}>Private notes</label>
+                  <label style={{ fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".04em" }}>{T("Private notes")}</label>
                   <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 8 }}>
-                    <textarea value={noteBody} onChange={(e) => setNoteBody(e.target.value)} rows={2} placeholder="Add a private note (only your team can see this)…"
+                    <textarea value={noteBody} onChange={(e) => setNoteBody(e.target.value)} rows={2} placeholder={T("Add a private note (only your team can see this)…")}
                       style={{ width: "100%", boxSizing: "border-box", resize: "vertical", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", padding: "9px 11px", fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)", color: "var(--text-body)", background: "var(--surface-page)", outline: "none", lineHeight: 1.5 }} />
-                    <div><Button variant="primary" size="sm" disabled={noteBusy || !noteBody.trim()} onClick={submitNote}>{noteBusy ? "Saving…" : "Add note"}</Button></div>
+                    <div><Button variant="primary" size="sm" disabled={noteBusy || !noteBody.trim()} onClick={submitNote}>{noteBusy ? T("Saving…") : T("Add note")}</Button></div>
                     {notes.map(function (n) {
                       return (
                         <div key={n.id} style={{ background: "var(--surface-sunken)", borderRadius: "var(--radius-md)", padding: "10px 12px" }}>
                           {editNote === n.id ? (
                             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                               <textarea value={editBody} onChange={(e) => setEditBody(e.target.value)} rows={2} style={{ width: "100%", boxSizing: "border-box", resize: "vertical", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", padding: "7px 9px", fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)", color: "var(--text-body)", background: "var(--surface-card)", outline: "none" }} />
-                              <div style={{ display: "flex", gap: 6 }}><Button variant="primary" size="sm" onClick={() => saveEditNote(n)}>Save</Button><Button variant="ghost" size="sm" onClick={() => setEditNote(null)}>Cancel</Button></div>
+                              <div style={{ display: "flex", gap: 6 }}><Button variant="primary" size="sm" onClick={() => saveEditNote(n)}>{T("Save note")}</Button><Button variant="ghost" size="sm" onClick={() => setEditNote(null)}>{T("Cancel")}</Button></div>
                             </div>
                           ) : (
                             <div>
                               <div style={{ fontSize: "var(--text-sm)", color: "var(--text-body)", whiteSpace: "pre-wrap" }}>{n.body}</div>
                               <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6, fontSize: 11, color: "var(--text-faint)" }}>
-                                <span>{n.author || "You"} · {fmtDay(n.created_at)}</span>
-                                {n.can_edit && <button onClick={() => { setEditNote(n.id); setEditBody(n.body); }} style={{ marginLeft: "auto", border: "none", background: "none", cursor: "pointer", color: "var(--text-brand)", fontWeight: 600 }}>Edit</button>}
-                                {n.can_edit && <button onClick={() => delNote(n)} style={{ border: "none", background: "none", cursor: "pointer", color: "var(--danger)", fontWeight: 600 }}>Delete</button>}
+                                <span>{n.author || T("You")} · {fmtDay(n.created_at)}</span>
+                                {n.can_edit && <button onClick={() => { setEditNote(n.id); setEditBody(n.body); }} style={{ marginLeft: "auto", border: "none", background: "none", cursor: "pointer", color: "var(--text-brand)", fontWeight: 600 }}>{T("Edit")}</button>}
+                                {n.can_edit && <button onClick={() => delNote(n)} style={{ border: "none", background: "none", cursor: "pointer", color: "var(--danger)", fontWeight: 600 }}>{T("Delete")}</button>}
                               </div>
                             </div>
                           )}
                         </div>
                       );
                     })}
-                    {notes.length === 0 && <div style={{ fontSize: "var(--text-xs)", color: "var(--text-faint)" }}>No notes yet.</div>}
+                    {notes.length === 0 && <div style={{ fontSize: "var(--text-xs)", color: "var(--text-faint)" }}>{T("No notes yet.")}</div>}
                   </div>
                 </div>
               </div>
@@ -1828,19 +2351,19 @@
               <div style={{ padding: "18px 22px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: 10 }}>
                 <Avatar src={msgModal.candidate.avatar_url} name={msgModal.candidate.name || "?"} size={38} />
                 <div style={{ minWidth: 0 }}>
-                  <div style={{ fontWeight: 700, color: "var(--text-strong)", fontSize: "var(--text-sm)" }}>Message {msgModal.candidate.name || "candidate"}</div>
+                  <div style={{ fontWeight: 700, color: "var(--text-strong)", fontSize: "var(--text-sm)" }}>{T("Message")} {msgModal.candidate.name || "candidate"}</div>
                   <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{msgModal.candidate.email || ""}</div>
                 </div>
               </div>
               <div style={{ padding: 18 }}>
-                <textarea value={msgBody} onChange={(e) => setMsgBody(e.target.value)} rows={5} autoFocus placeholder="Write your message…"
+                <textarea value={msgBody} onChange={(e) => setMsgBody(e.target.value)} rows={5} autoFocus placeholder={T("Write your message…")}
                   onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); sendNewMessage(); } }}
                   style={{ width: "100%", boxSizing: "border-box", resize: "vertical", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", padding: "10px 12px", fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)", color: "var(--text-body)", background: "var(--surface-page)", outline: "none", lineHeight: 1.5 }} />
                 {msgErr && <div style={{ color: "var(--danger)", fontSize: "var(--text-xs)", marginTop: 8 }}>{msgErr}</div>}
               </div>
               <div style={{ padding: "0 18px 18px", display: "flex", justifyContent: "flex-end", gap: 10 }}>
-                <Button variant="secondary" onClick={() => setMsgModal(null)}>Cancel</Button>
-                <Button variant="primary" disabled={msgSending || !msgBody.trim()} onClick={sendNewMessage}>{msgSending ? "Sending…" : "Send message"}</Button>
+                <Button variant="secondary" onClick={() => setMsgModal(null)}>{T("Cancel")}</Button>
+                <Button variant="primary" disabled={msgSending || !msgBody.trim()} onClick={sendNewMessage}>{msgSending ? T("Sending…") : T("Send message")}</Button>
               </div>
             </div>
           </div>
@@ -1850,7 +2373,7 @@
   }
 
   // Shown when the employer has no company yet — lets them create one instead of
-  // getting stuck on a "Loading…" screen. After creating, the full profile appears.
+  // getting stuck on a T("Loading…") screen. After creating, the full profile appears.
   function CreateCompanyForm({ onCreated }) {
     const [f, setF] = React.useState({ name: "", industry: "", website: "", address: "", description: "" });
     const [saving, setSaving] = React.useState(false);
@@ -2297,7 +2820,7 @@
                 {companyJobs.map((j, i) => (
                   <div key={j.id} className="krm-cojobs-row" style={{ display: "grid", gridTemplateColumns: "1.8fr 0.9fr 0.7fr 0.7fr 0.8fr", alignItems: "center", padding: "14px 22px", borderBottom: i < companyJobs.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>
                     <span style={{ fontWeight: 600, color: "var(--text-strong)" }}>{j.title}</span>
-                    <span><StatusBadge status={j.status} /></span>
+                    <span><StatusBadge status={j.status}>{statusText(j.status)}</StatusBadge></span>
                     <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-sm)", color: "var(--text-body)" }}>{j.applications_count || 0}</span>
                     <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-sm)", color: "var(--text-body)" }}>{j.views || 0}</span>
                     <span style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>{fmtDate(j.created_at)}</span>
@@ -3297,27 +3820,27 @@
 
     return (
       <div className="krm-page-pad" style={{ padding: 28 }}>
-        <ScreenHead title="Plan & billing" sub="Manage your subscription and billing history." />
+        <ScreenHead title={T("Plan & billing")} sub={T("Manage your subscription and billing history.")} />
         <ReferralCard />
-        {loading ? <div style={{ color: "var(--text-muted)", fontSize: "var(--text-sm)" }}>Loading…</div> : (
+        {loading ? <div style={{ color: "var(--text-muted)", fontSize: "var(--text-sm)" }}>{T("Loading…")}</div> : (
         <React.Fragment>
         {sub && sub.plan && (
           <div className="krm-stats-grid" style={{ marginBottom: 24, borderRadius: "var(--radius-lg)", border: "1px solid " + (sub.status === "expired" ? "var(--danger, #ef4444)" : sub.status === "pending" ? "var(--warning-border, #fcd34d)" : "var(--border)"), overflow: "hidden" }}>
             <div className="krm-plan-summary" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)" }}>
               <div style={{ padding: "16px 20px", borderRight: "1px solid var(--border)", background: "var(--surface-card)" }}>
-                <div style={{ fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 6 }}>Current plan</div>
+                <div style={{ fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 6 }}>{T("Current plan")}</div>
                 <div style={{ fontWeight: 700, color: "var(--text-strong)", fontSize: "var(--text-sm)" }}>{sub.status === "trial" ? "Trial — " + sub.plan.name : sub.plan.name}</div>
               </div>
               <div style={{ padding: "16px 20px", borderRight: "1px solid var(--border)", background: "var(--surface-card)" }}>
-                <div style={{ fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 6 }}>Status</div>
+                <div style={{ fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 6 }}>{T("Status")}</div>
                 <Badge tone={SUB_STATUS_TONE[sub.status] || "neutral"}>{(sub.status || "").replace("_", " ")}</Badge>
               </div>
               <div style={{ padding: "16px 20px", borderRight: "1px solid var(--border)", background: "var(--surface-card)" }}>
-                <div style={{ fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 6 }}>Started</div>
+                <div style={{ fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 6 }}>{T("Started")}</div>
                 <div style={{ fontWeight: 600, color: "var(--text-body)", fontSize: "var(--text-sm)" }}>{fmtDate(sub.started_at || sub.created_at)}</div>
               </div>
               <div style={{ padding: "16px 20px", background: "var(--surface-card)" }}>
-                <div style={{ fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 6 }}>{sub.status === "expired" ? "Expired on" : sub.status === "pending" ? "Activates on" : "Renews"}</div>
+                <div style={{ fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 6 }}>{sub.status === "expired" ? T("Expired on") : sub.status === "pending" ? T("Activates on") : T("Renews")}</div>
                 <div style={{ fontWeight: 600, color: sub.status === "expired" ? "var(--danger)" : "var(--text-body)", fontSize: "var(--text-sm)" }}>{fmtDate(sub.renews_at)}</div>
               </div>
             </div>
@@ -3327,7 +3850,7 @@
               var used = s.jobs_used || 0;
               var rem = s.jobs_remaining;
               var full = lim !== null && rem <= 0;
-              var planName = s.plan ? s.plan.name : "Plan";
+              var planName = s.plan ? s.plan.name : T("Plan");
               var isCustom = s.job_post_limit != null;
               var label = isCustom ? planName + " · Custom slots (Admin assigned)" : planName;
               var statusTone = { active: "var(--brand)", trial: "var(--brand)", pending: "var(--warning, #f59e0b)", expired: "var(--danger)", canceled: "var(--text-faint)" };
@@ -3336,20 +3859,20 @@
                 <div key={s.id} style={{ padding: "12px 20px", borderTop: "1px solid var(--border)", background: idx % 2 === 0 ? "var(--surface-sunken, var(--surface-card))" : "var(--surface-card)" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span style={{ fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".05em" }}>Live job posts</span>
+                      <span style={{ fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".05em" }}>{T("Live job posts")}</span>
                       <span style={{ fontSize: "var(--text-xs)", color: statusTone[s.status] || "var(--text-muted)", fontWeight: 600, background: "var(--surface-page)", border: "1px solid var(--border)", borderRadius: "var(--radius-full)", padding: "1px 8px" }}>{label}</span>
-                      {full && <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>Close a job to free a slot, or upgrade your plan for more.</span>}
+                      {full && <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>{T("Close a job to free a slot, or upgrade your plan for more.")}</span>}
                     </div>
                     {lim !== null
-                      ? <span style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: full ? "var(--danger)" : "var(--text-body)", whiteSpace: "nowrap" }}>{used} / {lim} · {full ? "Limit reached" : rem + " remaining"}</span>
-                      : <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 4 }}>{I("infinity", 13)} Unlimited</span>
+                      ? <span style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: full ? "var(--danger)" : "var(--text-body)", whiteSpace: "nowrap" }}>{used} / {lim} · {full ? T("Limit reached") : rem + " remaining"}</span>
+                      : <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 4 }}>{I("infinity", 13)} {T("Unlimited")}</span>
                     }
                   </div>
                   <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 5, marginBottom: lim !== null ? 6 : 0 }}>
                     {I("calendar", 12)}
                     <span>Started {fmtDate(s.started_at)}</span>
                     <span style={{ color: "var(--text-faint)" }}>·</span>
-                    <span style={{ color: s.status === "expired" ? "var(--danger)" : "var(--text-muted)" }}>{s.renews_at ? "Expires " + fmtDate(s.renews_at) : "No expiry"}</span>
+                    <span style={{ color: s.status === "expired" ? "var(--danger)" : "var(--text-muted)" }}>{s.renews_at ? "Expires " + fmtDate(s.renews_at) : T("No expiry")}</span>
                   </div>
                   {lim !== null && (
                     <div style={{ height: 5, borderRadius: 99, background: "var(--border)", overflow: "hidden" }}>
@@ -3363,17 +3886,17 @@
               <div style={{ padding: "12px 20px", borderTop: "1px solid var(--border)", background: "var(--surface-card)" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".05em" }}>Featured credits</span>
-                    <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>Free boosts included in your active plan{allSubs.length > 1 ? "s" : ""}</span>
+                    <span style={{ fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".05em" }}>{T("Featured credits")}</span>
+                    <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>{T("Free boosts included in your active plan")}{allSubs.length > 1 ? "s" : ""}</span>
                   </div>
-                  <span style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: featured.remaining <= 0 ? "var(--text-muted)" : "var(--text-body)", whiteSpace: "nowrap" }}>{featured.used} / {featured.pool} · {featured.remaining <= 0 ? "All used" : featured.remaining + " remaining"}</span>
+                  <span style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: featured.remaining <= 0 ? "var(--text-muted)" : "var(--text-body)", whiteSpace: "nowrap" }}>{featured.used} / {featured.pool} · {featured.remaining <= 0 ? T("All used") : featured.remaining + " remaining"}</span>
                 </div>
                 <div style={{ height: 5, borderRadius: 99, background: "var(--border)", overflow: "hidden" }}>
                   <div style={{ height: "100%", borderRadius: 99, width: Math.min(100, featured.pool > 0 ? Math.round((featured.used / featured.pool) * 100) : 0) + "%", background: featured.remaining <= 0 ? "var(--warning, #f59e0b)" : "var(--accent, var(--brand))" }} />
                 </div>
                 <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: 6, display: "flex", alignItems: "center", gap: 5 }}>
                   {I("star", 12)}
-                  <span>Use a credit to feature a job free. After they run out, featuring costs the pay-per-boost price.</span>
+                  <span>{T("Use a credit to feature a job free. After they run out, featuring costs the pay-per-boost price.")}</span>
                 </div>
               </div>
             )}
@@ -3386,8 +3909,8 @@
         )}
         {sub && sub.status === "pending" && (
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "12px 16px", background: "var(--warning-subtle, #fffbeb)", border: "1px solid var(--warning-border, #fcd34d)", borderRadius: "var(--radius-md)", color: "var(--warning-fg, #92400e)", fontWeight: 600, fontSize: "var(--text-sm)", marginBottom: 20 }}>
-            <span style={{ display: "flex", alignItems: "center", gap: 8 }}>{I("clock", 16)} Awaiting payment confirmation from admin. Your plan will activate automatically once confirmed.</span>
-            <Button variant="secondary" size="sm" onClick={load}>Check now</Button>
+            <span style={{ display: "flex", alignItems: "center", gap: 8 }}>{I("clock", 16)} {T("Awaiting payment confirmation from admin. Your plan will activate automatically once confirmed.")}</span>
+            <Button variant="secondary" size="sm" onClick={load}>{T("Check now")}</Button>
           </div>
         )}
         {sub && sub.status === "expired" && (
@@ -3404,7 +3927,7 @@
             const isFree = planIsFree(p);
             const isTrialPlan = planIsTrial(p);
             // A $0 plan (free OR trial) is one-time per company — gate it client-side so the card
-            // shows "Already used" (disabled) instead of letting the employer click through to a 422.
+            // shows T("Already used") (disabled) instead of letting the employer click through to a 422.
             const zeroCostUsed = (isFree || isTrialPlan) && usedPlanIds.indexOf(p.id) !== -1;
             const dark = isCustom;
             const textStrong = dark ? "var(--text-on-dark, #fff)" : "var(--text-strong)";
@@ -3418,20 +3941,20 @@
               }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                   <h3 style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: textStrong }}>{p.name}</h3>
-                  {popular && <Badge tone="accent">Popular</Badge>}
-                  {current && <Badge tone="brand">Current</Badge>}
+                  {popular && <Badge tone="accent">{T("Popular")}</Badge>}
+                  {current && <Badge tone="brand">{T("Current")}</Badge>}
                   {!isCustom && planHasDiscount(p) && <span style={{ fontSize: "var(--text-xs)", fontWeight: 700, color: "#fff", background: "#16a34a", padding: "2px 9px", borderRadius: 999 }}>Save {p.discount_percent}%</span>}
                 </div>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginTop: 12, flexWrap: "wrap" }}>
                   {isCustom ? (
-                    <span style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-4xl)", fontWeight: 800, color: textStrong }}>Custom</span>
+                    <span style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-4xl)", fontWeight: 800, color: textStrong }}>{T("Custom")}</span>
                   ) : isTrialPlan ? (
                     <React.Fragment>
                       <span style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-4xl)", fontWeight: 800, color: textStrong }}>{p.trial_days || 7}</span>
                       <span style={{ color: textMuted, fontSize: "var(--text-sm)" }}>days free</span>
                     </React.Fragment>
                   ) : isFree ? (
-                    <span style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-4xl)", fontWeight: 800, color: textStrong }}>Free</span>
+                    <span style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-4xl)", fontWeight: 800, color: textStrong }}>{T("Free")}</span>
                   ) : (
                     <React.Fragment>
                       <span style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-4xl)", fontWeight: 800, color: textStrong, whiteSpace: "nowrap" }}>${planHasDiscount(p) ? planCharge(p) : p.price}</span>
@@ -3459,11 +3982,11 @@
                   style={dark && !current && !zeroCostUsed ? { background: "#fff", color: "var(--stone-900, #1a1a1a)", border: "none" } : undefined}
                   onClick={() => {
                     if (current || zeroCostUsed) return;
-                    if (isCustom) { window.location.href = "mailto:sales@krama.com?subject=" + encodeURIComponent("Enterprise plan inquiry"); return; }
+                    if (isCustom) { window.location.href = "mailto:sales@krama.com?subject=" + encodeURIComponent(T("Enterprise plan inquiry")); return; }
                     setCheckout(p);
                   }}
                 >
-                  {current ? "Current plan" : zeroCostUsed ? "Already used" : isCustom ? "Contact sales" : isTrialPlan ? ("Start " + (p.trial_days || 7) + "-Day Trial") : isFree ? "Get started" : "Upgrade"}
+                  {current ? T("Current plan") : zeroCostUsed ? T("Already used") : isCustom ? T("Contact sales") : isTrialPlan ? ("Start " + (p.trial_days || 7) + "-Day Trial") : isFree ? T("Get started") : T("Upgrade")}
                 </Button>
               </Card>
             );
@@ -3478,11 +4001,11 @@
         )}
         </div>
         <div className="krm-table-wrap"><Card padding={0}>
-          <div style={{ padding: "16px 22px", borderBottom: "1px solid var(--border)", fontWeight: 700, color: "var(--text-strong)" }}>Billing history</div>
+          <div style={{ padding: "16px 22px", borderBottom: "1px solid var(--border)", fontWeight: 700, color: "var(--text-strong)" }}>{T("Billing history")}</div>
           <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 0.9fr 1fr 1fr 0.8fr 44px", padding: "10px 22px", fontSize: "var(--text-xs)", fontWeight: 700, letterSpacing: ".04em", textTransform: "uppercase", color: "var(--text-faint)", borderBottom: "1px solid var(--border-subtle)" }}>
-            <span>Invoice</span><span>Date</span><span>Amount</span><span>Type</span><span>Method</span><span>Status</span><span></span>
+            <span>{T("Invoice")}</span><span>{T("Date")}</span><span>{T("Amount")}</span><span>{T("Type")}</span><span>{T("Method")}</span><span>{T("Status")}</span><span></span>
           </div>
-          {invSlice.length === 0 && <div style={{ padding: "24px 22px", color: "var(--text-muted)", fontSize: "var(--text-sm)", textAlign: "center" }}>No payments yet.</div>}
+          {invSlice.length === 0 && <div style={{ padding: "24px 22px", color: "var(--text-muted)", fontSize: "var(--text-sm)", textAlign: "center" }}>{T("No payments yet.")}</div>}
           {invSlice.map((inv, i) => (
             <div key={inv.id} style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 0.9fr 1fr 1fr 0.8fr 44px", alignItems: "center", padding: "13px 22px", borderBottom: i < invSlice.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>
               <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-sm)", color: "var(--text-body)" }}>{inv.invoice_no || ("#" + inv.id)}</span>
@@ -3491,19 +4014,19 @@
                 ${Number(inv.amount).toLocaleString()}
                 {inv.is_tax_invoice && Number(inv.vat_amount) > 0 && <span style={{ display: "block", fontSize: "var(--text-xs)", fontWeight: 500, color: "var(--text-faint)" }}>incl. ${Number(inv.vat_amount).toLocaleString()} VAT</span>}
               </span>
-              <span>{inv.is_tax_invoice ? <Badge tone="brand">Tax invoice</Badge> : <Badge tone="neutral">Invoice</Badge>}</span>
+              <span>{inv.is_tax_invoice ? <Badge tone="brand">{T("Tax invoice")}</Badge> : <Badge tone="neutral">{T("Invoice")}</Badge>}</span>
               <span style={{ fontSize: "var(--text-sm)", color: "var(--text-body)", textTransform: "uppercase" }}>{inv.method}</span>
               <span><Badge tone={inv.status === "paid" ? "success" : inv.status === "refunded" ? "neutral" : "warning"}>{inv.status}</Badge></span>
-              <span>{inv.status === "paid" && <button title="Download invoice" onClick={() => emp.downloadInvoice(inv.id)} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 32, height: 32, borderRadius: "var(--radius-md)", border: "1px solid var(--border)", background: "var(--surface-card)", color: "var(--text-muted)", cursor: "pointer" }}>{I("download", 15)}</button>}</span>
+              <span>{inv.status === "paid" && <button title={T("Download invoice")} onClick={() => emp.downloadInvoice(inv.id)} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 32, height: 32, borderRadius: "var(--radius-md)", border: "1px solid var(--border)", background: "var(--surface-card)", color: "var(--text-muted)", cursor: "pointer" }}>{I("download", 15)}</button>}</span>
             </div>
           ))}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 22px", borderTop: "1px solid var(--border-subtle)" }}>
             <span style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>
-              {payMeta.total > 0 ? ("Showing " + ((invSafe - 1) * INV_PER + 1) + "–" + ((invSafe - 1) * INV_PER + invSlice.length) + " of " + payMeta.total) : "No payments yet."}
+              {payMeta.total > 0 ? ("Showing " + ((invSafe - 1) * INV_PER + 1) + "–" + ((invSafe - 1) * INV_PER + invSlice.length) + " of " + payMeta.total) : T("No payments yet.")}
             </span>
             <div style={{ display: "flex", gap: 8 }}>
-              <Button variant="secondary" size="sm" disabled={invSafe <= 1 || payLoading} onClick={() => { var p = invSafe - 1; setInvPage(p); fetchPayHistory(p); }}>Previous</Button>
-              <Button variant="secondary" size="sm" disabled={invSafe >= invPages || payLoading} onClick={() => { var p = invSafe + 1; setInvPage(p); fetchPayHistory(p); }}>Next</Button>
+              <Button variant="secondary" size="sm" disabled={invSafe <= 1 || payLoading} onClick={() => { var p = invSafe - 1; setInvPage(p); fetchPayHistory(p); }}>{T("Previous")}</Button>
+              <Button variant="secondary" size="sm" disabled={invSafe >= invPages || payLoading} onClick={() => { var p = invSafe + 1; setInvPage(p); fetchPayHistory(p); }}>{T("Next")}</Button>
             </div>
           </div>
         </Card></div>
@@ -4223,6 +4746,14 @@
 
   function App() {
     const [page, setPage] = React.useState("dashboard");
+    // Language lives in App state purely so changing it re-renders the tree — T() reads the
+    // global, so without a state change the new strings would not appear until a reload.
+    // Seeded through KIT_LANGS so a language this kit has no dictionary for shows as English.
+    const [lang, setLang] = React.useState(KIT_LANGS[window.KRAMA_LANG] ? window.KRAMA_LANG : "en");
+    const selectLang = function (code) {
+      if (window.KRAMA_SET_LANG) window.KRAMA_SET_LANG(code);
+      setLang(window.KRAMA_LANG);
+    };
     const [authUser, setAuthUser] = React.useState(null);
     const [authLoading, setAuthLoading] = React.useState(true);
     const [company, setCompany] = React.useState(null);
@@ -4347,11 +4878,11 @@
     // Alert badge on Plan & billing when a subscription is pending payment/approval.
     const badges = { jobs: companyPending, applicants: totalApps, messages: unreadMsg, support: supportUnread, billing: (sub && sub.status === "pending") ? 1 : 0 };
 
-    const titles = { dashboard: "Dashboard", jobs: "Job postings", applicants: "Applicant tracking", cvmatch: "CV Match", talent: "Find candidates", messages: "Messages", team: "Team", company: "Company profile", billing: "Plan & billing", support: "Help & support", profile: "My Profile" };
+    const titles = { dashboard: T("Dashboard"), jobs: T("Job postings"), applicants: T("Applicant tracking"), cvmatch: T("CV Match"), talent: T("Find candidates"), messages: T("Messages"), team: T("Team"), company: T("Company profile"), billing: T("Plan & billing"), support: T("Help & support"), profile: T("My Profile") };
     return (
       <div style={{ display: "flex", minHeight: "100vh", background: "var(--surface-page)" }}>
         {sidebarOpen && <div className="krm-sidebar-backdrop open" onClick={() => setSidebarOpen(false)} />}
-        <Sidebar page={page} onNav={setPage} company={company} badges={badges} open={sidebarOpen} onClose={() => setSidebarOpen(false)} user={authUser} />
+        <Sidebar page={page} onNav={setPage} company={company} badges={badges} open={sidebarOpen} onClose={() => setSidebarOpen(false)} user={authUser} lang={lang} onLang={selectLang} />
         <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
           <Topbar title={titles[page] || page} user={authUser} onLogout={handleLogout} onPost={handlePost} onNav={setPage} onMenu={() => setSidebarOpen(o => !o)} />
           {page === "dashboard" && <Overview jobs={jobs} loading={jobsLoading} onNav={setPage} />}
