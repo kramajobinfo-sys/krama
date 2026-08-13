@@ -13,10 +13,11 @@ function App() {
   const [user, setUser] = React.useState(null);
   const [ready, setReady] = React.useState(false);
   const [lang, setLang] = React.useState(window.KRAMA_LANG || "en");
-  const toggleLang = () => {
-    var next = (window.KRAMA_LANG === "km") ? "en" : "km";
-    if (window.KRAMA_SET_LANG) window.KRAMA_SET_LANG(next);
-    setLang(next);
+  // Selects a specific language rather than flipping between two — there are three now
+  // (en / km / zh), and the list is driven by KRAMA_LANGS in i18n.js.
+  const selectLang = (code) => {
+    if (window.KRAMA_SET_LANG) window.KRAMA_SET_LANG(code);
+    setLang(window.KRAMA_LANG);
   };
 
   React.useEffect(() => {
@@ -175,7 +176,7 @@ function App() {
     // the split-screen Shell keeps its own chrome — desktop stays untouched).
     return (
       <div className="krm-auth-page">
-        <KramaHeader page="" onNav={nav} user={user} onLogout={handleLogout} lang={lang} onToggleLang={toggleLang} />
+        <KramaHeader page="" onNav={nav} user={user} onLogout={handleLogout} lang={lang} onSelectLang={selectLang} />
         {page === "login"    && <KramaLogin onNav={nav} onLogin={handleLogin} />}
         {page === "register" && <KramaRegister onNav={nav} onLogin={handleLogin} />}
         {page === "forgot"   && <KramaForgotPassword onNav={nav} />}
@@ -190,7 +191,7 @@ function App() {
   if (page === "candidateProfile") {
     return (
       <div>
-        <KramaHeader page="" onNav={nav} user={user} onLogout={handleLogout} lang={lang} onToggleLang={toggleLang} />
+        <KramaHeader page="" onNav={nav} user={user} onLogout={handleLogout} lang={lang} onSelectLang={selectLang} />
         {KramaCandidateProfile
           ? <KramaCandidateProfile user={user} onNav={nav} onUserUpdate={(u) => setUser(u)} />
           : <div style={{ padding: 40, textAlign: "center", color: "var(--text-muted)" }}>Loading…</div>}
@@ -201,7 +202,7 @@ function App() {
 
   return (
     <div>
-      <KramaHeader page={headerPage} onNav={nav} user={user} onLogout={handleLogout} lang={lang} onToggleLang={toggleLang} />
+      <KramaHeader page={headerPage} onNav={nav} user={user} onLogout={handleLogout} lang={lang} onSelectLang={selectLang} />
       {page === "home" && <KramaHome onNav={nav} onOpenJob={openJob} saved={saved} toggleSave={toggleSave} />}
       {page === "jobs" && <KramaJobs onNav={nav} onOpenJob={openJob} saved={saved} toggleSave={toggleSave} initialCategory={jobCategory} initialCompany={jobCompany} initialKeyword={jobKeyword} initialLocation={jobLocation} />}
       {page === "companies" && <KramaCompanies onNav={nav} initialCompany={jobCompany} />}

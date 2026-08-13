@@ -97,15 +97,30 @@
     );
   }
 
-  function Header({ page, onNav, user, onLogout, lang, onToggleLang }) {
+  function Header({ page, onNav, user, onLogout, lang, onSelectLang }) {
     const [menuOpen, setMenuOpen] = React.useState(false);
     const t = window.KRAMA_T || function (s) { return s; };
-    const LangToggle = () => (
-      <button onClick={onToggleLang} title="Language / ភាសា" style={{ display: "inline-flex", alignItems: "center", gap: 2, border: "1px solid var(--border)", borderRadius: "var(--radius-pill)", background: "transparent", cursor: "pointer", padding: 3, flexShrink: 0 }}>
-        <span style={{ padding: "2px 8px", borderRadius: "var(--radius-pill)", fontSize: "var(--text-xs)", fontWeight: 700, background: lang !== "km" ? "var(--brand)" : "transparent", color: lang !== "km" ? "#fff" : "var(--text-muted)" }}>EN</span>
-        <span style={{ padding: "2px 8px", borderRadius: "var(--radius-pill)", fontSize: "var(--text-xs)", fontWeight: 700, background: lang === "km" ? "var(--brand)" : "transparent", color: lang === "km" ? "#fff" : "var(--text-muted)", fontFamily: "var(--font-khmer, var(--font-sans))" }}>ខ្មែរ</span>
-      </button>
-    );
+    // Segmented language picker, rendered from the registry in i18n.js rather than hardcoded —
+    // adding a language there adds a segment here with no change to this component. Each
+    // segment is its own button so it's directly selectable (a 3-state cycle-toggle would make
+    // reaching the third language a guessing game) and keyboard-reachable.
+    const LangToggle = () => {
+      const langs = window.KRAMA_LANGS || [{ code: "en", label: "EN" }];
+      const active = langs.some(function (l) { return l.code === lang; }) ? lang : "en";
+      return (
+        <div role="group" aria-label="Language" title="Language / ភាសា / 语言" style={{ display: "inline-flex", alignItems: "center", gap: 2, border: "1px solid var(--border)", borderRadius: "var(--radius-pill)", background: "transparent", padding: 3, flexShrink: 0 }}>
+          {langs.map(function (l) {
+            const on = l.code === active;
+            return (
+              <button key={l.code} onClick={function () { onSelectLang(l.code); }} lang={l.html} aria-pressed={on}
+                style={{ padding: "2px 8px", border: "none", borderRadius: "var(--radius-pill)", cursor: "pointer", fontSize: "var(--text-xs)", fontWeight: 700, background: on ? "var(--brand)" : "transparent", color: on ? "#fff" : "var(--text-muted)", fontFamily: l.code === "km" ? "var(--font-khmer, var(--font-sans))" : "var(--font-sans)" }}>
+                {l.label}
+              </button>
+            );
+          })}
+        </div>
+      );
+    };
     const links = [
       { id: "home", label: "Home" },
       { id: "jobs", label: "Jobs" },

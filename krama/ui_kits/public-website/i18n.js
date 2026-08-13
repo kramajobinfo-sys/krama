@@ -318,25 +318,361 @@
     "Scan with any KHQR app — ABA, Wing, ACLEDA, Chip Mong, and more. This confirms automatically once paid.": "ស្កេនដោយកម្មវិធី KHQR ណាមួយ — ABA, Wing, ACLEDA, Chip Mong និងច្រើនទៀត។ វានឹងបញ្ជាក់ដោយស្វ័យប្រវត្តិនៅពេលទូទាត់រួច។"
   };
 
-  window.KRAMA_I18N = { km: KM };
+  // ── Simplified Chinese (zh-Hans) ───────────────────────────────────────────────
+  // Cambodia's Chinese-speaking audience is predominantly Simplified-reading (mainland
+  // business community, local Chinese schools, Singapore/Malaysia). Traditional (zh-Hant)
+  // can be added later as its own dictionary without touching any call site.
+  var ZH = {
+    // ── Header / nav ──────────────────────────────────────────────
+    "Find jobs": "找工作",
+    "Jobs": "职位",
+    "Job Search": "职位搜索",
+    "Companies": "公司",
+    "Employers": "雇主",
+    "Community": "社区",
+    "New discussion": "发起讨论",
+    "Start a discussion": "发起讨论",
+    "Search discussions…": "搜索讨论…",
+    "Ask questions, share knowledge, and connect with others on Krama.": "在 Krama 上提问、分享知识，并与他人交流。",
+    "Follow": "关注",
+    "Following": "已关注",
+    "Post reply": "发表回复",
+    "Sign in": "登录",
+    "Log in": "登录",
+    "Post a job": "发布职位",
+    "Register": "注册",
+    "Sign up": "注册",
+    "Home": "首页",
+    "My profile": "我的档案",
+    "Dashboard": "控制台",
+    "Log out": "退出登录",
+    // ── Common actions ────────────────────────────────────────────
+    "Search": "搜索",
+    "Apply now": "立即申请",
+    "Apply": "申请",
+    "Save job": "收藏职位",
+    "Saved": "已收藏",
+    "View": "查看",
+    "View details": "查看详情",
+    "View all": "查看全部",
+    "See all jobs": "查看所有职位",
+    "Load more": "加载更多",
+    "Clear": "清除",
+    "Clear all": "全部清除",
+    "Cancel": "取消",
+    "Learn more": "了解更多",
+    "Get started": "立即开始",
+    // ── Home / hero ───────────────────────────────────────────────
+    "Find work that fits your life.": "找到适合你生活的工作。",
+    "Search jobs, companies, or keywords": "搜索职位、公司或关键词",
+    "Job title, keyword, or company": "职位名称、关键词或公司",
+    "All categories": "所有类别",
+    "All locations": "所有地区",
+    "Location": "地点",
+    "Featured jobs": "精选职位",
+    "Latest jobs": "最新职位",
+    "Browse by category": "按类别浏览",
+    "Browse by field": "按领域浏览",
+    "Explore job categories": "探索职位类别",
+    "Hand-picked": "精心挑选",
+    "Trusted by": "合作伙伴",
+    "Featured companies": "精选公司",
+    "Trusted by Cambodia's leading employers": "获柬埔寨知名雇主信赖",
+    "Job title or keyword": "职位名称或关键词",
+    "City or province": "城市或省份",
+    "Popular:": "热门：",
+    "Top employers": "顶尖雇主",
+    "Popular categories": "热门类别",
+    "Hiring? Reach top talent fast": "正在招聘？快速触达优秀人才",
+    // ── Jobs search / filters ─────────────────────────────────────
+    "Filters": "筛选",
+    "Category": "类别",
+    "Job type": "工作类型",
+    "Work mode": "工作方式",
+    "Experience level": "经验要求",
+    "Salary": "薪资",
+    "Sort by": "排序方式",
+    "Most recent": "最新发布",
+    "Relevance": "相关度",
+    "Remote": "远程",
+    "Full-time": "全职",
+    "Part-time": "兼职",
+    "Contract": "合同工",
+    "Internship": "实习",
+    "jobs found": "个职位",
+    "job found": "个职位",
+    "No jobs found": "未找到职位",
+    "Try adjusting your filters": "请尝试调整筛选条件",
+    // ── Job detail ────────────────────────────────────────────────
+    "Job description": "职位描述",
+    "Requirements": "任职要求",
+    "Benefits": "福利待遇",
+    "About the company": "公司简介",
+    "Similar jobs": "相似职位",
+    "Posted": "发布于",
+    "Deadline": "截止日期",
+    "Share": "分享",
+    // ── Auth ──────────────────────────────────────────────────────
+    "Welcome back": "欢迎回来",
+    "Sign in to track applications and saved jobs.": "登录以查看申请记录和收藏的职位。",
+    "Email": "电子邮箱",
+    "Password": "密码",
+    "New password": "新密码",
+    "Confirm password": "确认密码",
+    "Forgot password?": "忘记密码？",
+    "Continue with Google": "使用 Google 继续",
+    "Continue with Facebook": "使用 Facebook 继续",
+    "OR": "或",
+    "Don't have an account?": "还没有账户？",
+    "Create one": "创建账户",
+    "Already have an account?": "已有账户？",
+    "Create your account": "创建您的账户",
+    "Full name": "姓名",
+    "Contact name": "联系人姓名",
+    "I'm a candidate": "我是求职者",
+    "I'm an employer": "我是雇主",
+    "Send reset link": "发送重置链接",
+    "Reset password": "重置密码",
+    "Back to sign in": "返回登录",
+    // ── Footer ────────────────────────────────────────────────────
+    "About": "关于",
+    "About us": "关于我们",
+    "Contact": "联系",
+    "Contact us": "联系我们",
+    "Terms": "条款",
+    "Privacy": "隐私",
+    "Pricing": "价格",
+    "For candidates": "求职者专区",
+    "Company": "公司",
+    "Resources": "资源",
+    "Build résumé": "创建简历",
+    "Saved jobs": "收藏的职位",
+    "Career advice": "职业建议",
+    "Connecting talent and verified employers across Cambodia and Southeast Asia.": "连接柬埔寨及东南亚的人才与认证雇主。",
+    "Featured": "精选",
+    "Create job alert": "创建职位提醒",
+    "Done": "完成",
+    "Keyword": "关键词",
+    "Any category": "不限类别",
+    "Any location": "不限地区",
+    "Any": "不限",
+    "Clear filters": "清除筛选",
+    "Sort": "排序",
+    "View jobs": "查看职位",
+    "Reset": "重置",
+    "Previous": "上一页",
+    "Next": "下一页",
+    "e.g. Software Engineer": "例如：软件工程师",
+    "Search companies": "搜索公司",
+    "Applied": "已申请",
+    "View company profile": "查看公司主页",
+    "Experience": "工作经验",
+    "Sign in to apply": "登录后申请",
+    "Create account": "创建账户",
+    "Keep browsing": "继续浏览",
+    "Apply for this role": "申请该职位",
+    "Submit application": "提交申请",
+    "Tell the employer why you're a great fit…": "告诉雇主你为何适合这个职位…",
+    "Pricing is being updated right now.": "价格正在更新中。",
+    "Most popular": "最受欢迎",
+    "Free": "免费",
+    "How it works": "使用流程",
+    "From posting to offer in three steps.": "三步完成从发布职位到发出录用。",
+    "Everything you need": "一站式招聘所需",
+    "Plan grow with yours": "方案随业务成长",
+    "Start free, upgrade when you need more reach.": "免费开始，需要更大曝光时再升级。",
+    "Ready to find your next hire?": "准备好招到下一位人才了吗？",
+    "See pricing": "查看价格",
+    "Send message": "发送消息",
+    "Browse jobs": "浏览职位",
+    "No resume yet.": "尚未上传简历。",
+    "Your name": "您的姓名",
+    "Subject": "主题",
+    "Message": "留言",
+    "Phone": "电话",
+    "Bio / About me": "个人简介",
+    "How can we help?": "我们能为您做些什么？",
+    "Tell us a little more…": "请再多告诉我们一些…",
+    "Your full name": "您的姓名",
+    "Tell employers a bit about yourself…": "向雇主简单介绍一下自己…",
+    "Company details": "公司信息",
+    "Follow": "关注",
+    "View job": "查看职位",
+    "Industry": "行业",
+    "Address": "地址",
+    "Company size": "公司规模",
+    "Website": "官方网站",
+    "Summarise your experience in a short phrase…": "用一句话概括你的经验…",
+    "Your next role is waiting.": "你的下一份工作正在等你。",
+    "It's free. Apply to jobs in two clicks.": "完全免费。两次点击即可投递。",
+    "I agree to the Terms and Privacy Policy": "我同意服务条款和隐私政策",
+    "Forgot your password?": "忘记密码？",
+    "Enter your email and we'll send a reset link.": "输入您的邮箱，我们将发送重置链接。",
+    "Check your email": "请查收邮件",
+    "Try again": "重试",
+    "Set a new password": "设置新密码",
+    "Choose a strong password you haven't used before.": "请设置一个此前未使用过的高强度密码。",
+    "Password reset": "密码已重置",
+    "Min. 8 characters": "至少 8 个字符",
+    "All rights reserved.": "版权所有。",
+    "Show filters": "显示筛选",
+    "Hide filters": "隐藏筛选",
+    "job": "个职位",
+    "jobs": "个职位",
+    "in": "在",
+    "Save": "收藏",
+    "View & apply": "查看并申请",
+    "No jobs match your filters": "没有符合筛选条件的职位",
+    "Try removing a filter or widening your search.": "请尝试移除某个筛选条件或扩大搜索范围。",
+    "Find your next opportunity": "发现你的下一个机会",
+    "Browse thousands of verified roles across Cambodia -- filter by category, location, and work mode.": "浏览柬埔寨数千个经过认证的职位——可按类别、地点和工作方式筛选。",
+    "Verified companies hiring now": "正在招聘的认证公司",
+    "Explore {count} approved employers across Cambodia.": "探索柬埔寨 {count} 家已审核雇主。",
+    "Job alerts": "职位提醒",
+    "Get an email the moment a matching role is posted.": "一有匹配职位发布，立即邮件通知你。",
+    "Create alert": "创建提醒",
+    "Are you hiring?": "您在招聘吗？",
+    "List your company and reach 40,000+ verified candidates.": "发布公司信息，触达 40,000+ 认证求职者。",
+    "Boost your search": "提升求职效果",
+    "Complete your profile to get AI-matched roles and apply in one click.": "完善档案，获取 AI 智能匹配职位，一键投递。",
+    "Build your profile": "完善个人档案",
+    "Hiring? Reach top talent": "正在招聘？触达优秀人才",
+    "Post a job and get in front of 40,000+ candidates.": "发布职位，让 40,000+ 求职者看到你。",
+    "Get your company verified": "认证您的公司",
+    "Verified employers rank higher and earn candidate trust.": "认证雇主排名更靠前，更获求职者信赖。",
+    "List your company": "发布公司信息",
+    "Showcase your company": "展示您的公司",
+    "Add photos, awards, and social links to your profile to stand out to candidates.": "添加照片、奖项和社交链接，让求职者眼前一亮。",
+    "Complete your profile": "完善档案",
+    "Career resources": "职业资源",
+    "Tips, guides, and tools to help you land your next role.": "助你拿下下一份工作的技巧、指南与工具。",
+    "Explore": "探索",
+    "Company alerts": "公司动态提醒",
+    "Follow employers and get notified when they post new roles.": "关注雇主，有新职位发布时即时通知。",
+    "Follow companies": "关注公司",
+    "Browse by industry": "按行业浏览",
+    "Find employers in banking, telecom, retail and more.": "查找银行、电信、零售等行业的雇主。",
+    "Explore industries": "浏览行业",
+    "Chat with us": "在线咨询",
+    "Find work that fits your life": "找到适合你生活的工作",
+    "Search thousands of roles across Cambodia -- from banking to engineering -- and apply in two clicks.": "搜索柬埔寨数千个职位——从银行到工程——两次点击即可投递。",
+    "12,480 open jobs from verified employers": "认证雇主发布的 12,480 个在招职位",
+    "Post your job and get in front of 40,000+ verified candidates.": "发布职位，触达 40,000+ 认证求职者。",
+    "Trusted by 500+ companies": "500+ 家公司的共同选择",
+    "Get career-matched roles instantly": "即刻获取智能匹配职位",
+    "Complete your profile and let AI find the right jobs for you.": "完善档案，让 AI 为你找到合适的工作。",
+    "Smart job matching": "智能职位匹配",
+    "Build profile": "创建档案",
+    "View all jobs": "查看所有职位",
+    "All companies": "所有公司",
+    "Hiring? Reach 40,000+ verified candidates.": "正在招聘？触达 40,000+ 认证求职者。",
+    "Post your first job free and reach thousands of candidates.": "免费发布首个职位，触达数千名求职者。",
+    "Hire the right people, faster.": "更快招到合适的人。",
+    "Post jobs, review applications, and manage your entire hiring pipeline — all in one place built for Cambodia and Southeast Asia.": "发布职位、筛选简历、管理整个招聘流程——全部集中在这个为柬埔寨及东南亚打造的平台上。",
+    "Plans that grow with your hiring.": "随招聘需求成长的方案。",
+    "Start free, upgrade when you need more reach. All prices in USD.": "免费开始，需要更大曝光时再升级。所有价格均以美元计。",
+    "Work that fits your life.": "适合你生活的工作。",
+    "Krama connects ambitious people with verified employers across Cambodia and Southeast Asia.": "Krama 连接有抱负的人才与柬埔寨及东南亚的认证雇主。",
+    "We'd love to hear from you.": "期待您的来信。",
+    "Questions, partnerships, or support -- reach the Krama team.": "咨询、合作或技术支持——请联系 Krama 团队。",
+    "Legal": "法律条款",
+    "Terms of Service": "服务条款",
+    "The rules for using Krama. Last updated 18 June 2026.": "使用 Krama 的相关规定。最后更新于 2026 年 6 月 18 日。",
+    "Privacy Policy": "隐私政策",
+    "How we handle your data. Last updated 18 June 2026.": "我们如何处理您的数据。最后更新于 2026 年 6 月 18 日。",
+    "Custom": "定制",
+    "days free": "天免费",
+    "active job posts": "个在招职位",
+    "Contact sales": "联系销售",
+    "Start": "开始",
+    "-Day Trial": "天试用",
+    "Choose": "选择",
+    "Prices exclude applicable taxes. Pay by KHQR, ABA, Wing, or card. Cancel anytime.": "价格不含相关税费。支持 KHQR、ABA、Wing 或银行卡支付，可随时取消。",
+    "1. Post your job": "1. 发布职位",
+    "Create a listing in minutes. Set salary range, required skills, and your company story. Our team reviews every job before it goes live.": "几分钟即可创建职位。设置薪资范围、技能要求和公司介绍。每个职位上线前都会经我们团队审核。",
+    "2. Review applicants": "2. 筛选候选人",
+    "Applications land in a visual pipeline. Move candidates through stages — shortlisted, interview, offered — with one click.": "申请会进入可视化流程看板。一键将候选人在各阶段间流转——入围、面试、发出录用。",
+    "3. Make the hire": "3. 完成录用",
+    "Download CVs, leave notes, and update candidates directly. No juggling spreadsheets or email threads.": "下载简历、添加备注并直接更新候选人状态。无需再在表格和邮件之间来回切换。",
+    "Post jobs in minutes": "几分钟发布职位",
+    "Create a listing with salary range, requirements, and your company brand. Every job is reviewed by our team before it goes live — candidates trust what they see.": "创建包含薪资范围、任职要求和公司品牌的职位。每个职位上线前都会经我们团队审核——让求职者信任所见内容。",
+    "Pipeline board": "招聘流程看板",
+    "See every applicant at a glance. Drag candidates through stages — Applied, Reviewed, Shortlisted, Interview, Offered — and your whole team stays in sync.": "一览所有申请者。拖动候选人在各阶段间流转——已申请、已查看、已入围、面试中、已发录用——团队进度实时同步。",
+    "CV access": "简历下载",
+    "Download uploaded CVs directly through Krama. Candidates control their visibility so you always work with people who genuinely want to be found.": "直接在 Krama 下载上传的简历。求职者自行控制可见性，因此你接触到的都是真正希望被发现的人。",
+    "Team management": "团队管理",
+    "Invite recruiters under your company account. Each team member posts and manages their own jobs; you see the full picture.": "在公司账户下邀请招聘人员。每位成员发布并管理各自的职位，你可掌握全局。",
+    "Analytics dashboard": "数据分析面板",
+    "Track how many views, applications, and conversion rates your jobs get — so you know which roles need a boost.": "追踪职位的浏览量、申请量和转化率——清楚知道哪些职位需要加推。",
+    "Verified company badge": "认证公司标识",
+    "Complete a quick verification and earn the Krama Verified badge. Candidates apply more confidently to verified listings.": "完成快速认证，即可获得 Krama 认证标识。求职者更愿意投递认证职位。",
+    "Verified companies": "认证公司",
+    "Active candidates": "活跃求职者",
+    "Live jobs posted": "在线职位",
+    "Open jobs": "在招职位",
+    "Candidates": "求职者",
+    "Office": "办公地址",
+    "Hours": "办公时间",
+    "Create a free account and post your first job today.": "立即创建免费账户，发布您的第一个职位。",
+    "Post a job — it's free": "发布职位——完全免费",
+    "We started Krama with one belief: finding work -- and hiring -- should be hopeful and human. Every company on Krama is verified, every job is reviewed before it goes live, and every candidate is treated as more than a CV.": "我们创立 Krama 源于一个信念：求职与招聘都应充满希望且有温度。Krama 上的每家公司都经过认证，每个职位上线前都经过审核，每位求职者都不只是一份简历。",
+    "We're a Cambodia-first team building for the whole region -- with Khmer and English as first-class peers, and payment options that work locally, from KHQR to ABA and Wing.": "我们是一支扎根柬埔寨、服务整个区域的团队——高棉语与英语同等重要，并提供 KHQR、ABA、Wing 等本地支付方式。",
+    "Email or phone": "邮箱或手机号",
+    "Phone number": "手机号码",
+    "Send code": "发送验证码",
+    "Resend": "重新发送",
+    "Verification code": "验证码",
+    "Enter your phone number.": "请输入您的手机号码。",
+    "We sent a 6-digit code to your phone.": "我们已向您的手机发送 6 位验证码。",
+    "Request the code sent to your phone first.": "请先获取发送到您手机的验证码。",
+    // ── Checkout / KHQR ───────────────────────────────────────────
+    "Scan with any KHQR app — ABA, Wing, ACLEDA & more": "使用任意 KHQR 应用扫码——ABA、Wing、ACLEDA 等",
+    "Scan with any KHQR app — ABA, Wing, ACLEDA, Chip Mong, and more. This confirms automatically once paid.": "使用任意 KHQR 应用扫码——ABA、Wing、ACLEDA、Chip Mong 等。支付完成后将自动确认。"
+  };
+
+  // Registered translation dictionaries. English is the SOURCE language, so it has no
+  // dictionary — a missing key anywhere just falls through to the English it was written in.
+  // To add a language: add its dictionary here and an entry to KRAMA_LANGS below. Nothing
+  // else in the app needs to know how many languages exist.
+  window.KRAMA_I18N = { km: KM, zh: ZH };
+
+  // Display order + labels for the language pickers. `html` is the BCP-47 tag written to
+  // <html lang>, which drives font fallback, hyphenation and screen-reader pronunciation —
+  // Simplified Chinese is zh-Hans, not a bare "zh" (that would leave the script ambiguous
+  // and lets a browser pick Traditional glyphs from a CJK font).
+  window.KRAMA_LANGS = [
+    { code: "en", label: "EN",   html: "en" },
+    { code: "km", label: "ខ្មែរ", html: "km" },
+    { code: "zh", label: "中文",  html: "zh-Hans" }
+  ];
+
+  function isSupported(l) { return l === "en" || !!window.KRAMA_I18N[l]; }
+  function htmlTag(l) {
+    for (var i = 0; i < window.KRAMA_LANGS.length; i++) {
+      if (window.KRAMA_LANGS[i].code === l) return window.KRAMA_LANGS[i].html;
+    }
+    return l;
+  }
+
   window.KRAMA_LANG = (function () {
-    try { return localStorage.getItem("krama_lang") || "en"; } catch (e) { return "en"; }
+    try {
+      var saved = localStorage.getItem("krama_lang");
+      return isSupported(saved) ? saved : "en";
+    } catch (e) { return "en"; }
   })();
 
   window.KRAMA_SET_LANG = function (l) {
-    window.KRAMA_LANG = (l === "km") ? "km" : "en";
+    window.KRAMA_LANG = isSupported(l) ? l : "en";
     try { localStorage.setItem("krama_lang", window.KRAMA_LANG); } catch (e) {}
-    try { document.documentElement.setAttribute("lang", window.KRAMA_LANG); } catch (e) {}
+    try { document.documentElement.setAttribute("lang", htmlTag(window.KRAMA_LANG)); } catch (e) {}
   };
 
-  // t("English source") → Khmer when active, else the source string.
+  // t("English source") → the active language's string, else the English source unchanged.
   window.KRAMA_T = function (s) {
-    if (window.KRAMA_LANG === "km") {
-      var km = (window.KRAMA_I18N && window.KRAMA_I18N.km) || {};
-      if (km[s] != null) return km[s];
-    }
+    var dict = window.KRAMA_I18N[window.KRAMA_LANG];
+    if (dict && dict[s] != null) return dict[s];
     return s;
   };
 
-  try { document.documentElement.setAttribute("lang", window.KRAMA_LANG); } catch (e) {}
+  try { document.documentElement.setAttribute("lang", htmlTag(window.KRAMA_LANG)); } catch (e) {}
 })();

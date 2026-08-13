@@ -13,10 +13,11 @@ function App() {
   const [user, setUser] = React.useState(null);
   const [ready, setReady] = React.useState(false);
   const [lang, setLang] = React.useState(window.KRAMA_LANG || "en");
-  const toggleLang = () => {
-    var next = window.KRAMA_LANG === "km" ? "en" : "km";
-    if (window.KRAMA_SET_LANG) window.KRAMA_SET_LANG(next);
-    setLang(next);
+  // Selects a specific language rather than flipping between two — there are three now
+  // (en / km / zh), and the list is driven by KRAMA_LANGS in i18n.js.
+  const selectLang = code => {
+    if (window.KRAMA_SET_LANG) window.KRAMA_SET_LANG(code);
+    setLang(window.KRAMA_LANG);
   };
   React.useEffect(() => {
     const api = window.KRAMA_API;
@@ -268,7 +269,7 @@ function App() {
       user: user,
       onLogout: handleLogout,
       lang: lang,
-      onToggleLang: toggleLang
+      onSelectLang: selectLang
     }), page === "login" && /*#__PURE__*/React.createElement(KramaLogin, {
       onNav: nav,
       onLogin: handleLogin
@@ -290,7 +291,7 @@ function App() {
       user: user,
       onLogout: handleLogout,
       lang: lang,
-      onToggleLang: toggleLang
+      onSelectLang: selectLang
     }), KramaCandidateProfile ? /*#__PURE__*/React.createElement(KramaCandidateProfile, {
       user: user,
       onNav: nav,
@@ -311,7 +312,7 @@ function App() {
     user: user,
     onLogout: handleLogout,
     lang: lang,
-    onToggleLang: toggleLang
+    onSelectLang: selectLang
   }), page === "home" && /*#__PURE__*/React.createElement(KramaHome, {
     onNav: nav,
     onOpenJob: openJob,

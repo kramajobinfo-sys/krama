@@ -208,46 +208,61 @@
     user,
     onLogout,
     lang,
-    onToggleLang
+    onSelectLang
   }) {
     const [menuOpen, setMenuOpen] = React.useState(false);
     const t = window.KRAMA_T || function (s) {
       return s;
     };
-    const LangToggle = () => /*#__PURE__*/React.createElement("button", {
-      onClick: onToggleLang,
-      title: "Language / \u1797\u17B6\u179F\u17B6",
-      style: {
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 2,
-        border: "1px solid var(--border)",
-        borderRadius: "var(--radius-pill)",
-        background: "transparent",
-        cursor: "pointer",
-        padding: 3,
-        flexShrink: 0
-      }
-    }, /*#__PURE__*/React.createElement("span", {
-      style: {
-        padding: "2px 8px",
-        borderRadius: "var(--radius-pill)",
-        fontSize: "var(--text-xs)",
-        fontWeight: 700,
-        background: lang !== "km" ? "var(--brand)" : "transparent",
-        color: lang !== "km" ? "#fff" : "var(--text-muted)"
-      }
-    }, "EN"), /*#__PURE__*/React.createElement("span", {
-      style: {
-        padding: "2px 8px",
-        borderRadius: "var(--radius-pill)",
-        fontSize: "var(--text-xs)",
-        fontWeight: 700,
-        background: lang === "km" ? "var(--brand)" : "transparent",
-        color: lang === "km" ? "#fff" : "var(--text-muted)",
-        fontFamily: "var(--font-khmer, var(--font-sans))"
-      }
-    }, "\u1781\u17D2\u1798\u17C2\u179A"));
+    // Segmented language picker, rendered from the registry in i18n.js rather than hardcoded —
+    // adding a language there adds a segment here with no change to this component. Each
+    // segment is its own button so it's directly selectable (a 3-state cycle-toggle would make
+    // reaching the third language a guessing game) and keyboard-reachable.
+    const LangToggle = () => {
+      const langs = window.KRAMA_LANGS || [{
+        code: "en",
+        label: "EN"
+      }];
+      const active = langs.some(function (l) {
+        return l.code === lang;
+      }) ? lang : "en";
+      return /*#__PURE__*/React.createElement("div", {
+        role: "group",
+        "aria-label": "Language",
+        title: "Language / \u1797\u17B6\u179F\u17B6 / \u8BED\u8A00",
+        style: {
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 2,
+          border: "1px solid var(--border)",
+          borderRadius: "var(--radius-pill)",
+          background: "transparent",
+          padding: 3,
+          flexShrink: 0
+        }
+      }, langs.map(function (l) {
+        const on = l.code === active;
+        return /*#__PURE__*/React.createElement("button", {
+          key: l.code,
+          onClick: function () {
+            onSelectLang(l.code);
+          },
+          lang: l.html,
+          "aria-pressed": on,
+          style: {
+            padding: "2px 8px",
+            border: "none",
+            borderRadius: "var(--radius-pill)",
+            cursor: "pointer",
+            fontSize: "var(--text-xs)",
+            fontWeight: 700,
+            background: on ? "var(--brand)" : "transparent",
+            color: on ? "#fff" : "var(--text-muted)",
+            fontFamily: l.code === "km" ? "var(--font-khmer, var(--font-sans))" : "var(--font-sans)"
+          }
+        }, l.label);
+      }));
+    };
     const links = [{
       id: "home",
       label: "Home"
@@ -14003,10 +14018,11 @@ function App() {
   const [user, setUser] = React.useState(null);
   const [ready, setReady] = React.useState(false);
   const [lang, setLang] = React.useState(window.KRAMA_LANG || "en");
-  const toggleLang = () => {
-    var next = window.KRAMA_LANG === "km" ? "en" : "km";
-    if (window.KRAMA_SET_LANG) window.KRAMA_SET_LANG(next);
-    setLang(next);
+  // Selects a specific language rather than flipping between two — there are three now
+  // (en / km / zh), and the list is driven by KRAMA_LANGS in i18n.js.
+  const selectLang = code => {
+    if (window.KRAMA_SET_LANG) window.KRAMA_SET_LANG(code);
+    setLang(window.KRAMA_LANG);
   };
   React.useEffect(() => {
     const api = window.KRAMA_API;
@@ -14258,7 +14274,7 @@ function App() {
       user: user,
       onLogout: handleLogout,
       lang: lang,
-      onToggleLang: toggleLang
+      onSelectLang: selectLang
     }), page === "login" && /*#__PURE__*/React.createElement(KramaLogin, {
       onNav: nav,
       onLogin: handleLogin
@@ -14280,7 +14296,7 @@ function App() {
       user: user,
       onLogout: handleLogout,
       lang: lang,
-      onToggleLang: toggleLang
+      onSelectLang: selectLang
     }), KramaCandidateProfile ? /*#__PURE__*/React.createElement(KramaCandidateProfile, {
       user: user,
       onNav: nav,
@@ -14301,7 +14317,7 @@ function App() {
     user: user,
     onLogout: handleLogout,
     lang: lang,
-    onToggleLang: toggleLang
+    onSelectLang: selectLang
   }), page === "home" && /*#__PURE__*/React.createElement(KramaHome, {
     onNav: nav,
     onOpenJob: openJob,

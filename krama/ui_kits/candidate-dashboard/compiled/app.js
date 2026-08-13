@@ -243,8 +243,20 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       };
     }
   } catch (e) {}
+  // Languages this dashboard actually ships a dictionary for. The shared i18n layer carries
+  // more (the public site also has zh), and a chunk of this kit's strings — "Dashboard",
+  // "Saved jobs", "Job alerts" — happen to exist in that shared public-site dictionary. So
+  // without this guard, picking a language we haven't translated here renders a HALF-
+  // translated dashboard: shared keys switch, candidate-specific keys stay English. Falling
+  // back wholesale to English is the honest result until a dictionary for that language
+  // exists. To add one: merge it below like CAND_KM and list its code here.
+  var KIT_LANGS = {
+    en: 1,
+    km: 1
+  };
   var T = function (s) {
-    return typeof window.KRAMA_T === "function" ? window.KRAMA_T(s) : s;
+    if (typeof window.KRAMA_T !== "function") return s;
+    return KIT_LANGS[window.KRAMA_LANG] ? window.KRAMA_T(s) : s;
   };
   const LucideIcon = React.memo(function ({
     name,
