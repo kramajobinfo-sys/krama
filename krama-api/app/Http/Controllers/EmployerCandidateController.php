@@ -2,12 +2,20 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\EmailTemplates;
+use App\Helpers\MailConfig;
+use App\Models\Application;
+use App\Models\CandidateInvitation;
 use App\Models\Company;
+use App\Models\Job;
+use App\Models\Notification;
 use App\Models\Resume;
 use App\Models\Role;
 use App\Models\SavedCandidate;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 
 // Employer candidate search + talent pool. Only candidates who opted into employer visibility
@@ -149,6 +157,9 @@ class EmployerCandidateController extends Controller
             'certifications' => array_values((array) ($d['certifications'] ?? [])),
             'has_cv'     => ! empty(optional($resume)->file_url),
             'saved'      => SavedCandidate::where('company_id', $companyId)->where('candidate_id', $candidate->id)->exists(),
+            'invitations' => CandidateInvitation::where('company_id', $companyId)->where('candidate_id', $candidate->id)
+                ->with('job:id,title')->get()
+                ->map(fn ($v) => ['job_id' => $v->job_id, 'job' => optional($v->job)->title, 'status' => $v->effectiveStatus()])->values(),
         ];
         // Direct contact only for fully-public profiles; 'employers'-visible candidates are
         // reached via Message / Invite-to-apply, not a raw contact dump.
@@ -186,6 +197,63 @@ class EmployerCandidateController extends Controller
         return response()->streamDownload(function () use ($disk, $resume) {
             echo $disk->get($resume->file_url);
         }, ($candidate->name ?: 'Candidate') . ($ext ? '.' . $ext : ''), ['Content-Type' => $disk->mimeType($resume->file_url)]);
+    }
+
+    // POST /employer/candidates/{id}/invite — invite a candidate to apply to a published job
+    public function invite(Request $request, $id)
+    {
+        $user = $request->user();
+        $this->requirePermission('view_applicants');
+        $companyId = $this->employerCompanyId($user);
+
+        $candidate = User::where('role_id', $this->candidateRoleId())
+            ->whereIn('cv_visibility', ['public', 'employers'])
+            ->findOrFail($id);
+
+        $data = $request->validate([
+            'job_id'  => 'required|integer',
+            'message' => 'nullable|string|max:2000',
+        ]);
+
+        // The job must be a PUBLISHED job owned by this employer's company.
+        $job = Job::where('company_id', $companyId)->where('status', 'published')->findOrFail($data['job_id']);
+
+        if (Application::where('job_id', $job->id)->where('candidate_id', $candidate->id)->exists()) {
+            return response()->json(['message' => 'This candidate has already applied to that job.'], 422);
+        }
+
+        $inv    = CandidateInvitation::firstOrNew(['job_id' => $job->id, 'candidate_id' => $candidate->id]);
+        $isNew  = ! $inv->exists;
+        $reopen = $isNew || in_array($inv->status, ['declined', 'expired'], true);
+        $inv->fill(['company_id' => $companyId, 'invited_by' => $user->id, 'message' => $data['message'] ?? null]);
+        if ($reopen) {
+            $inv->status       = 'sent';
+            $inv->expires_at   = now()->addDays(30);
+            $inv->viewed_at    = null;
+            $inv->responded_at = null;
+        }
+        $inv->save();
+
+        if ($reopen) {
+            $companyName = $job->company->name ?? 'A company';
+            Notification::record(
+                $candidate->id,
+                'invitation',
+                'Invitation to apply',
+                $companyName . ' invited you to apply for “' . $job->title . '”.'
+            );
+            try {
+                if (MailConfig::isConfigured() && method_exists(EmailTemplates::class, 'invitedToApply')) {
+                    MailConfig::applyFromDb();
+                    [$subject, $html] = EmailTemplates::invitedToApply($candidate->name, $job->title, $companyName, $data['message'] ?? null);
+                    Mail::html($html, fn ($m) => $m->to($candidate->email, $candidate->name)->subject($subject));
+                }
+            } catch (\Throwable $e) {
+                Log::warning('Invite-to-apply email failed: ' . $e->getMessage());
+            }
+        }
+
+        return response()->json(['id' => $inv->id, 'job_id' => $job->id, 'status' => $inv->effectiveStatus()], $isNew ? 201 : 200);
     }
 
     // POST /employer/candidates/{id}/save — add to the talent pool

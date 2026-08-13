@@ -149,6 +149,8 @@ Route::middleware('auth:api')->group(function () {
     Route::delete('applications/{id}',          [ApplicationController::class, 'withdraw']);
     Route::get('candidate/applications/stage-counts', [ApplicationController::class, 'myApplicationStageCounts']);
     Route::get('candidate/applications',        [ApplicationController::class, 'myApplications']);
+    Route::get('candidate/invitations',         [\App\Http\Controllers\CandidateInvitationController::class, 'index']);
+    Route::post('candidate/invitations/{id}/decline', [\App\Http\Controllers\CandidateInvitationController::class, 'decline'])->where('id', '[0-9]+');
     Route::post('jobs/{id}/save',               [ApplicationController::class, 'save']);
     Route::delete('jobs/{id}/save',             [ApplicationController::class, 'unsave']);
     Route::get('candidate/saved-jobs',          [ApplicationController::class, 'savedJobs']);
@@ -236,6 +238,7 @@ Route::middleware('auth:api')->group(function () {
     Route::get('employer/candidates/{id}/cv',               [\App\Http\Controllers\EmployerCandidateController::class, 'downloadCv'])->where('id', '[0-9]+');
     Route::post('employer/candidates/{id}/save',            [\App\Http\Controllers\EmployerCandidateController::class, 'save'])->where('id', '[0-9]+')->middleware('throttle:60,1');
     Route::delete('employer/candidates/{id}/save',          [\App\Http\Controllers\EmployerCandidateController::class, 'unsave'])->where('id', '[0-9]+');
+    Route::post('employer/candidates/{id}/invite',          [\App\Http\Controllers\EmployerCandidateController::class, 'invite'])->where('id', '[0-9]+')->middleware('throttle:30,1');
 
     // Employer: own jobs
     // Note: 'verified' middleware removed — this is a JWT API (no verification.notice route),

@@ -94,6 +94,11 @@ class ApplicationController extends Controller
             );
         }
 
+        // If this application fulfils an invitation-to-apply, mark that invitation applied.
+        \App\Models\CandidateInvitation::where('job_id', $job->id)->where('candidate_id', $user->id)
+            ->whereIn('status', ['sent', 'viewed'])
+            ->update(['status' => 'applied', 'responded_at' => now()]);
+
         // In-app notification to the employer who owns the job
         \App\Models\Notification::record(
             $job->company->user_id ?? null,

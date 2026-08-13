@@ -61,6 +61,20 @@ class EmailTemplates
         return [$subject, $html];
     }
 
+    public static function invitedToApply(string $candidateName, string $jobTitle, string $companyName, ?string $message): array
+    {
+        $note = $message ? "<div style='background:#f8fafc;border-left:3px solid #0369a1;border-radius:4px;padding:12px 16px;margin:0 0 18px;color:#374151;font-size:14px'>" . nl2br(htmlspecialchars($message)) . "</div>" : '';
+        $subject = "You're invited to apply: {$jobTitle}";
+        $html = self::wrapper(
+            'Invitation to Apply',
+            "<p style='margin:0 0 12px'>Hello <strong>{$candidateName}</strong>,</p>
+            <p style='margin:0 0 18px'><strong>{$companyName}</strong> reviewed your profile and would like to invite you to apply for <strong>{$jobTitle}</strong>.</p>
+            {$note}
+            <p style='margin:0;color:#6b7280;font-size:13px'>Log in to your account to view the role and apply. This invitation expires in 30 days.</p>"
+        );
+        return [$subject, $html];
+    }
+
     // ── Employer emails ───────────────────────────────────────────────────────
 
     public static function newApplicationReceived(string $employerName, string $jobTitle, string $candidateName): array
