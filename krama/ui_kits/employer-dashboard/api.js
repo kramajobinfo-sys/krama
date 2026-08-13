@@ -222,6 +222,26 @@
     deleteInterview: function (id) { return req("DELETE", "/employer/interviews/" + id); },
     saveScorecard: function (id, data) { return req("PUT", "/employer/interviews/" + id + "/scorecard", data); },
     fetchUpcomingInterviews: function () { return req("GET", "/employer/interviews/upcoming"); },
+
+    // Candidate search + talent pool
+    searchCandidates: function (params) {
+      var q = Object.keys(params || {}).filter(function (k) { return params[k] !== "" && params[k] != null; }).map(function (k) { return k + "=" + encodeURIComponent(params[k]); }).join("&");
+      return req("GET", "/employer/candidates" + (q ? "?" + q : ""));
+    },
+    fetchCandidate: function (id) { return req("GET", "/employer/candidates/" + id); },
+    saveCandidate: function (id, note) { return req("POST", "/employer/candidates/" + id + "/save", { note: note || null }); },
+    unsaveCandidate: function (id) { return req("DELETE", "/employer/candidates/" + id + "/save"); },
+    fetchTalentPool: function (keyword) { return req("GET", "/employer/talent-pool" + (keyword ? "?keyword=" + encodeURIComponent(keyword) : "")); },
+    downloadCandidateCv: function (id) {
+      var token = getToken();
+      return fetch(BASE + "/employer/candidates/" + id + "/cv", { headers: { Authorization: "Bearer " + token } }).then(function (r) {
+        if (r.status === 404) return Promise.reject(new Error("No CV on file for this candidate."));
+        if (!r.ok) return Promise.reject(new Error("CV download failed (" + r.status + ")"));
+        var cd = r.headers.get("Content-Disposition"); var fname = "candidate_cv";
+        if (cd) { var m = cd.match(/filename="?([^"]+)"?/); if (m) fname = m[1]; }
+        return r.blob().then(function (b) { var u = URL.createObjectURL(b); var a = document.createElement("a"); a.href = u; a.download = fname; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(u); });
+      });
+    },
     downloadCv: function (applicationId) {
       var token = getToken();
       return fetch(BASE + "/applications/" + applicationId + "/cv", {

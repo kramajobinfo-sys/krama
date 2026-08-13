@@ -101,6 +101,7 @@
     { id: "jobs", label: "Job postings", icon: "briefcase" },
     { id: "applicants", label: "Applicants", icon: "users" },
     { id: "cvmatch", label: "CV Match", icon: "git-compare-arrows" },
+    { id: "talent", label: "Find candidates", icon: "user-search" },
     { id: "messages", label: "Messages", icon: "message-square" },
     { id: "team", label: "Team", icon: "user-plus", adminOnly: true },
     { id: "company", label: "Company profile", icon: "building-2", adminOnly: true },
@@ -1206,6 +1207,163 @@
           </div>
         )}
         <BoostModal job={boostTarget} onClose={() => setBoostTarget(null)} onDone={(m) => { setBoostTarget(null); flash(m); reload(); }} />
+      </div>
+    );
+  }
+
+  function TalentSearch({ onGoToMessages }) {
+    const [tab, setTab] = React.useState("search");
+    const [kw, setKw] = React.useState("");
+    const [skills, setSkills] = React.useState("");
+    const [langs, setLangs] = React.useState("");
+    const [results, setResults] = React.useState(null);
+    const [loading, setLoading] = React.useState(false);
+    const [pool, setPool] = React.useState(null);
+    const [poolKw, setPoolKw] = React.useState("");
+    const [sel, setSel] = React.useState(null);
+    const [detail, setDetail] = React.useState(null);
+    const [msgBody, setMsgBody] = React.useState("");
+    const [composing, setComposing] = React.useState(false);
+    const [msg, setMsg] = React.useState("");
+    const flash = (m) => { setMsg(m); setTimeout(function () { setMsg(""); }, 2500); };
+
+    const runSearch = function () {
+      setLoading(true);
+      emp.searchCandidates({ keyword: kw, skills: skills, languages: langs, per_page: 30 }).then(function (d) { setResults(d); setLoading(false); }).catch(function () { setLoading(false); });
+    };
+    React.useEffect(function () { runSearch(); }, []);
+    const loadPool = React.useCallback(function () { emp.fetchTalentPool(poolKw).then(setPool).catch(function () {}); }, [poolKw]);
+    React.useEffect(function () { if (tab === "pool") loadPool(); }, [tab, loadPool]);
+    React.useEffect(function () {
+      if (!sel) { setDetail(null); setComposing(false); setMsgBody(""); return; }
+      setDetail(null);
+      emp.fetchCandidate(sel).then(setDetail).catch(function () {});
+    }, [sel]);
+
+    const patchSaved = function (id, saved) {
+      setResults(function (r) { return r ? Object.assign({}, r, { data: r.data.map(function (x) { return x.id === id ? Object.assign({}, x, { saved: saved }) : x; }) }) : r; });
+      setDetail(function (d) { return d && d.id === id ? Object.assign({}, d, { saved: saved }) : d; });
+      if (tab === "pool") loadPool();
+    };
+    const toggleSave = function (c) {
+      if (c.saved) { emp.unsaveCandidate(c.id).then(function () { patchSaved(c.id, false); }).catch(function () {}); }
+      else { emp.saveCandidate(c.id).then(function () { patchSaved(c.id, true); flash("Saved to talent pool."); }).catch(function () {}); }
+    };
+    const sendMessage = function () {
+      if (!msgBody.trim() || !sel) return;
+      emp.startConversation({ other_user_id: sel, message: msgBody.trim() })
+        .then(function () { setComposing(false); setMsgBody(""); if (onGoToMessages) onGoToMessages(); })
+        .catch(function (e) { flash("Error: " + (e && e.message)); });
+    };
+    const stripTags = function (s) { return String(s == null ? "" : s).replace(/<[^>]*>/g, ""); };
+    const entryLine = function (e) {
+      if (typeof e === "string") return e;
+      if (e && typeof e === "object") { return Object.keys(e).filter(function (k) { return k !== "_k" && typeof e[k] !== "object" && String(e[k]).trim() !== ""; }).map(function (k) { return stripTags(e[k]); }).join(" · "); }
+      return "";
+    };
+    const Chip = function (t) { return <span key={t} style={{ fontSize: 11, fontWeight: 600, color: "var(--text-brand)", background: "var(--brand-subtle)", borderRadius: 999, padding: "2px 9px" }}>{t}</span>; };
+
+    const card = function (c) {
+      return (
+        <div key={c.id} onClick={function () { setSel(c.id); }} style={{ background: "var(--surface-card)", border: "1px solid var(--border)", borderRadius: "var(--radius-lg)", padding: 14, boxShadow: "var(--shadow-xs)", cursor: "pointer", display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
+            <Avatar src={c.avatar_url} name={c.name || "?"} size={40} />
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <div style={{ fontWeight: 700, fontSize: "var(--text-sm)", color: "var(--text-strong)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.name}</div>
+              <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.headline || "—"}</div>
+            </div>
+          </div>
+          {c.skills && c.skills.length > 0 && <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>{c.skills.slice(0, 6).map(function (s) { return Chip(s); })}</div>}
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 2 }}>
+            {c.has_cv && <span style={{ fontSize: 11, color: "var(--text-faint)", display: "inline-flex", alignItems: "center", gap: 3 }}>{I("file-text", 11)} CV</span>}
+            <div style={{ marginLeft: "auto" }} onClick={function (e) { e.stopPropagation(); toggleSave(c); }}>
+              <Button variant={c.saved ? "secondary" : "ghost"} size="sm" iconLeft={I(c.saved ? "bookmark-check" : "bookmark", 13)}>{c.saved ? "Saved" : "Save"}</Button>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    const listData = tab === "pool" ? (pool && pool.data) : (results && results.data);
+    return (
+      <div className="krm-page-pad" style={{ padding: 28 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 18, flexWrap: "wrap" }}>
+          <h1 style={{ fontSize: "var(--text-xl)", fontWeight: 700, color: "var(--text-strong)", margin: 0 }}>Find candidates</h1>
+          <div style={{ display: "flex", gap: 4, background: "var(--surface-sunken)", borderRadius: "var(--radius-pill)", padding: 3 }}>
+            {[{ id: "search", label: "Search" }, { id: "pool", label: "Talent pool" }].map(function (t) {
+              return <button key={t.id} onClick={function () { setTab(t.id); }} style={{ border: "none", cursor: "pointer", borderRadius: "var(--radius-pill)", padding: "6px 16px", fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)", fontWeight: 600, background: tab === t.id ? "var(--surface-card)" : "transparent", color: tab === t.id ? "var(--text-brand)" : "var(--text-muted)", boxShadow: tab === t.id ? "var(--shadow-xs)" : "none" }}>{t.label}</button>;
+            })}
+          </div>
+          {msg && <span style={{ fontSize: "var(--text-sm)", color: "var(--success)", fontWeight: 600 }}>{msg}</span>}
+        </div>
+
+        {tab === "search" ? (
+          <div style={{ display: "flex", gap: 10, marginBottom: 18, flexWrap: "wrap", alignItems: "flex-end" }}>
+            <div style={{ flex: 2, minWidth: 200 }}><Input label="Keyword" value={kw} onChange={function (e) { setKw(e.target.value); }} placeholder="name, title, summary…" onKeyDown={function (e) { if (e.key === "Enter") runSearch(); }} /></div>
+            <div style={{ flex: 1, minWidth: 160 }}><Input label="Skills" value={skills} onChange={function (e) { setSkills(e.target.value); }} placeholder="React, SQL" onKeyDown={function (e) { if (e.key === "Enter") runSearch(); }} /></div>
+            <div style={{ flex: 1, minWidth: 140 }}><Input label="Languages" value={langs} onChange={function (e) { setLangs(e.target.value); }} placeholder="English" onKeyDown={function (e) { if (e.key === "Enter") runSearch(); }} /></div>
+            <Button variant="primary" iconLeft={I("search", 15)} onClick={runSearch}>Search</Button>
+          </div>
+        ) : (
+          <div style={{ marginBottom: 18, maxWidth: 320 }}><Input value={poolKw} onChange={function (e) { setPoolKw(e.target.value); }} placeholder="Filter saved candidates…" iconLeft={I("search", 15)} /></div>
+        )}
+
+        {loading && tab === "search" ? <div style={{ color: "var(--text-muted)", fontSize: "var(--text-sm)" }}>Searching…</div> : (
+          (!listData || listData.length === 0)
+            ? <EmptyState icon={I(tab === "pool" ? "bookmark" : "user-search", 28)} title={tab === "pool" ? "No saved candidates" : "No candidates found"} message={tab === "pool" ? "Save candidates from Search to build your talent pool." : "Try different keywords or skills."} />
+            : (
+              <div>
+                {tab === "search" && results && <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginBottom: 10 }}>{results.total} candidate{results.total === 1 ? "" : "s"}</div>}
+                <div className="krm-talent-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 14 }}>
+                  {listData.map(function (c) { return card(c); })}
+                </div>
+              </div>
+            )
+        )}
+
+        {sel && (
+          <div onClick={function () { setSel(null); }} style={{ position: "fixed", inset: 0, zIndex: 200, background: "var(--surface-overlay)", display: "flex", justifyContent: "flex-end" }}>
+            <div onClick={function (e) { e.stopPropagation(); }} style={{ width: "100%", maxWidth: 460, height: "100%", background: "var(--surface-card)", boxShadow: "var(--shadow-xl)", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+              <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: 12 }}>
+                <Avatar src={detail && detail.avatar_url} name={(detail && detail.name) || "?"} size={44} />
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ fontWeight: 700, color: "var(--text-strong)" }}>{detail ? detail.name : "Loading…"}</div>
+                  <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>{detail && detail.headline}</div>
+                </div>
+                <Button variant="ghost" size="sm" onClick={function () { setSel(null); }}>{I("x", 18)}</Button>
+              </div>
+              <div style={{ padding: 20, overflowY: "auto", display: "flex", flexDirection: "column", gap: 16, flex: 1 }}>
+                {!detail ? <div style={{ color: "var(--text-muted)", fontSize: "var(--text-sm)" }}>Loading…</div> : (
+                  <React.Fragment>
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      <Button variant={detail.saved ? "secondary" : "primary"} size="sm" iconLeft={I(detail.saved ? "bookmark-check" : "bookmark", 14)} onClick={function () { toggleSave(detail); }}>{detail.saved ? "Saved" : "Save to pool"}</Button>
+                      {detail.has_cv && <Button variant="ghost" size="sm" iconLeft={I("download", 14)} onClick={function () { emp.downloadCandidateCv(detail.id).catch(function (e) { flash(e && e.message || "Download failed"); }); }}>CV</Button>}
+                      <Button variant="ghost" size="sm" iconLeft={I("message-square", 14)} onClick={function () { setComposing(function (v) { return !v; }); }}>Message</Button>
+                    </div>
+                    {composing && (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                        <textarea value={msgBody} onChange={function (e) { setMsgBody(e.target.value); }} rows={3} placeholder="Write a message…" style={{ width: "100%", boxSizing: "border-box", resize: "vertical", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", padding: "9px 11px", fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)", background: "var(--surface-page)", color: "var(--text-body)", outline: "none" }} />
+                        <div><Button variant="primary" size="sm" disabled={!msgBody.trim()} onClick={sendMessage}>Send message</Button></div>
+                      </div>
+                    )}
+                    {(detail.email || detail.phone) && (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 5, fontSize: "var(--text-sm)" }}>
+                        {detail.email && <div style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--text-body)" }}>{I("mail", 14)} <a href={"mailto:" + detail.email} style={{ color: "inherit", textDecoration: "none" }}>{detail.email}</a></div>}
+                        {detail.phone && <div style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--text-body)" }}>{I("phone", 14)} {detail.phone}</div>}
+                      </div>
+                    )}
+                    {detail.summary && <div><div style={{ fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".04em", marginBottom: 6 }}>Summary</div><div style={{ fontSize: "var(--text-sm)", color: "var(--text-body)", lineHeight: 1.6 }}>{stripTags(detail.summary)}</div></div>}
+                    {detail.skills && detail.skills.length > 0 && <div><div style={{ fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".04em", marginBottom: 8 }}>Skills</div><div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>{detail.skills.map(function (s) { return Chip(entryLine(s)); })}</div></div>}
+                    {detail.experience && detail.experience.length > 0 && <div><div style={{ fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".04em", marginBottom: 8 }}>Experience</div><div style={{ display: "flex", flexDirection: "column", gap: 6 }}>{detail.experience.map(function (e, i) { return <div key={i} style={{ fontSize: "var(--text-sm)", color: "var(--text-body)" }}>{entryLine(e)}</div>; })}</div></div>}
+                    {detail.education && detail.education.length > 0 && <div><div style={{ fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".04em", marginBottom: 8 }}>Education</div><div style={{ display: "flex", flexDirection: "column", gap: 6 }}>{detail.education.map(function (e, i) { return <div key={i} style={{ fontSize: "var(--text-sm)", color: "var(--text-body)" }}>{entryLine(e)}</div>; })}</div></div>}
+                    {detail.languages && detail.languages.length > 0 && <div><div style={{ fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".04em", marginBottom: 8 }}>Languages</div><div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>{detail.languages.map(function (l) { return Chip(entryLine(l)); })}</div></div>}
+                    {detail.certifications && detail.certifications.length > 0 && <div><div style={{ fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".04em", marginBottom: 8 }}>Certifications</div><div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>{detail.certifications.map(function (c) { return Chip(entryLine(c)); })}</div></div>}
+                  </React.Fragment>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -4153,6 +4311,7 @@
           {page === "jobs" && <JobsManage jobs={jobs} loading={jobsLoading} reload={loadJobs} onPost={handlePost} onPublish={publishJob} sub={sub} quota={quota} onBilling={() => setPage("billing")} onView={(j) => setViewingJob(j)} onEdit={(j) => setPosting({ mode: "edit", job: j })} onClone={(j) => setPosting({ mode: "clone", job: j })} user={authUser} />}
           {page === "applicants" && <Applicants jobs={jobs} onGoToMessages={() => setPage("messages")} />}
           {page === "cvmatch" && <EmployerCvMatch />}
+          {page === "talent" && <TalentSearch onGoToMessages={() => setPage("messages")} />}
           {page === "team" && isCompanyAdmin(authUser) && <Team user={authUser} />}
           {page === "company" && (!companyLoaded
             ? <div className="krm-page-pad" style={{ padding: 28, color: "var(--text-muted)" }}>Loading…</div>
