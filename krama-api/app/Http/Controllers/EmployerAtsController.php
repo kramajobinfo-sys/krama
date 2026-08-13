@@ -51,6 +51,7 @@ class EmployerAtsController extends Controller
                 'resume:id,candidate_id,headline,file_url',
                 'tags:id,application_id,label',
             ])->withCount('notes')
+                ->withCount(['answers as failed_count' => fn ($q) => $q->where('passed', false)])
                 ->where('job_id', $job->id)->where('stage', $stage)
                 ->orderByDesc('updated_at')->limit(self::COLUMN_CAP)->get();
 
@@ -72,6 +73,7 @@ class EmployerAtsController extends Controller
                         'has_cv'      => $app->resume && ! empty($app->resume->file_url) && $visibility !== 'private',
                         'tags'        => $app->tags->map(fn ($t) => ['id' => $t->id, 'label' => $t->label])->values(),
                         'notes_count' => $app->notes_count,
+                        'flagged'     => $app->failed_count > 0,   // failed a knockout question
                     ];
                 })->values(),
             ];
@@ -96,10 +98,18 @@ class EmployerAtsController extends Controller
             'resume:id,candidate_id,headline,file_url',
             'tags:id,application_id,label',
             'notes' => fn ($q) => $q->with('author:id,name'),
+            'answers' => fn ($q) => $q->with('question:id,label,type,knockout'),
         ])->whereHas('job', fn ($q) => $q->where('company_id', $this->employerCompanyId($user)))
             ->findOrFail($appId);
 
         $visibility = optional($app->candidate)->cv_visibility ?? 'employers';
+        $answers = $app->answers->map(fn ($a) => [
+            'question' => optional($a->question)->label,
+            'type'     => optional($a->question)->type,
+            'answer'   => $a->answer_text,
+            'knockout' => (bool) optional($a->question)->knockout,
+            'passed'   => $a->passed,
+        ])->values();
 
         return response()->json([
             'id'         => $app->id,
@@ -116,6 +126,8 @@ class EmployerAtsController extends Controller
             'headline'   => optional($app->resume)->headline,
             'has_cv'     => $app->resume && ! empty($app->resume->file_url) && $visibility !== 'private',
             'cv_private' => $visibility === 'private',
+            'answers'    => $answers,
+            'meets_requirements' => $app->answers->every(fn ($a) => $a->passed !== false),
             'tags'       => $app->tags->map(fn ($t) => ['id' => $t->id, 'label' => $t->label])->values(),
             'notes'      => $app->notes->map(fn ($n) => [
                 'id'         => $n->id,

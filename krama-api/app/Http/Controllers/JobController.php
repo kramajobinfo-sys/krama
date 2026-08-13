@@ -88,13 +88,48 @@ class JobController extends Controller
             'company:id,name,logo_url,website,industry,address,is_verified,org_type,org_status',
             'category:id,name,slug',
             'location:id,name',
+            'screeningQuestions',
         ])->where('status', 'published')
           ->findOrFail($id);
 
         DB::table('jobs')->where('id', $id)->increment('views');
         $job->views += 1;
 
-        return response()->json($job);
+        // Public-safe questions only — never leak the knockout config (the "right" answer)
+        // to candidates. The employer sees the full definition via their own endpoints.
+        $questions = $job->screeningQuestions;
+        $data = $job->toArray();
+        unset($data['screening_questions'], $data['screeningQuestions']);
+        $data['screening_questions'] = $questions->map(fn ($q) => [
+            'id'       => $q->id,
+            'type'     => $q->type,
+            'label'    => $q->label,
+            'options'  => $q->options,
+            'required' => $q->required,
+        ])->values();
+
+        return response()->json($data);
+    }
+
+    // Validate + persist a job's screening questions from the request (shared by all create/edit
+    // paths). No-op when the request omits the key, so partial edits never wipe existing questions.
+    private function syncScreeningFromRequest(Request $request, Job $job): void
+    {
+        if (! $request->has('screening_questions')) {
+            return;
+        }
+        $request->validate([
+            'screening_questions'                   => 'array|max:20',
+            'screening_questions.*.id'              => 'nullable|integer',
+            'screening_questions.*.type'            => 'required|in:text,textarea,yes_no,single_choice,multi_choice,number,date',
+            'screening_questions.*.label'           => 'required|string|max:300',
+            'screening_questions.*.options'         => 'nullable|array|max:20',
+            'screening_questions.*.options.*'       => 'string|max:120',
+            'screening_questions.*.required'        => 'boolean',
+            'screening_questions.*.knockout'        => 'boolean',
+            'screening_questions.*.knockout_config' => 'nullable|array',
+        ]);
+        \App\Services\ScreeningService::syncQuestions($job, $request->input('screening_questions', []));
     }
 
     // POST /api/jobs — employer/recruiter creates a draft job
@@ -148,6 +183,7 @@ class JobController extends Controller
         }
 
         $job = Job::create($data);
+        $this->syncScreeningFromRequest($request, $job);
 
         return response()->json($job->load(['company:id,name', 'category:id,name', 'location:id,name']), 201);
     }
@@ -213,6 +249,7 @@ class JobController extends Controller
         }
 
         $job = Job::create($data);
+        $this->syncScreeningFromRequest($request, $job);
 
         $this->auditLog('job.admin_posted', [
             'job_id'     => $job->id,
@@ -275,6 +312,7 @@ class JobController extends Controller
         }
 
         $job->fill($data)->save();
+        $this->syncScreeningFromRequest($request, $job);
 
         $this->auditLog('job.admin_updated', [
             'job_id'   => $job->id,
@@ -560,6 +598,7 @@ class JobController extends Controller
         }
 
         $job->update($data);
+        $this->syncScreeningFromRequest($request, $job);
 
         return response()->json($job->load(['company:id,name', 'category:id,name', 'location:id,name']));
     }

@@ -41,4 +41,9 @@ class Application extends Model
     {
         return $this->hasMany(ApplicationTag::class)->orderBy('label');
     }
+
+    public function answers()
+    {
+        return $this->hasMany(ApplicationAnswer::class);
+    }
 }

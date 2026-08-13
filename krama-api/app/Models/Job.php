@@ -38,6 +38,11 @@ class Job extends Model
         return $this->belongsTo(Company::class);
     }
 
+    public function screeningQuestions()
+    {
+        return $this->hasMany(JobScreeningQuestion::class)->orderBy('sort_order');
+    }
+
     public function category()
     {
         return $this->belongsTo(Category::class);

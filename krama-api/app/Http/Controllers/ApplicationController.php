@@ -23,12 +23,25 @@ class ApplicationController extends Controller
         $user = $request->user();
         $this->requirePermission('apply_jobs');
 
-        $job = Job::where('status', 'published')->findOrFail($jobId);
+        $job = Job::with('screeningQuestions')->where('status', 'published')->findOrFail($jobId);
 
         $data = $request->validate([
             'resume_id'  => 'nullable|exists:resumes,id',
             'cover_note' => 'nullable|string|max:2000',
+            'answers'    => 'nullable|array',
         ]);
+
+        // Every required screening question must be answered before the application is accepted.
+        $answers = $request->input('answers', []);
+        foreach ($job->screeningQuestions as $q) {
+            if (! $q->required) {
+                continue;
+            }
+            $raw = $answers[$q->id] ?? null;
+            if ($raw === null || $raw === '' || (is_array($raw) && count($raw) === 0)) {
+                return response()->json(['message' => 'Please answer all required screening questions.'], 422);
+            }
+        }
 
         // Ensure resume belongs to this candidate
         if (! empty($data['resume_id'])) {
@@ -67,6 +80,19 @@ class ApplicationController extends Controller
             ->where('candidate_id', $user->id)
             ->latest()
             ->first();
+
+        // Persist screening answers with their knockout result (employer-visible only).
+        foreach ($job->screeningQuestions as $q) {
+            $raw  = $answers[$q->id] ?? null;
+            $text = \App\Services\ScreeningService::answerText($q, $raw);
+            if ($text === null) {
+                continue;
+            }
+            \App\Models\ApplicationAnswer::updateOrCreate(
+                ['application_id' => $application->id, 'question_id' => $q->id],
+                ['answer_text' => $text, 'passed' => \App\Services\ScreeningService::evaluate($q, $raw)]
+            );
+        }
 
         // In-app notification to the employer who owns the job
         \App\Models\Notification::record(
