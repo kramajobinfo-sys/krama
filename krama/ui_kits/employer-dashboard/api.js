@@ -237,6 +237,7 @@
       var token = getToken();
       return fetch(BASE + "/employer/candidates/" + id + "/cv", { headers: { Authorization: "Bearer " + token } }).then(function (r) {
         if (r.status === 404) return Promise.reject(new Error("No CV on file for this candidate."));
+        if (r.status === 429) return Promise.reject(new Error("CV download limit reached. Please try again later."));
         if (!r.ok) return Promise.reject(new Error("CV download failed (" + r.status + ")"));
         var cd = r.headers.get("Content-Disposition"); var fname = "candidate_cv";
         if (cd) { var m = cd.match(/filename="?([^"]+)"?/); if (m) fname = m[1]; }

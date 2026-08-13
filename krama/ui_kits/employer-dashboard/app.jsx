@@ -1244,11 +1244,17 @@
 
     const runSearch = function () {
       setLoading(true);
-      emp.searchCandidates({ keyword: kw, skills: skills, languages: langs, per_page: 30 }).then(function (d) { setResults(d); setLoading(false); }).catch(function () { setLoading(false); });
+      emp.searchCandidates({ keyword: kw, skills: skills, languages: langs, per_page: 30 }).then(function (d) { setResults(d); setLoading(false); }).catch(function (e) { setLoading(false); flash((e && e.message) || "Search failed. Please try again."); });
     };
     React.useEffect(function () { runSearch(); }, []);
-    const loadPool = React.useCallback(function () { emp.fetchTalentPool(poolKw).then(setPool).catch(function () {}); }, [poolKw]);
-    React.useEffect(function () { if (tab === "pool") loadPool(); }, [tab, loadPool]);
+    const loadPool = React.useCallback(function () { emp.fetchTalentPool(poolKw).then(setPool).catch(function (e) { flash((e && e.message) || "Could not load the talent pool."); }); }, [poolKw]);
+    React.useEffect(function () {
+      if (tab !== "pool") return;
+      // Debounced: this filter re-fetches on every keystroke, so typing one query used to cost a
+      // dozen requests — enough to trip the candidate-search rate limit during normal typing.
+      var t = setTimeout(loadPool, 300);
+      return function () { clearTimeout(t); };
+    }, [tab, loadPool]);
     React.useEffect(function () {
       if (!sel) { setDetail(null); setComposing(false); setMsgBody(""); return; }
       setDetail(null);

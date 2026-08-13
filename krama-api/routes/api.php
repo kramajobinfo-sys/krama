@@ -232,10 +232,13 @@ Route::middleware('auth:api')->group(function () {
     Route::put('employer/interviews/{id}/scorecard',        [\App\Http\Controllers\EmployerInterviewController::class, 'upsertScorecard'])->where('id', '[0-9]+');
 
     // Employer: candidate search + talent pool
-    Route::get('employer/candidates',                       [\App\Http\Controllers\EmployerCandidateController::class, 'search']);
-    Route::get('employer/talent-pool',                      [\App\Http\Controllers\EmployerCandidateController::class, 'pool']);
-    Route::get('employer/candidates/{id}',                  [\App\Http\Controllers\EmployerCandidateController::class, 'show'])->where('id', '[0-9]+');
-    Route::get('employer/candidates/{id}/cv',               [\App\Http\Controllers\EmployerCandidateController::class, 'downloadCv'])->where('id', '[0-9]+');
+    // Reads are throttled too, not just writes: the candidate database is the asset employers
+    // subscribe for, and un-metered reads let any registered employer enumerate it. Limiters are
+    // defined in RouteServiceProvider (candidate-search / candidate-profile / candidate-cv).
+    Route::get('employer/candidates',                       [\App\Http\Controllers\EmployerCandidateController::class, 'search'])->middleware('throttle:candidate-search');
+    Route::get('employer/talent-pool',                      [\App\Http\Controllers\EmployerCandidateController::class, 'pool'])->middleware('throttle:candidate-search');
+    Route::get('employer/candidates/{id}',                  [\App\Http\Controllers\EmployerCandidateController::class, 'show'])->where('id', '[0-9]+')->middleware('throttle:candidate-profile');
+    Route::get('employer/candidates/{id}/cv',               [\App\Http\Controllers\EmployerCandidateController::class, 'downloadCv'])->where('id', '[0-9]+')->middleware('throttle:candidate-cv');
     Route::post('employer/candidates/{id}/save',            [\App\Http\Controllers\EmployerCandidateController::class, 'save'])->where('id', '[0-9]+')->middleware('throttle:60,1');
     Route::delete('employer/candidates/{id}/save',          [\App\Http\Controllers\EmployerCandidateController::class, 'unsave'])->where('id', '[0-9]+');
     Route::post('employer/candidates/{id}/invite',          [\App\Http\Controllers\EmployerCandidateController::class, 'invite'])->where('id', '[0-9]+')->middleware('throttle:30,1');
