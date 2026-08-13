@@ -1223,6 +1223,7 @@
     const [poolKw, setPoolKw] = React.useState("");
     const [sel, setSel] = React.useState(null);
     const [detail, setDetail] = React.useState(null);
+    const [detailErr, setDetailErr] = React.useState("");
     const [msgBody, setMsgBody] = React.useState("");
     const [composing, setComposing] = React.useState(false);
     const [inviting, setInviting] = React.useState(false);
@@ -1251,7 +1252,12 @@
     React.useEffect(function () {
       if (!sel) { setDetail(null); setComposing(false); setMsgBody(""); return; }
       setDetail(null);
-      emp.fetchCandidate(sel).then(setDetail).catch(function () {});
+      // Swallowing the error would leave the drawer stuck on "Loading…" with no way out. A 404 is
+      // reachable in normal use: a pooled candidate can go private (or be suspended) after saving.
+      setDetailErr("");
+      emp.fetchCandidate(sel).then(setDetail).catch(function (e) {
+        setDetailErr((e && e.message) || "This candidate is no longer available.");
+      });
     }, [sel]);
 
     const patchSaved = function (id, saved) {
@@ -1324,7 +1330,7 @@
 
         {loading && tab === "search" ? <div style={{ color: "var(--text-muted)", fontSize: "var(--text-sm)" }}>Searching…</div> : (
           (!listData || listData.length === 0)
-            ? <EmptyState icon={I(tab === "pool" ? "bookmark" : "user-search", 28)} title={tab === "pool" ? "No saved candidates" : "No candidates found"} message={tab === "pool" ? "Save candidates from Search to build your talent pool." : "Try different keywords or skills."} />
+            ? <EmptyState icon={I(tab === "pool" ? "bookmark" : "user-search", 28)} title={tab === "pool" ? "No saved candidates" : "No candidates found"} description={tab === "pool" ? "Save candidates from Search to build your talent pool." : "Try different keywords or skills."} />
             : (
               <div>
                 {tab === "search" && results && <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginBottom: 10 }}>{results.total} candidate{results.total === 1 ? "" : "s"}</div>}
@@ -1347,7 +1353,7 @@
                 <Button variant="ghost" size="sm" onClick={function () { setSel(null); }}>{I("x", 18)}</Button>
               </div>
               <div style={{ padding: 20, overflowY: "auto", display: "flex", flexDirection: "column", gap: 16, flex: 1 }}>
-                {!detail ? <div style={{ color: "var(--text-muted)", fontSize: "var(--text-sm)" }}>Loading…</div> : (
+                {!detail ? <div style={{ color: detailErr ? "var(--danger)" : "var(--text-muted)", fontSize: "var(--text-sm)" }}>{detailErr || "Loading…"}</div> : (
                   <React.Fragment>
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                       <Button variant={detail.saved ? "secondary" : "primary"} size="sm" iconLeft={I(detail.saved ? "bookmark-check" : "bookmark", 14)} onClick={function () { toggleSave(detail); }}>{detail.saved ? "Saved" : "Save to pool"}</Button>
@@ -1641,7 +1647,7 @@
     apps.forEach((a) => { var k = a.stage || "applied"; if (!byStage[k]) byStage[k] = []; byStage[k].push(a); });
 
     if (reviewable.length === 0) {
-      return <div className="krm-page-pad" style={{ padding: 28 }}><EmptyState icon={I("users", 28)} title="No applicants yet" message="Publish a job to start receiving applications." /></div>;
+      return <div className="krm-page-pad" style={{ padding: 28 }}><EmptyState icon={I("users", 28)} title="No applicants yet" description="Publish a job to start receiving applications." /></div>;
     }
 
     return (
@@ -4335,7 +4341,7 @@
     // Alert badge on Plan & billing when a subscription is pending payment/approval.
     const badges = { jobs: companyPending, applicants: totalApps, messages: unreadMsg, support: supportUnread, billing: (sub && sub.status === "pending") ? 1 : 0 };
 
-    const titles = { dashboard: "Dashboard", jobs: "Job postings", applicants: "Applicant tracking", messages: "Messages", team: "Team", company: "Company profile", billing: "Plan & billing", support: "Help & support", profile: "My Profile" };
+    const titles = { dashboard: "Dashboard", jobs: "Job postings", applicants: "Applicant tracking", cvmatch: "CV Match", talent: "Find candidates", messages: "Messages", team: "Team", company: "Company profile", billing: "Plan & billing", support: "Help & support", profile: "My Profile" };
     return (
       <div style={{ display: "flex", minHeight: "100vh", background: "var(--surface-page)" }}>
         {sidebarOpen && <div className="krm-sidebar-backdrop open" onClick={() => setSidebarOpen(false)} />}

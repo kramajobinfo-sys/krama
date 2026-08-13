@@ -3940,6 +3940,7 @@
     const [poolKw, setPoolKw] = React.useState("");
     const [sel, setSel] = React.useState(null);
     const [detail, setDetail] = React.useState(null);
+    const [detailErr, setDetailErr] = React.useState("");
     const [msgBody, setMsgBody] = React.useState("");
     const [composing, setComposing] = React.useState(false);
     const [inviting, setInviting] = React.useState(false);
@@ -4017,7 +4018,12 @@
         return;
       }
       setDetail(null);
-      emp.fetchCandidate(sel).then(setDetail).catch(function () {});
+      // Swallowing the error would leave the drawer stuck on "Loading…" with no way out. A 404 is
+      // reachable in normal use: a pooled candidate can go private (or be suspended) after saving.
+      setDetailErr("");
+      emp.fetchCandidate(sel).then(setDetail).catch(function (e) {
+        setDetailErr(e && e.message || "This candidate is no longer available.");
+      });
     }, [sel]);
     const patchSaved = function (id, saved) {
       setResults(function (r) {
@@ -4311,7 +4317,7 @@
     }, "Searching\u2026") : !listData || listData.length === 0 ? /*#__PURE__*/React.createElement(EmptyState, {
       icon: I(tab === "pool" ? "bookmark" : "user-search", 28),
       title: tab === "pool" ? "No saved candidates" : "No candidates found",
-      message: tab === "pool" ? "Save candidates from Search to build your talent pool." : "Try different keywords or skills."
+      description: tab === "pool" ? "Save candidates from Search to build your talent pool." : "Try different keywords or skills."
     }) : /*#__PURE__*/React.createElement("div", null, tab === "search" && results && /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: "var(--text-xs)",
@@ -4397,10 +4403,10 @@
       }
     }, !detail ? /*#__PURE__*/React.createElement("div", {
       style: {
-        color: "var(--text-muted)",
+        color: detailErr ? "var(--danger)" : "var(--text-muted)",
         fontSize: "var(--text-sm)"
       }
-    }, "Loading\u2026") : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    }, detailErr || "Loading…") : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
         gap: 8,
@@ -5500,7 +5506,7 @@
       }, /*#__PURE__*/React.createElement(EmptyState, {
         icon: I("users", 28),
         title: "No applicants yet",
-        message: "Publish a job to start receiving applications."
+        description: "Publish a job to start receiving applications."
       }));
     }
     return /*#__PURE__*/React.createElement("div", {
@@ -13002,6 +13008,8 @@
       dashboard: "Dashboard",
       jobs: "Job postings",
       applicants: "Applicant tracking",
+      cvmatch: "CV Match",
+      talent: "Find candidates",
       messages: "Messages",
       team: "Team",
       company: "Company profile",

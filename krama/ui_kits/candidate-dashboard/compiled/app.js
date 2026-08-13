@@ -1037,11 +1037,15 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     var [list, setList] = React.useState([]);
     var [unread, setUnread] = React.useState(0);
     var [loading, setLoading] = React.useState(false);
+    // Keep in sync with the `type` strings passed to Notification::record() on the API side —
+    // an unmapped type makes the notification a click-dead-end (it marks read and goes nowhere).
     var ROUTE = {
       application_received: "applications",
       application_stage: "applications",
       job_approved: "applications",
-      job_rejected: "applications"
+      job_rejected: "applications",
+      invitation: "invitations",
+      interview_scheduled: "applications"
     };
     var ICON = {
       application_received: "user-plus",
@@ -1049,7 +1053,9 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       job_approved: "circle-check-big",
       job_rejected: "circle-x",
       forum_reply: "message-circle",
-      forum_mention: "at-sign"
+      forum_mention: "at-sign",
+      invitation: "mail-plus",
+      interview_scheduled: "calendar-clock"
     };
     var pollUnread = React.useCallback(function () {
       cand.fetchNotifUnread().then(function (d) {
@@ -2260,13 +2266,6 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     };
     const jobLink = function (job) {
       return HOME_URL + "?job=" + job.id;
-    };
-    const STLABEL = {
-      sent: "New invitation",
-      viewed: "Invitation",
-      applied: "Applied",
-      declined: "Declined",
-      expired: "Expired"
     };
     return /*#__PURE__*/React.createElement("div", {
       className: "krm-page-pad",

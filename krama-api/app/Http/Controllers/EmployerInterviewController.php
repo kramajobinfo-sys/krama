@@ -106,9 +106,6 @@ class EmployerInterviewController extends Controller
         $iv = $this->findInterview($user, $id);
 
         $data = $this->validateInterview($request, false);
-        if ($request->filled('status')) {
-            $data['status'] = $request->input('status');
-        }
         $iv->fill($data)->save();
 
         $iv->load(['interviewer:id,name', 'scorecards.author:id,name']);
@@ -201,6 +198,9 @@ class EmployerInterviewController extends Controller
             'meeting_url'    => 'nullable|string|max:500',
             'notes'          => 'nullable|string|max:2000',
             'interviewer_id' => 'nullable|exists:users,id',
+            // Must be validated here, not merged in raw: `status` is fillable and the column is a
+            // MySQL enum under strict mode, so an unknown value is a 500 rather than a clean 422.
+            'status'         => 'sometimes|in:scheduled,confirmed,rescheduled,completed,cancelled,no_show',
         ];
         return $request->validate($rules);
     }

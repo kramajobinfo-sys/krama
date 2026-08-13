@@ -377,8 +377,10 @@
     var [list, setList] = React.useState([]);
     var [unread, setUnread] = React.useState(0);
     var [loading, setLoading] = React.useState(false);
-    var ROUTE = { application_received: "applications", application_stage: "applications", job_approved: "applications", job_rejected: "applications" };
-    var ICON = { application_received: "user-plus", application_stage: "activity", job_approved: "circle-check-big", job_rejected: "circle-x", forum_reply: "message-circle", forum_mention: "at-sign" };
+    // Keep in sync with the `type` strings passed to Notification::record() on the API side —
+    // an unmapped type makes the notification a click-dead-end (it marks read and goes nowhere).
+    var ROUTE = { application_received: "applications", application_stage: "applications", job_approved: "applications", job_rejected: "applications", invitation: "invitations", interview_scheduled: "applications" };
+    var ICON = { application_received: "user-plus", application_stage: "activity", job_approved: "circle-check-big", job_rejected: "circle-x", forum_reply: "message-circle", forum_mention: "at-sign", invitation: "mail-plus", interview_scheduled: "calendar-clock" };
     var pollUnread = React.useCallback(function () { cand.fetchNotifUnread().then(function (d) { setUnread(d.count || 0); }).catch(function () {}); }, []);
     React.useEffect(function () { pollUnread(); var t = setInterval(pollUnread, 20000); return function () { clearInterval(t); }; }, [pollUnread]);
     function openPanel() {
@@ -805,7 +807,6 @@
       cand.declineInvitation(id).then(function () { setList(function (l) { return (l || []).filter(function (x) { return x.id !== id; }); }); setBusy(null); }).catch(function () { setBusy(null); });
     };
     const jobLink = function (job) { return HOME_URL + "?job=" + job.id; };
-    const STLABEL = { sent: "New invitation", viewed: "Invitation", applied: "Applied", declined: "Declined", expired: "Expired" };
     return (
       <div className="krm-page-pad" style={{ padding: 28 }}>
         <h1 style={{ fontSize: "var(--text-xl)", fontWeight: 700, color: "var(--text-strong)", marginBottom: 4 }}>{T("Invitations")}</h1>

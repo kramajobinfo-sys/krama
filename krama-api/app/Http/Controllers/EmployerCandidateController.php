@@ -38,12 +38,31 @@ class EmployerCandidateController extends Controller
         return Role::where('slug', 'candidate')->value('id');
     }
 
+    // The single source of truth for "may an employer see this candidate AT ALL": candidate
+    // role, profile not private, account still active. Expressed as a constraint so it works
+    // both standalone and inside a Resume `whereHas('candidate', …)`.
+    //
+    // Every employer-facing read MUST go through this. It exists because each call site used
+    // to re-implement the rule and `pool()` silently drifted out of sync — it kept listing
+    // candidates who had since set their profile to private. Suspended accounts are excluded
+    // here too, matching the public Digital-CV page (SeoController::candidateCv).
+    private function visibleCandidateConstraint($q)
+    {
+        return $q->where('role_id', $this->candidateRoleId())
+            ->whereIn('cv_visibility', ['public', 'employers'])
+            ->where('status', 'active');
+    }
+
+    private function visibleCandidates()
+    {
+        return $this->visibleCandidateConstraint(User::query());
+    }
+
     // Best résumé per candidate: primary first, else most-recently updated.
     private function bestResumes()
     {
-        $rid = $this->candidateRoleId();
         return Resume::with('candidate:id,name,avatar_url,cv_visibility,email,phone')
-            ->whereHas('candidate', fn ($c) => $c->where('role_id', $rid)->whereIn('cv_visibility', ['public', 'employers']))
+            ->whereHas('candidate', fn ($c) => $this->visibleCandidateConstraint($c))
             ->orderByDesc('is_primary')->orderByDesc('updated_at')
             ->limit(self::SCAN_CAP)->get()
             ->filter(fn ($r) => $r->candidate)
@@ -136,9 +155,7 @@ class EmployerCandidateController extends Controller
         $this->requirePermission('view_applicants');
         $companyId = $this->employerCompanyId($user);
 
-        $candidate = User::where('role_id', $this->candidateRoleId())
-            ->whereIn('cv_visibility', ['public', 'employers'])
-            ->findOrFail($id);
+        $candidate = $this->visibleCandidates()->findOrFail($id);
 
         $resume = Resume::where('candidate_id', $candidate->id)
             ->orderByDesc('is_primary')->orderByDesc('updated_at')->first();
@@ -177,9 +194,7 @@ class EmployerCandidateController extends Controller
         $user = $request->user();
         $this->requirePermission('view_applicants');
 
-        $candidate = User::where('role_id', $this->candidateRoleId())
-            ->whereIn('cv_visibility', ['public', 'employers'])
-            ->findOrFail($id);
+        $candidate = $this->visibleCandidates()->findOrFail($id);
 
         $resume = Resume::where('candidate_id', $candidate->id)->whereNotNull('file_url')
             ->orderByDesc('is_primary')->orderByDesc('updated_at')->first();
@@ -206,9 +221,7 @@ class EmployerCandidateController extends Controller
         $this->requirePermission('view_applicants');
         $companyId = $this->employerCompanyId($user);
 
-        $candidate = User::where('role_id', $this->candidateRoleId())
-            ->whereIn('cv_visibility', ['public', 'employers'])
-            ->findOrFail($id);
+        $candidate = $this->visibleCandidates()->findOrFail($id);
 
         $data = $request->validate([
             'job_id'  => 'required|integer',
@@ -263,9 +276,7 @@ class EmployerCandidateController extends Controller
         $this->requirePermission('view_applicants');
         $companyId = $this->employerCompanyId($user);
 
-        $candidate = User::where('role_id', $this->candidateRoleId())
-            ->whereIn('cv_visibility', ['public', 'employers'])
-            ->findOrFail($id);
+        $candidate = $this->visibleCandidates()->findOrFail($id);
 
         $data = $request->validate(['note' => 'nullable|string|max:2000']);
 
@@ -303,6 +314,9 @@ class EmployerCandidateController extends Controller
         $kw = mb_strtolower(trim((string) $request->input('keyword', '')));
         $resumes = Resume::with('candidate:id,name,avatar_url,cv_visibility')
             ->whereIn('candidate_id', $ids)
+            // Saved rows are a snapshot; the candidate may have gone private or been suspended
+            // since. Re-check visibility on every read rather than trusting the saved row.
+            ->whereHas('candidate', fn ($c) => $this->visibleCandidateConstraint($c))
             ->orderByDesc('is_primary')->orderByDesc('updated_at')->get()
             ->filter(fn ($r) => $r->candidate)->unique('candidate_id');
 
