@@ -101,6 +101,217 @@
     "Your CV is private, so this link won't open. Set visibility to Employers or Public in your Profile to share it.": "CV របស់អ្នកជាឯកជន ដូច្នេះតំណនេះនឹងមិនបើកទេ។ កំណត់ភាពមើលឃើញទៅ និយោជក ឬ សាធារណៈ ក្នុងប្រវត្តិរូប ដើម្បីចែករំលែក។",
   };
   try { if (window.KRAMA_I18N && window.KRAMA_I18N.km) { Object.assign(window.KRAMA_I18N.km, CAND_KM); } else { window.KRAMA_I18N = { km: CAND_KM }; } } catch (e) {}
+  // Simplified Chinese for this dashboard. Keys that also exist in the shared public-site
+  // dictionary reuse its exact value on purpose — this merges into the SAME KRAMA_I18N.zh
+  // object, so a different value here would silently re-translate the public site too.
+  var CAND_ZH = {
+    // Nav + shell
+    "Dashboard": "控制台",
+    "My applications": "我的申请",
+    "Saved jobs": "收藏的职位",
+    "Recommended": "推荐职位",
+    "Following": "已关注",
+    "Job alerts": "职位提醒",
+    "Messages": "消息",
+    "Invitations": "邀请",
+    "Employers who invited you to apply.": "邀请你投递的雇主。",
+    "No invitations yet": "暂无邀请",
+    "When an employer invites you to apply for a role, it will appear here.": "当雇主邀请你申请职位时，会显示在这里。",
+    "New": "新",
+    "Decline": "谢绝",
+    "Already applied": "已申请",
+    "Job closed": "职位已关闭",
+    "Résumé builder": "简历生成器",
+    "Profile": "个人档案",
+    "Help & support": "帮助与支持",
+    "Profile strength": "档案完整度",
+    "Profile complete": "档案已完善",
+    "Sign out": "退出登录",
+    "Welcome back": "欢迎回来",
+    "Recommended for you": "为你推荐",
+    "Companies I follow": "我关注的公司",
+    // Dashboard / overview
+    "Applied jobs": "已申请职位",
+    "Interviews": "面试",
+    "Application pipeline": "申请进度",
+    "Applied": "已申请",
+    "Reviewed": "已查看",
+    "Shortlisted": "已入围",
+    "Interview": "面试",
+    "Offered": "已发录用",
+    "Recent applications": "最近的申请",
+    "View all": "查看全部",
+    "No applications yet. Start applying!": "还没有申请记录，快去投递吧！",
+    // Completion meter
+    "Complete your profile": "完善档案",
+    "Guided setup": "引导设置",
+    "A complete profile gets far more employer views.": "完整的档案能获得更多雇主浏览。",
+    "step left": "项待完成",
+    "steps left": "项待完成",
+    "Full name": "姓名",
+    "Email address": "电子邮箱",
+    "Phone number": "手机号码",
+    "Profile photo": "头像",
+    "About you": "个人简介",
+    "Professional headline": "职业头衔",
+    "Career summary": "职业概述",
+    "Work experience": "工作经历",
+    "Education": "教育背景",
+    "Skills": "技能",
+    "Upload your CV": "上传简历",
+    // Onboarding wizard
+    "Set up your profile": "设置你的档案",
+    "Jobs you want": "期望职位",
+    "Upload CV": "上传简历",
+    "Step": "第",
+    "of": "步，共",
+    "Tell us what you're looking for — we'll email you matching jobs.": "告诉我们你想找什么工作——有匹配职位时我们会邮件通知你。",
+    "Job title you want": "期望职位名称",
+    "Field / category": "领域 / 类别",
+    "Any field": "不限领域",
+    "Location": "地点",
+    "Any location": "不限地区",
+    "Employment type": "工作性质",
+    "Any type": "不限类型",
+    "Full time": "全职",
+    "Part time": "兼职",
+    "Contract": "合同工",
+    "Internship": "实习",
+    "Upload your CV so you can apply to jobs in one click.": "上传简历，即可一键投递职位。",
+    "Upload your CV file": "上传简历文件",
+    "Browse files": "浏览文件",
+    "Choose a different file": "选择其他文件",
+    "Add your most recent role — employers see this on your profile.": "填写你最近的一份工作——雇主会在你的档案中看到。",
+    "Position": "职位",
+    "Company name": "公司名称",
+    "Years": "年限",
+    "You can add more roles later in the Résumé builder.": "之后可在简历生成器中添加更多经历。",
+    "Back": "上一步",
+    "Skip this step": "跳过此步",
+    "Continue": "继续",
+    "Finish setup": "完成设置",
+    "CV already on file": "已有简历",
+    // Common
+    "Loading…": "加载中…",
+    "Saving…": "保存中…",
+    "Uploading…": "上传中…",
+    "Previous": "上一页",
+    "Next": "下一页",
+    "Add": "添加",
+    "Cancel": "取消",
+    "Search": "搜索",
+    "Clear": "清除",
+    "No results": "无结果",
+    "Rejected": "未通过",
+    "View": "查看",
+    "All": "全部",
+    // Applications
+    "total applications": "份申请",
+    "No applications found.": "未找到申请记录。",
+    "Message": "留言",
+    "Withdraw": "撤回申请",
+    "Send message": "发送消息",
+    "Sending…": "发送中…",
+    "Employer": "雇主",
+    // Saved jobs
+    "jobs saved": "个已收藏职位",
+    "No saved jobs yet. Browse jobs and click the bookmark icon.": "还没有收藏的职位。浏览职位并点击书签图标即可收藏。",
+    // Recommended
+    "jobs matched": "个匹配职位",
+    "Matches your field": "匹配你的领域",
+    "Matches your level": "匹配你的级别",
+    "Apply to or save some jobs first — we'll personalise these recommendations based on your activity.": "先投递或收藏一些职位——我们会根据你的行为个性化推荐。",
+    // Profile
+    "How you appear to employers.": "雇主看到的你。",
+    "Change photo": "更换头像",
+    "Email": "电子邮箱",
+    "Phone": "电话",
+    "Bio / Description": "个人简介",
+    "CV / Resume visibility": "简历可见性",
+    "Controls who can download your uploaded CV file.": "控制谁可以下载你上传的简历文件。",
+    "Public — anyone can view": "公开——任何人可查看",
+    "Employers only — recruiters who review your application": "仅雇主——查看你申请的招聘人员",
+    "Private — only you can access": "私密——仅你本人可访问",
+    "Save changes": "保存更改",
+    "Change password": "修改密码",
+    "Choose a strong password of at least 8 characters.": "请设置至少 8 个字符的高强度密码。",
+    "Current password": "当前密码",
+    "New password": "新密码",
+    "Confirm new password": "确认新密码",
+    "Update password": "更新密码",
+    "Updating…": "更新中…",
+    // Résumé builder
+    "Build your CV to attach when applying for jobs.": "创建简历，投递职位时可一并提交。",
+    "Download CV": "下载简历",
+    "Save resume": "保存简历",
+    "Resume saved successfully!": "简历保存成功！",
+    "Upload CV file": "上传简历文件",
+    "CV uploaded": "简历已上传",
+    "Replace CV": "替换简历",
+    "No CV uploaded yet. Upload a PDF or DOC (max 5 MB).": "尚未上传简历。请上传 PDF 或 DOC 文件（最大 5 MB）。",
+    "Personal summary": "个人概述",
+    "Headline / Job title": "头衔 / 职位名称",
+    "Summary": "概述",
+    "No education entries yet.": "尚未添加教育背景。",
+    "School / University": "学校 / 大学",
+    "Degree": "学位",
+    "No experience entries yet.": "尚未添加工作经历。",
+    "Job title": "职位名称",
+    "Company": "公司",
+    "Description": "描述",
+    "No skills added yet.": "尚未添加技能。",
+    "Certifications": "证书",
+    "No certifications yet.": "尚未添加证书。",
+    "Certification name": "证书名称",
+    "Year": "年份",
+    // Following
+    "You'll get an email when a followed company posts a new job.": "你关注的公司发布新职位时，我们会邮件通知你。",
+    "Not following anyone yet": "尚未关注任何公司",
+    "Visit a company profile and click Follow to stay notified of new jobs.": "访问公司主页并点击关注，即可及时获知新职位。",
+    "Unfollow": "取消关注",
+    // Job alerts
+    "Your job alerts": "你的职位提醒",
+    "Get an email the moment a matching role is posted. Up to 10 alerts.": "一有匹配职位发布，立即邮件通知你。最多可创建 10 个提醒。",
+    "+ New alert": "+ 新建提醒",
+    "Create a new alert": "创建新提醒",
+    "Keyword": "关键词",
+    "Category": "类别",
+    "Any category": "不限类别",
+    "Job type": "工作类型",
+    "Work mode": "工作方式",
+    "Any": "不限",
+    "Remote only": "仅远程",
+    "On-site / hybrid": "现场 / 混合办公",
+    "Full-time": "全职",
+    "Part-time": "兼职",
+    "Save alert": "保存提醒",
+    "No job alerts yet": "尚无职位提醒",
+    "Create an alert and we'll email you when a matching role is posted.": "创建提醒，有匹配职位发布时我们会邮件通知你。",
+    "All new jobs": "所有新职位",
+    "Remote": "远程",
+    // Messages
+    "Conversations": "会话",
+    "No conversations yet.": "暂无会话。",
+    "Employers can message you directly after viewing your application.": "雇主查看你的申请后可直接给你发消息。",
+    "Send": "发送",
+    "Select a conversation to read messages": "选择一个会话以查看消息",
+    // Login
+    "Candidate sign in": "求职者登录",
+    "Access your applications and saved jobs.": "查看你的申请记录和收藏的职位。",
+    "Password": "密码",
+    "Sign in": "登录",
+    "Signing in…": "登录中…",
+    // Digital CV
+    "My Digital CV": "我的电子简历",
+    "Share your CV with a link or QR code.": "通过链接或二维码分享你的简历。",
+    "Scan the code or share the link — anyone can view your CV, no login needed.": "扫描二维码或分享链接——任何人无需登录即可查看你的简历。",
+    "Copy link": "复制链接",
+    "Copied!": "已复制！",
+    "Open public CV": "打开公开简历",
+    "Your CV is private, so this link won't open. Set visibility to Employers or Public in your Profile to share it.": "你的简历为私密状态，此链接无法打开。请在个人档案中将可见性设为「仅雇主」或「公开」后再分享。"
+  };
+  try { if (window.KRAMA_I18N && window.KRAMA_I18N.zh) { Object.assign(window.KRAMA_I18N.zh, CAND_ZH); } else if (window.KRAMA_I18N) { window.KRAMA_I18N.zh = CAND_ZH; } } catch (e) {}
+
   // Languages this dashboard actually ships a dictionary for. The shared i18n layer carries
   // more (the public site also has zh), and a chunk of this kit's strings — "Dashboard",
   // "Saved jobs", "Job alerts" — happen to exist in that shared public-site dictionary. So
@@ -108,7 +319,7 @@
   // translated dashboard: shared keys switch, candidate-specific keys stay English. Falling
   // back wholesale to English is the honest result until a dictionary for that language
   // exists. To add one: merge it below like CAND_KM and list its code here.
-  var KIT_LANGS = { en: 1, km: 1 };
+  var KIT_LANGS = { en: 1, km: 1, zh: 1 };
   var T = function (s) {
     if (typeof window.KRAMA_T !== "function") return s;
     return KIT_LANGS[window.KRAMA_LANG] ? window.KRAMA_T(s) : s;
@@ -366,7 +577,7 @@
           </div>
           {onLang && (
             <div style={{ display: "flex", gap: 6, padding: "6px 12px 8px" }}>
-              {[{ v: "en", l: "EN" }, { v: "km", l: "ខ្មែរ" }].map(function (o) {
+              {[{ v: "en", l: "EN" }, { v: "km", l: "ខ្មែរ" }, { v: "zh", l: "中文" }].map(function (o) {
                 var on = (lang || "en") === o.v;
                 return (
                   <button key={o.v} onClick={function () { onLang(o.v); }} style={{ flex: 1, padding: "6px 8px", borderRadius: "var(--radius-md)", border: "1px solid " + (on ? "var(--brand)" : "var(--border)"), background: on ? "var(--brand-subtle)" : "transparent", color: on ? "var(--text-brand)" : "var(--text-muted)", fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)", fontWeight: 700, cursor: "pointer" }}>{o.l}</button>
@@ -1047,7 +1258,7 @@
               <Input label={T("Email")} type="email" value={email} onChange={function(e){ setEmail(e.target.value); }} iconLeft={I("mail", 16)} />
               <Input label={T("Phone")} value={phone} onChange={function(e){ setPhone(e.target.value); }} iconLeft={I("phone", 16)} />
             </div>
-            <Textarea label={T("Bio / Description")} value={bio} onChange={function(e){ setBio(e.target.value); }} rows={4} placeholder="Tell employers a bit about yourself…" />
+            <Textarea label={T("Bio / Description")} value={bio} onChange={function(e){ setBio(e.target.value); }} rows={4} placeholder={T("Tell employers a bit about yourself…")} />
             <div>
               <div style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-strong)", marginBottom: 6 }}>{T("CV / Resume visibility")}</div>
               <Select value={cvVis} onChange={function(e){ setCvVis(e.target.value); }} options={[
@@ -1246,7 +1457,7 @@
               <div key={e._k != null ? e._k : i} style={{ border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-md)", padding: "14px", marginBottom: 12 }}>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10, marginBottom: 10, alignItems: "end" }}>
                   <Input label={T("Job title")} value={e.role} onChange={function(ev){ updateExp(i,"role",ev.target.value); }} placeholder="e.g. Senior Accountant" />
-                  <Input label={T("Company")} value={e.org} onChange={function(ev){ updateExp(i,"org",ev.target.value); }} placeholder="Company name" />
+                  <Input label={T("Company")} value={e.org} onChange={function(ev){ updateExp(i,"org",ev.target.value); }} placeholder={T("Company name")} />
                   <Input label={T("Years")} value={e.years} onChange={function(ev){ updateExp(i,"years",ev.target.value); }} placeholder="2021–present" />
                   <button onClick={function(){ removeExp(i); }} style={{ height: 40, width: 36, border: "1px solid var(--border)", borderRadius: "var(--radius-md)", background: "transparent", cursor: "pointer", color: "var(--danger)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 20 }}>{I("trash-2", 15)}</button>
                 </div>
@@ -1504,7 +1715,7 @@
             <form onSubmit={handleCreate}>
               <div style={{ fontWeight: 700, fontSize: "var(--text-base)", color: "var(--text-strong)", marginBottom: 16 }}>{T("Create a new alert")}</div>
               <div className="krm-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
-                <Input label={T("Keyword")} placeholder="e.g. Software Engineer" value={form.keyword} onChange={function(e){ setForm(function(f){ return Object.assign({}, f, { keyword: e.target.value }); }); }} />
+                <Input label={T("Keyword")} placeholder={T("e.g. Software Engineer")} value={form.keyword} onChange={function(e){ setForm(function(f){ return Object.assign({}, f, { keyword: e.target.value }); }); }} />
                 {/* Design-system Select, not a raw <select>: the hand-rolled ones were 39px
                     tall next to the 44px Input on the same row, set their own 13px font
                     against the Input's 15px, and coloured their label with an undefined
@@ -2120,8 +2331,10 @@
 
   function App() {
     var [page, setPage] = React.useState("dashboard");
-    var [lang, setLang] = React.useState((window.KRAMA_LANG === "km") ? "km" : "en");
-    function switchLang(l) { if (window.KRAMA_SET_LANG) window.KRAMA_SET_LANG(l); setLang(l); }
+    // Seed from the global choice, but only honour languages this kit ships a dictionary for —
+    // otherwise the pills would highlight a language whose strings render as English.
+    var [lang, setLang] = React.useState(KIT_LANGS[window.KRAMA_LANG] ? window.KRAMA_LANG : "en");
+    function switchLang(l) { if (window.KRAMA_SET_LANG) window.KRAMA_SET_LANG(l); setLang(window.KRAMA_LANG); }
     var [authUser, setAuthUser] = React.useState(null);
     var [authLoading, setAuthLoading] = React.useState(true);
     var [resume, setResume] = React.useState(null);   // for the profile-completion meter
