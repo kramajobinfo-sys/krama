@@ -229,6 +229,14 @@ Route::middleware('auth:api')->group(function () {
     Route::delete('employer/interviews/{id}',               [\App\Http\Controllers\EmployerInterviewController::class, 'destroy'])->where('id', '[0-9]+');
     Route::put('employer/interviews/{id}/scorecard',        [\App\Http\Controllers\EmployerInterviewController::class, 'upsertScorecard'])->where('id', '[0-9]+');
 
+    // Employer: candidate search + talent pool
+    Route::get('employer/candidates',                       [\App\Http\Controllers\EmployerCandidateController::class, 'search']);
+    Route::get('employer/talent-pool',                      [\App\Http\Controllers\EmployerCandidateController::class, 'pool']);
+    Route::get('employer/candidates/{id}',                  [\App\Http\Controllers\EmployerCandidateController::class, 'show'])->where('id', '[0-9]+');
+    Route::get('employer/candidates/{id}/cv',               [\App\Http\Controllers\EmployerCandidateController::class, 'downloadCv'])->where('id', '[0-9]+');
+    Route::post('employer/candidates/{id}/save',            [\App\Http\Controllers\EmployerCandidateController::class, 'save'])->where('id', '[0-9]+')->middleware('throttle:60,1');
+    Route::delete('employer/candidates/{id}/save',          [\App\Http\Controllers\EmployerCandidateController::class, 'unsave'])->where('id', '[0-9]+');
+
     // Employer: own jobs
     // Note: 'verified' middleware removed — this is a JWT API (no verification.notice route),
     // and recruiters are created programmatically without email verification.
