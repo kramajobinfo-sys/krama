@@ -214,6 +214,14 @@
     addAppTag: function (appId, label) { return req("POST", "/employer/applications/" + appId + "/tags", { label: label }); },
     removeAppTag: function (appId, tagId) { return req("DELETE", "/employer/applications/" + appId + "/tags/" + tagId); },
     fetchCompanyTags: function () { return req("GET", "/employer/tags"); },
+
+    // Interviews + scorecards
+    fetchInterviews: function (appId) { return req("GET", "/employer/applications/" + appId + "/interviews"); },
+    scheduleInterview: function (appId, data) { return req("POST", "/employer/applications/" + appId + "/interviews", data); },
+    updateInterview: function (id, data) { return req("PATCH", "/employer/interviews/" + id, data); },
+    deleteInterview: function (id) { return req("DELETE", "/employer/interviews/" + id); },
+    saveScorecard: function (id, data) { return req("PUT", "/employer/interviews/" + id + "/scorecard", data); },
+    fetchUpcomingInterviews: function () { return req("GET", "/employer/interviews/upcoming"); },
     downloadCv: function (applicationId) {
       var token = getToken();
       return fetch(BASE + "/applications/" + applicationId + "/cv", {

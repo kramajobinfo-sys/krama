@@ -447,6 +447,9 @@
     const totalViews = jobs.reduce((s, j) => s + (j.views || 0), 0);
     const fmtDate = (iso) => { if (!iso) return "—"; var d = new Date(iso); return d.getDate() + " " + ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][d.getMonth()]; };
     const recent = jobs.slice(0, 6);
+    const [upcoming, setUpcoming] = React.useState([]);
+    React.useEffect(function () { emp.fetchUpcomingInterviews().then(function (d) { setUpcoming(d || []); }).catch(function () {}); }, []);
+    const fmtDT = fmtWall;
     return (
       <div className="krm-page-pad" style={{ padding: 28, display: "flex", flexDirection: "column", gap: 24 }}>
         {!loading && jobs.length === 0 && (
@@ -503,6 +506,28 @@
             </div>
           ))}
         </Card></div>
+
+        {upcoming.length > 0 && (
+          <div className="krm-table-wrap"><Card padding={0}>
+            <div style={{ padding: "18px 22px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ display: "inline-flex", color: "var(--text-brand)" }}>{I("calendar-clock", 18)}</span>
+              <h2 style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: "var(--text-strong)" }}>Upcoming interviews</h2>
+            </div>
+            {upcoming.map(function (iv, i) {
+              return (
+                <div key={iv.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "13px 22px", borderBottom: i < upcoming.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>
+                  <span style={{ display: "inline-flex", color: "var(--text-muted)", flexShrink: 0 }}>{I(iv.type === "phone" ? "phone" : iv.type === "in_person" ? "map-pin" : "video", 16)}</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-strong)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{iv.candidate || "Candidate"} · {iv.job || ""}</div>
+                    <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>{IV_TYPE[iv.type]} · {iv.duration_min} min{iv.interviewer ? " · " + iv.interviewer : ""}</div>
+                  </div>
+                  <div style={{ fontSize: "var(--text-sm)", color: "var(--text-body)", fontWeight: 600, flexShrink: 0 }}>{fmtDT(iv.scheduled_at)}</div>
+                  <Button variant="ghost" size="sm" onClick={() => onNav("applicants")} style={{ flexShrink: 0 }}>Open</Button>
+                </div>
+              );
+            })}
+          </Card></div>
+        )}
       </div>
     );
   }
@@ -1185,6 +1210,135 @@
     );
   }
 
+  const IV_TYPE = { phone: "Phone", video: "Video", in_person: "In-person" };
+  const IV_STATUS = [
+    { value: "scheduled", label: "Scheduled" }, { value: "confirmed", label: "Confirmed" }, { value: "rescheduled", label: "Rescheduled" },
+    { value: "completed", label: "Completed" }, { value: "cancelled", label: "Cancelled" }, { value: "no_show", label: "No show" },
+  ];
+  const SC_CRITERIA = [
+    { key: "technical", label: "Technical skills" }, { key: "communication", label: "Communication" }, { key: "experience", label: "Experience" },
+    { key: "problem_solving", label: "Problem solving" }, { key: "culture_fit", label: "Culture fit" },
+  ];
+  const SC_REC = [{ value: "", label: "— Recommendation —" }, { value: "strong_hire", label: "Strong hire" }, { value: "hire", label: "Hire" }, { value: "maybe", label: "Maybe" }, { value: "no_hire", label: "No hire" }];
+  const REC_LABEL = { strong_hire: "Strong hire", hire: "Hire", maybe: "Maybe", no_hire: "No hire" };
+  const ivInput = { width: "100%", boxSizing: "border-box", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", padding: "7px 10px", fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)", color: "var(--text-body)", background: "var(--surface-card)", outline: "none" };
+  // Interviews are stored as a naive wall-clock time (in the interview's timezone). Parse the
+  // date/time components directly so the browser doesn't re-interpret them as UTC and shift them.
+  const fmtWall = function (iso) {
+    if (!iso) return "";
+    var m = String(iso).match(/(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})/);
+    if (!m) return String(iso);
+    var d = new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]);
+    return d.toLocaleString(undefined, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  };
+
+  function ScorecardEditor({ iv, onSaved, flash }) {
+    var mine = (iv.scorecards || []).find(function (s) { return s.can_edit; });
+    const [ratings, setRatings] = React.useState((mine && mine.ratings) || {});
+    const [rec, setRec] = React.useState((mine && mine.recommendation) || "");
+    const [comment, setComment] = React.useState((mine && mine.comment) || "");
+    const [busy, setBusy] = React.useState(false);
+    var others = (iv.scorecards || []).filter(function (s) { return !s.can_edit; });
+    const save = function () {
+      setBusy(true);
+      emp.saveScorecard(iv.id, { ratings: ratings, recommendation: rec || null, comment: comment || null })
+        .then(function () { setBusy(false); flash("Scorecard saved."); if (onSaved) onSaved(); })
+        .catch(function (e) { setBusy(false); flash("Error: " + (e && e.message)); });
+    };
+    return (
+      <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px dashed var(--border)" }}>
+        {others.map(function (s) { return <div key={s.id} style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4 }}>{s.author}: <b>{REC_LABEL[s.recommendation] || "—"}</b></div>; })}
+        <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+          {SC_CRITERIA.map(function (c) {
+            return (
+              <div key={c.key} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ flex: 1, fontSize: 12, color: "var(--text-body)" }}>{c.label}</span>
+                <div style={{ display: "flex", gap: 3 }}>
+                  {[1, 2, 3, 4, 5].map(function (n) {
+                    var on = (ratings[c.key] || 0) >= n;
+                    return <span key={n} onClick={function () { setRatings(Object.assign({}, ratings, { [c.key]: n })); }} style={{ cursor: "pointer", color: on ? "var(--warning)" : "var(--border-strong)", fontSize: 16, lineHeight: 1 }}>★</span>;
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <div style={{ marginTop: 8 }}><Select value={rec} onChange={function (e) { setRec(e.target.value); }} options={SC_REC} /></div>
+        <textarea value={comment} onChange={function (e) { setComment(e.target.value); }} rows={2} placeholder="Notes…" style={Object.assign({}, ivInput, { marginTop: 6, resize: "vertical", background: "var(--surface-page)" })} />
+        <div style={{ marginTop: 6 }}><Button variant="secondary" size="sm" disabled={busy} onClick={save}>{busy ? "Saving…" : "Save scorecard"}</Button></div>
+      </div>
+    );
+  }
+
+  function InterviewsPanel({ appId, flash }) {
+    const [list, setList] = React.useState([]);
+    const [loading, setLoading] = React.useState(true);
+    const [open, setOpen] = React.useState(false);
+    const [scOpen, setScOpen] = React.useState(null);
+    const IVBLANK = { type: "video", scheduled_at: "", duration_min: 45, timezone: "Asia/Phnom_Penh", meeting_url: "", location: "", notes: "" };
+    const [form, setForm] = React.useState(IVBLANK);
+    const [busy, setBusy] = React.useState(false);
+    const set = function (k, v) { setForm(function (f) { return Object.assign({}, f, { [k]: v }); }); };
+    const load = React.useCallback(function () { setLoading(true); emp.fetchInterviews(appId).then(function (d) { setList(d || []); setLoading(false); }).catch(function () { setLoading(false); }); }, [appId]);
+    React.useEffect(function () { load(); }, [load]);
+    const schedule = function () {
+      if (!form.scheduled_at) { flash("Pick a date & time first."); return; }
+      setBusy(true);
+      emp.scheduleInterview(appId, form).then(function () { setBusy(false); setOpen(false); setForm(IVBLANK); flash("Interview scheduled — candidate notified."); load(); }).catch(function (e) { setBusy(false); flash("Error: " + (e && e.message)); });
+    };
+    const setStatus = function (iv, status) { emp.updateInterview(iv.id, { status: status }).then(load).catch(function () {}); };
+    const del = function (iv) { emp.deleteInterview(iv.id).then(load).catch(function () {}); };
+    const fmt = fmtWall;
+    return (
+      <div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+          <label style={{ fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".04em" }}>Interviews</label>
+          <Button variant="ghost" size="sm" iconLeft={I("calendar-plus", 14)} onClick={function () { setOpen(function (o) { return !o; }); }}>{open ? "Close" : "Schedule"}</Button>
+        </div>
+        {open && (
+          <div style={{ border: "1px solid var(--border)", borderRadius: "var(--radius-md)", padding: 12, marginBottom: 10, display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ display: "flex", gap: 8 }}>
+              <div style={{ width: 130 }}><Select value={form.type} onChange={function (e) { set("type", e.target.value); }} options={[{ value: "video", label: "Video" }, { value: "phone", label: "Phone" }, { value: "in_person", label: "In-person" }]} /></div>
+              <input type="number" min="5" value={form.duration_min} onChange={function (e) { set("duration_min", e.target.value); }} title="Duration (minutes)" style={ivInput} />
+            </div>
+            <input type="datetime-local" value={form.scheduled_at} onChange={function (e) { set("scheduled_at", e.target.value); }} style={ivInput} />
+            {form.type === "in_person"
+              ? <input value={form.location} onChange={function (e) { set("location", e.target.value); }} placeholder="Location / address" style={ivInput} />
+              : <input value={form.meeting_url} onChange={function (e) { set("meeting_url", e.target.value); }} placeholder="Meeting link (https://…)" style={ivInput} />}
+            <textarea value={form.notes} onChange={function (e) { set("notes", e.target.value); }} rows={2} placeholder="Notes (optional)…" style={Object.assign({}, ivInput, { resize: "vertical" })} />
+            <div><Button variant="primary" size="sm" disabled={busy} onClick={schedule}>{busy ? "Scheduling…" : "Schedule interview"}</Button></div>
+          </div>
+        )}
+        {loading ? <div style={{ fontSize: "var(--text-xs)", color: "var(--text-faint)" }}>Loading…</div> : (
+          list.length === 0 ? <div style={{ fontSize: "var(--text-xs)", color: "var(--text-faint)" }}>No interviews scheduled.</div> : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {list.map(function (iv) {
+                return (
+                  <div key={iv.id} style={{ background: "var(--surface-sunken)", borderRadius: "var(--radius-md)", padding: "10px 12px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ display: "inline-flex", color: "var(--text-brand)" }}>{I(iv.type === "phone" ? "phone" : iv.type === "in_person" ? "map-pin" : "video", 14)}</span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-strong)" }}>{fmt(iv.scheduled_at)}</div>
+                        <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{IV_TYPE[iv.type]} · {iv.duration_min} min{iv.timezone ? " · " + iv.timezone : ""}</div>
+                      </div>
+                      <div style={{ width: 124, flexShrink: 0 }}><Select value={iv.status} onChange={function (e) { setStatus(iv, e.target.value); }} options={IV_STATUS} /></div>
+                      <button onClick={function () { del(iv); }} title="Remove" style={{ border: "none", background: "none", cursor: "pointer", color: "var(--danger)", display: "inline-flex", padding: 4, flexShrink: 0 }}>{I("trash-2", 14)}</button>
+                    </div>
+                    {iv.meeting_url && <a href={iv.meeting_url} target="_blank" rel="noopener" style={{ fontSize: 12, color: "var(--text-brand)", display: "inline-block", marginTop: 4, wordBreak: "break-all" }}>{iv.meeting_url}</a>}
+                    {iv.location && <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 4 }}>{iv.location}</div>}
+                    {iv.notes && <div style={{ fontSize: 12, color: "var(--text-body)", marginTop: 4, whiteSpace: "pre-wrap" }}>{iv.notes}</div>}
+                    <button onClick={function () { setScOpen(scOpen === iv.id ? null : iv.id); }} style={{ marginTop: 6, border: "none", background: "none", cursor: "pointer", color: "var(--text-brand)", fontWeight: 600, fontSize: 12, padding: 0 }}>{scOpen === iv.id ? "Hide scorecard" : ((iv.scorecards && iv.scorecards.length) ? "Scorecard (" + iv.scorecards.length + ")" : "Add scorecard")}</button>
+                    {scOpen === iv.id && <ScorecardEditor iv={iv} flash={flash} onSaved={load} />}
+                  </div>
+                );
+              })}
+            </div>
+          )
+        )}
+      </div>
+    );
+  }
+
   const STAGES = [
     { key: "applied", label: "Applied", tone: "neutral" },
     { key: "reviewed", label: "Reviewed", tone: "info" },
@@ -1414,6 +1568,7 @@
                     </div>
                   </div>
                 )}
+                <InterviewsPanel key={"iv" + sel.id} appId={sel.id} flash={flash} />
                 <div>
                   <label style={{ fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: ".04em" }}>Tags</label>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
