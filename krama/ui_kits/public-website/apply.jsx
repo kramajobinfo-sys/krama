@@ -10,8 +10,17 @@
     const [loading, setLoading] = React.useState(false);
     const [error, setError] = React.useState("");
     const [coverNote, setCoverNote] = React.useState("");
+    const [questions, setQuestions] = React.useState((job && job._raw && job._raw.screening_questions) || []);
+    const [answers, setAnswers] = React.useState({});
+    const setAnswer = (qid, v) => setAnswers(function (a) { var n = Object.assign({}, a); n[qid] = v; return n; });
 
     React.useEffect(() => { if (window.lucide) window.lucide.createIcons(); });
+    React.useEffect(function () {
+      if (!job) return;
+      if (job._raw && job._raw.screening_questions) { setQuestions(job._raw.screening_questions); return; }
+      var id = job._raw ? job._raw.id : job.id;
+      window.KRAMA_API.fetchJobDetail(id).then(function (d) { setQuestions((d && d.screening_questions) || []); }).catch(function () {});
+    }, [job && (job._raw ? job._raw.id : job.id)]);
 
     if (!job) return null;
 
@@ -34,10 +43,58 @@
     }
 
     const submitApplication = () => {
+      for (var k = 0; k < questions.length; k++) {
+        var q = questions[k];
+        if (!q.required) continue;
+        var av = answers[q.id];
+        if (av === undefined || av === null || av === "" || (Array.isArray(av) && av.length === 0)) {
+          setError(TR("Please answer all required questions.")); return;
+        }
+      }
       setError(""); setLoading(true);
-      window.KRAMA_API.applyToJob(job._raw ? job._raw.id : job.id, coverNote)
+      window.KRAMA_API.applyToJob(job._raw ? job._raw.id : job.id, coverNote, answers)
         .then(() => { setLoading(false); setDone(true); })
         .catch((e) => { setLoading(false); setError((e && e.message) || "Application failed. Please try again."); });
+    };
+
+    const fieldStyle = { width: "100%", boxSizing: "border-box", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", padding: "9px 12px", fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)", color: "var(--text-body)", background: "var(--surface-page)", outline: "none" };
+    const renderField = (q) => {
+      var v = answers[q.id];
+      if (q.type === "textarea") return <textarea value={v || ""} onChange={(e) => setAnswer(q.id, e.target.value)} rows={3} style={Object.assign({}, fieldStyle, { resize: "vertical" })} />;
+      if (q.type === "number") return <input type="number" value={v || ""} onChange={(e) => setAnswer(q.id, e.target.value)} style={fieldStyle} />;
+      if (q.type === "date") return <input type="date" value={v || ""} onChange={(e) => setAnswer(q.id, e.target.value)} style={fieldStyle} />;
+      if (q.type === "yes_no") return (
+        <div style={{ display: "flex", gap: 18 }}>
+          {["yes", "no"].map(function (opt) { return (
+            <label key={opt} style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: "var(--text-sm)", color: "var(--text-body)" }}>
+              <input type="radio" name={"q" + q.id} checked={v === opt} onChange={() => setAnswer(q.id, opt)} /> {opt === "yes" ? "Yes" : "No"}
+            </label>
+          ); })}
+        </div>
+      );
+      if (q.type === "single_choice") return (
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {(q.options || []).map(function (opt) { return (
+            <label key={opt} style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: "var(--text-sm)", color: "var(--text-body)" }}>
+              <input type="radio" name={"q" + q.id} checked={v === opt} onChange={() => setAnswer(q.id, opt)} /> {opt}
+            </label>
+          ); })}
+        </div>
+      );
+      if (q.type === "multi_choice") return (
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {(q.options || []).map(function (opt) {
+            var arr = Array.isArray(v) ? v : [];
+            var on = arr.indexOf(opt) !== -1;
+            return (
+              <label key={opt} style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: "var(--text-sm)", color: "var(--text-body)" }}>
+                <input type="checkbox" checked={on} onChange={() => setAnswer(q.id, on ? arr.filter(function (x) { return x !== opt; }) : arr.concat([opt]))} /> {opt}
+              </label>
+            );
+          })}
+        </div>
+      );
+      return <input type="text" value={v || ""} onChange={(e) => setAnswer(q.id, e.target.value)} maxLength={2000} style={fieldStyle} />;
     };
 
     return (
@@ -100,6 +157,21 @@
                   rows={4}
                 />
               </div>
+              {questions.length > 0 && (
+                <div style={{ marginBottom: 16, display: "flex", flexDirection: "column", gap: 14, borderTop: "1px solid var(--border-subtle)", paddingTop: 16 }}>
+                  <div style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-strong)" }}>{TR("Screening questions")}</div>
+                  {questions.map(function (q) {
+                    return (
+                      <div key={q.id}>
+                        <label style={{ display: "block", fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-body)", marginBottom: 6 }}>
+                          {q.label}{q.required && <span style={{ color: "var(--danger)" }}> *</span>}
+                        </label>
+                        {renderField(q)}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
               <div style={{ display: "flex", gap: 10 }}>
                 <Button variant="secondary" block onClick={onClose}>{TR("Cancel")}</Button>
                 <Button variant="primary" block onClick={submitApplication}>{TR("Submit application")}</Button>

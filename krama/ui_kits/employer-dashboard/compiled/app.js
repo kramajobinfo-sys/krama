@@ -4310,7 +4310,16 @@
           fontSize: 11,
           color: "var(--text-faint)"
         }
-      }, a.has_cv && /*#__PURE__*/React.createElement("span", {
+      }, a.flagged && /*#__PURE__*/React.createElement("span", {
+        title: "Doesn't meet a screening requirement",
+        style: {
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 3,
+          color: "var(--danger)",
+          fontWeight: 700
+        }
+      }, I("alert-triangle", 11), " Flag"), a.has_cv && /*#__PURE__*/React.createElement("span", {
         style: {
           display: "inline-flex",
           alignItems: "center",
@@ -4486,7 +4495,91 @@
         borderRadius: "var(--radius-md)",
         padding: "10px 12px"
       }
-    }, detail.cover_note)), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    }, detail.cover_note)), detail && detail.answers && detail.answers.length > 0 && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        marginBottom: 8
+      }
+    }, /*#__PURE__*/React.createElement("label", {
+      style: {
+        fontSize: "var(--text-xs)",
+        fontWeight: 700,
+        color: "var(--text-faint)",
+        textTransform: "uppercase",
+        letterSpacing: ".04em"
+      }
+    }, "Screening answers"), detail.meets_requirements === false ? /*#__PURE__*/React.createElement("span", {
+      style: {
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 4,
+        fontSize: 11,
+        fontWeight: 700,
+        color: "var(--danger)",
+        background: "var(--danger-subtle)",
+        borderRadius: 999,
+        padding: "2px 9px"
+      }
+    }, I("alert-triangle", 11), " Doesn't meet requirements") : /*#__PURE__*/React.createElement("span", {
+      style: {
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 4,
+        fontSize: 11,
+        fontWeight: 700,
+        color: "var(--success)",
+        background: "var(--success-subtle)",
+        borderRadius: 999,
+        padding: "2px 9px"
+      }
+    }, I("check", 11), " Meets requirements")), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        flexDirection: "column",
+        gap: 10
+      }
+    }, detail.answers.map(function (a, i) {
+      return /*#__PURE__*/React.createElement("div", {
+        key: i,
+        style: {
+          background: "var(--surface-sunken)",
+          borderRadius: "var(--radius-md)",
+          padding: "9px 12px"
+        }
+      }, /*#__PURE__*/React.createElement("div", {
+        style: {
+          fontSize: "var(--text-xs)",
+          color: "var(--text-muted)",
+          marginBottom: 3
+        }
+      }, a.question), /*#__PURE__*/React.createElement("div", {
+        style: {
+          display: "flex",
+          alignItems: "center",
+          gap: 8
+        }
+      }, /*#__PURE__*/React.createElement("span", {
+        style: {
+          fontSize: "var(--text-sm)",
+          color: "var(--text-body)",
+          fontWeight: 600
+        }
+      }, a.answer), a.knockout && a.passed === true && /*#__PURE__*/React.createElement("span", {
+        style: {
+          display: "inline-flex",
+          color: "var(--success)"
+        },
+        title: "Meets requirement"
+      }, I("check-circle", 14)), a.knockout && a.passed === false && /*#__PURE__*/React.createElement("span", {
+        style: {
+          display: "inline-flex",
+          color: "var(--danger)"
+        },
+        title: "Does not meet requirement"
+      }, I("x-circle", 14))));
+    }))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
       style: {
         fontSize: "var(--text-xs)",
         fontWeight: 700,

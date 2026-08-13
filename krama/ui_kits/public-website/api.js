@@ -457,9 +457,12 @@
     });
   }
 
-  function applyToJob(jobId, coverNote) {
-    return authedPost("/jobs/" + jobId + "/apply", { cover_note: coverNote });
+  function applyToJob(jobId, coverNote, answers) {
+    return authedPost("/jobs/" + jobId + "/apply", { cover_note: coverNote, answers: answers || {} });
   }
+
+  // Public job detail (includes public-safe screening_questions).
+  function fetchJobDetail(id) { return get("/jobs/" + id); }
 
   function checkApplied(jobId) {
     if (!getToken()) return Promise.resolve({ applied: false });
@@ -549,7 +552,7 @@
     socialLogin: socialLogin,
     forgotPassword: forgotPassword, resetPassword: resetPassword,
     fetchMe: fetchMe, updateMe: updateMe,
-    applyToJob: applyToJob, checkApplied: checkApplied, fetchCompany: fetchCompany, fetchPlans: fetchPlans,
+    applyToJob: applyToJob, checkApplied: checkApplied, fetchJobDetail: fetchJobDetail, fetchCompany: fetchCompany, fetchPlans: fetchPlans,
     saveJob: saveJob, unsaveJob: unsaveJob,
     getMyResume: getMyResume,
     followCompany: followCompany, unfollowCompany: unfollowCompany, checkFollowing: checkFollowing,
