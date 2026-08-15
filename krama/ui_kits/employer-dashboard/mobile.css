@@ -79,6 +79,13 @@
   .krm-card-grid {
     grid-template-columns: 1fr !important;
   }
+  /* Find candidates (talent search) results — one clean column on a phone.
+     minmax(0,1fr) — NOT the desktop minmax(240px,…) — so a candidate card's
+     min-content (wrapped skill chips) can't force the track past the viewport
+     and get clipped by body{overflow-x:hidden}. */
+  .krm-talent-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
   /* Tables scroll horizontally */
   .krm-table-wrap {
     overflow-x: auto !important;
@@ -208,6 +215,18 @@
     min-width: max-content !important;
   }
   .krm-tabs-scroll > div > button { flex: 0 0 auto !important; }
+
+  /* Company profile → Jobs: the jobs list is a 5-column grid
+     (Title / Type / Status / Applicants / Posted) that crushes to unreadable
+     on a phone. Scroll it horizontally with a readable min width instead —
+     same pattern as .krm-table-wrap. */
+  .krm-cojobs-scroll {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  .krm-cojobs-row {
+    min-width: 640px !important;
+  }
 
   /* Plan & billing — the current-plan summary is a hard 4-column grid (Current plan / Status /
      Started / Renews) that overflows a phone and clips the "Renews" column. Stack it 2×2. */
