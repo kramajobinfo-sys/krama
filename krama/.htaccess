@@ -35,3 +35,8 @@
 # NOTE: JS/CSS are intentionally NOT force-cached here — the app hand-patches
 # _ds_bundle.js and versions assets via ?v= query strings. Once a real build
 # step lands (audit P-1), switch to hashed filenames + Cache-Control: immutable.
+
+# === KRAMA-DEV-ARTIFACT-GUARD: never serve source/dev files ===
+<FilesMatch "(\.jsx$)|(\.bak)|(\.orig$)|(\.map$)|(^\._)|(\.md$)">
+    Require all denied
+</FilesMatch>
