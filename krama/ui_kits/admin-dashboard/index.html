@@ -62,11 +62,12 @@ class ErrBoundary extends React.Component {
 // staring at a blank page indefinitely.
 var mountDeadline = Date.now() + 10000;
 function mount(){
-  if(!window.KramaAdminApp||!window.KramaDesignSystem_1a6f65){
+  if(!window.KramaAdminApp||!window.KramaDesignSystem_1a6f65||!window.KRAMA_ADMIN_API){
     if(Date.now() > mountDeadline){
       return showLoadError('The admin app did not load.\n\nMissing: '
         + (!window.KramaAdminApp ? 'compiled/app.js ' : '')
-        + (!window.KramaDesignSystem_1a6f65 ? '_ds_bundle.js' : '')
+        + (!window.KramaDesignSystem_1a6f65 ? '_ds_bundle.js ' : '')
+        + (!window.KRAMA_ADMIN_API ? 'api.js' : '')
         + '\n\nCheck the browser console and the network tab.');
     }
     return setTimeout(mount,40);

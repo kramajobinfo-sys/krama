@@ -60,11 +60,12 @@ class ErrBoundary extends React.Component {
 // reports a failed load — a missing app.js would otherwise leave a blank page forever.
 var mountDeadline = Date.now() + 10000;
 function mount(){
-  if(!window.KramaEmployerApp||!window.KramaDesignSystem_1a6f65){
+  if(!window.KramaEmployerApp||!window.KramaDesignSystem_1a6f65||!window.KRAMA_EMPLOYER_API){
     if(Date.now() > mountDeadline){
       return showLoadError('The app did not load.\n\nMissing: '
         + (!window.KramaEmployerApp ? 'compiled/app.js ' : '')
-        + (!window.KramaDesignSystem_1a6f65 ? '_ds_bundle.js' : '')
+        + (!window.KramaDesignSystem_1a6f65 ? '_ds_bundle.js ' : '')
+        + (!window.KRAMA_EMPLOYER_API ? 'api.js' : '')
         + '\n\nCheck the browser console and the network tab.');
     }
     return setTimeout(mount,40);
