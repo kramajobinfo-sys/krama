@@ -310,6 +310,60 @@
     );
   }
 
+  // ── Footer call-to-action banner ──────────────────────────────────────────
+  // The wide banner above the site footer. It used to render only on the Home page
+  // (in home.jsx); moved here into the shared Footer so it shows on EVERY public
+  // page. Config is the admin's home_content.footerBanner (same control as before).
+  // home_content is warmed at app init (api.js → KRAMA_SETTINGS), so it's available
+  // on any page; we read the localStorage cache first and refresh on mount.
+  const FB_HOME_KEY = "krama_home_settings";
+  const FOOTER_BANNER_DEFAULT = { visible: true, mobileVisible: false, theme: "teal", title: "Hiring? Reach 40,000+ verified candidates.", message: "Post your first job free and reach thousands of candidates.", cta: "Post a job", ctaUrl: "", image: "../../assets/banners/bg-footerBanner.svg", fit: "cover" };
+  const FOOTER_BANNER_THEMES = {
+    teal:        { bg: "var(--teal-700)",    fg: "#fff", ctaBg: "var(--saffron-500)", ctaFg: "#fff" },
+    saffron:     { bg: "var(--saffron-500)", fg: "#fff", ctaBg: "#fff",              ctaFg: "var(--saffron-700)" },
+    dark:        { bg: "var(--stone-900)",   fg: "#fff", ctaBg: "var(--saffron-500)", ctaFg: "#fff" },
+    blank:       { bg: "var(--surface-card)", fg: "var(--text-body)", ctaBg: "var(--brand)", ctaFg: "#fff" },
+    transparent: { bg: "transparent",        fg: "var(--text-body)", ctaBg: "var(--brand)", ctaFg: "#fff" },
+  };
+  function resolveFooterTheme(b) {
+    if (b.theme === "custom") return { bg: b.customBg || "var(--teal-700)", fg: b.customFg || "#fff", ctaBg: b.customCtaBg || "var(--saffron-500)", ctaFg: b.customCtaFg || "#fff" };
+    return FOOTER_BANNER_THEMES[b.theme] || FOOTER_BANNER_THEMES.teal;
+  }
+  function FooterBanner({ onNav }) {
+    const t = window.KRAMA_T || function (s) { return s; };
+    const readCache = function () { try { return JSON.parse(localStorage.getItem(FB_HOME_KEY) || "{}") || {}; } catch (e) { return {}; } };
+    const [hs, setHs] = React.useState(readCache);
+    React.useEffect(function () {
+      if (!window.KRAMA_SETTINGS) return;
+      window.KRAMA_SETTINGS("home_content").then(function (d) {
+        if (d && d.data) { try { var p = JSON.parse(d.data); try { localStorage.setItem(FB_HOME_KEY, JSON.stringify(p)); } catch (e) {} setHs(p); } catch (e) {} }
+      }).catch(function () {});
+    }, []);
+    const b = Object.assign({}, FOOTER_BANNER_DEFAULT, hs.footerBanner || {});
+    if (!b.visible) return null;
+    const th = resolveFooterTheme(b);
+    const handleCta = function () { if (b.ctaUrl) window.open(b.ctaUrl, "_blank"); else if (onNav) onNav("register"); };
+    return (
+      <section className={"krm-footer-banner" + (b.mobileVisible === true ? " krm-banner-show-mobile" : "")} style={{ position: "relative", background: th.bg, overflow: "hidden", margin: "0 32px 56px", maxWidth: 1136, marginLeft: "auto", marginRight: "auto", borderRadius: "var(--radius-2xl)", padding: b.hideText ? 0 : "48px", minHeight: b.hideText ? 160 : undefined, border: (b.theme === "transparent" || b.theme === "blank") ? "1px solid var(--border)" : "none" }}>
+        {b.image
+          ? <React.Fragment>
+              <div style={{ position: "absolute", inset: 0, backgroundImage: "url('" + b.image + "')", backgroundSize: b.fit === "contain" ? "contain" : "cover", backgroundRepeat: "no-repeat", backgroundPosition: "center" }} />
+              <div style={{ position: "absolute", inset: 0, background: th.bg, opacity: (b.imgOverlay != null ? b.imgOverlay : 20) / 100 }} />
+            </React.Fragment>
+          : <div style={{ position: "absolute", inset: 0, background: "url('../../assets/krama-pattern.svg')", backgroundSize: 64, opacity: 0.08 }} />}
+        {!b.hideText && (
+        <div className="krm-footer-banner-inner" style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 32, flexWrap: "wrap" }}>
+          <div>
+            <h2 style={{ color: th.fg, fontSize: "var(--text-3xl)", fontWeight: 700 }}>{t(b.title)}</h2>
+            {b.message && <p style={{ color: th.fg, opacity: 0.8, fontSize: "var(--text-md)", marginTop: 10 }}>{t(b.message)}</p>}
+          </div>
+          {b.cta && <button className="krm-footer-cta-btn" onClick={handleCta} style={{ flexShrink: 0, height: 52, padding: "0 32px", borderRadius: "var(--radius-pill)", border: "none", background: th.ctaBg, color: th.ctaFg, fontFamily: "var(--font-sans)", fontSize: "var(--text-base)", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>{t(b.cta)}</button>}
+        </div>
+        )}
+      </section>
+    );
+  }
+
   function Footer({ onNav }) {
     const t = window.KRAMA_T || function (s) { return s; };
     const go = (p) => (e) => { e.preventDefault(); onNav && onNav(p); };
@@ -322,6 +376,8 @@
       </div>
     );
     return (
+      <React.Fragment>
+      <FooterBanner onNav={onNav} />
       <footer className="krm-footer" style={{ position: "relative", background: "var(--stone-900)", padding: "56px 32px 32px", overflow: "hidden" }}>
         <div style={{ position: "absolute", inset: 0, background: "url('../../assets/krama-pattern.svg')", backgroundSize: 64, opacity: 0.05 }} />
         <div className="krm-footer-grid" style={{ position: "relative", maxWidth: 1200, margin: "0 auto", display: "grid", gridTemplateColumns: "1.4fr 1fr 1fr 1fr", gap: 40 }}>
@@ -342,6 +398,7 @@
           <span>© 2026 Krama Job. {t("All rights reserved.")}</span>
         </div>
       </footer>
+      </React.Fragment>
     );
   }
 

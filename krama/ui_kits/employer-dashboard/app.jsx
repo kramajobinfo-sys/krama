@@ -1145,7 +1145,12 @@
   }
 
   function JobFormModal({ open, mode, job, onClose, onCreated, onPublishRequest, user }) {
-    const BLANK = { title: "", job_type: "full_time", experience_level: "mid", category_id: "", location_id: "", salary_min: "", salary_max: "", salary_currency: "USD", salary_period: "month", is_remote: false, working_days: "", working_time: "", map_location: "", description: "", requirements: "", benefits: "", expires_at: "", share_social: true, social_image: "", screening_questions: [] };
+    // Default banner for the social post when the employer doesn't upload their own:
+    // the same "Hiring" banner used on the public Home page. Resolved to an ABSOLUTE
+    // URL (via document.baseURI) so it works in the Telegram/Facebook post, not just
+    // the in-dashboard preview. Employers can Replace it, or Remove it for a text-only post.
+    const DEFAULT_SOCIAL_BANNER = new URL("../../assets/banners/banner-hiring.png", document.baseURI).href;
+    const BLANK = { title: "", job_type: "full_time", experience_level: "mid", category_id: "", location_id: "", salary_min: "", salary_max: "", salary_currency: "USD", salary_period: "month", is_remote: false, working_days: "", working_time: "", map_location: "", description: "", requirements: "", benefits: "", expires_at: "", share_social: true, social_image: DEFAULT_SOCIAL_BANNER, screening_questions: [] };
     function jobToForm(j, isClone) {
       var _today = new Date(); _today.setHours(0, 0, 0, 0);
       var _rawExp = j.expires_at ? j.expires_at.split("T")[0] : "";

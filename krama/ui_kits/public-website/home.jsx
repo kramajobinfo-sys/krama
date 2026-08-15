@@ -603,7 +603,8 @@
         {/* Featured jobs on mobile — infinite scroll, at the bottom of the page */}
         {isMobile && fjSection}
 
-        <FooterBanner onNav={onNav} />
+        {/* Footer CTA banner moved to the shared chrome Footer (chrome.jsx) so it shows
+            on every public page, not just Home. */}
       </div>
     );
   }

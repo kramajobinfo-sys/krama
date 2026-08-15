@@ -1507,9 +1507,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         cursor: fcPageSafe === fcPages - 1 ? "not-allowed" : "pointer",
         color: fcPageSafe === fcPages - 1 ? "var(--text-faint)" : "var(--text-body)"
       }
-    }, I("chevron-right", 18))) : null) : null, isMobile && fjSection, /*#__PURE__*/React.createElement(FooterBanner, {
-      onNav: onNav
-    }));
+    }, I("chevron-right", 18))) : null) : null, isMobile && fjSection);
   }
   window.KramaHome = Home;
 })();
