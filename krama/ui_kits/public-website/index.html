@@ -163,11 +163,12 @@ class ErrBoundary extends React.Component {
 // the old runtime-fetch boot reported that failure explicitly, and this keeps that.
 var mountDeadline = Date.now() + 10000;
 function mount(){
-  if(!window.KramaPublicApp||!window.KramaDesignSystem_1a6f65){
+  if(!window.KramaPublicApp||!window.KramaDesignSystem_1a6f65||!window.KRAMA_API){
     if(Date.now() > mountDeadline){
       return showLoadError('The app bundle did not load.\n\nMissing: '
         + (!window.KramaPublicApp ? 'compiled/bundle.js ' : '')
-        + (!window.KramaDesignSystem_1a6f65 ? '_ds_bundle.js' : '')
+        + (!window.KramaDesignSystem_1a6f65 ? '_ds_bundle.js ' : '')
+        + (!window.KRAMA_API ? 'api.js' : '')
         + '\n\nCheck the browser console and the network tab.');
     }
     return setTimeout(mount,40);
