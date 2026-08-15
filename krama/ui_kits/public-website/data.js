@@ -70,3 +70,18 @@ window.KRAMA_LOGOS = {
   (D.jobs || []).forEach(function (j) { if (L[j.company]) j.logo = L[j.company]; });
   (D.companies || []).forEach(function (c) { if (L[c.name]) c.logo = L[c.name]; });
 })();
+
+// ── Production guard ────────────────────────────────────────────────────────
+// The jobs / companies / banners above are LOCALHOST-ONLY placeholders so the dev
+// site isn't blank without an API. On a real host they must NEVER render: api.js →
+// KRAMA_API.init() fills these from the live database, and if that call fails (an
+// origin hiccup) init() deliberately "keeps the static fallback" — which would leak
+// FAKE companies (ABA Bank / Smart Axiata / Manulife …) onto production. Emptying
+// them here means a failed load shows an empty/loading state, not fake data.
+// Categories and the icon/logo maps stay — they're static schema data the API
+// doesn't supply.
+if (!/^(localhost|127\.0\.0\.1|::1|192\.168\.|10\.)/.test(window.location.hostname)) {
+  window.KRAMA_DATA.jobs = [];
+  window.KRAMA_DATA.companies = [];
+  window.KRAMA_DATA.banners = [];
+}
