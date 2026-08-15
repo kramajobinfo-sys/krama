@@ -83,6 +83,13 @@ class UserController extends Controller
     }
 
     // POST /api/admin/users — create a new user directly (no email invite)
+    /** Role hierarchy rank — higher = more privileged. Unknown roles rank 0. */
+    private static function roleRank(?string $slug): int
+    {
+        $ranks = ['candidate' => 1, 'employer' => 2, 'admin' => 3, 'super_admin' => 4];
+        return $ranks[$slug] ?? 0;
+    }
+
     public function adminCreateUser(Request $request)
     {
         $this->requirePermission('manage_users');
@@ -97,14 +104,15 @@ class UserController extends Controller
 
         $role = Role::where('slug', $data['role'])->firstOrFail();
 
-        // Privilege-escalation guard (H-2): minting a privileged account requires
-        // manage_roles — the same boundary adminUpdateUser enforces for role changes.
-        // A plain admin holds manage_users but NOT manage_roles, so it cannot create
-        // a super_admin/admin and self-escalate. (role.permissions was loaded by the
-        // requirePermission('manage_users') call above.)
-        $privilegedRoles = ['super_admin', 'admin'];
-        if (in_array($data['role'], $privilegedRoles, true) && ! auth()->user()->hasPermission('manage_roles')) {
-            abort(403, 'You do not have permission to create a user with this role.');
+        // Privilege-escalation guard: you can only create a user whose role is at or
+        // below your own rank, and only a Super Admin can mint a Super Admin. So an
+        // Admin can create Candidate/Employer/Admin accounts, never a Super Admin.
+        $actorSlug = optional(auth()->user()->role)->slug;
+        if (self::roleRank($data['role']) > self::roleRank($actorSlug)) {
+            abort(403, 'You cannot create a user with a role higher than your own.');
+        }
+        if ($data['role'] === 'super_admin' && $actorSlug !== 'super_admin') {
+            abort(403, 'Only a Super Admin can create a Super Admin account.');
         }
 
         $user = User::create([
@@ -126,7 +134,7 @@ class UserController extends Controller
     // PATCH /api/admin/users/{id} — update role and/or status
     public function adminUpdateUser(Request $request, $id)
     {
-        $this->requirePermission('manage_roles');
+        $this->requirePermission('manage_users');
 
         $data = $request->validate([
             'role'     => 'sometimes|string|exists:roles,slug',
@@ -134,9 +142,35 @@ class UserController extends Controller
             'password' => 'sometimes|string|min:8',
         ]);
 
-        $user = User::findOrFail($id);
+        $actor     = $request->user();
+        $actorSlug = optional($actor->role)->slug;
+        $actorRank = self::roleRank($actorSlug);
+
+        $user       = User::with('role:id,slug')->findOrFail($id);
+        $targetSlug = optional($user->role)->slug;
+
+        // Hierarchy guard: you may only manage users at or below your own rank, and a
+        // Super Admin account can only be touched by another Super Admin. Protects role,
+        // status AND password changes so an Admin can never act on a Super Admin.
+        if ((int) $actor->id !== (int) $user->id) {
+            if (self::roleRank($targetSlug) > $actorRank
+                || ($targetSlug === 'super_admin' && $actorSlug !== 'super_admin')) {
+                abort(403, 'You do not have authority over this account.');
+            }
+        }
 
         if (isset($data['role'])) {
+            // No self role change — prevents self-lockout and self-escalation.
+            if ((int) $actor->id === (int) $user->id && $data['role'] !== $targetSlug) {
+                abort(403, 'You cannot change your own role.');
+            }
+            // Cannot grant a role above your own rank; only a Super Admin grants Super Admin.
+            if (self::roleRank($data['role']) > $actorRank) {
+                abort(403, 'You cannot assign a role higher than your own.');
+            }
+            if ($data['role'] === 'super_admin' && $actorSlug !== 'super_admin') {
+                abort(403, 'Only a Super Admin can grant the Super Admin role.');
+            }
             $role = Role::where('slug', $data['role'])->firstOrFail();
             $user->update(['role_id' => $role->id]);
         }

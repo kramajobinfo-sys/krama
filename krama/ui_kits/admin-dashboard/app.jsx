@@ -2572,7 +2572,7 @@
   // ===== User management -- roles & permissions ============================
   const ROLES = {
     super_admin: { label: "Super Admin", tone: "danger", desc: "Full control of the entire system." },
-    admin: { label: "Admin", tone: "brand", desc: "Moderates content; no billing or role changes." },
+    admin: { label: "Admin", tone: "brand", desc: "Moderates content and manages users up to Admin — cannot grant Super Admin." },
     employer: { label: "Employer", tone: "info", desc: "Posts jobs and manages applicants." },
     candidate: { label: "Candidate", tone: "neutral", desc: "Searches and applies to jobs." },
   };
@@ -2631,15 +2631,21 @@
     }, [user]);
     if (!user) return null;
 
-    // Hierarchy guard: viewer can only edit users strictly below their own rank
+    // Hierarchy guard: a viewer may manage users at or below their own rank, but a
+    // Super Admin account is editable only by another Super Admin. So an Admin can now
+    // manage Candidate / Employer / Admin — never a Super Admin. (Enforced server-side too.)
     var viewerRank = ROLE_RANK[viewerRole] || 3;
     var targetRank = ROLE_RANK[user.role] || 0;
-    // locked = viewer has no authority over this user's role
-    var locked = !isSelf && viewerRank <= targetRank;
+    var canManageTarget = (targetRank <= viewerRank) && !(user.role === "super_admin" && viewerRole !== "super_admin");
+    // locked = viewer has no authority over this user
+    var locked = !isSelf && !canManageTarget;
     // self = viewing own profile — allow password change but not role change
     var selfView = !!isSelf;
-    // Roles the viewer is allowed to assign (strictly lower rank than themselves)
-    var assignableRoles = Object.keys(ROLES).filter(function(k) { return ROLE_RANK[k] < viewerRank; });
+    // Roles the viewer may assign: at or below their own rank; Super Admin only by a Super Admin.
+    var assignableRoles = Object.keys(ROLES).filter(function(k) {
+      if (k === "super_admin") return viewerRole === "super_admin";
+      return ROLE_RANK[k] <= viewerRank;
+    });
 
     const setRoleAndDefaults = (r) => { setRole(r); setPerms(ROLE_PERMS[r] || []); };
     const toggle = (p) => setPerms((s) => s.includes(p) ? s.filter((x) => x !== p) : [...s, p]);
