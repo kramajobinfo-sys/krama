@@ -344,9 +344,13 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     onNav,
     settings
   }) {
-    const all = D && D.companies || [];
+    let pool = D && D.companies || [];
     if (settings && settings.topVisible === false) return null;
-    const list = settings && settings.topCount ? all.slice(0, settings.topCount) : all;
+    // Only feature employers that actually have open jobs (admin-controlled; default on).
+    if (!settings || settings.topOnlyWithJobs !== false) {
+      pool = pool.filter(c => (c.openJobs || 0) > 0);
+    }
+    const list = settings && settings.topCount ? pool.slice(0, settings.topCount) : pool;
     if (list.length === 0) return null;
     const loop = list.concat(list); // duplicate for seamless scroll
     const dur = Math.max(18, list.length * 3.5); // seconds
