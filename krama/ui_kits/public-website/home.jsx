@@ -592,8 +592,15 @@
         <Section eyebrow={TR("Premium")} title={TR("Premium featured companies")}
           action={<Button variant="ghost" onClick={() => onNav("companies")} iconRight={I("arrow-right", 16)}>{TR("All companies")}</Button>}>
           <div className="krm-company-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16 }}>
-            {/* Identical to the Featured grid below — only the border colour + shadow are gold. */}
-            {premiumList.map((c) => <CompanyCard key={c.name} {...c} onClick={() => onNav("company", { companyId: c.id })} style={{ border: "1px solid #D9A521", boxShadow: "0 2px 4px rgba(190,140,25,0.18), 0 6px 18px rgba(190,140,25,0.30)" }} />)}
+            {/* Same CompanyCard as Featured (gold border + shadow). The wrapper is display:grid so
+                the card still stretches to full row height — a plain <div> broke that. The PREMIUM
+                badge is absolutely positioned in the wrapper, outside the card's clipped box. */}
+            {premiumList.map((c) => (
+              <div key={c.name} style={{ position: "relative", display: "grid" }}>
+                <CompanyCard {...c} onClick={() => onNav("company", { companyId: c.id })} style={{ border: "1px solid #D9A521", boxShadow: "0 2px 4px rgba(190,140,25,0.18), 0 6px 18px rgba(190,140,25,0.30)" }} />
+                <span style={{ position: "absolute", top: -9, left: "50%", transform: "translateX(-50%)", zIndex: 3, background: "linear-gradient(180deg,#F7CE63,#D99A1F)", color: "#4a3300", fontSize: 10, fontWeight: 800, letterSpacing: ".08em", padding: "3px 11px", borderRadius: 999, boxShadow: "0 2px 8px rgba(200,150,30,0.55)", whiteSpace: "nowrap" }}>★ PREMIUM</span>
+              </div>
+            ))}
           </div>
         </Section>
         ) : null}

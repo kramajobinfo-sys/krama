@@ -2641,9 +2641,13 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         gridTemplateColumns: "repeat(4,1fr)",
         gap: 16
       }
-    }, premiumList.map(c => /*#__PURE__*/React.createElement(CompanyCard, _extends({
-      key: c.name
-    }, c, {
+    }, premiumList.map(c => /*#__PURE__*/React.createElement("div", {
+      key: c.name,
+      style: {
+        position: "relative",
+        display: "grid"
+      }
+    }, /*#__PURE__*/React.createElement(CompanyCard, _extends({}, c, {
       onClick: () => onNav("company", {
         companyId: c.id
       }),
@@ -2651,7 +2655,24 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         border: "1px solid #D9A521",
         boxShadow: "0 2px 4px rgba(190,140,25,0.18), 0 6px 18px rgba(190,140,25,0.30)"
       }
-    }))))) : null, showFeatured ? /*#__PURE__*/React.createElement(Section, {
+    })), /*#__PURE__*/React.createElement("span", {
+      style: {
+        position: "absolute",
+        top: -9,
+        left: "50%",
+        transform: "translateX(-50%)",
+        zIndex: 3,
+        background: "linear-gradient(180deg,#F7CE63,#D99A1F)",
+        color: "#4a3300",
+        fontSize: 10,
+        fontWeight: 800,
+        letterSpacing: ".08em",
+        padding: "3px 11px",
+        borderRadius: 999,
+        boxShadow: "0 2px 8px rgba(200,150,30,0.55)",
+        whiteSpace: "nowrap"
+      }
+    }, "\u2605 PREMIUM"))))) : null, showFeatured ? /*#__PURE__*/React.createElement(Section, {
       eyebrow: TR("Trusted by"),
       title: TR("Featured companies"),
       action: /*#__PURE__*/React.createElement(Button, {
