@@ -30,6 +30,20 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
   // map a job to a coarse category bucket matching the filter options
   const catOf = j => j.category || "";
 
+  // Windowed paginator: show at most `size` page numbers, centred on the current
+  // page and clamped to the ends — so long result sets don't sprawl the page-number
+  // row (matters most on mobile, where a flex-wrap row would spill onto many lines).
+  const pageWindow = (pages, current, size = 5) => {
+    if (pages <= size) return Array.from({
+      length: pages
+    }, (_, i) => i);
+    const half = Math.floor(size / 2);
+    const start = Math.max(0, Math.min(current - half, pages - size));
+    return Array.from({
+      length: size
+    }, (_, i) => start + i);
+  };
+
   // Admin-controlled promos (Find Jobs). Read Admin Console settings.
   const SB_DEFAULT = {
     visible: true,
@@ -1833,9 +1847,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         cursor: pageSafe === 0 ? "not-allowed" : "pointer",
         color: pageSafe === 0 ? "var(--text-faint)" : "var(--text-body)"
       }
-    }, I("chevron-left", 18)), Array.from({
-      length: pages
-    }).map((_, i) => /*#__PURE__*/React.createElement("button", {
+    }, I("chevron-left", 18)), pageWindow(pages, pageSafe).map(i => /*#__PURE__*/React.createElement("button", {
       key: i,
       onClick: () => setPage(i),
       style: {
@@ -2288,9 +2300,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         cursor: pageSafe === 0 ? "not-allowed" : "pointer",
         color: pageSafe === 0 ? "var(--text-faint)" : "var(--text-body)"
       }
-    }, I("chevron-left", 18)), Array.from({
-      length: pages
-    }).map((_, i) => /*#__PURE__*/React.createElement("button", {
+    }, I("chevron-left", 18)), pageWindow(pages, pageSafe).map(i => /*#__PURE__*/React.createElement("button", {
       key: i,
       onClick: () => setPage(i),
       style: {

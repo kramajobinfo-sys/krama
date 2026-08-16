@@ -3879,6 +3879,7 @@
     const [saveErr, setSaveErr] = React.useState("");
     const [companies, setCompanies] = React.useState(HOME_COMPANIES);
     const [companyCounts, setCompanyCounts] = React.useState({});
+    const [companyLogos, setCompanyLogos] = React.useState({});
     const [allCats, setAllCats] = React.useState([]);
     const [editSlide, setEditSlide] = React.useState(null);
     const SLIDE_BLANK = { id: "", title: "", titleSize: "", subtitle: "", theme: "teal", image: "", imageMobile: "", focalX: 50, focalY: 50, fit: "cover", imageOnly: true, ctaLabel: "", ctaUrl: "" };
@@ -3902,8 +3903,10 @@
         var names = rows.map(function (c) { return c.name; }).filter(Boolean);
         if (names.length > 0) setCompanies(names);
         var counts = {};
-        rows.forEach(function (c) { if (c.name) counts[c.name] = c.open_jobs_count || 0; });
+        var logos = {};
+        rows.forEach(function (c) { if (c.name) { counts[c.name] = c.open_jobs_count || 0; logos[c.name] = c.logo_url || null; } });
         setCompanyCounts(counts);
+        setCompanyLogos(logos);
       }).catch(function () {});
       adm.fetchCategories().then(function (cats) {
         setAllCats(cats.filter(function (c) { return c.status === "active"; }));
@@ -4810,7 +4813,7 @@
                     border: "1px solid " + (on ? "var(--brand)" : "var(--border-strong)"),
                     background: on ? "var(--brand-subtle)" : "var(--surface-card)", borderRadius: "var(--radius-md)",
                   }}>
-                    <Avatar name={name} square size={32} />
+                    <Avatar src={companyLogos[name]} name={name} square size={32} />
                     <span style={{ flex: 1, fontWeight: 600, fontSize: "var(--text-sm)", color: "var(--text-strong)" }}>{name} <span style={{ color: "var(--text-muted)", fontWeight: 500 }}>({(companyCounts[name] || 0).toLocaleString()})</span></span>
                     <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 20, height: 20, borderRadius: "var(--radius-sm)", border: "1.5px solid " + (on ? "var(--brand)" : "var(--border-strong)"), background: on ? "var(--brand)" : "transparent", color: "#fff" }}>{on ? I("check", 13) : null}</span>
                   </button>

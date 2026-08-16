@@ -9,6 +9,16 @@
   // map a job to a coarse category bucket matching the filter options
   const catOf = (j) => j.category || "";
 
+  // Windowed paginator: show at most `size` page numbers, centred on the current
+  // page and clamped to the ends — so long result sets don't sprawl the page-number
+  // row (matters most on mobile, where a flex-wrap row would spill onto many lines).
+  const pageWindow = (pages, current, size = 5) => {
+    if (pages <= size) return Array.from({ length: pages }, (_, i) => i);
+    const half = Math.floor(size / 2);
+    const start = Math.max(0, Math.min(current - half, pages - size));
+    return Array.from({ length: size }, (_, i) => start + i);
+  };
+
   // Admin-controlled promos (Find Jobs). Read Admin Console settings.
   const SB_DEFAULT = { visible: true, theme: "teal", icon: "sparkles", title: "Boost your search", message: "Complete your profile to get AI-matched roles and apply in one click.", cta: "Build your profile", image: "../../assets/banners/bg-sidebarBanner.svg", fit: "cover" };
   const CB_DEFAULT = { visible: true, theme: "saffron", icon: "rocket", title: "Hiring? Reach top talent", message: "Post a job and get in front of 40,000+ candidates.", cta: "Post a job", image: "../../assets/banners/bg-categoryBanner.svg", fit: "cover" };
@@ -574,7 +584,7 @@
               {pages > 1 ? (
                 <div className="krm-pagination" style={{ display: "flex", alignItems: "center", justifyContent: "center", flexWrap: "wrap", gap: 8, marginTop: 28 }}>
                   <button onClick={() => setPage(Math.max(0, pageSafe - 1))} disabled={pageSafe === 0} aria-label={TR("Previous")} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 40, height: 40, borderRadius: "var(--radius-md)", border: "1px solid var(--border-strong)", background: "var(--surface-card)", cursor: pageSafe === 0 ? "not-allowed" : "pointer", color: pageSafe === 0 ? "var(--text-faint)" : "var(--text-body)" }}>{I("chevron-left", 18)}</button>
-                  {Array.from({ length: pages }).map((_, i) => (
+                  {pageWindow(pages, pageSafe).map((i) => (
                     <button key={i} onClick={() => setPage(i)} style={{ minWidth: 40, height: 40, padding: "0 12px", borderRadius: "var(--radius-md)", cursor: "pointer", border: "1px solid " + (i === pageSafe ? "var(--brand)" : "var(--border-strong)"), background: i === pageSafe ? "var(--brand)" : "var(--surface-card)", color: i === pageSafe ? "var(--on-brand)" : "var(--text-body)", fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)", fontWeight: 700 }}>{i + 1}</button>
                   ))}
                   <button onClick={() => setPage(Math.min(pages - 1, pageSafe + 1))} disabled={pageSafe === pages - 1} aria-label={TR("Next")} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 40, height: 40, borderRadius: "var(--radius-md)", border: "1px solid var(--border-strong)", background: "var(--surface-card)", cursor: pageSafe === pages - 1 ? "not-allowed" : "pointer", color: pageSafe === pages - 1 ? "var(--text-faint)" : "var(--text-body)" }}>{I("chevron-right", 18)}</button>
@@ -714,7 +724,7 @@
               {pages > 1 ? (
                 <div className="krm-pagination" style={{ display: "flex", alignItems: "center", justifyContent: "center", flexWrap: "wrap", gap: 8, marginTop: 28 }}>
                   <button onClick={() => setPage(Math.max(0, pageSafe - 1))} disabled={pageSafe === 0} aria-label={TR("Previous")} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 40, height: 40, borderRadius: "var(--radius-md)", border: "1px solid var(--border-strong)", background: "var(--surface-card)", cursor: pageSafe === 0 ? "not-allowed" : "pointer", color: pageSafe === 0 ? "var(--text-faint)" : "var(--text-body)" }}>{I("chevron-left", 18)}</button>
-                  {Array.from({ length: pages }).map((_, i) => (
+                  {pageWindow(pages, pageSafe).map((i) => (
                     <button key={i} onClick={() => setPage(i)} style={{ minWidth: 40, height: 40, padding: "0 12px", borderRadius: "var(--radius-md)", cursor: "pointer", border: "1px solid " + (i === pageSafe ? "var(--brand)" : "var(--border-strong)"), background: i === pageSafe ? "var(--brand)" : "var(--surface-card)", color: i === pageSafe ? "var(--on-brand)" : "var(--text-body)", fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)", fontWeight: 700 }}>{i + 1}</button>
                   ))}
                   <button onClick={() => setPage(Math.min(pages - 1, pageSafe + 1))} disabled={pageSafe === pages - 1} aria-label={TR("Next")} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 40, height: 40, borderRadius: "var(--radius-md)", border: "1px solid var(--border-strong)", background: "var(--surface-card)", cursor: pageSafe === pages - 1 ? "not-allowed" : "pointer", color: pageSafe === pages - 1 ? "var(--text-faint)" : "var(--text-body)" }}>{I("chevron-right", 18)}</button>
