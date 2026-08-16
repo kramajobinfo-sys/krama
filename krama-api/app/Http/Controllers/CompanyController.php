@@ -462,7 +462,8 @@ class CompanyController extends Controller
     {
         $this->requirePermission('approve_companies');
 
-        $q = Company::with(['owner:id,name,email', 'location:id,name']);
+        $q = Company::with(['owner:id,name,email', 'location:id,name'])
+            ->withCount(['jobs as open_jobs_count' => fn ($j) => $j->where('status', 'published')]);
 
         if ($request->filled('status')) {
             $q->where('status', $request->status);

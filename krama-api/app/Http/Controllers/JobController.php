@@ -1091,9 +1091,9 @@ class JobController extends Controller
     }
 
     // Find an existing category by (case-insensitive) name, or create a new one as
-    // 'inactive' — pending admin approval: it is assigned to the job right away but stays
-    // hidden from the public category list/filters until an admin activates it. Returns
-    // the category id (existing or new), or null for a blank name.
+    // 'active' so it shows in the public category list/filters immediately (auto-enabled,
+    // like admin-created categories). Returns the category id (existing or new), or null
+    // for a blank name.
     private function resolveOrCreateCategory(?string $name): ?int
     {
         $name = trim((string) $name);
@@ -1107,7 +1107,7 @@ class JobController extends Controller
         $n = 1;
         while (\App\Models\Category::where('slug', $slug)->exists()) { $slug = $base . '-' . (++$n); }
 
-        $cat = \App\Models\Category::create(['name' => $name, 'slug' => $slug, 'status' => 'inactive']);
+        $cat = \App\Models\Category::create(['name' => $name, 'slug' => $slug, 'status' => 'active']);
         return $cat->id;
     }
 
