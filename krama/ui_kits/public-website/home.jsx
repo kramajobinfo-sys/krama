@@ -5,6 +5,14 @@
   const D = window.KRAMA_DATA;
   const TR = window.KRAMA_T || function (s) { return s; };
   const I = (n, s = 20) => <i data-lucide={n} style={{ width: s, height: s }}></i>;
+  // Windowed page numbers: at most `size` (default 5) buttons, centred on the current
+  // page and clamped to the ends — so long paginators (Featured jobs, etc.) don't sprawl.
+  const pageWindow = (pages, current, size = 5) => {
+    if (pages <= size) return Array.from({ length: pages }, (_, i) => i);
+    const half = Math.floor(size / 2);
+    const start = Math.max(0, Math.min(current - half, pages - size));
+    return Array.from({ length: size }, (_, i) => start + i);
+  };
 
   // Compact row for the Featured-jobs List view — matches the Find Jobs list style.
   function CompactJobRow({ job, saved, onSave, onOpen }) {
@@ -483,7 +491,7 @@
                     border: "1px solid var(--border-strong)", background: "var(--surface-card)", cursor: fjPageSafe === 0 ? "not-allowed" : "pointer",
                     color: fjPageSafe === 0 ? "var(--text-faint)" : "var(--text-body)",
                   }}>{I("chevron-left", 18)}</button>
-                  {Array.from({ length: fjPages }).map((_, i) => (
+                  {pageWindow(fjPages, fjPageSafe).map((i) => (
                     <button key={i} onClick={() => setFjPage(i)} style={{
                       minWidth: 40, height: 40, padding: "0 12px", borderRadius: "var(--radius-md)", cursor: "pointer",
                       border: "1px solid " + (i === fjPageSafe ? "var(--brand)" : "var(--border-strong)"),
@@ -547,7 +555,7 @@
                 border: "1px solid var(--border-strong)", background: "var(--surface-card)", cursor: catPageSafe === 0 ? "not-allowed" : "pointer",
                 color: catPageSafe === 0 ? "var(--text-faint)" : "var(--text-body)",
               }}>{I("chevron-left", 18)}</button>
-              {Array.from({ length: catPages }).map((_, i) => (
+              {pageWindow(catPages, catPageSafe).map((i) => (
                 <button key={i} onClick={() => setCatPage(i)} style={{
                   minWidth: 40, height: 40, padding: "0 12px", borderRadius: "var(--radius-md)", cursor: "pointer",
                   border: "1px solid " + (i === catPageSafe ? "var(--brand)" : "var(--border-strong)"),
@@ -581,7 +589,7 @@
                 border: "1px solid var(--border-strong)", background: "var(--surface-card)", cursor: fcPageSafe === 0 ? "not-allowed" : "pointer",
                 color: fcPageSafe === 0 ? "var(--text-faint)" : "var(--text-body)",
               }}>{I("chevron-left", 18)}</button>
-              {Array.from({ length: fcPages }).map((_, i) => (
+              {pageWindow(fcPages, fcPageSafe).map((i) => (
                 <button key={i} onClick={() => setFcPage(i)} style={{
                   minWidth: 40, height: 40, padding: "0 12px", borderRadius: "var(--radius-md)", cursor: "pointer",
                   border: "1px solid " + (i === fcPageSafe ? "var(--brand)" : "var(--border-strong)"),

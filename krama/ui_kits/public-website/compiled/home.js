@@ -23,6 +23,18 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       height: s
     }
   });
+  // Windowed page numbers: at most `size` (default 5) buttons, centred on the current
+  // page and clamped to the ends — so long paginators (Featured jobs, etc.) don't sprawl.
+  const pageWindow = (pages, current, size = 5) => {
+    if (pages <= size) return Array.from({
+      length: pages
+    }, (_, i) => i);
+    const half = Math.floor(size / 2);
+    const start = Math.max(0, Math.min(current - half, pages - size));
+    return Array.from({
+      length: size
+    }, (_, i) => start + i);
+  };
 
   // Compact row for the Featured-jobs List view — matches the Find Jobs list style.
   function CompactJobRow({
@@ -1259,9 +1271,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         cursor: fjPageSafe === 0 ? "not-allowed" : "pointer",
         color: fjPageSafe === 0 ? "var(--text-faint)" : "var(--text-body)"
       }
-    }, I("chevron-left", 18)), Array.from({
-      length: fjPages
-    }).map((_, i) => /*#__PURE__*/React.createElement("button", {
+    }, I("chevron-left", 18)), pageWindow(fjPages, fjPageSafe).map(i => /*#__PURE__*/React.createElement("button", {
       key: i,
       onClick: () => setFjPage(i),
       style: {
@@ -1392,9 +1402,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         cursor: catPageSafe === 0 ? "not-allowed" : "pointer",
         color: catPageSafe === 0 ? "var(--text-faint)" : "var(--text-body)"
       }
-    }, I("chevron-left", 18)), Array.from({
-      length: catPages
-    }).map((_, i) => /*#__PURE__*/React.createElement("button", {
+    }, I("chevron-left", 18)), pageWindow(catPages, catPageSafe).map(i => /*#__PURE__*/React.createElement("button", {
       key: i,
       onClick: () => setCatPage(i),
       style: {
@@ -1473,9 +1481,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         cursor: fcPageSafe === 0 ? "not-allowed" : "pointer",
         color: fcPageSafe === 0 ? "var(--text-faint)" : "var(--text-body)"
       }
-    }, I("chevron-left", 18)), Array.from({
-      length: fcPages
-    }).map((_, i) => /*#__PURE__*/React.createElement("button", {
+    }, I("chevron-left", 18)), pageWindow(fcPages, fcPageSafe).map(i => /*#__PURE__*/React.createElement("button", {
       key: i,
       onClick: () => setFcPage(i),
       style: {
