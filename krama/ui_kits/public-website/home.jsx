@@ -591,11 +591,11 @@
         {showPremium ? (
         <Section eyebrow={TR("Premium")} title={TR("Premium featured companies")}
           action={<Button variant="ghost" onClick={() => onNav("companies")} iconRight={I("arrow-right", 16)}>{TR("All companies")}</Button>}>
-          <div className="krm-company-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 18 }}>
+          <div className="krm-company-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16 }}>
             {premiumList.map((c) => (
-              <div key={c.name} style={{ position: "relative", paddingTop: 6 }}>
-                <span style={{ position: "absolute", top: -3, left: "50%", transform: "translateX(-50%)", zIndex: 2, background: "linear-gradient(180deg,#F6C556,#D99A1F)", color: "#4a3600", fontSize: 10.5, fontWeight: 800, letterSpacing: ".07em", padding: "3px 12px", borderRadius: 999, boxShadow: "0 2px 8px rgba(212,160,42,0.5)", whiteSpace: "nowrap" }}>★ PREMIUM</span>
-                <CompanyCard {...c} onClick={() => onNav("company", { companyId: c.id })} style={{ boxShadow: "0 0 0 2px #D9A521, 0 12px 30px -8px rgba(217,165,33,0.55)", borderColor: "transparent" }} />
+              <div key={c.name} style={{ position: "relative" }}>
+                <span style={{ position: "absolute", top: -10, left: "50%", transform: "translateX(-50%)", zIndex: 3, display: "inline-flex", alignItems: "center", gap: 4, background: "linear-gradient(180deg,#F7CE63,#D99A1F)", color: "#4a3300", fontSize: 10, fontWeight: 800, letterSpacing: ".08em", padding: "3px 11px", borderRadius: 999, boxShadow: "0 2px 8px rgba(200,150,30,0.55)", whiteSpace: "nowrap" }}>★ PREMIUM</span>
+                <CompanyCard {...c} onClick={() => onNav("company", { companyId: c.id })} style={{ borderColor: "#E3B84B", boxShadow: "0 0 0 3px rgba(226,165,42,0.16), 0 10px 26px -12px rgba(190,140,25,0.5)" }} />
               </div>
             ))}
           </div>

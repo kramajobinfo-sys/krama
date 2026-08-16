@@ -4796,7 +4796,7 @@
         </Card>
 
         {/* Premium Featured companies -- paid, limited tier shown above regular Featured */}
-        <Card padding={24} style={{ marginBottom: 18, border: "1px solid #E4C36A", background: "linear-gradient(180deg, rgba(246,197,86,0.09), transparent 120px)" }}>
+        <Card padding={24} style={{ marginBottom: 18 }}>
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16 }}>
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
