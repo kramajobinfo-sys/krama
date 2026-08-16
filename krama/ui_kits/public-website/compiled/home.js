@@ -1121,8 +1121,16 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     const catMoreLeft = visibleCats.length - catShownSafe;
     // featured companies: admin selection (fallback to all), respect visibility
     const allCompanies = D && D.companies || [];
+    // Premium featured: admin-selected paid tier (manual until employer subscriptions exist),
+    // capped at the admin limit, shown ABOVE regular Featured with a gold highlight.
+    const premiumNames = hs.premiumFeatured && hs.premiumFeatured.length ? hs.premiumFeatured : [];
+    const premiumLimit = hs.premiumFeaturedLimit || 10;
+    const premiumSet = new Set(premiumNames);
+    const premiumList = allCompanies.filter(c => premiumSet.has(c.name)).slice(0, premiumLimit);
+    const showPremium = hs.premiumFeaturedVisible !== false && premiumList.length > 0;
     const featuredNames = hs.featured && hs.featured.length ? hs.featured : null;
-    const featuredList = featuredNames ? allCompanies.filter(c => featuredNames.includes(c.name)) : allCompanies;
+    // Regular Featured excludes anything already promoted to Premium so a company never appears twice.
+    const featuredList = (featuredNames ? allCompanies.filter(c => featuredNames.includes(c.name)) : allCompanies).filter(c => !premiumSet.has(c.name));
     const showFeatured = hs.featuredVisible !== false;
     const fcPages = Math.max(1, Math.ceil(featuredList.length / FC_PER_PAGE));
     const fcPageSafe = Math.min(fcPage, fcPages - 1);
@@ -1438,7 +1446,53 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         cursor: catPageSafe === catPages - 1 ? "not-allowed" : "pointer",
         color: catPageSafe === catPages - 1 ? "var(--text-faint)" : "var(--text-body)"
       }
-    }, I("chevron-right", 18))) : null), !isMobile && fjSection, showFeatured ? /*#__PURE__*/React.createElement(Section, {
+    }, I("chevron-right", 18))) : null), !isMobile && fjSection, showPremium ? /*#__PURE__*/React.createElement(Section, {
+      eyebrow: TR("Premium"),
+      title: TR("Premium featured companies"),
+      action: /*#__PURE__*/React.createElement(Button, {
+        variant: "ghost",
+        onClick: () => onNav("companies"),
+        iconRight: I("arrow-right", 16)
+      }, TR("All companies"))
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "krm-company-grid",
+      style: {
+        display: "grid",
+        gridTemplateColumns: "repeat(4,1fr)",
+        gap: 18
+      }
+    }, premiumList.map(c => /*#__PURE__*/React.createElement("div", {
+      key: c.name,
+      style: {
+        position: "relative",
+        paddingTop: 6
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        position: "absolute",
+        top: -3,
+        left: "50%",
+        transform: "translateX(-50%)",
+        zIndex: 2,
+        background: "linear-gradient(180deg,#F6C556,#D99A1F)",
+        color: "#4a3600",
+        fontSize: 10.5,
+        fontWeight: 800,
+        letterSpacing: ".07em",
+        padding: "3px 12px",
+        borderRadius: 999,
+        boxShadow: "0 2px 8px rgba(212,160,42,0.5)",
+        whiteSpace: "nowrap"
+      }
+    }, "\u2605 PREMIUM"), /*#__PURE__*/React.createElement(CompanyCard, _extends({}, c, {
+      onClick: () => onNav("company", {
+        companyId: c.id
+      }),
+      style: {
+        boxShadow: "0 0 0 2px #D9A521, 0 12px 30px -8px rgba(217,165,33,0.55)",
+        borderColor: "transparent"
+      }
+    })))))) : null, showFeatured ? /*#__PURE__*/React.createElement(Section, {
       eyebrow: TR("Trusted by"),
       title: TR("Featured companies"),
       action: /*#__PURE__*/React.createElement(Button, {
