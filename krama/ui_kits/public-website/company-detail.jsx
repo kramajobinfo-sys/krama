@@ -162,6 +162,12 @@
     const gallery = Array.isArray(c.gallery) ? c.gallery : [];
     const awards = Array.isArray(c.awards) ? c.awards : [];
     const coverBanner = c.cover_banner_url || "";
+    // Hero fallback chain: the employer's own uploaded cover always wins; otherwise the
+    // admin-configured default (Admin → Homepage → Companies → "Company Profile default
+    // hero banner"); otherwise Krama's built-in branded SVG.
+    const defaultHero = loadBanner("companyProfileHero", { image: "", fit: "cover" });
+    const heroImg = coverBanner || defaultHero.image || "";
+    const heroFit = coverBanner ? "cover" : (defaultHero.fit === "contain" ? "contain" : "cover");
     const companySize = c.company_size || "";
     const parseTags = (v) => Array.isArray(v) ? v : (typeof v === "string" && v ? v.split(",").map(function(s) { return s.trim(); }).filter(Boolean) : []);
     const cultureValues = parseTags(c.culture_values);
@@ -201,9 +207,9 @@
       <div style={{ background: "var(--surface-page)", minHeight: "70vh" }}>
         <AnnouncementBar b={loadBanner("companyProfileTopBanner", CO_PROFILE_TOP_DEFAULT)} onNav={onNav} />
         {/* Hero band — default 1600×360 (matches the other page heroes); shows the company's own cover photo when set, else a branded fallback */}
-        <div className={"krm-co-hero" + (coverBanner ? " krm-co-hero--img" : "")} style={{ position: "relative", background: coverBanner ? "var(--surface-sunken)" : "var(--teal-800)", overflow: "hidden", aspectRatio: "1600 / 360", maxHeight: 360 }}>
-          {coverBanner
-            ? <img className="krm-co-hero-pic" src={coverBanner} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+        <div className={"krm-co-hero" + (heroImg ? " krm-co-hero--img" : "")} style={{ position: "relative", background: heroImg ? "var(--surface-sunken)" : "var(--teal-800)", overflow: "hidden", aspectRatio: "1600 / 360", maxHeight: 360 }}>
+          {heroImg
+            ? <img className="krm-co-hero-pic" src={heroImg} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: heroFit, display: "block" }} />
             : <React.Fragment>
                 <div style={{ position: "absolute", inset: 0, backgroundImage: "url('../../assets/banners/bg-companyProfileHero.svg')", backgroundSize: "cover", backgroundPosition: "center" }} />
                 <div style={{ position: "absolute", inset: 0, background: "var(--teal-800)", opacity: 0.45 }} />

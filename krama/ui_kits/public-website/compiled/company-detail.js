@@ -408,6 +408,15 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     const gallery = Array.isArray(c.gallery) ? c.gallery : [];
     const awards = Array.isArray(c.awards) ? c.awards : [];
     const coverBanner = c.cover_banner_url || "";
+    // Hero fallback chain: the employer's own uploaded cover always wins; otherwise the
+    // admin-configured default (Admin → Homepage → Companies → "Company Profile default
+    // hero banner"); otherwise Krama's built-in branded SVG.
+    const defaultHero = loadBanner("companyProfileHero", {
+      image: "",
+      fit: "cover"
+    });
+    const heroImg = coverBanner || defaultHero.image || "";
+    const heroFit = coverBanner ? "cover" : defaultHero.fit === "contain" ? "contain" : "cover";
     const companySize = c.company_size || "";
     const parseTags = v => Array.isArray(v) ? v : typeof v === "string" && v ? v.split(",").map(function (s) {
       return s.trim();
@@ -466,24 +475,24 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       b: loadBanner("companyProfileTopBanner", CO_PROFILE_TOP_DEFAULT),
       onNav: onNav
     }), /*#__PURE__*/React.createElement("div", {
-      className: "krm-co-hero" + (coverBanner ? " krm-co-hero--img" : ""),
+      className: "krm-co-hero" + (heroImg ? " krm-co-hero--img" : ""),
       style: {
         position: "relative",
-        background: coverBanner ? "var(--surface-sunken)" : "var(--teal-800)",
+        background: heroImg ? "var(--surface-sunken)" : "var(--teal-800)",
         overflow: "hidden",
         aspectRatio: "1600 / 360",
         maxHeight: 360
       }
-    }, coverBanner ? /*#__PURE__*/React.createElement("img", {
+    }, heroImg ? /*#__PURE__*/React.createElement("img", {
       className: "krm-co-hero-pic",
-      src: coverBanner,
+      src: heroImg,
       alt: "",
       style: {
         position: "absolute",
         inset: 0,
         width: "100%",
         height: "100%",
-        objectFit: "cover",
+        objectFit: heroFit,
         display: "block"
       }
     }) : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
