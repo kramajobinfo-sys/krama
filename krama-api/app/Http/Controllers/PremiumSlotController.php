@@ -82,7 +82,8 @@ class PremiumSlotController extends Controller
             'used'           => $used,
             'is_full'        => $used >= $cfg['limit'],
             // A renewal/comp already holds a slot; a brand-new buyer needs free capacity.
-            'can_buy'        => $cfg['price'] > 0 && ($active || $isComp || $used < $cfg['limit']),
+            // (Price may be $0 for a promo/test — that's a valid free grant, so no price gate here.)
+            'can_buy'        => ($active || $isComp || $used < $cfg['limit']),
             'waitlisted'     => (bool) $wl,
             'waitlist_position' => $waitlistPos,
             'waitlist_count' => $waitlistCount,
@@ -171,10 +172,6 @@ class PremiumSlotController extends Controller
         $company = $this->resolveCompany($request->user());
         $cfg     = self::premiumConfig();
 
-        if ($cfg['price'] <= 0) {
-            return response()->json(['message' => 'Premium slots are not available for purchase right now.'], 422);
-        }
-
         $active = $company->premium_until !== null && $company->premium_until->isFuture();
         $isComp = in_array($company->name, $cfg['manual'], true);
 
@@ -197,6 +194,32 @@ class PremiumSlotController extends Controller
         $annual   = (($data['period'] ?? 'month') === 'year') && $cfg['annual_price'] > 0;
         $price    = $annual ? $cfg['annual_price'] : $cfg['price'];
         $days     = $annual ? $cfg['annual_days'] : $cfg['days'];
+
+        // Free ($0) slot — admin promo / test price. Skip the gateway and grant immediately
+        // (a $0 paid invoice is still recorded via fulfill for the audit trail).
+        if ($price <= 0) {
+            $payment = null;
+            DB::transaction(function () use ($company, $days, &$payment) {
+                $payment = Payment::create([
+                    'company_id' => $company->id,
+                    'purpose'    => 'premium_slot',
+                    'invoice_no' => $this->nextInvoiceNo(),
+                    'amount'     => 0,
+                    'currency'   => 'USD',
+                    'credits'    => $days,
+                    'method'     => 'free',
+                    'status'     => 'pending',
+                    'created_at' => now(),
+                ]);
+            });
+            \App\Services\PaymentService::fulfill($payment); // flips to paid + sets premium_until
+            return response()->json([
+                'requires_payment' => false,
+                'payment'          => $payment->fresh(),
+                'message'          => 'Your company is now Premium.',
+            ]);
+        }
+
         $currency = $cfg['currency'];
         $fxRate   = null;
 
