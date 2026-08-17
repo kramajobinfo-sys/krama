@@ -184,7 +184,7 @@ class PremiumSlotController extends Controller
 
         $data = $request->validate([
             'currency' => 'sometimes|in:USD,KHR',
-            'method'   => 'sometimes|in:khqr,aba,stripe',
+            'method'   => 'sometimes|in:khqr,aba,acleda,card,cod,stripe',
             'period'   => 'sometimes|in:month,year',
         ]);
 

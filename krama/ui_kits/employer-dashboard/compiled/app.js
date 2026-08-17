@@ -13235,7 +13235,8 @@
     onClose,
     onDone
   }) {
-    const [method, setMethod] = React.useState("khqr");
+    const [pay, setPay] = React.useState(PAY_DEFAULTS);
+    const [method, setMethod] = React.useState(null);
     const [busy, setBusy] = React.useState(false);
     const [err, setErr] = React.useState("");
     const [billCur, setBillCur] = React.useState("USD");
@@ -13247,6 +13248,27 @@
     const [done, setDone] = React.useState(false);
     const [attempts, setAttempts] = React.useState(0);
     const [notConfirmed, setNotConfirmed] = React.useState(false);
+    // Payment methods come from the admin config (Admin Console → Payment methods).
+    React.useEffect(function () {
+      var apiBase = /^(localhost|127\.0\.0\.1|::1|192\.168\.|10\.)/.test(window.location.hostname) ? 'http://127.0.0.1:8000/api' : window.location.protocol + '//' + window.location.host + '/api';
+      fetch(apiBase + '/settings/payment_config', {
+        cache: 'no-cache'
+      }).then(function (r) {
+        return r.ok ? r.json() : null;
+      }).then(function (d) {
+        if (d && d.data) {
+          try {
+            setPay(Object.assign({}, PAY_DEFAULTS, JSON.parse(d.data)));
+          } catch (e) {}
+        }
+      }).catch(function () {});
+    }, []);
+    var available = ["cod", "khqr", "aba", "card"].filter(function (k) {
+      return pay[k] && pay[k].enabled;
+    });
+    React.useEffect(function () {
+      if (available.length && available.indexOf(method) === -1) setMethod(available[0]);
+    }, [pay]);
     React.useEffect(function () {
       emp.exchangeRate().then(function (d) {
         if (d && d.rate) setFxRate(Number(d.rate));
@@ -13322,25 +13344,7 @@
       return String(cur).toUpperCase() === "KHR" ? "៛" + Math.round(amt).toLocaleString() : "$" + Number(amt).toFixed(2);
     };
     var priceLabel = fmtMoney(payCur, payAmt);
-    var methods = [{
-      v: "khqr",
-      l: "KHQR"
-    }, {
-      v: "aba",
-      l: "ABA"
-    }, {
-      v: "acleda",
-      l: "ACLEDA"
-    }, {
-      v: "wing",
-      l: "Wing"
-    }, {
-      v: "card",
-      l: "Card"
-    }, {
-      v: "cod",
-      l: "Cash"
-    }];
+    // payment methods = `available` (admin config) rendered with PAY_META labels
     var submit = function () {
       setBusy(true);
       setErr("");
@@ -13372,7 +13376,8 @@
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        padding: 24
+        padding: 16,
+        overflowY: "auto"
       }
     }, /*#__PURE__*/React.createElement("div", {
       onClick: function (e) {
@@ -13384,7 +13389,9 @@
         background: "var(--surface-card)",
         borderRadius: "var(--radius-xl)",
         boxShadow: "var(--shadow-xl)",
-        overflow: "hidden"
+        maxHeight: "calc(100dvh - 32px)",
+        overflowY: "auto",
+        WebkitOverflowScrolling: "touch"
       }
     }, /*#__PURE__*/React.createElement("div", {
       style: {
@@ -13392,7 +13399,11 @@
         borderBottom: "1px solid var(--border)",
         display: "flex",
         alignItems: "center",
-        gap: 10
+        gap: 10,
+        position: "sticky",
+        top: 0,
+        background: "var(--surface-card)",
+        zIndex: 1
       }
     }, /*#__PURE__*/React.createElement("span", {
       style: {
@@ -13665,37 +13676,45 @@
         display: "block",
         marginBottom: 6
       }
-    }, "Payment method"), /*#__PURE__*/React.createElement("div", {
+    }, "Payment method"), available.length === 0 ? /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: "var(--text-sm)",
+        color: "var(--text-muted)"
+      }
+    }, "No payment methods are enabled. Ask an admin to enable one in Payment settings.") : /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
         flexWrap: "wrap",
         gap: 6
       }
-    }, methods.map(function (m) {
+    }, available.map(function (k) {
+      var meta = PAY_META[k] || {
+        label: k
+      };
       return /*#__PURE__*/React.createElement("button", {
-        key: m.v,
+        key: k,
         onClick: function () {
-          setMethod(m.v);
+          setMethod(k);
         },
         style: {
           padding: "6px 12px",
           borderRadius: "var(--radius-full)",
-          border: "1px solid " + (method === m.v ? "var(--brand)" : "var(--border)"),
-          background: method === m.v ? "var(--brand-subtle)" : "var(--surface-page)",
-          color: method === m.v ? "var(--text-brand)" : "var(--text-muted)",
+          border: "1px solid " + (method === k ? "var(--brand)" : "var(--border)"),
+          background: method === k ? "var(--brand-subtle)" : "var(--surface-page)",
+          color: method === k ? "var(--text-brand)" : "var(--text-muted)",
           fontFamily: "var(--font-sans)",
           fontSize: "var(--text-xs)",
           fontWeight: 600,
           cursor: "pointer"
         }
-      }, m.l);
+      }, meta.label);
     })), /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: "var(--text-xs)",
         color: "var(--text-muted)",
         marginTop: 10
       }
-    }, "KHQR / ABA / Card confirm automatically. Cash / ACLEDA / Wing are confirmed by an admin."))), err && /*#__PURE__*/React.createElement("div", {
+    }, "KHQR, ABA & Card confirm automatically. Cash & ACLEDA are confirmed by an admin."))), err && /*#__PURE__*/React.createElement("div", {
       style: {
         color: "var(--danger)",
         fontSize: "var(--text-xs)",
@@ -13713,7 +13732,7 @@
       onClick: onClose
     }, "Cancel"), /*#__PURE__*/React.createElement(Button, {
       variant: "primary",
-      disabled: busy,
+      disabled: busy || !method,
       onClick: submit
     }, busy ? "Working…" : "Pay " + priceLabel)))));
   }
