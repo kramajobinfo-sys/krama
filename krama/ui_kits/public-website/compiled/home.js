@@ -1448,7 +1448,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         cursor: catPageSafe === catPages - 1 ? "not-allowed" : "pointer",
         color: catPageSafe === catPages - 1 ? "var(--text-faint)" : "var(--text-body)"
       }
-    }, I("chevron-right", 18))) : null), !isMobile && fjSection, showPremium ? /*#__PURE__*/React.createElement(Section, {
+    }, I("chevron-right", 18))) : null), showPremium ? /*#__PURE__*/React.createElement(Section, {
       eyebrow: TR("Premium"),
       title: TR("Premium featured companies"),
       action: /*#__PURE__*/React.createElement(Button, {
@@ -1573,7 +1573,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         cursor: fcPageSafe === fcPages - 1 ? "not-allowed" : "pointer",
         color: fcPageSafe === fcPages - 1 ? "var(--text-faint)" : "var(--text-body)"
       }
-    }, I("chevron-right", 18))) : null) : null, isMobile && fjSection);
+    }, I("chevron-right", 18))) : null) : null, fjSection);
   }
   window.KramaHome = Home;
 })();

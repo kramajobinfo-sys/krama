@@ -587,9 +587,6 @@
           ) : null}
         </Section>
 
-        {/* Featured jobs — in place on desktop; moved to the bottom on mobile (see below) */}
-        {!isMobile && fjSection}
-
         {showPremium ? (
         <Section eyebrow={TR("Premium")} title={TR("Premium featured companies")}
           action={<Button variant="ghost" onClick={() => onNav("companies")} iconRight={I("arrow-right", 16)}>{TR("All companies")}</Button>}>
@@ -639,8 +636,8 @@
         </Section>
         ) : null}
 
-        {/* Featured jobs on mobile — infinite scroll, at the bottom of the page */}
-        {isMobile && fjSection}
+        {/* Featured jobs — below the company sections (desktop grid + paginator, mobile infinite scroll) */}
+        {fjSection}
 
         {/* Footer CTA banner moved to the shared chrome Footer (chrome.jsx) so it shows
             on every public page, not just Home. */}
