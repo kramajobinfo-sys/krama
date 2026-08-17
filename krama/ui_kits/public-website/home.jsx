@@ -100,7 +100,7 @@
 
   function Section({ eyebrow, title, action, children }) {
     return (
-      <section className="krm-section" style={{ maxWidth: 1200, margin: "0 auto", padding: "36px 32px" }}>
+      <section className="krm-section" style={{ maxWidth: 1200, margin: "0 auto", padding: "24px 32px" }}>
         <div className="krm-section-header" style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 28 }}>
           <div>
             <div className="eyebrow" style={{ marginBottom: 8 }}>{eyebrow}</div>

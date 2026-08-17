@@ -317,7 +317,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       style: {
         maxWidth: 1200,
         margin: "0 auto",
-        padding: "36px 32px"
+        padding: "24px 32px"
       }
     }, /*#__PURE__*/React.createElement("div", {
       className: "krm-section-header",
