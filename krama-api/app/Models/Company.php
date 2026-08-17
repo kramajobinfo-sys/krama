@@ -13,6 +13,7 @@ class Company extends Model
         'address', 'phone', 'contact_name', 'contact_email', 'location_id', 'logo_url', 'description', 'about_image_url', 'social_links',
         'cover_banner_url', 'company_size', 'culture_values', 'benefits_tags',
         'telegram_chat_id', 'vat_tin', 'vat_legal_name', 'vat_address',
+        'premium_until',
     ];
 
     // org_doc_path is the raw on-disk filename of the proof document — never expose it;
@@ -27,9 +28,19 @@ class Company extends Model
         'social_links'    => 'array',
         'culture_values'  => 'array',
         'benefits_tags'   => 'array',
+        'premium_until'   => 'datetime',
         'created_at'    => 'datetime',
         'updated_at'    => 'datetime',
     ];
+
+    // Exposed on every company payload so the public homepage can pick out the paid
+    // "Premium featured" tier without a second query. True while the paid slot is unexpired.
+    protected $appends = ['is_premium'];
+
+    public function getIsPremiumAttribute(): bool
+    {
+        return $this->premium_until !== null && $this->premium_until->isFuture();
+    }
 
     public function owner()
     {

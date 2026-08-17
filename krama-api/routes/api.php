@@ -13,6 +13,7 @@ use App\Http\Controllers\HealthController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\JobController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\PremiumSlotController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\CompanyFollowerController;
 use App\Http\Controllers\CompanyReviewController;
@@ -263,6 +264,10 @@ Route::middleware('auth:api')->group(function () {
     // Employer: featured-job boost (spend a plan credit, else start a paid boost)
     Route::get('employer/jobs/{id}/boost',   [JobController::class, 'boostQuote']);
     Route::post('employer/jobs/{id}/boost',  [JobController::class, 'boost']);
+
+    // Employer: Premium Featured homepage slot (paid, time-boxed; capacity-limited)
+    Route::get('employer/premium-slot',           [PremiumSlotController::class, 'status']);
+    Route::post('employer/premium-slot/checkout',  [PremiumSlotController::class, 'checkout'])->middleware('throttle:20,1');
 
     // Employer: company-level job approval (company admin approves/rejects recruiter jobs)
     Route::patch('employer/jobs/{id}/approve', [JobController::class, 'companyApprove']);

@@ -2306,11 +2306,13 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     const premiumNames = hs.premiumFeatured && hs.premiumFeatured.length ? hs.premiumFeatured : [];
     const premiumLimit = hs.premiumFeaturedLimit || 10;
     const premiumSet = new Set(premiumNames);
-    const premiumList = allCompanies.filter(c => premiumSet.has(c.name)).slice(0, premiumLimit);
+    // A company is premium if it holds a paid slot (c.isPremium) OR the admin comped it by name.
+    const isPrem = c => c.isPremium || premiumSet.has(c.name);
+    const premiumList = allCompanies.filter(isPrem).slice(0, premiumLimit);
     const showPremium = hs.premiumFeaturedVisible !== false && premiumList.length > 0;
     const featuredNames = hs.featured && hs.featured.length ? hs.featured : null;
     // Regular Featured excludes anything already promoted to Premium so a company never appears twice.
-    const featuredList = (featuredNames ? allCompanies.filter(c => featuredNames.includes(c.name)) : allCompanies).filter(c => !premiumSet.has(c.name));
+    const featuredList = (featuredNames ? allCompanies.filter(c => featuredNames.includes(c.name)) : allCompanies).filter(c => !isPrem(c));
     const showFeatured = hs.featuredVisible !== false;
     const fcPages = Math.max(1, Math.ceil(featuredList.length / FC_PER_PAGE));
     const fcPageSafe = Math.min(fcPage, fcPages - 1);

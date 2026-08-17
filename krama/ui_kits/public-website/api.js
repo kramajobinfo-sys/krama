@@ -196,6 +196,7 @@
       verified:      !!c.is_verified,
       orgType:       orgTypeOf(c),
       logo:      c.logo_url || (window.KRAMA_LOGOS || {})[c.name] || null,
+      isPremium:     !!c.is_premium,
     };
   }
 

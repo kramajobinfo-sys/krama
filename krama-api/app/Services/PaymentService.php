@@ -70,6 +70,20 @@ class PaymentService
                 if ($payment->company_id && $payment->credits) {
                     \App\Models\Company::where('id', $payment->company_id)->increment('cv_match_credits', (int) $payment->credits);
                 }
+            } elseif ($payment->purpose === 'premium_slot') {
+                // Paid Premium Featured homepage slot — extend premium_until by the configured
+                // duration, stacking from the later of now / current expiry so renewals add on.
+                if ($payment->company_id) {
+                    $raw  = Setting::where('group', 'home_content')->where('key', 'data')->value('value');
+                    $cfg  = json_decode($raw ?: '{}', true);
+                    $days = (int) (is_array($cfg) ? ($cfg['premiumSlotDays'] ?? 30) : 30);
+                    $company = \App\Models\Company::find($payment->company_id);
+                    if ($company) {
+                        $base = ($company->premium_until && $company->premium_until->isFuture())
+                            ? $company->premium_until->copy() : now();
+                        $company->update(['premium_until' => $base->addDays(max(1, $days))]);
+                    }
+                }
             } elseif ($payment->subscription_id) {
                 Subscription::where('id', $payment->subscription_id)
                     ->update(['status' => 'active']);

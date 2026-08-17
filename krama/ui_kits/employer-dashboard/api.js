@@ -188,6 +188,13 @@
       return req("POST", "/employer/jobs/" + id + "/boost", body);
     },
     closeJob: function (id) { return req("PATCH", "/jobs/" + id + "/close"); },
+    premiumSlotStatus: function () { return req("GET", "/employer/premium-slot"); },
+    premiumSlotCheckout: function (method, currency) {
+      var body = {};
+      if (method) body.method = method;
+      if (currency) body.currency = currency;
+      return req("POST", "/employer/premium-slot/checkout", body);
+    },
     companyApproveJob: function (id, subscriptionId) { return req("PATCH", "/employer/jobs/" + id + "/approve", subscriptionId ? { subscription_id: subscriptionId } : undefined); },
     companyRejectJob: function (id, reason) { return req("PATCH", "/employer/jobs/" + id + "/reject", { reason: reason }); },
 

@@ -11571,7 +11571,7 @@
           scrollToCard(i);
         }
       });
-    }))), /*#__PURE__*/React.createElement("div", {
+    }))), /*#__PURE__*/React.createElement(PremiumSlotCard, null), /*#__PURE__*/React.createElement("div", {
       className: "krm-table-wrap"
     }, /*#__PURE__*/React.createElement(Card, {
       padding: 0
@@ -13020,6 +13020,615 @@
       disabled: busy,
       onClick: submit
     }, busy ? "Working…" : hasCredits ? "Feature for " + days + " days" : "Pay " + priceLabel)))));
+  }
+
+  // Premium homepage slot — paid, time-boxed placement above the regular Featured companies.
+  function PremiumSlotCard() {
+    const [st, setSt] = React.useState(null);
+    const [loading, setLoading] = React.useState(true);
+    const [modal, setModal] = React.useState(false);
+    const [flash, setFlash] = React.useState("");
+    const load = React.useCallback(function () {
+      setLoading(true);
+      emp.premiumSlotStatus().then(function (d) {
+        setSt(d);
+        setLoading(false);
+      }).catch(function () {
+        setLoading(false);
+      });
+    }, []);
+    React.useEffect(function () {
+      load();
+    }, [load]);
+    var fmtDate = function (iso) {
+      if (!iso) return "";
+      var d = new Date(iso);
+      return d.getDate() + " " + ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][d.getMonth()] + " " + d.getFullYear();
+    };
+    var money = function (cur, amt) {
+      return String(cur).toUpperCase() === "KHR" ? "៛" + Math.round(amt).toLocaleString() : "$" + Number(amt).toFixed(2);
+    };
+    return /*#__PURE__*/React.createElement("div", {
+      className: "krm-table-wrap",
+      style: {
+        marginBottom: 18
+      }
+    }, /*#__PURE__*/React.createElement(Card, {
+      padding: 0,
+      style: {
+        border: "1px solid #E4C36A"
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        padding: "16px 22px",
+        borderBottom: "1px solid var(--border)",
+        display: "flex",
+        alignItems: "center",
+        gap: 10
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: 30,
+        height: 30,
+        borderRadius: "var(--radius-md)",
+        background: "linear-gradient(180deg,#F7CE63,#D99A1F)",
+        color: "#4a3300"
+      }
+    }, I("star", 16)), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontWeight: 700,
+        color: "var(--text-strong)"
+      }
+    }, "Premium homepage slot")), /*#__PURE__*/React.createElement("div", {
+      style: {
+        padding: "18px 22px"
+      }
+    }, loading || !st ? /*#__PURE__*/React.createElement("div", {
+      style: {
+        color: "var(--text-muted)",
+        fontSize: "var(--text-sm)"
+      }
+    }, "Loading\u2026") : st.paid_active ? /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 16,
+        flexWrap: "wrap"
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: "var(--text-sm)",
+        color: "var(--text-body)",
+        lineHeight: 1.6
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 6,
+        color: "var(--text-brand)",
+        fontWeight: 700
+      }
+    }, I("check-circle", 15), " Your company is Premium featured"), /*#__PURE__*/React.createElement("div", {
+      style: {
+        color: "var(--text-muted)",
+        marginTop: 4
+      }
+    }, "Active until ", /*#__PURE__*/React.createElement("strong", {
+      style: {
+        color: "var(--text-body)"
+      }
+    }, fmtDate(st.premium_until)), " \xB7 ", st.days_remaining, " days left")), /*#__PURE__*/React.createElement(Button, {
+      variant: "secondary",
+      iconLeft: I("refresh-cw", 15),
+      onClick: function () {
+        setModal(true);
+      }
+    }, "Renew (", money(st.currency, st.price), ")")) : st.comp ? /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: "var(--text-sm)",
+        color: "var(--text-body)",
+        lineHeight: 1.6
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 6,
+        color: "var(--text-brand)",
+        fontWeight: 700
+      }
+    }, I("check-circle", 15), " Your company is featured as Premium by Krama \u2014 no charge.")) : /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 16,
+        flexWrap: "wrap"
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: "var(--text-sm)",
+        color: "var(--text-body)",
+        lineHeight: 1.6,
+        maxWidth: 470
+      }
+    }, "Feature your company at the top of the homepage \u2014 above the regular Featured companies, with a gold highlight \u2014 for ", /*#__PURE__*/React.createElement("strong", null, st.days, " days"), ".", /*#__PURE__*/React.createElement("div", {
+      style: {
+        color: "var(--text-muted)",
+        marginTop: 4
+      }
+    }, st.used, " / ", st.limit, " slots taken.")), st.is_full && !st.can_buy ? /*#__PURE__*/React.createElement(Button, {
+      variant: "secondary",
+      disabled: true
+    }, "Premium is full") : /*#__PURE__*/React.createElement(Button, {
+      variant: "primary",
+      iconLeft: I("star", 15),
+      onClick: function () {
+        setModal(true);
+      }
+    }, "Get premium slot (", money(st.currency, st.price), ")")), flash && /*#__PURE__*/React.createElement("div", {
+      style: {
+        marginTop: 12,
+        color: "var(--text-brand)",
+        fontSize: "var(--text-sm)",
+        fontWeight: 600
+      }
+    }, flash))), modal && /*#__PURE__*/React.createElement(PremiumSlotModal, {
+      status: st,
+      onClose: function () {
+        setModal(false);
+      },
+      onDone: function (m) {
+        setModal(false);
+        setFlash(m);
+        load();
+      }
+    }));
+  }
+  function PremiumSlotModal({
+    status,
+    onClose,
+    onDone
+  }) {
+    const [method, setMethod] = React.useState("khqr");
+    const [busy, setBusy] = React.useState(false);
+    const [err, setErr] = React.useState("");
+    const [billCur, setBillCur] = React.useState("USD");
+    const [fxRate, setFxRate] = React.useState(null);
+    const [khqr, setKhqr] = React.useState(null);
+    const [paymentId, setPaymentId] = React.useState(null);
+    const [waiting, setWaiting] = React.useState(false);
+    const [done, setDone] = React.useState(false);
+    const [attempts, setAttempts] = React.useState(0);
+    const [notConfirmed, setNotConfirmed] = React.useState(false);
+    React.useEffect(function () {
+      emp.exchangeRate().then(function (d) {
+        if (d && d.rate) setFxRate(Number(d.rate));
+      }).catch(function () {});
+    }, []);
+    React.useEffect(function () {
+      if (!waiting || !paymentId || done) return;
+      var POLL_LIMIT = 22;
+      var t = setInterval(function () {
+        emp.verifyPayment(paymentId).then(function (r) {
+          if (r && r.status === "paid") {
+            setDone(true);
+            setNotConfirmed(false);
+            onDone && onDone("Payment confirmed — your company is now Premium!");
+            return;
+          }
+          if (r && (r.status === "failed" || r.status === "canceled" || r.status === "declined")) {
+            setNotConfirmed(true);
+            return;
+          }
+          setAttempts(function (n) {
+            var next = n + 1;
+            if (next >= POLL_LIMIT) setNotConfirmed(true);
+            return next;
+          });
+        }).catch(function () {});
+      }, 4000);
+      return function () {
+        clearInterval(t);
+      };
+    }, [waiting, paymentId, done]);
+    var startGateway = function (id) {
+      if (method === "khqr") {
+        setWaiting(true);
+        emp.generateKhqr(id).then(function (d) {
+          setKhqr(d.qr);
+        }).catch(function (e) {
+          setErr(e && e.message || "Could not generate KHQR.");
+        });
+      } else if (method === "card") {
+        setWaiting(true);
+        emp.abaForm(id, "cards").then(abaSubmitForm).catch(function (e) {
+          setErr(e && e.message || "Could not start card payment.");
+        });
+      } else if (method === "aba") {
+        setWaiting(true);
+        emp.abaForm(id).then(abaSubmitForm).catch(function (e) {
+          setErr(e && e.message || "Could not start ABA payment.");
+        });
+      } else {
+        onDone && onDone("Payment pending — your company becomes Premium once an admin confirms it.");
+      }
+    };
+    var retryPayment = function () {
+      if (!paymentId) {
+        onClose();
+        return;
+      }
+      setNotConfirmed(false);
+      setAttempts(0);
+      setErr("");
+      startGateway(paymentId);
+    };
+    var price = status ? status.price : 0;
+    var baseCur = status ? status.currency : "USD";
+    var days = status ? status.days : 30;
+    var canKhr = fxRate && String(baseCur).toUpperCase() === "USD" && Number(price) > 0;
+    var payCur = canKhr ? billCur : baseCur;
+    var payAmt = canKhr && billCur === "KHR" ? Math.round(Number(price) * fxRate) : Number(price);
+    var fmtMoney = function (cur, amt) {
+      return String(cur).toUpperCase() === "KHR" ? "៛" + Math.round(amt).toLocaleString() : "$" + Number(amt).toFixed(2);
+    };
+    var priceLabel = fmtMoney(payCur, payAmt);
+    var methods = [{
+      v: "khqr",
+      l: "KHQR"
+    }, {
+      v: "aba",
+      l: "ABA"
+    }, {
+      v: "acleda",
+      l: "ACLEDA"
+    }, {
+      v: "wing",
+      l: "Wing"
+    }, {
+      v: "card",
+      l: "Card"
+    }, {
+      v: "cod",
+      l: "Cash"
+    }];
+    var submit = function () {
+      setBusy(true);
+      setErr("");
+      emp.premiumSlotCheckout(method, canKhr ? billCur : undefined).then(function (r) {
+        setBusy(false);
+        if (!r || !r.requires_payment) {
+          onDone("Your company is now Premium!");
+          return;
+        }
+        var id = r.payment && r.payment.id;
+        if (!id) {
+          setErr("Could not start the payment.");
+          return;
+        }
+        setPaymentId(id);
+        startGateway(id);
+      }).catch(function (e) {
+        setBusy(false);
+        setErr(e && e.message || "Could not start the purchase.");
+      });
+    };
+    return /*#__PURE__*/React.createElement("div", {
+      onClick: onClose,
+      style: {
+        position: "fixed",
+        inset: 0,
+        zIndex: 260,
+        background: "var(--surface-overlay)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 24
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      onClick: function (e) {
+        e.stopPropagation();
+      },
+      style: {
+        width: "100%",
+        maxWidth: 440,
+        background: "var(--surface-card)",
+        borderRadius: "var(--radius-xl)",
+        boxShadow: "var(--shadow-xl)",
+        overflow: "hidden"
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        padding: "18px 22px",
+        borderBottom: "1px solid var(--border)",
+        display: "flex",
+        alignItems: "center",
+        gap: 10
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: 30,
+        height: 30,
+        borderRadius: "var(--radius-md)",
+        background: "linear-gradient(180deg,#F7CE63,#D99A1F)",
+        color: "#4a3300"
+      }
+    }, I("star", 16)), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontWeight: 700,
+        color: "var(--text-strong)",
+        fontSize: "var(--text-md)"
+      }
+    }, "Get a premium slot")), notConfirmed ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+      style: {
+        padding: 20
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        gap: 12,
+        alignItems: "flex-start",
+        padding: "14px 16px",
+        border: "1px solid var(--warning-border, #fcd34d)",
+        background: "var(--warning-subtle, #fef3c7)",
+        borderRadius: "var(--radius-md)"
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        color: "var(--warning, #d97706)",
+        flexShrink: 0
+      }
+    }, I("triangle-alert", 20)), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: "var(--text-sm)",
+        color: "var(--text-body)",
+        lineHeight: 1.6
+      }
+    }, /*#__PURE__*/React.createElement("strong", {
+      style: {
+        color: "var(--text-strong)"
+      }
+    }, "Your payment wasn't confirmed."), /*#__PURE__*/React.createElement("br", null), "If you just paid it can take a moment \u2014 otherwise please try again.")), err && /*#__PURE__*/React.createElement("div", {
+      style: {
+        color: "var(--danger)",
+        fontSize: "var(--text-xs)",
+        marginTop: 10
+      }
+    }, err)), /*#__PURE__*/React.createElement("div", {
+      style: {
+        padding: "0 20px 18px",
+        display: "flex",
+        justifyContent: "flex-end",
+        gap: 10
+      }
+    }, /*#__PURE__*/React.createElement(Button, {
+      variant: "secondary",
+      onClick: onClose
+    }, "I'll finish later"), /*#__PURE__*/React.createElement(Button, {
+      variant: "primary",
+      iconLeft: I("refresh-cw", 15),
+      onClick: retryPayment
+    }, "Try payment again"))) : khqr ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+      style: {
+        padding: 20,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 12
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        padding: 12,
+        border: "1px solid var(--border)",
+        borderRadius: "var(--radius-md)",
+        background: "#fff"
+      }
+    }, /*#__PURE__*/React.createElement(KhqrCanvas, {
+      value: khqr,
+      size: 200
+    })), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: "var(--text-sm)",
+        color: "var(--text-muted)",
+        textAlign: "center",
+        lineHeight: 1.55
+      }
+    }, "Scan with any Cambodian banking app to pay ", /*#__PURE__*/React.createElement("strong", {
+      style: {
+        color: "var(--text-body)"
+      }
+    }, priceLabel), ". This confirms automatically once paid."), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 8,
+        color: "var(--text-brand)",
+        fontSize: "var(--text-sm)",
+        fontWeight: 600
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        width: 8,
+        height: 8,
+        borderRadius: "50%",
+        background: "var(--brand)"
+      }
+    }), "Waiting for payment\u2026")), /*#__PURE__*/React.createElement("div", {
+      style: {
+        padding: "0 20px 18px"
+      }
+    }, /*#__PURE__*/React.createElement(Button, {
+      variant: "secondary",
+      block: true,
+      onClick: onClose
+    }, "I'll finish later"))) : waiting ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+      style: {
+        padding: 20,
+        display: "flex",
+        flexDirection: "column",
+        gap: 14
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: "var(--text-sm)",
+        color: "var(--text-body)",
+        lineHeight: 1.6
+      }
+    }, method === "card" ? "Complete your Visa / Mastercard payment in the window that opened." : "Complete your ABA payment to activate your premium slot."), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 8,
+        color: "var(--text-brand)",
+        fontSize: "var(--text-sm)",
+        fontWeight: 600
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        width: 8,
+        height: 8,
+        borderRadius: "50%",
+        background: "var(--brand)"
+      }
+    }), "Waiting for payment confirmation\u2026"), err && /*#__PURE__*/React.createElement("div", {
+      style: {
+        color: "var(--danger)",
+        fontSize: "var(--text-xs)"
+      }
+    }, err)), /*#__PURE__*/React.createElement("div", {
+      style: {
+        padding: "0 20px 18px"
+      }
+    }, /*#__PURE__*/React.createElement(Button, {
+      variant: "secondary",
+      block: true,
+      onClick: onClose
+    }, "I'll finish later"))) : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+      style: {
+        padding: 20
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: "var(--text-sm)",
+        color: "var(--text-body)",
+        lineHeight: 1.6
+      }
+    }, "Feature your company above the regular Featured companies (gold highlight) for ", /*#__PURE__*/React.createElement("strong", null, days, " days"), " for ", /*#__PURE__*/React.createElement("strong", null, priceLabel), ".", canKhr && /*#__PURE__*/React.createElement("div", {
+      style: {
+        marginTop: 12
+      }
+    }, /*#__PURE__*/React.createElement("label", {
+      style: {
+        fontSize: "var(--text-xs)",
+        fontWeight: 600,
+        color: "var(--text-muted)",
+        display: "block",
+        marginBottom: 6
+      }
+    }, "Pay in"), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        gap: 6
+      }
+    }, [{
+      v: "USD",
+      l: fmtMoney("USD", Number(price)) + " · USD"
+    }, {
+      v: "KHR",
+      l: fmtMoney("KHR", Number(price) * fxRate) + " · KHR"
+    }].map(function (c) {
+      var on = billCur === c.v;
+      return /*#__PURE__*/React.createElement("button", {
+        key: c.v,
+        type: "button",
+        onClick: function () {
+          setBillCur(c.v);
+        },
+        style: {
+          flex: 1,
+          padding: "8px 12px",
+          borderRadius: "var(--radius-md)",
+          border: "1.5px solid " + (on ? "var(--brand)" : "var(--border)"),
+          background: on ? "var(--brand-subtle)" : "var(--surface-page)",
+          color: on ? "var(--text-brand)" : "var(--text-muted)",
+          fontFamily: "var(--font-sans)",
+          fontSize: "var(--text-xs)",
+          fontWeight: 700,
+          cursor: "pointer"
+        }
+      }, c.l);
+    }))), /*#__PURE__*/React.createElement("div", {
+      style: {
+        marginTop: 12
+      }
+    }, /*#__PURE__*/React.createElement("label", {
+      style: {
+        fontSize: "var(--text-xs)",
+        fontWeight: 600,
+        color: "var(--text-muted)",
+        display: "block",
+        marginBottom: 6
+      }
+    }, "Payment method"), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        flexWrap: "wrap",
+        gap: 6
+      }
+    }, methods.map(function (m) {
+      return /*#__PURE__*/React.createElement("button", {
+        key: m.v,
+        onClick: function () {
+          setMethod(m.v);
+        },
+        style: {
+          padding: "6px 12px",
+          borderRadius: "var(--radius-full)",
+          border: "1px solid " + (method === m.v ? "var(--brand)" : "var(--border)"),
+          background: method === m.v ? "var(--brand-subtle)" : "var(--surface-page)",
+          color: method === m.v ? "var(--text-brand)" : "var(--text-muted)",
+          fontFamily: "var(--font-sans)",
+          fontSize: "var(--text-xs)",
+          fontWeight: 600,
+          cursor: "pointer"
+        }
+      }, m.l);
+    })), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: "var(--text-xs)",
+        color: "var(--text-muted)",
+        marginTop: 10
+      }
+    }, "KHQR / ABA / Card confirm automatically. Cash / ACLEDA / Wing are confirmed by an admin."))), err && /*#__PURE__*/React.createElement("div", {
+      style: {
+        color: "var(--danger)",
+        fontSize: "var(--text-xs)",
+        marginTop: 10
+      }
+    }, err)), /*#__PURE__*/React.createElement("div", {
+      style: {
+        padding: "0 20px 18px",
+        display: "flex",
+        justifyContent: "flex-end",
+        gap: 10
+      }
+    }, /*#__PURE__*/React.createElement(Button, {
+      variant: "secondary",
+      onClick: onClose
+    }, "Cancel"), /*#__PURE__*/React.createElement(Button, {
+      variant: "primary",
+      disabled: busy,
+      onClick: submit
+    }, busy ? "Working…" : "Pay " + priceLabel)))));
   }
   function PlanPickerModal({
     picker,
