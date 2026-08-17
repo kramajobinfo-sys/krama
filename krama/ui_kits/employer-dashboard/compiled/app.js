@@ -13239,6 +13239,7 @@
     const [busy, setBusy] = React.useState(false);
     const [err, setErr] = React.useState("");
     const [billCur, setBillCur] = React.useState("USD");
+    const [period, setPeriod] = React.useState("month");
     const [fxRate, setFxRate] = React.useState(null);
     const [khqr, setKhqr] = React.useState(null);
     const [paymentId, setPaymentId] = React.useState(null);
@@ -13309,9 +13310,11 @@
       setErr("");
       startGateway(paymentId);
     };
-    var price = status ? status.price : 0;
+    var annualOn = !!(status && status.annual_available);
+    var isYear = annualOn && period === "year";
+    var price = status ? isYear ? status.annual_price : status.price : 0;
+    var days = status ? isYear ? status.annual_days : status.days : 30;
     var baseCur = status ? status.currency : "USD";
-    var days = status ? status.days : 30;
     var canKhr = fxRate && String(baseCur).toUpperCase() === "USD" && Number(price) > 0;
     var payCur = canKhr ? billCur : baseCur;
     var payAmt = canKhr && billCur === "KHR" ? Math.round(Number(price) * fxRate) : Number(price);
@@ -13341,7 +13344,7 @@
     var submit = function () {
       setBusy(true);
       setErr("");
-      emp.premiumSlotCheckout(method, canKhr ? billCur : undefined).then(function (r) {
+      emp.premiumSlotCheckout(method, canKhr ? billCur : undefined, isYear ? "year" : "month").then(function (r) {
         setBusy(false);
         if (!r || !r.requires_payment) {
           onDone("Your company is now Premium!");
@@ -13562,7 +13565,51 @@
         color: "var(--text-body)",
         lineHeight: 1.6
       }
-    }, "Feature your company above the regular Featured companies (gold highlight) for ", /*#__PURE__*/React.createElement("strong", null, days, " days"), " for ", /*#__PURE__*/React.createElement("strong", null, priceLabel), ".", canKhr && /*#__PURE__*/React.createElement("div", {
+    }, "Feature your company above the regular Featured companies (gold highlight) for ", /*#__PURE__*/React.createElement("strong", null, days, " days"), " for ", /*#__PURE__*/React.createElement("strong", null, priceLabel), ".", annualOn && /*#__PURE__*/React.createElement("div", {
+      style: {
+        marginTop: 12
+      }
+    }, /*#__PURE__*/React.createElement("label", {
+      style: {
+        fontSize: "var(--text-xs)",
+        fontWeight: 600,
+        color: "var(--text-muted)",
+        display: "block",
+        marginBottom: 6
+      }
+    }, "Billing period"), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        gap: 6
+      }
+    }, [{
+      v: "month",
+      l: "Monthly · " + fmtMoney(status.currency, status.price)
+    }, {
+      v: "year",
+      l: "Annual · " + fmtMoney(status.currency, status.annual_price)
+    }].map(function (p) {
+      var on = period === p.v;
+      return /*#__PURE__*/React.createElement("button", {
+        key: p.v,
+        type: "button",
+        onClick: function () {
+          setPeriod(p.v);
+        },
+        style: {
+          flex: 1,
+          padding: "8px 12px",
+          borderRadius: "var(--radius-md)",
+          border: "1.5px solid " + (on ? "var(--brand)" : "var(--border)"),
+          background: on ? "var(--brand-subtle)" : "var(--surface-page)",
+          color: on ? "var(--text-brand)" : "var(--text-muted)",
+          fontFamily: "var(--font-sans)",
+          fontSize: "var(--text-xs)",
+          fontWeight: 700,
+          cursor: "pointer"
+        }
+      }, p.l);
+    }))), canKhr && /*#__PURE__*/React.createElement("div", {
       style: {
         marginTop: 12
       }

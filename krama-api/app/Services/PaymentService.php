@@ -74,14 +74,20 @@ class PaymentService
                 // Paid Premium Featured homepage slot — extend premium_until by the configured
                 // duration, stacking from the later of now / current expiry so renewals add on.
                 if ($payment->company_id) {
-                    $raw  = Setting::where('group', 'home_content')->where('key', 'data')->value('value');
-                    $cfg  = json_decode($raw ?: '{}', true);
-                    $days = (int) (is_array($cfg) ? ($cfg['premiumSlotDays'] ?? 30) : 30);
+                    // Days were stamped on the payment at checkout (month vs year); fall back
+                    // to the configured monthly duration for older/absent values.
+                    $days = (int) $payment->credits;
+                    if ($days < 1) {
+                        $raw  = Setting::where('group', 'home_content')->where('key', 'data')->value('value');
+                        $cfg  = json_decode($raw ?: '{}', true);
+                        $days = (int) (is_array($cfg) ? ($cfg['premiumSlotDays'] ?? 30) : 30);
+                    }
                     $company = \App\Models\Company::find($payment->company_id);
                     if ($company) {
                         $base = ($company->premium_until && $company->premium_until->isFuture())
                             ? $company->premium_until->copy() : now();
-                        $company->update(['premium_until' => $base->addDays(max(1, $days))]);
+                        // Extend the slot and clear the expiry-reminder flag so the next cycle re-reminds.
+                        $company->update(['premium_until' => $base->addDays(max(1, $days)), 'premium_reminder_sent_at' => null]);
                         // They now hold a slot — drop them from the waitlist if present.
                         \App\Models\PremiumWaitlist::where('company_id', $payment->company_id)->delete();
                     }

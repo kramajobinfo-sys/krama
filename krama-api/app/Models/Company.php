@@ -13,7 +13,7 @@ class Company extends Model
         'address', 'phone', 'contact_name', 'contact_email', 'location_id', 'logo_url', 'description', 'about_image_url', 'social_links',
         'cover_banner_url', 'company_size', 'culture_values', 'benefits_tags',
         'telegram_chat_id', 'vat_tin', 'vat_legal_name', 'vat_address',
-        'premium_until',
+        'premium_until', 'premium_reminder_sent_at',
     ];
 
     // org_doc_path is the raw on-disk filename of the proof document — never expose it;
@@ -29,6 +29,7 @@ class Company extends Model
         'culture_values'  => 'array',
         'benefits_tags'   => 'array',
         'premium_until'   => 'datetime',
+        'premium_reminder_sent_at' => 'datetime',
         'created_at'    => 'datetime',
         'updated_at'    => 'datetime',
     ];

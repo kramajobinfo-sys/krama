@@ -189,10 +189,11 @@
     },
     closeJob: function (id) { return req("PATCH", "/jobs/" + id + "/close"); },
     premiumSlotStatus: function () { return req("GET", "/employer/premium-slot"); },
-    premiumSlotCheckout: function (method, currency) {
+    premiumSlotCheckout: function (method, currency, period) {
       var body = {};
       if (method) body.method = method;
       if (currency) body.currency = currency;
+      if (period) body.period = period;
       return req("POST", "/employer/premium-slot/checkout", body);
     },
     premiumSlotJoinWaitlist: function () { return req("POST", "/employer/premium-slot/waitlist", {}); },

@@ -242,6 +242,35 @@ class EmailTemplates
         return [$subject, self::wrapper('Invoice ' . $invoiceNo, $body)];
     }
 
+    // ── Premium homepage slot ────────────────────────────────────────────────
+
+    public static function premiumRenewalReminder(string $employerName, int $daysLeft, string $untilDate, string $manageUrl): array
+    {
+        $d = $daysLeft . ' day' . ($daysLeft === 1 ? '' : 's');
+        $subject = "Your Premium slot expires in {$d}";
+        $html = self::wrapper(
+            'Premium expiring soon',
+            "<p style='margin:0 0 12px'>Hello <strong>" . htmlspecialchars($employerName) . "</strong>,</p>
+            <p style='margin:0 0 20px'>Your company's <strong>Premium homepage placement</strong> ends on <strong>{$untilDate}</strong> — {$d} left. Renew now to keep your gold-highlighted spot above the Featured companies.</p>
+            <p style='margin:0 0 24px'><a href='{$manageUrl}' style='display:inline-block;background:#0d7a68;color:#fff;text-decoration:none;padding:12px 22px;border-radius:8px;font-weight:600'>Renew premium</a></p>
+            <p style='margin:0;color:#6b7280;font-size:13px'>If it lapses, your company simply returns to the regular listings — you can re-purchase anytime.</p>"
+        );
+        return [$subject, $html];
+    }
+
+    public static function premiumSlotAvailable(string $employerName, string $manageUrl): array
+    {
+        $subject = 'A Premium slot just opened up';
+        $html = self::wrapper(
+            'Premium slot available',
+            "<p style='margin:0 0 12px'>Hello <strong>" . htmlspecialchars($employerName) . "</strong>,</p>
+            <p style='margin:0 0 20px'>Good news — a <strong>Premium homepage slot</strong> is now available and your company is near the top of the waitlist. Slots are limited and first-come, so claim it before someone else does.</p>
+            <p style='margin:0 0 24px'><a href='{$manageUrl}' style='display:inline-block;background:#0d7a68;color:#fff;text-decoration:none;padding:12px 22px;border-radius:8px;font-weight:600'>Get your premium slot</a></p>
+            <p style='margin:0;color:#6b7280;font-size:13px'>Featured above the regular companies with a gold highlight.</p>"
+        );
+        return [$subject, $html];
+    }
+
     private static function wrapper(string $heading, string $body): string
     {
         $fromName = config('mail.from.name', 'Krama');

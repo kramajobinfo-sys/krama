@@ -4639,6 +4639,7 @@
     const [busy, setBusy] = React.useState(false);
     const [err, setErr] = React.useState("");
     const [billCur, setBillCur] = React.useState("USD");
+    const [period, setPeriod] = React.useState("month");
     const [fxRate, setFxRate] = React.useState(null);
     const [khqr, setKhqr] = React.useState(null);
     const [paymentId, setPaymentId] = React.useState(null);
@@ -4666,9 +4667,11 @@
       else { onDone && onDone("Payment pending — your company becomes Premium once an admin confirms it."); }
     };
     var retryPayment = function () { if (!paymentId) { onClose(); return; } setNotConfirmed(false); setAttempts(0); setErr(""); startGateway(paymentId); };
-    var price = status ? status.price : 0;
+    var annualOn = !!(status && status.annual_available);
+    var isYear = annualOn && period === "year";
+    var price = status ? (isYear ? status.annual_price : status.price) : 0;
+    var days = status ? (isYear ? status.annual_days : status.days) : 30;
     var baseCur = status ? status.currency : "USD";
-    var days = status ? status.days : 30;
     var canKhr = fxRate && String(baseCur).toUpperCase() === "USD" && Number(price) > 0;
     var payCur = canKhr ? billCur : baseCur;
     var payAmt = (canKhr && billCur === "KHR") ? Math.round(Number(price) * fxRate) : Number(price);
@@ -4677,7 +4680,7 @@
     var methods = [ { v: "khqr", l: "KHQR" }, { v: "aba", l: "ABA" }, { v: "acleda", l: "ACLEDA" }, { v: "wing", l: "Wing" }, { v: "card", l: "Card" }, { v: "cod", l: "Cash" } ];
     var submit = function () {
       setBusy(true); setErr("");
-      emp.premiumSlotCheckout(method, canKhr ? billCur : undefined).then(function (r) {
+      emp.premiumSlotCheckout(method, canKhr ? billCur : undefined, isYear ? "year" : "month").then(function (r) {
         setBusy(false);
         if (!r || !r.requires_payment) { onDone("Your company is now Premium!"); return; }
         var id = r.payment && r.payment.id;
@@ -4729,6 +4732,17 @@
               <div style={{ padding: 20 }}>
                 <div style={{ fontSize: "var(--text-sm)", color: "var(--text-body)", lineHeight: 1.6 }}>
                   Feature your company above the regular Featured companies (gold highlight) for <strong>{days} days</strong> for <strong>{priceLabel}</strong>.
+                  {annualOn && (
+                    <div style={{ marginTop: 12 }}>
+                      <label style={{ fontSize: "var(--text-xs)", fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 6 }}>Billing period</label>
+                      <div style={{ display: "flex", gap: 6 }}>
+                        {[{ v: "month", l: "Monthly · " + fmtMoney(status.currency, status.price) }, { v: "year", l: "Annual · " + fmtMoney(status.currency, status.annual_price) }].map(function (p) {
+                          var on = period === p.v;
+                          return <button key={p.v} type="button" onClick={function () { setPeriod(p.v); }} style={{ flex: 1, padding: "8px 12px", borderRadius: "var(--radius-md)", border: "1.5px solid " + (on ? "var(--brand)" : "var(--border)"), background: on ? "var(--brand-subtle)" : "var(--surface-page)", color: on ? "var(--text-brand)" : "var(--text-muted)", fontFamily: "var(--font-sans)", fontSize: "var(--text-xs)", fontWeight: 700, cursor: "pointer" }}>{p.l}</button>;
+                        })}
+                      </div>
+                    </div>
+                  )}
                   {canKhr && (
                     <div style={{ marginTop: 12 }}>
                       <label style={{ fontSize: "var(--text-xs)", fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 6 }}>Pay in</label>

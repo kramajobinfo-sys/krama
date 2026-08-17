@@ -27,12 +27,15 @@ class PremiumSlotController extends Controller
         if (! is_array($d)) $d = [];
 
         return [
-            'price'    => (float) ($d['premiumSlotPrice'] ?? 49),
-            'currency' => strtoupper((string) ($d['premiumSlotCurrency'] ?? 'USD')),
-            'days'     => (int) ($d['premiumSlotDays'] ?? 30),
-            'limit'    => (int) ($d['premiumFeaturedLimit'] ?? 10),
-            'manual'   => is_array($d['premiumFeatured'] ?? null) ? $d['premiumFeatured'] : [],
-            'visible'  => ($d['premiumFeaturedVisible'] ?? true) !== false,
+            'price'        => (float) ($d['premiumSlotPrice'] ?? 49),
+            'currency'     => strtoupper((string) ($d['premiumSlotCurrency'] ?? 'USD')),
+            'days'         => (int) ($d['premiumSlotDays'] ?? 30),
+            // Optional annual option: enabled when a non-zero annual price is set.
+            'annual_price' => (float) ($d['premiumSlotAnnualPrice'] ?? 0),
+            'annual_days'  => (int) ($d['premiumSlotAnnualDays'] ?? 365),
+            'limit'        => (int) ($d['premiumFeaturedLimit'] ?? 10),
+            'manual'       => is_array($d['premiumFeatured'] ?? null) ? $d['premiumFeatured'] : [],
+            'visible'      => ($d['premiumFeaturedVisible'] ?? true) !== false,
         ];
     }
 
@@ -72,6 +75,9 @@ class PremiumSlotController extends Controller
             'price'          => $cfg['price'],
             'currency'       => $cfg['currency'],
             'days'           => $cfg['days'],
+            'annual_available' => $cfg['annual_price'] > 0,
+            'annual_price'   => $cfg['annual_price'],
+            'annual_days'    => $cfg['annual_days'],
             'limit'          => $cfg['limit'],
             'used'           => $used,
             'is_full'        => $used >= $cfg['limit'],
@@ -182,9 +188,15 @@ class PremiumSlotController extends Controller
         $data = $request->validate([
             'currency' => 'sometimes|in:USD,KHR',
             'method'   => 'sometimes|in:khqr,aba,stripe',
+            'period'   => 'sometimes|in:month,year',
         ]);
 
-        $price    = $cfg['price'];
+        // Annual chosen only when offered (annual_price>0). The granted duration is stamped
+        // on the payment (credits column) so fulfill() extends by the right amount even if
+        // the admin later changes the config.
+        $annual   = (($data['period'] ?? 'month') === 'year') && $cfg['annual_price'] > 0;
+        $price    = $annual ? $cfg['annual_price'] : $cfg['price'];
+        $days     = $annual ? $cfg['annual_days'] : $cfg['days'];
         $currency = $cfg['currency'];
         $fxRate   = null;
 
@@ -198,7 +210,7 @@ class PremiumSlotController extends Controller
         }
 
         $payment = null;
-        DB::transaction(function () use ($company, $price, $currency, $fxRate, $data, &$payment) {
+        DB::transaction(function () use ($company, $price, $currency, $fxRate, $days, $data, &$payment) {
             $payment = Payment::create([
                 'company_id' => $company->id,
                 'purpose'    => 'premium_slot',
@@ -206,6 +218,7 @@ class PremiumSlotController extends Controller
                 'amount'     => $price,
                 'currency'   => $currency,
                 'fx_rate'    => $fxRate,
+                'credits'    => $days, // days granted on fulfilment (month vs year)
                 'method'     => $data['method'] ?? 'khqr',
                 'status'     => 'pending',
                 'created_at' => now(),
