@@ -13063,7 +13063,6 @@
       return String(cur).toUpperCase() === "KHR" ? "៛" + Math.round(amt).toLocaleString() : "$" + Number(amt).toFixed(2);
     };
     return /*#__PURE__*/React.createElement("div", {
-      className: "krm-table-wrap",
       style: {
         marginBottom: 18
       }
@@ -13366,7 +13365,7 @@
         setErr(e && e.message || "Could not start the purchase.");
       });
     };
-    return /*#__PURE__*/React.createElement("div", {
+    return window.ReactDOM.createPortal(/*#__PURE__*/React.createElement("div", {
       onClick: onClose,
       style: {
         position: "fixed",
@@ -13734,7 +13733,7 @@
       variant: "primary",
       disabled: busy || !method,
       onClick: submit
-    }, busy ? "Working…" : "Pay " + priceLabel)))));
+    }, busy ? "Working…" : "Pay " + priceLabel))))), document.body);
   }
   function PlanPickerModal({
     picker,

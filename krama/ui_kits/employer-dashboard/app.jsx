@@ -4585,7 +4585,7 @@
     var fmtDate = function (iso) { if (!iso) return ""; var d = new Date(iso); return d.getDate() + " " + ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][d.getMonth()] + " " + d.getFullYear(); };
     var money = function (cur, amt) { return String(cur).toUpperCase() === "KHR" ? ("៛" + Math.round(amt).toLocaleString()) : ("$" + Number(amt).toFixed(2)); };
     return (
-      <div className="krm-table-wrap" style={{ marginBottom: 18 }}>
+      <div style={{ marginBottom: 18 }}>
         <Card padding={0} style={{ border: "1px solid #E4C36A" }}>
           <div style={{ padding: "16px 22px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: 10 }}>
             <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 30, height: 30, borderRadius: "var(--radius-md)", background: "linear-gradient(180deg,#F7CE63,#D99A1F)", color: "#4a3300" }}>{I("star", 16)}</span>
@@ -4696,7 +4696,7 @@
         setPaymentId(id); startGateway(id);
       }).catch(function (e) { setBusy(false); setErr((e && e.message) || "Could not start the purchase."); });
     };
-    return (
+    return window.ReactDOM.createPortal((
       <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 260, background: "var(--surface-overlay)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16, overflowY: "auto" }}>
         <div onClick={function (e) { e.stopPropagation(); }} style={{ width: "100%", maxWidth: 440, background: "var(--surface-card)", borderRadius: "var(--radius-xl)", boxShadow: "var(--shadow-xl)", maxHeight: "calc(100dvh - 32px)", overflowY: "auto", WebkitOverflowScrolling: "touch" }}>
           <div style={{ padding: "18px 22px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: 10, position: "sticky", top: 0, background: "var(--surface-card)", zIndex: 1 }}>
@@ -4784,7 +4784,7 @@
           )}
         </div>
       </div>
-    );
+    ), document.body);
   }
 
   function PlanPickerModal({ picker, onPick, onClose }) {
