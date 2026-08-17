@@ -549,8 +549,16 @@ class AuthController extends Controller
         }
         RateLimiter::hit($key, 900);
 
-        $user = User::where('email', $data['email'])->where('status', 'active')->first();
+        $user = User::where('email', $data['email'])->first();
+
+        // Every request is recorded in the admin Audit Log with its outcome, so a "no email
+        // received" report can be diagnosed (no account / inactive / SMTP off / send failed).
         if (! $user) {
+            $this->auditLog('auth.password_reset_requested', ['email' => $data['email'], 'outcome' => 'no_account']);
+            return $generic;
+        }
+        if ($user->status !== 'active') {
+            $this->auditLog('auth.password_reset_requested', ['email' => $data['email'], 'user_id' => $user->id, 'outcome' => 'inactive_account', 'status' => $user->status]);
             return $generic;
         }
 
@@ -569,18 +577,23 @@ class AuthController extends Controller
         $frontend  = rtrim(config('app.frontend_url', 'http://localhost/krama'), '/');
         $resetUrl  = $frontend . '?reset=1&token=' . $raw . '&email=' . urlencode($user->email);
 
-        if (MailConfig::isConfigured()) {
-            // Send AFTER the HTTP response so forgot-password isn't blocked on SMTP.
-            app()->terminating(function () use ($user, $resetUrl) {
-                try {
-                    MailConfig::applyFromDb();
-                    [$subject, $html] = EmailTemplates::passwordReset($user->name, $resetUrl);
-                    Mail::html($html, fn ($m) => $m->to($user->email, $user->name)->subject($subject));
-                } catch (\Exception $e) {
-                    Log::warning('Password reset email failed: ' . $e->getMessage());
-                }
-            });
+        // Send synchronously (mirrors the verification-code email) — the previous
+        // app()->terminating() deferral could silently no-op on some LiteSpeed setups, so
+        // password-reset emails were never delivered even when SMTP was healthy.
+        $outcome = 'sent';
+        if (! MailConfig::isConfigured()) {
+            $outcome = 'smtp_not_configured';
+        } else {
+            try {
+                MailConfig::applyFromDb();
+                [$subject, $html] = EmailTemplates::passwordReset($user->name, $resetUrl);
+                Mail::html($html, fn ($m) => $m->to($user->email, $user->name)->subject($subject));
+            } catch (\Throwable $e) {
+                Log::warning('Password reset email failed: ' . $e->getMessage());
+                $outcome = 'mail_failed';
+            }
         }
+        $this->auditLog('auth.password_reset_requested', ['email' => $data['email'], 'user_id' => $user->id, 'outcome' => $outcome]);
 
         return $generic;
     }
