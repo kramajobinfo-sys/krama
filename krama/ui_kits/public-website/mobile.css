@@ -190,8 +190,8 @@
 
   /* ── Categories grid — 2 columns ─────────────────────────────────────── */
   .krm-cat-grid {
-    grid-template-columns: 1fr 1fr !important;
-    gap: 10px !important;
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
   }
 
   /* ── Featured jobs — 1 column (List view, default); toggle to 2 (Grid) ── */
@@ -592,7 +592,7 @@
   .krm-footer       { padding: 48px 24px 24px !important; }
 
   /* Categories — 2 columns */
-  .krm-cat-grid     { grid-template-columns: 1fr 1fr !important; }
+  .krm-cat-grid     { grid-template-columns: 1fr !important; }
 
   /* Featured jobs — 1 column */
   .krm-job-grid     { grid-template-columns: 1fr !important; }

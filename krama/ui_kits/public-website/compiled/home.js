@@ -325,16 +325,16 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         display: "flex",
         alignItems: "flex-end",
         justifyContent: "space-between",
-        marginBottom: 28
+        marginBottom: 20
       }
     }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
       className: "eyebrow",
       style: {
-        marginBottom: 8
+        marginBottom: 6
       }
     }, eyebrow), /*#__PURE__*/React.createElement("h2", {
       style: {
-        fontSize: "var(--text-3xl)",
+        fontSize: "var(--text-2xl)",
         fontWeight: 700,
         color: "var(--text-strong)"
       }
@@ -1055,7 +1055,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     const showFeaturedJobs = hs.featuredJobsVisible !== false;
     const FJ_PER_PAGE = hs.featuredJobsCount || 8;
     const FC_PER_PAGE = 8;
-    const CAT_PER_PAGE = 12; // desktop: one page of the 3-column category grid
+    const CAT_PER_PAGE = isMobile ? 8 : 12; // categories per page (numbered pagination on all sizes)
     const CAT_PER_LOAD = 8; // mobile: how many more each "Load more" reveals
     // featured-first ordering across all jobs, then paginate
     // Age in minutes parsed from the relative "postedAt" string (works for static + API data)
@@ -1117,7 +1117,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     const catPages = Math.max(1, Math.ceil(visibleCats.length / CAT_PER_PAGE));
     const catPageSafe = Math.min(catPage, catPages - 1);
     const catShownSafe = Math.min(catShown, visibleCats.length);
-    const catSlice = isMobile ? visibleCats.slice(0, catShownSafe) : visibleCats.slice(catPageSafe * CAT_PER_PAGE, catPageSafe * CAT_PER_PAGE + CAT_PER_PAGE);
+    const catSlice = visibleCats.slice(catPageSafe * CAT_PER_PAGE, catPageSafe * CAT_PER_PAGE + CAT_PER_PAGE);
     const catMoreLeft = visibleCats.length - catShownSafe;
     // featured companies: admin selection (fallback to all), respect visibility
     const allCompanies = D && D.companies || [];
@@ -1332,65 +1332,65 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       className: "krm-cat-grid",
       style: {
         display: "grid",
-        gridTemplateColumns: "repeat(3,1fr)",
-        gap: 16
+        gridTemplateColumns: "repeat(2,1fr)",
+        gap: 10
       }
-    }, catSlice.map(c => /*#__PURE__*/React.createElement(Card, {
+    }, catSlice.map(c => /*#__PURE__*/React.createElement("button", {
       key: c.name,
-      interactive: true,
       onClick: () => onNav("jobs", {
         category: toFilter(c.name)
       }),
-      padding: 18
-    }, /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
         alignItems: "center",
-        gap: 14
+        gap: 10,
+        width: "100%",
+        textAlign: "left",
+        padding: "9px 12px",
+        border: "1px solid var(--border)",
+        borderRadius: "var(--radius-md)",
+        background: "var(--surface-card)",
+        cursor: "pointer",
+        transition: "border-color var(--dur-base) var(--ease-standard), background var(--dur-base) var(--ease-standard)"
+      },
+      onMouseEnter: e => {
+        e.currentTarget.style.borderColor = "var(--border-strong)";
+        e.currentTarget.style.background = "var(--surface-sunken)";
+      },
+      onMouseLeave: e => {
+        e.currentTarget.style.borderColor = "var(--border)";
+        e.currentTarget.style.background = "var(--surface-card)";
       }
     }, /*#__PURE__*/React.createElement("span", {
       style: {
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
-        width: 46,
-        height: 46,
-        borderRadius: "var(--radius-md)",
+        width: 30,
+        height: 30,
+        flexShrink: 0,
+        borderRadius: "var(--radius-sm)",
         background: "var(--brand-subtle)",
         color: "var(--brand)"
       }
-    }, I(c.icon, 22)), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    }, I(c.icon, 16)), /*#__PURE__*/React.createElement("span", {
       style: {
-        fontWeight: 700,
+        flex: 1,
+        minWidth: 0,
+        fontWeight: 600,
         color: "var(--text-strong)",
-        fontSize: "var(--text-md)"
-      }
-    }, c.name), /*#__PURE__*/React.createElement("div", {
-      style: {
         fontSize: "var(--text-sm)",
-        color: "var(--text-muted)",
-        marginTop: 2
+        whiteSpace: "nowrap",
+        overflow: "hidden",
+        textOverflow: "ellipsis"
       }
-    }, c.count.toLocaleString(), " jobs")))))), isMobile && catMoreLeft > 0 ? /*#__PURE__*/React.createElement("div", {
-      style: {
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        gap: 10,
-        marginTop: 20
-      }
-    }, /*#__PURE__*/React.createElement(Button, {
-      variant: "secondary",
-      onClick: () => setCatShown(function (n) {
-        return Math.min(n + CAT_PER_LOAD, visibleCats.length);
-      }),
-      iconRight: I("chevron-down", 16)
-    }, TR("Load more")), /*#__PURE__*/React.createElement("div", {
+    }, c.name), /*#__PURE__*/React.createElement("span", {
       style: {
         fontSize: "var(--text-xs)",
-        color: "var(--text-muted)"
+        color: "var(--text-muted)",
+        whiteSpace: "nowrap"
       }
-    }, catShownSafe, " / ", visibleCats.length)) : null, !isMobile && catPages > 1 ? /*#__PURE__*/React.createElement("div", {
+    }, c.count.toLocaleString(), " jobs")))), catPages > 1 ? /*#__PURE__*/React.createElement("div", {
       className: "krm-pagination",
       style: {
         display: "flex",

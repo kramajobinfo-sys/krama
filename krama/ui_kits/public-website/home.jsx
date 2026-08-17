@@ -101,10 +101,10 @@
   function Section({ eyebrow, title, action, children }) {
     return (
       <section className="krm-section" style={{ maxWidth: 1200, margin: "0 auto", padding: "24px 32px" }}>
-        <div className="krm-section-header" style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 28 }}>
+        <div className="krm-section-header" style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 20 }}>
           <div>
-            <div className="eyebrow" style={{ marginBottom: 8 }}>{eyebrow}</div>
-            <h2 style={{ fontSize: "var(--text-3xl)", fontWeight: 700, color: "var(--text-strong)" }}>{title}</h2>
+            <div className="eyebrow" style={{ marginBottom: 6 }}>{eyebrow}</div>
+            <h2 style={{ fontSize: "var(--text-2xl)", fontWeight: 700, color: "var(--text-strong)" }}>{title}</h2>
           </div>
           {action}
         </div>
@@ -379,7 +379,7 @@
     const showFeaturedJobs = hs.featuredJobsVisible !== false;
     const FJ_PER_PAGE = hs.featuredJobsCount || 8;
     const FC_PER_PAGE = 8;
-    const CAT_PER_PAGE = 12;   // desktop: one page of the 3-column category grid
+    const CAT_PER_PAGE = isMobile ? 8 : 12;   // categories per page (numbered pagination on all sizes)
     const CAT_PER_LOAD = 8;    // mobile: how many more each "Load more" reveals
     // featured-first ordering across all jobs, then paginate
     // Age in minutes parsed from the relative "postedAt" string (works for static + API data)
@@ -425,9 +425,7 @@
     const catPages = Math.max(1, Math.ceil(visibleCats.length / CAT_PER_PAGE));
     const catPageSafe = Math.min(catPage, catPages - 1);
     const catShownSafe = Math.min(catShown, visibleCats.length);
-    const catSlice = isMobile
-      ? visibleCats.slice(0, catShownSafe)
-      : visibleCats.slice(catPageSafe * CAT_PER_PAGE, catPageSafe * CAT_PER_PAGE + CAT_PER_PAGE);
+    const catSlice = visibleCats.slice(catPageSafe * CAT_PER_PAGE, catPageSafe * CAT_PER_PAGE + CAT_PER_PAGE);
     const catMoreLeft = visibleCats.length - catShownSafe;
     // featured companies: admin selection (fallback to all), respect visibility
     const allCompanies = (D && D.companies) || [];
@@ -533,36 +531,26 @@
         <TopEmployers onNav={onNav} settings={hs} />
 
         <Section eyebrow={TR("Browse by field")} title={TR("Explore job categories")}>
-          <div className="krm-cat-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16 }}>
+          {/* Compact list view — 2 columns of rows on desktop, 1 column on mobile (see mobile.css). */}
+          <div className="krm-cat-grid" style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 10 }}>
             {catSlice.map((c) => (
-              <Card key={c.name} interactive onClick={() => onNav("jobs", { category: toFilter(c.name) })} padding={18}>
-                <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                  <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 46, height: 46, borderRadius: "var(--radius-md)", background: "var(--brand-subtle)", color: "var(--brand)" }}>{I(c.icon, 22)}</span>
-                  <div>
-                    <div style={{ fontWeight: 700, color: "var(--text-strong)", fontSize: "var(--text-md)" }}>{c.name}</div>
-                    <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginTop: 2 }}>{c.count.toLocaleString()} jobs</div>
-                  </div>
-                </div>
-              </Card>
+              <button key={c.name} onClick={() => onNav("jobs", { category: toFilter(c.name) })} style={{
+                display: "flex", alignItems: "center", gap: 10, width: "100%", textAlign: "left",
+                padding: "9px 12px", border: "1px solid var(--border)", borderRadius: "var(--radius-md)",
+                background: "var(--surface-card)", cursor: "pointer",
+                transition: "border-color var(--dur-base) var(--ease-standard), background var(--dur-base) var(--ease-standard)",
+              }}
+                onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--border-strong)"; e.currentTarget.style.background = "var(--surface-sunken)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.background = "var(--surface-card)"; }}>
+                <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 30, height: 30, flexShrink: 0, borderRadius: "var(--radius-sm)", background: "var(--brand-subtle)", color: "var(--brand)" }}>{I(c.icon, 16)}</span>
+                <span style={{ flex: 1, minWidth: 0, fontWeight: 600, color: "var(--text-strong)", fontSize: "var(--text-sm)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.name}</span>
+                <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", whiteSpace: "nowrap" }}>{c.count.toLocaleString()} jobs</span>
+              </button>
             ))}
           </div>
 
-          {/* Mobile: reveal 8 more at a time. */}
-          {isMobile && catMoreLeft > 0 ? (
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10, marginTop: 20 }}>
-              {/* Functional updater, not catShownSafe + step: two taps before React re-renders
-                  would both read the same stale count and only advance one step. */}
-              <Button variant="secondary"
-                onClick={() => setCatShown(function (n) { return Math.min(n + CAT_PER_LOAD, visibleCats.length); })}
-                iconRight={I("chevron-down", 16)}>{TR("Load more")}</Button>
-              <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
-                {catShownSafe} / {visibleCats.length}
-              </div>
-            </div>
-          ) : null}
-
-          {/* Desktop: numbered pages, same control as Featured companies below. */}
-          {!isMobile && catPages > 1 ? (
+          {/* Numbered pagination — same style as Featured jobs/companies, on all screen sizes. */}
+          {catPages > 1 ? (
             <div className="krm-pagination" style={{ display: "flex", alignItems: "center", justifyContent: "center", flexWrap: "wrap", gap: 8, marginTop: 28 }}>
               <button onClick={() => setCatPage(Math.max(0, catPageSafe - 1))} disabled={catPageSafe === 0} aria-label="Previous" style={{
                 display: "inline-flex", alignItems: "center", justifyContent: "center", width: 40, height: 40, borderRadius: "var(--radius-md)",
