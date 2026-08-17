@@ -363,6 +363,7 @@
 
     // Settings
     fetchSettings: function (group) { return req("GET", "/admin/settings/" + group); },
+    fetchPremiumOverview: function () { return req("GET", "/admin/premium/overview"); },
     fetchNbcRate: function () { return req("GET", "/admin/exchange-rate"); },
     fetchSeoOverview: function () { return req("GET", "/admin/seo/overview"); },
     testGoogleIndexing: function () { return req("POST", "/admin/seo/indexing/test", {}); },

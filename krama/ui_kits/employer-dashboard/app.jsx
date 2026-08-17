@@ -4580,6 +4580,8 @@
       emp.premiumSlotStatus().then(function (d) { setSt(d); setLoading(false); }).catch(function () { setLoading(false); });
     }, []);
     React.useEffect(function () { load(); }, [load]);
+    const joinWl = function () { emp.premiumSlotJoinWaitlist().then(function () { setFlash("You're on the premium waitlist — we'll let you know when a slot opens."); load(); }).catch(function (e) { setFlash((e && e.message) || "Could not join the waitlist."); }); };
+    const leaveWl = function () { emp.premiumSlotLeaveWaitlist().then(function () { setFlash("Left the waitlist."); load(); }).catch(function () {}); };
     var fmtDate = function (iso) { if (!iso) return ""; var d = new Date(iso); return d.getDate() + " " + ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][d.getMonth()] + " " + d.getFullYear(); };
     var money = function (cur, amt) { return String(cur).toUpperCase() === "KHR" ? ("៛" + Math.round(amt).toLocaleString()) : ("$" + Number(amt).toFixed(2)); };
     return (
@@ -4608,11 +4610,20 @@
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
                 <div style={{ fontSize: "var(--text-sm)", color: "var(--text-body)", lineHeight: 1.6, maxWidth: 470 }}>
                   Feature your company at the top of the homepage — above the regular Featured companies, with a gold highlight — for <strong>{st.days} days</strong>.
-                  <div style={{ color: "var(--text-muted)", marginTop: 4 }}>{st.used} / {st.limit} slots taken.</div>
+                  <div style={{ color: "var(--text-muted)", marginTop: 4 }}>{st.used} / {st.limit} slots taken.{st.is_full && st.waitlist_count ? (" " + st.waitlist_count + " waiting.") : ""}</div>
                 </div>
-                {st.is_full && !st.can_buy
-                  ? <Button variant="secondary" disabled>Premium is full</Button>
-                  : <Button variant="primary" iconLeft={I("star", 15)} onClick={function () { setModal(true); }}>Get premium slot ({money(st.currency, st.price)})</Button>}
+                {st.is_full && !st.can_buy ? (
+                  st.waitlisted ? (
+                    <div style={{ textAlign: "right" }}>
+                      <div style={{ fontSize: "var(--text-sm)", color: "var(--text-brand)", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 6 }}>{I("check-circle", 15)} On the waitlist{st.waitlist_position ? (" · #" + st.waitlist_position) : ""}</div>
+                      <div><button onClick={leaveWl} style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-xs)", textDecoration: "underline", padding: "4px 0 0" }}>Leave waitlist</button></div>
+                    </div>
+                  ) : (
+                    <Button variant="secondary" iconLeft={I("clock", 15)} onClick={joinWl}>Join waitlist</Button>
+                  )
+                ) : (
+                  <Button variant="primary" iconLeft={I("star", 15)} onClick={function () { setModal(true); }}>Get premium slot ({money(st.currency, st.price)})</Button>
+                )}
               </div>
             )}
             {flash && <div style={{ marginTop: 12, color: "var(--text-brand)", fontSize: "var(--text-sm)", fontWeight: 600 }}>{flash}</div>}

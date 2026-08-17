@@ -13040,6 +13040,20 @@
     React.useEffect(function () {
       load();
     }, [load]);
+    const joinWl = function () {
+      emp.premiumSlotJoinWaitlist().then(function () {
+        setFlash("You're on the premium waitlist — we'll let you know when a slot opens.");
+        load();
+      }).catch(function (e) {
+        setFlash(e && e.message || "Could not join the waitlist.");
+      });
+    };
+    const leaveWl = function () {
+      emp.premiumSlotLeaveWaitlist().then(function () {
+        setFlash("Left the waitlist.");
+        load();
+      }).catch(function () {});
+    };
     var fmtDate = function (iso) {
       if (!iso) return "";
       var d = new Date(iso);
@@ -13162,10 +13176,36 @@
         color: "var(--text-muted)",
         marginTop: 4
       }
-    }, st.used, " / ", st.limit, " slots taken.")), st.is_full && !st.can_buy ? /*#__PURE__*/React.createElement(Button, {
+    }, st.used, " / ", st.limit, " slots taken.", st.is_full && st.waitlist_count ? " " + st.waitlist_count + " waiting." : "")), st.is_full && !st.can_buy ? st.waitlisted ? /*#__PURE__*/React.createElement("div", {
+      style: {
+        textAlign: "right"
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: "var(--text-sm)",
+        color: "var(--text-brand)",
+        fontWeight: 700,
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 6
+      }
+    }, I("check-circle", 15), " On the waitlist", st.waitlist_position ? " · #" + st.waitlist_position : ""), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("button", {
+      onClick: leaveWl,
+      style: {
+        background: "none",
+        border: "none",
+        color: "var(--text-muted)",
+        cursor: "pointer",
+        fontFamily: "var(--font-sans)",
+        fontSize: "var(--text-xs)",
+        textDecoration: "underline",
+        padding: "4px 0 0"
+      }
+    }, "Leave waitlist"))) : /*#__PURE__*/React.createElement(Button, {
       variant: "secondary",
-      disabled: true
-    }, "Premium is full") : /*#__PURE__*/React.createElement(Button, {
+      iconLeft: I("clock", 15),
+      onClick: joinWl
+    }, "Join waitlist") : /*#__PURE__*/React.createElement(Button, {
       variant: "primary",
       iconLeft: I("star", 15),
       onClick: function () {

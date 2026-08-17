@@ -82,6 +82,8 @@ class PaymentService
                         $base = ($company->premium_until && $company->premium_until->isFuture())
                             ? $company->premium_until->copy() : now();
                         $company->update(['premium_until' => $base->addDays(max(1, $days))]);
+                        // They now hold a slot — drop them from the waitlist if present.
+                        \App\Models\PremiumWaitlist::where('company_id', $payment->company_id)->delete();
                     }
                 }
             } elseif ($payment->subscription_id) {

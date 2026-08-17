@@ -268,6 +268,8 @@ Route::middleware('auth:api')->group(function () {
     // Employer: Premium Featured homepage slot (paid, time-boxed; capacity-limited)
     Route::get('employer/premium-slot',           [PremiumSlotController::class, 'status']);
     Route::post('employer/premium-slot/checkout',  [PremiumSlotController::class, 'checkout'])->middleware('throttle:20,1');
+    Route::post('employer/premium-slot/waitlist',   [PremiumSlotController::class, 'joinWaitlist'])->middleware('throttle:20,1');
+    Route::delete('employer/premium-slot/waitlist', [PremiumSlotController::class, 'leaveWaitlist'])->middleware('throttle:20,1');
 
     // Employer: company-level job approval (company admin approves/rejects recruiter jobs)
     Route::patch('employer/jobs/{id}/approve', [JobController::class, 'companyApprove']);
@@ -334,6 +336,7 @@ Route::middleware(['auth:api', 'permission:site_settings'])->group(function () {
     Route::post('admin/seo/indexing/test',     [SettingController::class, 'testGoogleIndexing']);
     Route::get('admin/settings/{group}',       [SettingController::class, 'adminGroup']);
     Route::patch('admin/settings/{group}',     [SettingController::class, 'update']);
+    Route::get('admin/premium/overview',        [PremiumSlotController::class, 'adminOverview']);
     Route::post('admin/settings/smtp/test',    [SettingController::class, 'testSmtp']);
     Route::post('admin/settings/sms/test',     [SettingController::class, 'testSms']);
     Route::post('admin/settings/social/test',  [SettingController::class, 'testSocial']);

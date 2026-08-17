@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Company;
 use App\Models\Notification;
 use App\Models\Payment;
+use App\Models\PremiumWaitlist;
 use App\Models\Setting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -55,6 +56,13 @@ class PremiumSlotController extends Controller
         $active  = $company->premium_until !== null && $company->premium_until->isFuture();
         $isComp  = in_array($company->name, $cfg['manual'], true);
 
+        // Waitlist state for this company + the queue depth ahead of it.
+        $wl = PremiumWaitlist::where('company_id', $company->id)->first();
+        $waitlistCount = PremiumWaitlist::count();
+        $waitlistPos = $wl
+            ? PremiumWaitlist::where('id', '<=', $wl->id)->count()
+            : 0;
+
         return response()->json([
             'active'         => $active || $isComp,
             'paid_active'    => $active,
@@ -69,6 +77,86 @@ class PremiumSlotController extends Controller
             'is_full'        => $used >= $cfg['limit'],
             // A renewal/comp already holds a slot; a brand-new buyer needs free capacity.
             'can_buy'        => $cfg['price'] > 0 && ($active || $isComp || $used < $cfg['limit']),
+            'waitlisted'     => (bool) $wl,
+            'waitlist_position' => $waitlistPos,
+            'waitlist_count' => $waitlistCount,
+        ]);
+    }
+
+    // Employer joins the waitlist — only meaningful when all slots are full and they
+    // don't already hold one. Idempotent; alerts admins so they can gauge demand.
+    public function joinWaitlist(Request $request)
+    {
+        $company = $this->resolveCompany($request->user());
+        $cfg     = self::premiumConfig();
+
+        $active = $company->premium_until !== null && $company->premium_until->isFuture();
+        $isComp = in_array($company->name, $cfg['manual'], true);
+        if ($active || $isComp) {
+            return response()->json(['message' => 'Your company already holds a premium slot.'], 422);
+        }
+        if (self::occupiedCount($cfg) < $cfg['limit']) {
+            return response()->json(['message' => 'Slots are available — you can buy one now.'], 422);
+        }
+
+        $existing = PremiumWaitlist::where('company_id', $company->id)->first();
+        if (! $existing) {
+            PremiumWaitlist::create(['company_id' => $company->id]);
+            Notification::recordAdmins(
+                'premium_waitlist',
+                'Premium waitlist',
+                '“' . ($company->name ?? 'A company') . '” joined the Premium slot waitlist.'
+            );
+        }
+
+        $wl  = PremiumWaitlist::where('company_id', $company->id)->first();
+        $pos = $wl ? PremiumWaitlist::where('id', '<=', $wl->id)->count() : 0;
+        return response()->json(['waitlisted' => true, 'waitlist_position' => $pos, 'waitlist_count' => PremiumWaitlist::count()]);
+    }
+
+    public function leaveWaitlist(Request $request)
+    {
+        $company = $this->resolveCompany($request->user());
+        PremiumWaitlist::where('company_id', $company->id)->delete();
+        return response()->json(['waitlisted' => false, 'waitlist_count' => PremiumWaitlist::count()]);
+    }
+
+    // Admin overview: current occupants split into paid (with expiry) vs comp, plus the
+    // waitlist queue. Used by the admin Homepage → Explore → Premium card.
+    public function adminOverview(Request $request)
+    {
+        $cfg = self::premiumConfig();
+
+        $paid = Company::where('premium_until', '>', now())
+            ->orderBy('premium_until')
+            ->get(['id', 'name', 'logo_url', 'premium_until'])
+            ->map(fn ($c) => [
+                'id'            => $c->id,
+                'name'          => $c->name,
+                'logo_url'      => $c->logo_url,
+                'premium_until' => $c->premium_until,
+            ]);
+
+        $paidNames = $paid->pluck('name')->all();
+        // Comp = admin manual picks that aren't already counted as paid.
+        $comp = array_values(array_filter($cfg['manual'], fn ($n) => ! in_array($n, $paidNames, true)));
+
+        $waitlist = PremiumWaitlist::with('company:id,name,logo_url')
+            ->orderBy('id')
+            ->get()
+            ->map(fn ($w) => [
+                'company_id' => $w->company_id,
+                'name'       => $w->company ? $w->company->name : ('#' . $w->company_id),
+                'logo_url'   => $w->company ? $w->company->logo_url : null,
+                'since'      => $w->created_at,
+            ]);
+
+        return response()->json([
+            'limit'    => $cfg['limit'],
+            'used'     => self::occupiedCount($cfg),
+            'paid'     => $paid,
+            'comp'     => $comp,
+            'waitlist' => $waitlist,
         ]);
     }
 

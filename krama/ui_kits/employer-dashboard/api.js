@@ -195,6 +195,8 @@
       if (currency) body.currency = currency;
       return req("POST", "/employer/premium-slot/checkout", body);
     },
+    premiumSlotJoinWaitlist: function () { return req("POST", "/employer/premium-slot/waitlist", {}); },
+    premiumSlotLeaveWaitlist: function () { return req("DELETE", "/employer/premium-slot/waitlist"); },
     companyApproveJob: function (id, subscriptionId) { return req("PATCH", "/employer/jobs/" + id + "/approve", subscriptionId ? { subscription_id: subscriptionId } : undefined); },
     companyRejectJob: function (id, reason) { return req("PATCH", "/employer/jobs/" + id + "/reject", { reason: reason }); },
 

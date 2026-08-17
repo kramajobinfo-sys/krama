@@ -3880,6 +3880,7 @@
     const [companies, setCompanies] = React.useState(HOME_COMPANIES);
     const [companyCounts, setCompanyCounts] = React.useState({});
     const [companyLogos, setCompanyLogos] = React.useState({});
+    const [premiumOverview, setPremiumOverview] = React.useState(null);
     const [allCats, setAllCats] = React.useState([]);
     const [editSlide, setEditSlide] = React.useState(null);
     const SLIDE_BLANK = { id: "", title: "", titleSize: "", subtitle: "", theme: "teal", image: "", imageMobile: "", focalX: 50, focalY: 50, fit: "cover", imageOnly: true, ctaLabel: "", ctaUrl: "" };
@@ -3911,6 +3912,7 @@
       adm.fetchCategories().then(function (cats) {
         setAllCats(cats.filter(function (c) { return c.status === "active"; }));
       }).catch(function () {});
+      adm.fetchPremiumOverview().then(setPremiumOverview).catch(function () {});
     }, []);
     const set = (k, v) => { setS((x) => ({ ...x, [k]: v })); setSaved(false); };
     const setSB = (k, v) => { setS((x) => ({ ...x, sidebarBanner: Object.assign({}, x.sidebarBanner, { [k]: v }) })); setSaved(false); };
@@ -4819,8 +4821,31 @@
               </div>
               <Input label="Duration (days)" type="number" min="1" step="1" value={s.premiumSlotDays != null ? s.premiumSlotDays : 30} onChange={(e) => set("premiumSlotDays", e.target.value === "" ? "" : Number(e.target.value))} placeholder="30" hint="Employers pay the price above to appear as Premium for this many days, then renew." />
             </div>
+            {premiumOverview && (
+              <div style={{ marginBottom: 16, padding: "12px 14px", borderRadius: "var(--radius-md)", background: "var(--surface-sunken)", border: "1px solid var(--border-subtle)" }}>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 14, fontSize: "var(--text-xs)", color: "var(--text-body)" }}>
+                  <span><strong style={{ color: "var(--text-strong)" }}>{premiumOverview.used}</strong> / {premiumOverview.limit} filled</span>
+                  <span style={{ color: "var(--text-muted)" }}>Paid: <strong style={{ color: "var(--text-body)" }}>{premiumOverview.paid.length}</strong> · Comp: <strong style={{ color: "var(--text-body)" }}>{premiumOverview.comp.length}</strong> · Waitlist: <strong style={{ color: "var(--text-body)" }}>{premiumOverview.waitlist.length}</strong></span>
+                </div>
+                {premiumOverview.paid.length > 0 && (
+                  <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 4 }}>
+                    {premiumOverview.paid.map(function (p) {
+                      return <div key={p.id} style={{ display: "flex", justifyContent: "space-between", gap: 10, fontSize: "var(--text-xs)" }}><span style={{ fontWeight: 600, color: "var(--text-strong)" }}>{p.name} <span style={{ color: "#B8860B", fontWeight: 700 }}>· paid</span></span><span style={{ color: "var(--text-muted)", whiteSpace: "nowrap" }}>until {new Date(p.premium_until).toLocaleDateString()}</span></div>;
+                    })}
+                  </div>
+                )}
+                {premiumOverview.waitlist.length > 0 && (
+                  <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px dashed var(--border-subtle)" }}>
+                    <div style={{ fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-muted)", marginBottom: 4 }}>Waitlist ({premiumOverview.waitlist.length})</div>
+                    {premiumOverview.waitlist.map(function (w, i) {
+                      return <div key={w.company_id} style={{ fontSize: "var(--text-xs)", color: "var(--text-body)" }}>{i + 1}. {w.name}</div>;
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-              <span style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-strong)" }}>Selected premium companies</span>
+              <span style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-strong)" }}>Selected premium companies <span style={{ fontWeight: 500, color: "var(--text-muted)" }}>(free comp)</span></span>
               <Badge tone={((s.premiumFeatured || []).length >= (s.premiumFeaturedLimit || 10)) ? "danger" : "accent"}>{(s.premiumFeatured || []).length} / {s.premiumFeaturedLimit || 10}</Badge>
             </div>
             <div className="krm-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
