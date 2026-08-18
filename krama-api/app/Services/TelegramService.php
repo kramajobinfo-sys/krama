@@ -91,12 +91,13 @@ class TelegramService
     // Send a photo with an optional HTML caption. $photo may be a local file path
     // (uploaded as multipart — works even when the URL isn't publicly reachable, e.g.
     // on localhost) or a public URL/file_id.
-    public static function sendPhoto(string $token, string $chatId, string $photo, string $caption = '', ?array $replyMarkup = null): array
+    public static function sendPhoto(string $token, string $chatId, string $photo, string $caption = '', ?array $replyMarkup = null, ?int $threadId = null): array
     {
         try {
             $url = 'https://api.telegram.org/bot' . $token . '/sendPhoto';
             $fields = ['chat_id' => $chatId, 'caption' => $caption, 'parse_mode' => 'HTML'];
             if ($replyMarkup) $fields['reply_markup'] = json_encode($replyMarkup);
+            if ($threadId) $fields['message_thread_id'] = $threadId; // post into a forum topic
 
             if (is_file($photo)) {
                 $resp = Http::timeout(20)

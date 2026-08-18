@@ -189,6 +189,9 @@ class SettingController extends Controller
             'enabled'             => 'boolean',
             'telegram_enabled'    => 'boolean',
             'telegram_channel'    => 'nullable|string|max:128',   // @channel or -100... id (reuses the shared bot)
+            'telegram_topics_enabled' => 'boolean',               // post jobs into per-category forum topics
+            'telegram_forum_chat'     => 'nullable|string|max:64', // forum supergroup id (@name or -100…)
+            'telegram_topic_map'      => 'nullable|string|max:8000', // JSON category→topic cache (managed by the app)
             'facebook_enabled'    => 'boolean',
             'facebook_page_id'    => 'nullable|string|max:64',
             'facebook_page_token' => 'nullable|string|max:512',

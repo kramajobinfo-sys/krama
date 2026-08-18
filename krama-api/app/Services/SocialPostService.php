@@ -51,6 +51,16 @@ class SocialPostService
             catch (\Throwable $e) { Log::warning('Social post (telegram) failed for job ' . $job->id . ': ' . $e->getMessage()); }
         }
 
+        // Telegram forum group — post into the topic for the job's category (auto-created + cached).
+        if (self::on($cfg['telegram_topics_enabled'] ?? null) && ! empty($cfg['telegram_forum_chat']) && TelegramService::botToken() !== '') {
+            $attempted = true;
+            try {
+                $forum   = trim($cfg['telegram_forum_chat']);
+                $threadId = self::resolveCategoryTopic($forum, $job);
+                if ($threadId) self::postTelegram($forum, $text, $url, $image, $req, $threadId);
+            } catch (\Throwable $e) { Log::warning('Social post (telegram topic) failed for job ' . $job->id . ': ' . $e->getMessage()); }
+        }
+
         // Facebook Page — photo post when an image is present, else a feed link post.
         if (self::on($cfg['facebook_enabled'] ?? null) && ! empty($cfg['facebook_page_id']) && ! empty($cfg['facebook_page_token'])) {
             $attempted = true;
@@ -149,7 +159,7 @@ class SocialPostService
 
     // ── Platform posters — throw on failure; shareJob() wraps each in try/catch ──
 
-    public static function postTelegram(string $channel, string $text, string $url = '', ?string $image = null, string $suffix = ''): void
+    public static function postTelegram(string $channel, string $text, string $url = '', ?string $image = null, string $suffix = '', ?int $threadId = null): void
     {
         $token = TelegramService::botToken();
         // Telegram rejects inline-button URLs that aren't a public http(s) address
@@ -169,9 +179,33 @@ class SocialPostService
         // With a banner image, post it as a photo + caption (like a hiring poster);
         // otherwise a plain text message. (Telegram caption cap is 1024 chars.)
         $res = $image
-            ? TelegramService::sendPhoto($token, $channel, $image, mb_substr($safe, 0, 1024), $markup)
-            : TelegramService::sendMessage($token, $channel, $safe, $markup);
+            ? TelegramService::sendPhoto($token, $channel, $image, mb_substr($safe, 0, 1024), $markup, $threadId)
+            : TelegramService::sendMessage($token, $channel, $safe, $markup, $threadId);
         if (empty($res['ok'])) throw new \RuntimeException($res['error'] ?? 'telegram send failed');
+    }
+
+    // Resolve (or create + cache) the forum-topic id for a job's category. The category→topic
+    // map is persisted in the social_post settings, so each topic is created once and reused.
+    private static function resolveCategoryTopic(string $forumChat, Job $job): ?int
+    {
+        $job->loadMissing('category');
+        $name = trim(optional($job->category)->name ?? '') ?: 'Other';
+        $name = mb_substr($name, 0, 128); // Telegram topic-name cap
+        $key  = mb_strtolower($name);
+
+        $row = Setting::where('group', 'social_post')->where('key', 'telegram_topic_map')->first();
+        $map = ($row && $row->value) ? json_decode($row->value, true) : [];
+        if (! is_array($map)) $map = [];
+        if (! empty($map[$key]['id'])) return (int) $map[$key]['id'];
+
+        $res = TelegramService::createForumTopic(TelegramService::botToken(), $forumChat, $name);
+        if (empty($res['ok']) || empty($res['topic_id'])) {
+            Log::warning('createForumTopic failed for "' . $name . '": ' . ($res['error'] ?? 'unknown'));
+            return null;
+        }
+        $map[$key] = ['id' => (int) $res['topic_id'], 'name' => $name];
+        Setting::updateOrInsert(['group' => 'social_post', 'key' => 'telegram_topic_map'], ['value' => json_encode($map)]);
+        return (int) $res['topic_id'];
     }
 
     public static function postFacebook(string $pageId, string $token, string $message, string $link, ?string $image = null, string $suffix = ''): void
