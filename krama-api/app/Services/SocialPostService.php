@@ -81,6 +81,36 @@ class SocialPostService
         }
     }
 
+    /**
+     * Post a single job into its @kramajobforum category topic ONLY (never the channel).
+     * Used by the telegram:backfill-topics one-time backfill. Does NOT touch social_posted_at,
+     * does NOT check share_social — it always attempts the topic post. Never throws; returns
+     * ['ok' => bool, 'topic' => ?string, 'error' => ?string]. The caller handles pacing/retry.
+     */
+    public static function postJobToForumTopic(Job $job): array
+    {
+        $cfg   = self::settings();
+        $forum = trim($cfg['telegram_forum_chat'] ?? '');
+        if ($forum === '' || TelegramService::botToken() === '') {
+            return ['ok' => false, 'topic' => null, 'error' => 'forum chat / bot token not configured'];
+        }
+        try {
+            $job->loadMissing('company', 'location', 'category');
+            $threadId = self::resolveCategoryTopic($forum, $job);
+            if (! $threadId) return ['ok' => false, 'topic' => null, 'error' => 'could not resolve/create topic'];
+
+            $text  = self::buildText($job);
+            $url   = self::jobUrl($job);
+            $image = self::imageForJob($job);
+            $req   = self::requirementsBlock($job);
+            self::postTelegram($forum, $text, $url, $image, $req, $threadId);
+
+            return ['ok' => true, 'topic' => optional($job->category)->name ?? 'Other', 'error' => null];
+        } catch (\Throwable $e) {
+            return ['ok' => false, 'topic' => null, 'error' => $e->getMessage()];
+        }
+    }
+
     public static function buildText(Job $job): string
     {
         // Banner (#1) is sent as the photo; the apply link (#8) is the inline button /
