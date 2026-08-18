@@ -1404,7 +1404,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       className: "krm-cat-grid",
       style: {
         display: "grid",
-        gridTemplateColumns: "repeat(2,1fr)",
+        gridTemplateColumns: "repeat(3,1fr)",
         gap: 10
       }
     }, catSlice.map(c => /*#__PURE__*/React.createElement("button", {

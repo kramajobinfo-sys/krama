@@ -557,8 +557,8 @@
         <TopEmployers onNav={onNav} settings={hs} />
 
         <Section eyebrow={TR("Browse by field")} title={TR("Explore job categories")}>
-          {/* Compact list view — 2 columns of rows on desktop, 1 column on mobile (see mobile.css). */}
-          <div className="krm-cat-grid" style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 10 }}>
+          {/* Compact list view — 3 columns of rows on desktop, 1 column on mobile (see mobile.css). */}
+          <div className="krm-cat-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10 }}>
             {catSlice.map((c) => (
               <button key={c.name} onClick={() => onNav("jobs", { category: toFilter(c.name) })} style={{
                 display: "flex", alignItems: "center", gap: 10, width: "100%", textAlign: "left",
