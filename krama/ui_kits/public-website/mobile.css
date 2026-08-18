@@ -14,6 +14,25 @@
 .krm-page-hero.krm-hs-md p { font-size: clamp(13px, 2.4vw, 17px) !important; }
 .krm-page-hero.krm-hs-lg p { font-size: clamp(15px, 2.8vw, 20px) !important; }
 
+/* ── Wide-desktop hero fix ──────────────────────────────────────────────────
+   Image page/company heroes carry inline `aspect-ratio: 1600/360` + `max-height: 360`.
+   On screens wider than 1600px the two together shrink the hero's WIDTH down to
+   1600px (the browser derives width from the capped height to keep the ratio), so
+   the banner sits left-aligned with an empty gap on the right — unlike the Home
+   hero, which fills the screen. Pin full width and drive the height from the
+   viewport (capped at 360) so these heroes fill the screen and center-crop just
+   like Home. min() reproduces the old height exactly below 1600 (22.5vw = 360/1600),
+   so nothing changes there. Scoped to ≥768px; phones keep the mobile rules below. */
+@media (min-width: 768px) {
+  .krm-page-hero.krm-page-hero--img,
+  .krm-co-hero.krm-co-hero--img {
+    width: 100% !important;
+    aspect-ratio: auto !important;
+    max-height: none !important;
+    height: min(360px, 22.5vw) !important;
+  }
+}
+
 /* ── Auth pages: on desktop the split-screen Shell provides its own chrome,
       so hide the site header/footer there (mobile re-shows them below). ────── */
 .krm-auth-page > .krm-header,

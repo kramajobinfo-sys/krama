@@ -1054,7 +1054,9 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     const fjSentinelRef = React.useRef(null);
     const showFeaturedJobs = hs.featuredJobsVisible !== false;
     const FJ_PER_PAGE = hs.featuredJobsCount || 8;
-    const FC_PER_PAGE = 8;
+    // Featured companies per page — admin-configurable, separate mobile vs desktop counts so
+    // each grid tiles evenly (mobile = 3 cols, desktop = 4 cols).
+    const FC_PER_PAGE = isMobile ? hs.featuredCountMobile || 9 : hs.featuredCount || 8;
     const CAT_PER_PAGE = isMobile ? 8 : 12; // categories per page (numbered pagination on all sizes)
     const CAT_PER_LOAD = 8; // mobile: how many more each "Load more" reveals
     // featured-first ordering across all jobs, then paginate
@@ -1124,11 +1126,14 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     // Premium featured: admin-selected paid tier (manual until employer subscriptions exist),
     // capped at the admin limit, shown ABOVE regular Featured with a gold highlight.
     const premiumNames = hs.premiumFeatured && hs.premiumFeatured.length ? hs.premiumFeatured : [];
-    const premiumLimit = hs.premiumFeaturedLimit || 10;
+    const premiumLimit = hs.premiumFeaturedLimit || 10; // business slot cap = desktop show count
+    // How many premium companies to display, per device. Desktop uses the slot limit;
+    // mobile can be capped smaller (falls back to the slot limit when unset).
+    const premiumShow = isMobile ? Math.min(premiumLimit, hs.premiumFeaturedCountMobile || premiumLimit) : premiumLimit;
     const premiumSet = new Set(premiumNames);
     // A company is premium if it holds a paid slot (c.isPremium) OR the admin comped it by name.
     const isPrem = c => c.isPremium || premiumSet.has(c.name);
-    const premiumList = allCompanies.filter(isPrem).slice(0, premiumLimit);
+    const premiumList = allCompanies.filter(isPrem).slice(0, premiumShow);
     const showPremium = hs.premiumFeaturedVisible !== false && premiumList.length > 0;
     const featuredNames = hs.featured && hs.featured.length ? hs.featured : null;
     // Regular Featured excludes anything already promoted to Premium so a company never appears twice.
