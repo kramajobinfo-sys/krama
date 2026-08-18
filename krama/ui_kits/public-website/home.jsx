@@ -446,6 +446,27 @@
     const fcPageSafe = Math.min(fcPage, fcPages - 1);
     const fcSlice = featuredList.slice(fcPageSafe * FC_PER_PAGE, fcPageSafe * FC_PER_PAGE + FC_PER_PAGE);
 
+    // Compact company tile for the 3-column mobile grid. The full CompanyCard (logo 64 +
+    // industry + location + roles badges) is far too tall/wide for 3 columns on a phone, so on
+    // mobile we render a slim logo + name + role-count tile instead. `premium` adds the gold
+    // border, shadow and PREMIUM ribbon so it still reads as the paid tier.
+    const compactCompany = (c, premium) => (
+      <button key={c.name} onClick={() => onNav("company", { companyId: c.id })} style={{
+        position: "relative", display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
+        textAlign: "center", padding: "14px 6px 12px", minWidth: 0, cursor: "pointer",
+        background: "var(--surface-card)", borderRadius: "var(--radius-lg)",
+        border: premium ? "1px solid #D9A521" : "1px solid var(--border)",
+        boxShadow: premium ? "0 2px 4px rgba(190,140,25,0.18), 0 5px 14px rgba(190,140,25,0.28)" : "var(--shadow-sm)",
+      }}>
+        {premium ? (
+          <span style={{ position: "absolute", top: -8, left: "50%", transform: "translateX(-50%)", zIndex: 3, background: "linear-gradient(180deg,#F7CE63,#D99A1F)", color: "#4a3300", fontSize: 8, fontWeight: 800, letterSpacing: ".05em", padding: "2px 7px", borderRadius: 999, boxShadow: "0 2px 6px rgba(200,150,30,0.55)", whiteSpace: "nowrap" }}>★ PREMIUM</span>
+        ) : null}
+        <Avatar src={c.logo} name={c.name} square size={44} />
+        <span style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 11, lineHeight: 1.2, color: "var(--text-strong)", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", width: "100%" }}>{c.name}</span>
+        <span style={{ fontSize: 9.5, fontWeight: 600, color: "var(--text-brand)" }}>{(c.openJobs || 0)} {(c.openJobs === 1 ? TR("role") : TR("roles"))}</span>
+      </button>
+    );
+
     // Featured jobs section — rendered in place on desktop, at the page bottom on mobile.
     const fjSection = showFeaturedJobs ? (
       <div style={{ background: "var(--surface-card)", borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)" }}>
@@ -582,7 +603,7 @@
             {/* Same CompanyCard as Featured (gold border + shadow). The wrapper is display:grid so
                 the card still stretches to full row height — a plain <div> broke that. The PREMIUM
                 badge is absolutely positioned in the wrapper, outside the card's clipped box. */}
-            {premiumList.map((c) => (
+            {premiumList.map((c) => isMobile ? compactCompany(c, true) : (
               <div key={c.name} style={{ position: "relative", display: "grid" }}>
                 <CompanyCard {...c} onClick={() => onNav("company", { companyId: c.id })} style={{ border: "1px solid #D9A521", boxShadow: "0 2px 4px rgba(190,140,25,0.18), 0 6px 18px rgba(190,140,25,0.30)" }} />
                 <span style={{ position: "absolute", top: -9, left: "50%", transform: "translateX(-50%)", zIndex: 3, background: "linear-gradient(180deg,#F7CE63,#D99A1F)", color: "#4a3300", fontSize: 10, fontWeight: 800, letterSpacing: ".08em", padding: "3px 11px", borderRadius: 999, boxShadow: "0 2px 8px rgba(200,150,30,0.55)", whiteSpace: "nowrap" }}>★ PREMIUM</span>
@@ -596,7 +617,7 @@
         <Section eyebrow={TR("Trusted by")} title={TR("Featured companies")}
           action={<Button variant="ghost" onClick={() => onNav("companies")} iconRight={I("arrow-right", 16)}>{TR("All companies")}</Button>}>
           <div className="krm-company-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16 }}>
-            {fcSlice.map((c) => <CompanyCard key={c.name} {...c} onClick={() => onNav("company", { companyId: c.id })} />)}
+            {fcSlice.map((c) => isMobile ? compactCompany(c, false) : <CompanyCard key={c.name} {...c} onClick={() => onNav("company", { companyId: c.id })} />)}
           </div>
           {fcPages > 1 ? (
             <div className="krm-pagination" style={{ display: "flex", alignItems: "center", justifyContent: "center", flexWrap: "wrap", gap: 8, marginTop: 28 }}>

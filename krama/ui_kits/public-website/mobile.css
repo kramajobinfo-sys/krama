@@ -245,10 +245,10 @@
     flex: 0 0 auto;
   }
 
-  /* ── Featured companies grid — 2 columns ────────────────────────────── */
+  /* ── Featured / Premium companies grid — 3 compact columns ──────────── */
   .krm-company-grid {
-    grid-template-columns: 1fr 1fr !important;
-    gap: 10px !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 8px !important;
   }
 
   /* ── Top employers — keep the running marquee, size so ~5 tiles show ──── */
@@ -597,8 +597,8 @@
   /* Featured jobs — 1 column */
   .krm-job-grid     { grid-template-columns: 1fr !important; }
 
-  /* Featured companies — 2 columns */
-  .krm-company-grid { grid-template-columns: 1fr 1fr !important; }
+  /* Featured / Premium companies — 3 compact columns */
+  .krm-company-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 8px !important; }
 
   /* Footer — 2 columns */
   .krm-footer-grid  { grid-template-columns: 1fr 1fr !important; gap: 24px !important; }
