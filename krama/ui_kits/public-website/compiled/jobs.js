@@ -2045,8 +2045,39 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     const [view, setView] = React.useState(function () {
       return window.matchMedia && window.matchMedia("(max-width: 767px)").matches ? "grid" : "details";
     });
+    const [isMobile, setIsMobile] = React.useState(function () {
+      try {
+        return window.matchMedia("(max-width: 767px)").matches;
+      } catch (e) {
+        return false;
+      }
+    });
+    React.useEffect(function () {
+      var mq;
+      try {
+        mq = window.matchMedia("(max-width: 767px)");
+      } catch (e) {
+        return;
+      }
+      var on = function () {
+        setIsMobile(mq.matches);
+      };
+      mq.addEventListener ? mq.addEventListener("change", on) : mq.addListener(on);
+      return function () {
+        mq.removeEventListener ? mq.removeEventListener("change", on) : mq.removeListener(on);
+      };
+    }, []);
     const [page, setPage] = React.useState(0);
-    const PER_PAGE = 8;
+    // Companies per page — admin-configurable (Admin → Homepage → Companies tab), separate
+    // mobile vs desktop counts so each grid tiles evenly (mobile = 3 cols, desktop grid).
+    const _hs = function () {
+      try {
+        return JSON.parse(localStorage.getItem("krama_home_settings") || "{}") || {};
+      } catch (e) {
+        return {};
+      }
+    }();
+    const PER_PAGE = isMobile ? _hs.companiesPerPageMobile || 9 : _hs.companiesPerPage || 12;
     React.useEffect(() => {
       if (window.lucide) window.lucide.createIcons();
     });
@@ -2268,7 +2299,12 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         gridTemplateColumns: hasSide ? "1fr 1fr" : "repeat(3,1fr)",
         gap: 16
       }
-    }, pageResults.map(c => /*#__PURE__*/React.createElement(CompanyCard, _extends({
+    }, pageResults.map(c => isMobile && window.KramaCompactCompany ? /*#__PURE__*/React.createElement(window.KramaCompactCompany, {
+      key: c.name,
+      company: c,
+      premium: false,
+      onNav: onNav
+    }) : /*#__PURE__*/React.createElement(CompanyCard, _extends({
       key: c.name
     }, c, {
       onClick: () => onNav("company", {

@@ -2172,6 +2172,80 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       }
     })))));
   }
+
+  // Shared compact company tile for the 3-column MOBILE grids — home Featured/Premium AND the
+  // Companies directory page (jobs.jsx). The full DS CompanyCard (logo 64 + industry + location +
+  // roles badges) is far too tall/wide for 3 columns on a phone, so this slim tile (logo 44 +
+  // 2-line name + role count) is used instead. `premium` adds the gold border + PREMIUM ribbon.
+  // Exposed on window so jobs.jsx can render the identical tile.
+  function CompactCompany({
+    company: c,
+    premium,
+    onNav
+  }) {
+    return /*#__PURE__*/React.createElement("button", {
+      onClick: () => onNav("company", {
+        companyId: c.id
+      }),
+      style: {
+        position: "relative",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 6,
+        textAlign: "center",
+        padding: "14px 6px 12px",
+        minWidth: 0,
+        cursor: "pointer",
+        background: "var(--surface-card)",
+        borderRadius: "var(--radius-lg)",
+        border: premium ? "1px solid #D9A521" : "1px solid var(--border)",
+        boxShadow: premium ? "0 2px 4px rgba(190,140,25,0.18), 0 5px 14px rgba(190,140,25,0.28)" : "var(--shadow-sm)"
+      }
+    }, premium ? /*#__PURE__*/React.createElement("span", {
+      style: {
+        position: "absolute",
+        top: -8,
+        left: "50%",
+        transform: "translateX(-50%)",
+        zIndex: 3,
+        background: "linear-gradient(180deg,#F7CE63,#D99A1F)",
+        color: "#4a3300",
+        fontSize: 8,
+        fontWeight: 800,
+        letterSpacing: ".05em",
+        padding: "2px 7px",
+        borderRadius: 999,
+        boxShadow: "0 2px 6px rgba(200,150,30,0.55)",
+        whiteSpace: "nowrap"
+      }
+    }, "\u2605 PREMIUM") : null, /*#__PURE__*/React.createElement(Avatar, {
+      src: c.logo,
+      name: c.name,
+      square: true,
+      size: 44
+    }), /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontFamily: "var(--font-display)",
+        fontWeight: 700,
+        fontSize: 11,
+        lineHeight: 1.2,
+        color: "var(--text-strong)",
+        display: "-webkit-box",
+        WebkitLineClamp: 2,
+        WebkitBoxOrient: "vertical",
+        overflow: "hidden",
+        width: "100%"
+      }
+    }, c.name), /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: 9.5,
+        fontWeight: 600,
+        color: "var(--text-brand)"
+      }
+    }, c.openJobs || 0, " ", c.openJobs === 1 ? TR("role") : TR("roles")));
+  }
+  window.KramaCompactCompany = CompactCompany;
   function Home({
     onNav,
     onOpenJob,
@@ -2323,72 +2397,13 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     const fcPageSafe = Math.min(fcPage, fcPages - 1);
     const fcSlice = featuredList.slice(fcPageSafe * FC_PER_PAGE, fcPageSafe * FC_PER_PAGE + FC_PER_PAGE);
 
-    // Compact company tile for the 3-column mobile grid. The full CompanyCard (logo 64 +
-    // industry + location + roles badges) is far too tall/wide for 3 columns on a phone, so on
-    // mobile we render a slim logo + name + role-count tile instead. `premium` adds the gold
-    // border, shadow and PREMIUM ribbon so it still reads as the paid tier.
-    const compactCompany = (c, premium) => /*#__PURE__*/React.createElement("button", {
+    // Compact tile for the 3-column mobile grid — shared with the Companies page (see CompactCompany).
+    const compactCompany = (c, premium) => /*#__PURE__*/React.createElement(CompactCompany, {
       key: c.name,
-      onClick: () => onNav("company", {
-        companyId: c.id
-      }),
-      style: {
-        position: "relative",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        gap: 6,
-        textAlign: "center",
-        padding: "14px 6px 12px",
-        minWidth: 0,
-        cursor: "pointer",
-        background: "var(--surface-card)",
-        borderRadius: "var(--radius-lg)",
-        border: premium ? "1px solid #D9A521" : "1px solid var(--border)",
-        boxShadow: premium ? "0 2px 4px rgba(190,140,25,0.18), 0 5px 14px rgba(190,140,25,0.28)" : "var(--shadow-sm)"
-      }
-    }, premium ? /*#__PURE__*/React.createElement("span", {
-      style: {
-        position: "absolute",
-        top: -8,
-        left: "50%",
-        transform: "translateX(-50%)",
-        zIndex: 3,
-        background: "linear-gradient(180deg,#F7CE63,#D99A1F)",
-        color: "#4a3300",
-        fontSize: 8,
-        fontWeight: 800,
-        letterSpacing: ".05em",
-        padding: "2px 7px",
-        borderRadius: 999,
-        boxShadow: "0 2px 6px rgba(200,150,30,0.55)",
-        whiteSpace: "nowrap"
-      }
-    }, "\u2605 PREMIUM") : null, /*#__PURE__*/React.createElement(Avatar, {
-      src: c.logo,
-      name: c.name,
-      square: true,
-      size: 44
-    }), /*#__PURE__*/React.createElement("span", {
-      style: {
-        fontFamily: "var(--font-display)",
-        fontWeight: 700,
-        fontSize: 11,
-        lineHeight: 1.2,
-        color: "var(--text-strong)",
-        display: "-webkit-box",
-        WebkitLineClamp: 2,
-        WebkitBoxOrient: "vertical",
-        overflow: "hidden",
-        width: "100%"
-      }
-    }, c.name), /*#__PURE__*/React.createElement("span", {
-      style: {
-        fontSize: 9.5,
-        fontWeight: 600,
-        color: "var(--text-brand)"
-      }
-    }, c.openJobs || 0, " ", c.openJobs === 1 ? TR("role") : TR("roles")));
+      company: c,
+      premium: premium,
+      onNav: onNav
+    });
 
     // Featured jobs section — rendered in place on desktop, at the page bottom on mobile.
     const fjSection = showFeaturedJobs ? /*#__PURE__*/React.createElement("div", {
@@ -2598,7 +2613,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         gap: 10,
         width: "100%",
         textAlign: "left",
-        padding: "9px 12px",
+        padding: "11px 13px",
         border: "1px solid var(--border)",
         borderRadius: "var(--radius-md)",
         background: "var(--surface-card)",
@@ -2618,27 +2633,27 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
-        width: 30,
-        height: 30,
+        width: 34,
+        height: 34,
         flexShrink: 0,
         borderRadius: "var(--radius-sm)",
         background: "var(--brand-subtle)",
         color: "var(--brand)"
       }
-    }, I(c.icon, 16)), /*#__PURE__*/React.createElement("span", {
+    }, I(c.icon, 18)), /*#__PURE__*/React.createElement("span", {
       style: {
         flex: 1,
         minWidth: 0,
         fontWeight: 600,
         color: "var(--text-strong)",
-        fontSize: "var(--text-sm)",
+        fontSize: "var(--text-base)",
         whiteSpace: "nowrap",
         overflow: "hidden",
         textOverflow: "ellipsis"
       }
     }, c.name), /*#__PURE__*/React.createElement("span", {
       style: {
-        fontSize: "var(--text-xs)",
+        fontSize: "var(--text-sm)",
         color: "var(--text-muted)",
         whiteSpace: "nowrap"
       }
@@ -4878,8 +4893,39 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     const [view, setView] = React.useState(function () {
       return window.matchMedia && window.matchMedia("(max-width: 767px)").matches ? "grid" : "details";
     });
+    const [isMobile, setIsMobile] = React.useState(function () {
+      try {
+        return window.matchMedia("(max-width: 767px)").matches;
+      } catch (e) {
+        return false;
+      }
+    });
+    React.useEffect(function () {
+      var mq;
+      try {
+        mq = window.matchMedia("(max-width: 767px)");
+      } catch (e) {
+        return;
+      }
+      var on = function () {
+        setIsMobile(mq.matches);
+      };
+      mq.addEventListener ? mq.addEventListener("change", on) : mq.addListener(on);
+      return function () {
+        mq.removeEventListener ? mq.removeEventListener("change", on) : mq.removeListener(on);
+      };
+    }, []);
     const [page, setPage] = React.useState(0);
-    const PER_PAGE = 8;
+    // Companies per page — admin-configurable (Admin → Homepage → Companies tab), separate
+    // mobile vs desktop counts so each grid tiles evenly (mobile = 3 cols, desktop grid).
+    const _hs = function () {
+      try {
+        return JSON.parse(localStorage.getItem("krama_home_settings") || "{}") || {};
+      } catch (e) {
+        return {};
+      }
+    }();
+    const PER_PAGE = isMobile ? _hs.companiesPerPageMobile || 9 : _hs.companiesPerPage || 12;
     React.useEffect(() => {
       if (window.lucide) window.lucide.createIcons();
     });
@@ -5101,7 +5147,12 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         gridTemplateColumns: hasSide ? "1fr 1fr" : "repeat(3,1fr)",
         gap: 16
       }
-    }, pageResults.map(c => /*#__PURE__*/React.createElement(CompanyCard, _extends({
+    }, pageResults.map(c => isMobile && window.KramaCompactCompany ? /*#__PURE__*/React.createElement(window.KramaCompactCompany, {
+      key: c.name,
+      company: c,
+      premium: false,
+      onNav: onNav
+    }) : /*#__PURE__*/React.createElement(CompanyCard, _extends({
       key: c.name
     }, c, {
       onClick: () => onNav("company", {

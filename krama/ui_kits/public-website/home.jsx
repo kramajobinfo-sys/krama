@@ -342,6 +342,31 @@
     );
   }
 
+  // Shared compact company tile for the 3-column MOBILE grids — home Featured/Premium AND the
+  // Companies directory page (jobs.jsx). The full DS CompanyCard (logo 64 + industry + location +
+  // roles badges) is far too tall/wide for 3 columns on a phone, so this slim tile (logo 44 +
+  // 2-line name + role count) is used instead. `premium` adds the gold border + PREMIUM ribbon.
+  // Exposed on window so jobs.jsx can render the identical tile.
+  function CompactCompany({ company: c, premium, onNav }) {
+    return (
+      <button onClick={() => onNav("company", { companyId: c.id })} style={{
+        position: "relative", display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
+        textAlign: "center", padding: "14px 6px 12px", minWidth: 0, cursor: "pointer",
+        background: "var(--surface-card)", borderRadius: "var(--radius-lg)",
+        border: premium ? "1px solid #D9A521" : "1px solid var(--border)",
+        boxShadow: premium ? "0 2px 4px rgba(190,140,25,0.18), 0 5px 14px rgba(190,140,25,0.28)" : "var(--shadow-sm)",
+      }}>
+        {premium ? (
+          <span style={{ position: "absolute", top: -8, left: "50%", transform: "translateX(-50%)", zIndex: 3, background: "linear-gradient(180deg,#F7CE63,#D99A1F)", color: "#4a3300", fontSize: 8, fontWeight: 800, letterSpacing: ".05em", padding: "2px 7px", borderRadius: 999, boxShadow: "0 2px 6px rgba(200,150,30,0.55)", whiteSpace: "nowrap" }}>★ PREMIUM</span>
+        ) : null}
+        <Avatar src={c.logo} name={c.name} square size={44} />
+        <span style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 11, lineHeight: 1.2, color: "var(--text-strong)", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", width: "100%" }}>{c.name}</span>
+        <span style={{ fontSize: 9.5, fontWeight: 600, color: "var(--text-brand)" }}>{(c.openJobs || 0)} {(c.openJobs === 1 ? TR("role") : TR("roles"))}</span>
+      </button>
+    );
+  }
+  window.KramaCompactCompany = CompactCompany;
+
   function Home({ onNav, onOpenJob, saved, toggleSave }) {
     const [hs, setHs] = React.useState(loadHomeSettings);
     React.useEffect(function() {
@@ -451,26 +476,8 @@
     const fcPageSafe = Math.min(fcPage, fcPages - 1);
     const fcSlice = featuredList.slice(fcPageSafe * FC_PER_PAGE, fcPageSafe * FC_PER_PAGE + FC_PER_PAGE);
 
-    // Compact company tile for the 3-column mobile grid. The full CompanyCard (logo 64 +
-    // industry + location + roles badges) is far too tall/wide for 3 columns on a phone, so on
-    // mobile we render a slim logo + name + role-count tile instead. `premium` adds the gold
-    // border, shadow and PREMIUM ribbon so it still reads as the paid tier.
-    const compactCompany = (c, premium) => (
-      <button key={c.name} onClick={() => onNav("company", { companyId: c.id })} style={{
-        position: "relative", display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
-        textAlign: "center", padding: "14px 6px 12px", minWidth: 0, cursor: "pointer",
-        background: "var(--surface-card)", borderRadius: "var(--radius-lg)",
-        border: premium ? "1px solid #D9A521" : "1px solid var(--border)",
-        boxShadow: premium ? "0 2px 4px rgba(190,140,25,0.18), 0 5px 14px rgba(190,140,25,0.28)" : "var(--shadow-sm)",
-      }}>
-        {premium ? (
-          <span style={{ position: "absolute", top: -8, left: "50%", transform: "translateX(-50%)", zIndex: 3, background: "linear-gradient(180deg,#F7CE63,#D99A1F)", color: "#4a3300", fontSize: 8, fontWeight: 800, letterSpacing: ".05em", padding: "2px 7px", borderRadius: 999, boxShadow: "0 2px 6px rgba(200,150,30,0.55)", whiteSpace: "nowrap" }}>★ PREMIUM</span>
-        ) : null}
-        <Avatar src={c.logo} name={c.name} square size={44} />
-        <span style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 11, lineHeight: 1.2, color: "var(--text-strong)", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", width: "100%" }}>{c.name}</span>
-        <span style={{ fontSize: 9.5, fontWeight: 600, color: "var(--text-brand)" }}>{(c.openJobs || 0)} {(c.openJobs === 1 ? TR("role") : TR("roles"))}</span>
-      </button>
-    );
+    // Compact tile for the 3-column mobile grid — shared with the Companies page (see CompactCompany).
+    const compactCompany = (c, premium) => <CompactCompany key={c.name} company={c} premium={premium} onNav={onNav} />;
 
     // Featured jobs section — rendered in place on desktop, at the page bottom on mobile.
     const fjSection = showFeaturedJobs ? (
@@ -562,15 +569,15 @@
             {catSlice.map((c) => (
               <button key={c.name} onClick={() => onNav("jobs", { category: toFilter(c.name) })} style={{
                 display: "flex", alignItems: "center", gap: 10, width: "100%", textAlign: "left",
-                padding: "9px 12px", border: "1px solid var(--border)", borderRadius: "var(--radius-md)",
+                padding: "11px 13px", border: "1px solid var(--border)", borderRadius: "var(--radius-md)",
                 background: "var(--surface-card)", cursor: "pointer",
                 transition: "border-color var(--dur-base) var(--ease-standard), background var(--dur-base) var(--ease-standard)",
               }}
                 onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--border-strong)"; e.currentTarget.style.background = "var(--surface-sunken)"; }}
                 onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.background = "var(--surface-card)"; }}>
-                <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 30, height: 30, flexShrink: 0, borderRadius: "var(--radius-sm)", background: "var(--brand-subtle)", color: "var(--brand)" }}>{I(c.icon, 16)}</span>
-                <span style={{ flex: 1, minWidth: 0, fontWeight: 600, color: "var(--text-strong)", fontSize: "var(--text-sm)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.name}</span>
-                <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", whiteSpace: "nowrap" }}>{c.count.toLocaleString()} jobs</span>
+                <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, flexShrink: 0, borderRadius: "var(--radius-sm)", background: "var(--brand-subtle)", color: "var(--brand)" }}>{I(c.icon, 18)}</span>
+                <span style={{ flex: 1, minWidth: 0, fontWeight: 600, color: "var(--text-strong)", fontSize: "var(--text-base)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.name}</span>
+                <span style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", whiteSpace: "nowrap" }}>{c.count.toLocaleString()} jobs</span>
               </button>
             ))}
           </div>

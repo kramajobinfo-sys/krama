@@ -650,8 +650,18 @@
     const [view, setView] = React.useState(function () {
       return (window.matchMedia && window.matchMedia("(max-width: 767px)").matches) ? "grid" : "details";
     });
+    const [isMobile, setIsMobile] = React.useState(function () { try { return window.matchMedia("(max-width: 767px)").matches; } catch (e) { return false; } });
+    React.useEffect(function () {
+      var mq; try { mq = window.matchMedia("(max-width: 767px)"); } catch (e) { return; }
+      var on = function () { setIsMobile(mq.matches); };
+      mq.addEventListener ? mq.addEventListener("change", on) : mq.addListener(on);
+      return function () { mq.removeEventListener ? mq.removeEventListener("change", on) : mq.removeListener(on); };
+    }, []);
     const [page, setPage] = React.useState(0);
-    const PER_PAGE = 8;
+    // Companies per page — admin-configurable (Admin → Homepage → Companies tab), separate
+    // mobile vs desktop counts so each grid tiles evenly (mobile = 3 cols, desktop grid).
+    const _hs = (function () { try { return JSON.parse(localStorage.getItem("krama_home_settings") || "{}") || {}; } catch (e) { return {}; } })();
+    const PER_PAGE = isMobile ? (_hs.companiesPerPageMobile || 9) : (_hs.companiesPerPage || 12);
     React.useEffect(() => { if (window.lucide) window.lucide.createIcons(); });
 
     const industries = ["All industries", ...Array.from(new Set(D.companies.map((c) => c.industry)))];
@@ -720,7 +730,9 @@
               <React.Fragment>
               {view === "details"
                 ? <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>{pageResults.map((c) => <CompanyDetailRow key={c.name} c={c} onNav={onNav} />)}</div>
-                : <div className="krm-company-grid" style={{ display: "grid", gridTemplateColumns: hasSide ? "1fr 1fr" : "repeat(3,1fr)", gap: 16 }}>{pageResults.map((c) => <CompanyCard key={c.name} {...c} onClick={() => onNav("company", { companyId: c.id })} />)}</div>}
+                : <div className="krm-company-grid" style={{ display: "grid", gridTemplateColumns: hasSide ? "1fr 1fr" : "repeat(3,1fr)", gap: 16 }}>{pageResults.map((c) => (isMobile && window.KramaCompactCompany)
+                    ? <window.KramaCompactCompany key={c.name} company={c} premium={false} onNav={onNav} />
+                    : <CompanyCard key={c.name} {...c} onClick={() => onNav("company", { companyId: c.id })} />)}</div>}
               {pages > 1 ? (
                 <div className="krm-pagination" style={{ display: "flex", alignItems: "center", justifyContent: "center", flexWrap: "wrap", gap: 8, marginTop: 28 }}>
                   <button onClick={() => setPage(Math.max(0, pageSafe - 1))} disabled={pageSafe === 0} aria-label={TR("Previous")} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 40, height: 40, borderRadius: "var(--radius-md)", border: "1px solid var(--border-strong)", background: "var(--surface-card)", cursor: pageSafe === 0 ? "not-allowed" : "pointer", color: pageSafe === 0 ? "var(--text-faint)" : "var(--text-body)" }}>{I("chevron-left", 18)}</button>
