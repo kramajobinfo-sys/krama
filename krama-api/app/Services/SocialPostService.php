@@ -126,8 +126,6 @@ class SocialPostService
         if ($job->working_days) $lines[] = '📅 ' . $job->working_days;     // Working day
         if ($job->working_time) $lines[] = '🕐 ' . $job->working_time;     // Working time
         if ($loc)               $lines[] = '📍 ' . $loc;                   // Location
-        $lines[]                = '';
-        $lines[]                = '👇 Apply on Krama:';
         return implode("\n", $lines);
     }
 
