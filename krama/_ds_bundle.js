@@ -58,6 +58,8 @@ function Avatar({
   }, rest), src ? /*#__PURE__*/React.createElement("img", {
     src: src,
     alt: name,
+    loading: "lazy",
+    decoding: "async",
     style: {
       width: "100%",
       height: "100%",
