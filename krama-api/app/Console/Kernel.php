@@ -20,6 +20,8 @@ class Kernel extends ConsoleKernel
         $schedule->command('jobs:expire')->dailyAt('00:05');
         $schedule->command('features:expire')->dailyAt('00:10');
         $schedule->command('premium:maintain')->dailyAt('00:20');
+        // Backfill existing jobs to Google Indexing in daily quota-sized batches; self-stops when the backlog is done.
+        $schedule->command('google:index-all')->dailyAt('02:30')->withoutOverlapping();
         $schedule->command('payments:verify-pending')->everyThreeMinutes()->withoutOverlapping();
         $schedule->command('forum:digest')->dailyAt('08:00');
         $schedule->command('feeds:import')->everySixHours()->withoutOverlapping();

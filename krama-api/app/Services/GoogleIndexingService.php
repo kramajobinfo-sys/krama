@@ -77,6 +77,26 @@ class GoogleIndexingService
         }
     }
 
+    /**
+     * Like publish() but returns the HTTP status code (or 0 on skip/auth/exception) so a
+     * batch caller can react — notably 429 = daily quota exhausted → stop. Used by google:index-all.
+     */
+    public static function publishStatus(string $url, string $type = 'URL_UPDATED'): int
+    {
+        if (! preg_match('#^https?://#i', $url) || preg_match('#localhost|127\.0\.0\.1|\.local(?::|/|$)#i', $url)) {
+            return 0;
+        }
+        $token = self::accessToken();
+        if (! $token) return 0;
+        try {
+            $resp = Http::withToken($token)->timeout(10)->post(self::PUBLISH_URL, ['url' => $url, 'type' => $type]);
+            return $resp->status();
+        } catch (\Throwable $e) {
+            Log::warning('google_indexing.publish_error', ['error' => $e->getMessage(), 'url' => $url]);
+            return 0;
+        }
+    }
+
     /** OAuth2 access token from the service account (cached ~55 min). Null when unavailable. */
     public static function accessToken(): ?string
     {
