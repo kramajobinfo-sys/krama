@@ -102,6 +102,9 @@ class SettingController extends Controller
             'phone'        => 'nullable|string|max:60',
             'contactEmail' => 'nullable|string|max:120',
             'address'      => 'nullable|string|max:300',
+            // Public social links (footer icons). Blank = icon hidden.
+            'telegramUrl'  => 'nullable|string|max:300',
+            'facebookUrl'  => 'nullable|string|max:300',
         ],
         'social' => [
             'google_enabled'      => 'boolean',

@@ -423,6 +423,7 @@ Route::middleware(['auth:api', 'permission:site_settings'])->group(function () {
 
     // Admin: company moderation
     Route::get('admin/companies',               [CompanyController::class, 'adminIndex']);
+    Route::get('admin/companies/export',        [CompanyController::class, 'adminExport']);
     Route::post('admin/companies',              [CompanyController::class, 'adminStore']);
     Route::get('admin/companies/{id}',           [CompanyController::class, 'adminShow'])->where('id', '[0-9]+');
     Route::patch('admin/companies/{id}/approve', [CompanyController::class, 'approve']);
@@ -449,6 +450,7 @@ Route::middleware(['auth:api', 'permission:site_settings'])->group(function () {
 
     // Admin: job moderation
     Route::get('admin/jobs',                 [JobController::class, 'adminIndex']);
+    Route::get('admin/jobs/export',          [JobController::class, 'adminExport']);
     Route::post('admin/jobs',                [JobController::class, 'adminStore']);
     Route::post('admin/jobs/bulk-import',    [JobController::class, 'adminBulkImport']);
     Route::post('admin/jobs/ai-draft',       [JobController::class, 'aiDraft']);

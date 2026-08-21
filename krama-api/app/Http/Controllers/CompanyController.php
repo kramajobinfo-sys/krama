@@ -486,6 +486,58 @@ class CompanyController extends Controller
         return response()->json($q->paginate($perPage));
     }
 
+    // GET /api/admin/companies/export — stream ALL matching companies (same status/org_status/
+    // search filters as adminIndex, no pagination) as a CSV download. Chunked for large sets.
+    public function adminExport(Request $request)
+    {
+        $this->requirePermission('approve_companies');
+
+        $q = Company::with(['owner:id,name,email', 'location:id,name'])
+            ->withCount(['jobs as open_jobs_count' => fn ($j) => $j->where('status', 'published')]);
+        if ($request->filled('status')) {
+            $q->where('status', $request->status);
+        }
+        if ($request->filled('org_status')) {
+            $q->where('org_status', $request->org_status);
+        }
+        if ($request->filled('search')) {
+            $q->where('name', 'like', '%' . $request->search . '%');
+        }
+        $q->orderBy('created_at', 'desc');
+
+        $headers = ['ID', 'Name', 'Status', 'Industry', 'Open jobs', 'Verified', 'Org type', 'Org status', 'Owner', 'Owner email', 'Contact name', 'Contact email', 'Location', 'Website', 'Phone', 'Created at'];
+        $filename = 'krama-companies-' . date('Y-m-d') . '.csv';
+
+        return response()->streamDownload(function () use ($q, $headers) {
+            $out = fopen('php://output', 'w');
+            fwrite($out, "\xEF\xBB\xBF"); // UTF-8 BOM for Excel
+            fputcsv($out, $headers);
+            $q->chunk(200, function ($companies) use ($out) {
+                foreach ($companies as $c) {
+                    fputcsv($out, [
+                        $c->id,
+                        $c->name,
+                        $c->status,
+                        $c->industry,
+                        $c->open_jobs_count,
+                        $c->is_verified ? 'Yes' : 'No',
+                        $c->org_type,
+                        $c->org_status,
+                        optional($c->owner)->name,
+                        optional($c->owner)->email,
+                        $c->contact_name,
+                        $c->contact_email,
+                        optional($c->location)->name,
+                        $c->website,
+                        $c->phone,
+                        optional($c->created_at)->format('Y-m-d H:i'),
+                    ]);
+                }
+            });
+            fclose($out);
+        }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
     // GET /api/admin/companies/{id} — full company detail (any status), incl. gallery/awards
     public function adminShow(Request $request, $id)
     {

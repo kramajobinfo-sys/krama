@@ -389,6 +389,26 @@
             <p style={{ color: "var(--text-on-dark-mut)", fontSize: "var(--text-sm)", marginTop: 16, maxWidth: 260, lineHeight: 1.6 }}>
               {t("Connecting talent and verified employers across Cambodia and Southeast Asia.")}
             </p>
+            {(window.KRAMA_SOCIAL_TELEGRAM || window.KRAMA_SOCIAL_FACEBOOK) ? (
+              <div style={{ display: "flex", gap: 10, marginTop: 18 }}>
+                {window.KRAMA_SOCIAL_TELEGRAM ? (
+                  <a href={window.KRAMA_SOCIAL_TELEGRAM} target="_blank" rel="noopener noreferrer" aria-label="Telegram" title="Telegram"
+                    style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 38, height: 38, borderRadius: "50%", background: "rgba(255,255,255,0.1)", color: "#fff", transition: "background var(--dur-base) var(--ease-standard)" }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = "#229ED9"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.1)"; }}>
+                    <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71L12.6 16.3l-1.99 1.93c-.23.23-.42.42-.83.42z"/></svg>
+                  </a>
+                ) : null}
+                {window.KRAMA_SOCIAL_FACEBOOK ? (
+                  <a href={window.KRAMA_SOCIAL_FACEBOOK} target="_blank" rel="noopener noreferrer" aria-label="Facebook" title="Facebook"
+                    style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 38, height: 38, borderRadius: "50%", background: "rgba(255,255,255,0.1)", color: "#fff", transition: "background var(--dur-base) var(--ease-standard)" }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = "#1877F2"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.1)"; }}>
+                    <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+                  </a>
+                ) : null}
+              </div>
+            ) : null}
           </div>
           {col("For candidates", [["Find jobs", "jobs"], ["Build résumé", "register"], ["Saved jobs", "login"], ["Community", "community"]])}
           {col("Employers", [["Employers", "employers"], ["Post a job", "register"], ["Pricing", "pricing"], ["Companies", "companies"]])}

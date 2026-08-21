@@ -6,6 +6,8 @@
     window.KRAMA_BRAND_PHONE   = (s && s.phone) || null;
     window.KRAMA_BRAND_EMAIL   = (s && s.contactEmail) || null;
     window.KRAMA_BRAND_ADDRESS = (s && s.address) || null;
+    window.KRAMA_SOCIAL_TELEGRAM = (s && s.telegramUrl) || null;
+    window.KRAMA_SOCIAL_FACEBOOK = (s && s.facebookUrl) || null;
   }
 
   // 1. Sync-read localStorage for instant paint (avoids flash)

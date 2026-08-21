@@ -169,8 +169,9 @@
     fetchStats: function () { return req("GET", "/admin/stats"); },
 
     // Jobs (admin listing — supports any status; public /jobs only returns published)
-    fetchJobs: function (status, page) {
+    fetchJobs: function (status, page, search) {
       var qs = status ? "?status=" + status + "&per_page=30&page=" + (page || 1) : "?per_page=30&page=" + (page || 1);
+      if (search) qs += "&search=" + encodeURIComponent(search);
       return req("GET", "/admin/jobs" + qs);
     },
 
@@ -205,10 +206,25 @@
     deleteCategory: function (id) { return req("DELETE", "/admin/categories/" + id); },
 
     // Companies
-    fetchCompanies: function (status, page, perPage) {
+    fetchCompanies: function (status, page, perPage, search) {
       var pp = perPage || 30;
       var qs = status && status !== "all" ? "?status=" + status + "&per_page=" + pp + "&page=" + (page || 1) : "?per_page=" + pp + "&page=" + (page || 1);
+      if (search) qs += "&search=" + encodeURIComponent(search);
       return req("GET", "/admin/companies" + qs);
+    },
+
+    // Download a CSV export from an authenticated admin endpoint. Fetches with the bearer
+    // token (a plain link can't send it), then hands the browser a Blob to save.
+    downloadCsv: function (path, filename) {
+      return fetch(BASE + path, { headers: { Authorization: "Bearer " + getToken() } })
+        .then(function (r) { if (!r.ok) throw new Error("Export failed (HTTP " + r.status + ")"); return r.blob(); })
+        .then(function (blob) {
+          var url = URL.createObjectURL(blob);
+          var a = document.createElement("a");
+          a.href = url; a.download = filename;
+          document.body.appendChild(a); a.click(); a.remove();
+          setTimeout(function () { URL.revokeObjectURL(url); }, 1500);
+        });
     },
 
     // Candidates

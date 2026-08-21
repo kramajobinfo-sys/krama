@@ -861,6 +861,58 @@ class JobController extends Controller
         return response()->json($q->paginate($perPage));
     }
 
+    // GET /api/admin/jobs/export — stream ALL matching jobs (same status/search filters as
+    // adminIndex, no pagination) as a CSV download. Chunked so a large catalogue never
+    // buffers in memory.
+    public function adminExport(Request $request)
+    {
+        $this->requirePermission('approve_jobs');
+
+        $q = Job::with(['company:id,name', 'category:id,name', 'location:id,name']);
+        if ($request->filled('status')) {
+            $q->where('status', $request->status);
+        }
+        if ($request->filled('search')) {
+            $term = '%' . $request->search . '%';
+            $q->where(function ($query) use ($term) {
+                $query->where('title', 'like', $term)
+                      ->orWhereHas('company', fn ($c) => $c->where('name', 'like', $term));
+            });
+        }
+        $q->orderBy('created_at', 'desc');
+
+        $headers = ['ID', 'Title', 'Company', 'Category', 'Location', 'Type', 'Status', 'Remote', 'Featured', 'Salary min', 'Salary max', 'Currency', 'Applications', 'Posted at', 'URL'];
+        $filename = 'krama-jobs-' . date('Y-m-d') . '.csv';
+
+        return response()->streamDownload(function () use ($q, $headers) {
+            $out = fopen('php://output', 'w');
+            fwrite($out, "\xEF\xBB\xBF"); // UTF-8 BOM so Excel reads Khmer/accents correctly
+            fputcsv($out, $headers);
+            $q->chunk(200, function ($jobs) use ($out) {
+                foreach ($jobs as $j) {
+                    fputcsv($out, [
+                        $j->id,
+                        $j->title,
+                        optional($j->company)->name,
+                        optional($j->category)->name,
+                        $j->is_remote ? 'Remote' : optional($j->location)->name,
+                        $j->job_type,
+                        $j->status,
+                        $j->is_remote ? 'Yes' : 'No',
+                        $j->is_featured ? 'Yes' : 'No',
+                        $j->salary_min,
+                        $j->salary_max,
+                        $j->salary_currency,
+                        $j->applications_count ?? '',
+                        optional($j->created_at)->format('Y-m-d H:i'),
+                        $j->slug ? url('/jobs/' . $j->slug) : '',
+                    ]);
+                }
+            });
+            fclose($out);
+        }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
     // PATCH /api/admin/jobs/{id}/feature — admin toggles featured flag
     public function toggleFeatured(Request $request, $id)
     {

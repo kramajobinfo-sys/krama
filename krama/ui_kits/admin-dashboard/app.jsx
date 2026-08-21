@@ -777,10 +777,13 @@
     const [page, setPage] = React.useState(1);
     const [lastPage, setLastPage] = React.useState(1);
     const [total, setTotal] = React.useState(0);
+    const [search, setSearch] = React.useState("");
+    const [query, setQuery] = React.useState("");
+    const [exporting, setExporting] = React.useState(false);
 
     const loadJobs = (status, pg) => {
       setLoading(true);
-      var q = status === "all" ? adm.fetchJobs(undefined, pg) : adm.fetchJobs(status, pg);
+      var q = adm.fetchJobs(status === "all" ? undefined : status, pg, query);
       q.then(function (d) {
         setJobs(d.data || []);
         setLastPage(d.last_page || 1);
@@ -800,9 +803,21 @@
       }).catch(function () {});
     }, []);
 
-    React.useEffect(() => { loadJobs(tab, page); }, [tab, page]);
+    React.useEffect(() => { loadJobs(tab, page); }, [tab, page, query]);
 
     const flashMsg = (msg) => { setActionMsg(msg); setTimeout(() => setActionMsg(""), 3000); };
+
+    const runSearch = () => { setPage(1); setQuery(search.trim()); };
+    const clearSearch = () => { setSearch(""); setPage(1); setQuery(""); };
+    const exportCsv = () => {
+      setExporting(true);
+      var p = [];
+      if (tab !== "all") p.push("status=" + tab);
+      if (query) p.push("search=" + encodeURIComponent(query));
+      adm.downloadCsv("/admin/jobs/export" + (p.length ? "?" + p.join("&") : ""), "krama-jobs-" + tab + ".csv")
+        .catch(function (e) { flashMsg("Export failed: " + ((e && e.message) || "error")); })
+        .then(function () { setExporting(false); });
+    };
 
     const takeDown = (id, reason) => {
       adm.rejectJob(id, reason).then(function () { flashMsg("Job taken down."); loadJobs(tab, page); setRejectModal(null); setRejectReason(""); }).catch(function (e) { flashMsg("Error: " + (e && e.message)); });
@@ -857,6 +872,23 @@
           { value: "rejected", label: "Taken down", count: counts.rejected },
           { value: "all", label: "All jobs", count: counts.all },
         ]} style={{ marginBottom: 20 }} /></div>
+
+        {/* Search (title / employer) + CSV export of the current tab + search.
+            Search box flexes to fill; the two buttons stay grouped and wrap below as a unit on mobile. */}
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, height: 40, padding: "0 12px", border: "1px solid var(--border-strong)", borderRadius: "var(--radius-md)", background: "var(--surface-card)", flex: "1 1 240px", minWidth: 180 }}>
+            <span style={{ color: "var(--text-faint)" }}>{I("search", 16)}</span>
+            <input placeholder="Search job title or employer" value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") runSearch(); }}
+              style={{ border: "none", outline: "none", flex: 1, minWidth: 0, fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)", background: "transparent" }} />
+            {query && <button onClick={clearSearch} title="Clear" style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--text-faint)", display: "inline-flex" }}>{I("x", 14)}</button>}
+          </div>
+          <div style={{ display: "flex", gap: 10, flexShrink: 0 }}>
+            <Button variant="secondary" size="sm" onClick={runSearch}>Search</Button>
+            <Button variant="secondary" size="sm" iconLeft={I("download", 15)} onClick={exportCsv} disabled={exporting}>{exporting ? "Exporting…" : "Export CSV"}</Button>
+          </div>
+        </div>
 
         {actionMsg && <div style={{ padding: "10px 14px", background: "var(--success-subtle)", color: "var(--success)", borderRadius: "var(--radius-md)", marginBottom: 14, fontWeight: 600, fontSize: "var(--text-sm)" }}>{actionMsg}</div>}
 
@@ -1522,10 +1554,13 @@
     const [page, setPage] = React.useState(1);
     const [lastPage, setLastPage] = React.useState(1);
     const [total, setTotal] = React.useState(0);
+    const [search, setSearch] = React.useState("");
+    const [query, setQuery] = React.useState("");
+    const [exporting, setExporting] = React.useState(false);
 
     const loadCompanies = (status, pg) => {
       setLoading(true);
-      adm.fetchCompanies(status, pg).then(function (d) {
+      adm.fetchCompanies(status, pg, 30, query).then(function (d) {
         setCompanies(d.data || []);
         setLastPage(d.last_page || 1);
         setTotal(d.total || 0);
@@ -1545,9 +1580,20 @@
       }).catch(function () {});
     }, []);
 
-    React.useEffect(() => { loadCompanies(tab, page); }, [tab, page]);
+    React.useEffect(() => { loadCompanies(tab, page); }, [tab, page, query]);
 
     const flashMsg = (msg) => { setActionMsg(msg); setTimeout(() => setActionMsg(""), 4000); };
+
+    const runSearch = () => { setPage(1); setQuery(search.trim()); };
+    const clearSearch = () => { setSearch(""); setPage(1); setQuery(""); };
+    const exportCsv = () => {
+      setExporting(true);
+      var p = ["status=" + tab];
+      if (query) p.push("search=" + encodeURIComponent(query));
+      adm.downloadCsv("/admin/companies/export?" + p.join("&"), "krama-companies-" + tab + ".csv")
+        .catch(function (e) { flashMsg("Export failed: " + ((e && e.message) || "error")); })
+        .then(function () { setExporting(false); });
+    };
 
     // Fired by CompanyEditorModal on every save (create AND every subsequent field/image
     // save) — isNew is only true for the very first save of a brand-new company.
@@ -1617,6 +1663,23 @@
       <div className="krm-page-pad" style={{ padding: 28 }}>
         <ScreenHead title="Company management" sub="Approve, reject, or suspend employer companies — or create one on an employer's behalf." action={<Button variant="primary" iconLeft={I("plus", 16)} onClick={() => setEditorTarget("new")}>Create company</Button>} />
         <div className="krm-tabs-scroll"><Tabs value={tab} onChange={(v) => { setPage(1); setTab(v); }} tabs={[{ value: "pending", label: "Pending", count: counts.pending }, { value: "approved", label: "Approved", count: counts.approved }, { value: "suspended", label: "Suspended", count: counts.suspended }]} style={{ marginBottom: 18 }} /></div>
+
+        {/* Search (company name) + CSV export of the current tab + search.
+            Search box flexes to fill; the two buttons stay grouped and wrap below as a unit on mobile. */}
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, height: 40, padding: "0 12px", border: "1px solid var(--border-strong)", borderRadius: "var(--radius-md)", background: "var(--surface-card)", flex: "1 1 240px", minWidth: 180 }}>
+            <span style={{ color: "var(--text-faint)" }}>{I("search", 16)}</span>
+            <input placeholder="Search company name" value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") runSearch(); }}
+              style={{ border: "none", outline: "none", flex: 1, minWidth: 0, fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)", background: "transparent" }} />
+            {query && <button onClick={clearSearch} title="Clear" style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--text-faint)", display: "inline-flex" }}>{I("x", 14)}</button>}
+          </div>
+          <div style={{ display: "flex", gap: 10, flexShrink: 0 }}>
+            <Button variant="secondary" size="sm" onClick={runSearch}>Search</Button>
+            <Button variant="secondary" size="sm" iconLeft={I("download", 15)} onClick={exportCsv} disabled={exporting}>{exporting ? "Exporting…" : "Export CSV"}</Button>
+          </div>
+        </div>
         {actionMsg && <div style={{ padding: "10px 14px", background: "var(--success-subtle)", color: "var(--success)", borderRadius: "var(--radius-md)", marginBottom: 14, fontWeight: 600, fontSize: "var(--text-sm)" }}>{actionMsg}</div>}
         <div className="krm-table-wrap"><Card padding={0}>
           <div style={{ display: "grid", gridTemplateColumns: "2fr 1.15fr 1fr 0.6fr 0.9fr 380px", padding: "12px 20px", fontSize: "var(--text-xs)", fontWeight: 700, letterSpacing: ".04em", textTransform: "uppercase", color: "var(--text-faint)", borderBottom: "1px solid var(--border)" }}>
@@ -3314,6 +3377,18 @@
           </div>
           <div style={{ marginTop: 14 }}>
             <Input label="Address" value={b.address || ""} onChange={(e) => set("address", e.target.value)} placeholder="Street, city, country" iconLeft={I("map-pin", 16)} />
+          </div>
+        </Card>
+
+        {/* Social links — footer icons on the public site */}
+        <Card padding={24} style={{ marginBottom: 20 }}>
+          <h3 style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: "var(--text-strong)", marginBottom: 4, display: "flex", alignItems: "center", gap: 8 }}>
+            {I("share-2", 18)} Social links
+          </h3>
+          <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginBottom: 16 }}>Shown as icons in the public website footer. Leave blank to hide an icon.</p>
+          <div className="krm-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+            <Input label="Telegram channel URL" value={b.telegramUrl || ""} onChange={(e) => set("telegramUrl", e.target.value)} placeholder="https://t.me/yourchannel" iconLeft={I("send", 16)} />
+            <Input label="Facebook page URL" value={b.facebookUrl || ""} onChange={(e) => set("facebookUrl", e.target.value)} placeholder="https://facebook.com/yourpage" iconLeft={I("facebook", 16)} />
           </div>
         </Card>
 
