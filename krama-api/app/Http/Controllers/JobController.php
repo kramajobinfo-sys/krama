@@ -75,7 +75,20 @@ class JobController extends Controller
 
         $perPage = min(100, max(1, (int) $request->input('per_page', 20)));
 
-        return response()->json($q->paginate($perPage))
+        $paginated = $q->paginate($perPage);
+        // Slim the LIST payload. The full description/requirements/benefits HTML is only needed on
+        // the job-detail page (re-fetched via /jobs/{id}); sending it for every row bloated the
+        // whole catalogue the public site loads client-side (~6 MB decoded at 1,400+ jobs). Keep a
+        // short plain-text description excerpt for cards and drop the rest of the heavy fields.
+        $paginated->getCollection()->transform(function ($job) {
+            $desc = trim(preg_replace('/\s+/', ' ', strip_tags((string) ($job->description ?? ''))));
+            $job->description  = $desc !== '' ? \Illuminate\Support\Str::limit($desc, 220) : null;
+            $job->requirements = null;
+            $job->benefits     = null;
+            return $job;
+        });
+
+        return response()->json($paginated)
             ->header('Cache-Control', 'no-cache, must-revalidate');
     }
 

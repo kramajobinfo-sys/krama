@@ -176,19 +176,31 @@
   }
 
   function JobDetail({ job, onBack, onOpenJob, onApply, saved, toggleSave, onNav }) {
-    const j = job || (D.jobs && D.jobs[0]);
+    // The catalogue list payload is slim (description is a short excerpt; requirements/benefits are
+    // omitted to keep the site load small). Re-fetch the full job on open and merge it in.
+    const [full, setFull] = React.useState(job);
+    const j = full || job || (D.jobs && D.jobs[0]);
     const [applied, setApplied] = React.useState(false);
     // Similar jobs view — List by default, with a Grid option.
     const [similarView, setSimilarView] = React.useState("list");
     React.useEffect(() => {
       let alive = true;
       setApplied(false);
-      var id = j && (j._raw ? j._raw.id : j.id);
-      if (id && window.KRAMA_API && window.KRAMA_API.checkApplied) {
-        window.KRAMA_API.checkApplied(id).then((r) => { if (alive) setApplied(!!(r && r.applied)); }).catch(() => {});
+      setFull(job);
+      var id = job && (job._raw ? job._raw.id : job.id);
+      if (id && window.KRAMA_API) {
+        if (window.KRAMA_API.checkApplied) {
+          window.KRAMA_API.checkApplied(id).then((r) => { if (alive) setApplied(!!(r && r.applied)); }).catch(() => {});
+        }
+        // Pull the full record (description/requirements/benefits) that the list omits.
+        if (window.KRAMA_API.fetchJobDetail && window.KRAMA_API.normaliseJob) {
+          window.KRAMA_API.fetchJobDetail(id).then((r) => {
+            if (alive && r && r.id) setFull(window.KRAMA_API.normaliseJob(r));
+          }).catch(() => {});
+        }
       }
       return () => { alive = false; };
-    }, [j && j.id]);
+    }, [job && (job._raw ? job._raw.id : job.id)]);
 
     if (!j) return null;
 
