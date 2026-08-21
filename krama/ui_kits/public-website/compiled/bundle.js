@@ -422,10 +422,54 @@
         marginLeft: "auto",
         display: "none",
         alignItems: "center",
-        gap: 10,
+        gap: 8,
         flexShrink: 0
       }
-    }, window.KramaChatLauncher ? /*#__PURE__*/React.createElement(window.KramaChatLauncher, null) : null, /*#__PURE__*/React.createElement(LangToggle, null), /*#__PURE__*/React.createElement("button", {
+    }, window.KramaChatLauncher ? /*#__PURE__*/React.createElement(window.KramaChatLauncher, null) : null, window.KRAMA_SOCIAL_TELEGRAM ? /*#__PURE__*/React.createElement("a", {
+      href: window.KRAMA_SOCIAL_TELEGRAM,
+      target: "_blank",
+      rel: "noopener noreferrer",
+      "aria-label": "Telegram",
+      title: "Telegram",
+      style: {
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: 28,
+        height: 28,
+        flexShrink: 0,
+        color: "var(--text-muted)"
+      }
+    }, /*#__PURE__*/React.createElement("svg", {
+      width: "19",
+      height: "19",
+      viewBox: "0 0 24 24",
+      fill: "currentColor"
+    }, /*#__PURE__*/React.createElement("path", {
+      d: "M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71L12.6 16.3l-1.99 1.93c-.23.23-.42.42-.83.42z"
+    }))) : null, window.KRAMA_SOCIAL_FACEBOOK ? /*#__PURE__*/React.createElement("a", {
+      href: window.KRAMA_SOCIAL_FACEBOOK,
+      target: "_blank",
+      rel: "noopener noreferrer",
+      "aria-label": "Facebook",
+      title: "Facebook",
+      style: {
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: 28,
+        height: 28,
+        flexShrink: 0,
+        color: "var(--text-muted)"
+      }
+    }, /*#__PURE__*/React.createElement("svg", {
+      width: "19",
+      height: "19",
+      viewBox: "0 0 24 24",
+      fill: "currentColor"
+    }, /*#__PURE__*/React.createElement("path", {
+      d: "M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"
+    }))) : null, /*#__PURE__*/React.createElement(LangToggle, null), /*#__PURE__*/React.createElement("button", {
       onClick: () => {
         if (user) {
           setMenuOpen(o => !o);

@@ -199,8 +199,21 @@
           </div>
 
           {/* Language toggle + Account — mobile only, shown in header bar */}
-          <div className="krm-mobile-lang" style={{ marginLeft: "auto", display: "none", alignItems: "center", gap: 10, flexShrink: 0 }}>
+          <div className="krm-mobile-lang" style={{ marginLeft: "auto", display: "none", alignItems: "center", gap: 8, flexShrink: 0 }}>
             {window.KramaChatLauncher ? <window.KramaChatLauncher /> : null}
+            {/* Social links — mobile, shown just before the language switcher */}
+            {window.KRAMA_SOCIAL_TELEGRAM ? (
+              <a href={window.KRAMA_SOCIAL_TELEGRAM} target="_blank" rel="noopener noreferrer" aria-label="Telegram" title="Telegram"
+                style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, flexShrink: 0, color: "var(--text-muted)" }}>
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71L12.6 16.3l-1.99 1.93c-.23.23-.42.42-.83.42z"/></svg>
+              </a>
+            ) : null}
+            {window.KRAMA_SOCIAL_FACEBOOK ? (
+              <a href={window.KRAMA_SOCIAL_FACEBOOK} target="_blank" rel="noopener noreferrer" aria-label="Facebook" title="Facebook"
+                style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, flexShrink: 0, color: "var(--text-muted)" }}>
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+              </a>
+            ) : null}
             <LangToggle />
             <button onClick={() => { if (user) { setMenuOpen(o => !o); } else { navTo("login"); } }} aria-label={t("Account")} style={{
               display: "inline-flex", alignItems: "center", justifyContent: "center",
