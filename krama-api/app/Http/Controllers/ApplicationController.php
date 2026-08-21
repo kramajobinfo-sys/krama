@@ -118,16 +118,39 @@ class ApplicationController extends Controller
             );
         }
 
-        // Notify employer of new application
+        // Notify the employer of the new application. Send to the COMPANY's own contact email —
+        // essential for admin-created "on behalf" companies whose placeholder owner is an admin
+        // account (emailing the admin for every application would be wrong/noisy). Also include
+        // the owner's login email when the owner is a real employer (not an admin), so normally
+        // registered employers still get it. Deduped; one email per distinct address.
         try {
             if (MailConfig::isConfigured()) {
-                $employer = User::find($job->company->user_id ?? null);
-                if ($employer) {
+                $company  = $job->company;
+                $employer = User::with('role')->find($company->user_id ?? null);
+
+                $recipients = [];
+                $add = function ($email, $name) use (&$recipients) {
+                    $email = trim((string) $email);
+                    if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                        $recipients[strtolower($email)] = $name ?: null;
+                    }
+                };
+                // 1) the company's own contact email (the address that belongs to the company)
+                $add(optional($company)->contact_email, optional($company)->contact_name ?: optional($company)->name);
+                // 2) the owner account's email, unless that owner is an admin (behalf placeholder)
+                $ownerRole = $employer ? optional($employer->role)->slug : null;
+                if ($employer && ! in_array($ownerRole, ['super_admin', 'admin'], true)) {
+                    $add($employer->email, $employer->name);
+                }
+
+                if (! empty($recipients)) {
                     MailConfig::applyFromDb();
-                    [$subject, $html] = EmailTemplates::newApplicationReceived(
-                        $employer->name, $job->title, $user->name
-                    );
-                    Mail::html($html, fn ($m) => $m->to($employer->email, $employer->name)->subject($subject));
+                    foreach ($recipients as $email => $name) {
+                        [$subject, $html] = EmailTemplates::newApplicationReceived(
+                            $name ?: (optional($company)->name ?: 'there'), $job->title, $user->name
+                        );
+                        Mail::html($html, fn ($m) => $m->to($email, $name)->subject($subject));
+                    }
                 }
             }
         } catch (\Exception $e) {
