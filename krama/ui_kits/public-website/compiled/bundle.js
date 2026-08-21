@@ -14478,6 +14478,8 @@ function App() {
   const [saved, setSaved] = React.useState([]);
   const [user, setUser] = React.useState(null);
   const [ready, setReady] = React.useState(false);
+  // Bumped when the background job-catalogue load finishes, to re-render and reveal the full set.
+  const [dataVersion, setDataVersion] = React.useState(0);
   const [lang, setLang] = React.useState(window.KRAMA_LANG || "en");
   // Selects a specific language rather than flipping between two — there are three now
   // (en / km / zh), and the list is driven by KRAMA_LANGS in i18n.js.
@@ -14522,12 +14524,12 @@ function App() {
     }
     const ctrl = new AbortController();
     setTimeout(() => ctrl.abort(), 8000);
-    Promise.allSettled([api.init().then(() => {
-      if (_mJobSlug && !deepJobId) {
-        const j = (window.KRAMA_DATA && window.KRAMA_DATA.jobs || []).find(x => x.slug === _mJobSlug[1]);
-        if (j) openJob(j);else setPage("jobs");
-      }
-    }), api.fetchMe().then(u => {
+    Promise.allSettled([api.init(),
+    // Clean-URL /jobs/{slug} deep link: resolve straight from the server (show() accepts a
+    // slug now), so it works even though the SPA no longer preloads the whole catalogue.
+    _mJobSlug && !deepJobId ? api.fetchJobDetail(_mJobSlug[1]).then(j => {
+      if (j && j.id) openJob(api.normaliseJob(j));else setPage("jobs");
+    }).catch(() => setPage("jobs")) : Promise.resolve(), api.fetchMe().then(u => {
       if (u) setUser(u);
     }), deepJobId ? fetch((/^(localhost|127\.0\.0\.1|::1|192\.168\.|10\.)/.test(window.location.hostname) ? 'http://127.0.0.1:8000/api' : window.location.protocol + '//' + window.location.host + '/api') + "/jobs/" + encodeURIComponent(deepJobId), {
       signal: ctrl.signal
@@ -14546,7 +14548,19 @@ function App() {
       setPage("jobs");
     }).catch(() => {
       setPage("jobs");
-    }) : Promise.resolve()]).finally(() => setReady(true));
+    }) : Promise.resolve()]).finally(() => {
+      setReady(true);
+      // After first paint, pull the rest of the jobs catalogue in the background, then re-render
+      // so Find Jobs / featured / company pages show the complete set.
+      const kick = () => {
+        if (window.KRAMA_API && window.KRAMA_API.loadRestJobs) {
+          window.KRAMA_API.loadRestJobs(() => setDataVersion(v => v + 1));
+        }
+      };
+      if (window.requestIdleCallback) window.requestIdleCallback(kick, {
+        timeout: 1500
+      });else setTimeout(kick, 300);
+    });
   }, []);
 
   // Keep the address bar in sync with the current view: job detail → /jobs/{slug},

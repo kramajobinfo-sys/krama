@@ -92,7 +92,9 @@ class JobController extends Controller
             ->header('Cache-Control', 'no-cache, must-revalidate');
     }
 
-    // GET /api/jobs/{id} — public single job; increments view counter
+    // GET /api/jobs/{id} — public single job; increments view counter.
+    // Accepts a numeric id OR a slug, so clean-URL deep links (/jobs/{slug}) resolve
+    // directly from the server without the SPA needing the whole catalogue preloaded.
     public function show($id)
     {
         // No subscription gate here — a published job is always viewable via direct link.
@@ -103,9 +105,10 @@ class JobController extends Controller
             'location:id,name',
             'screeningQuestions',
         ])->where('status', 'published')
-          ->findOrFail($id);
+          ->where(ctype_digit((string) $id) ? 'id' : 'slug', $id)
+          ->firstOrFail();
 
-        DB::table('jobs')->where('id', $id)->increment('views');
+        DB::table('jobs')->where('id', $job->id)->increment('views');
         $job->views += 1;
 
         // Public-safe questions only — never leak the knockout config (the "right" answer)

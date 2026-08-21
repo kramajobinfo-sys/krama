@@ -325,9 +325,13 @@
     // if external happened to resolve first.
     // A main-list failure keeps the static fallback (main -> null); external is
     // best-effort and its failure never breaks the site (-> []).
-    var jobsMain = getAllPages("/jobs", 100)
-      .then(function (list) { return list.map(normaliseJob); })
-      .catch(function () { return null; });
+    // Perf: on the critical path, load only the FIRST page of jobs (the API orders
+    // is_featured first, so the homepage's Featured section is fully covered) — the homepage
+    // renders fast instead of waiting on the whole catalogue. The remaining pages are fetched
+    // in the background after first paint by loadRestJobs() (see app.jsx).
+    var jobsMain = get("/jobs?per_page=100&page=1")
+      .then(function (r) { D._jobsLastPage = r.last_page || 1; return (r.data || []).map(normaliseJob); })
+      .catch(function () { D._jobsLastPage = 1; return null; });
     var jobsExt = get("/external-jobs")
       .then(function (list) { return (list || []).map(normaliseExternalJob); })
       .catch(function () { return []; });
@@ -386,6 +390,35 @@
     }).catch(function () {});
 
     return Promise.all([jobs, companies, banners, catCounts, settings]);
+  }
+
+  // Background: fetch the remaining pages of /jobs (2..last) after first paint and merge them
+  // into KRAMA_DATA.jobs, then recompute category counts. Idempotent (runs once). onDone() is
+  // called when finished so the app can trigger a re-render to reveal the full catalogue.
+  function loadRestJobs(onDone) {
+    var D = window.KRAMA_DATA || {};
+    var last = D._jobsLastPage || 1;
+    if (D._jobsRestLoaded || last <= 1) { D._jobsRestLoaded = true; if (onDone) onDone(); return; }
+    D._jobsRestLoaded = true;
+    var reqs = [];
+    for (var p = 2; p <= last; p++) {
+      reqs.push(get("/jobs?per_page=100&page=" + p)
+        .then(function (rr) { return (rr.data || []).map(normaliseJob); })
+        .catch(function () { return []; }));
+    }
+    Promise.all(reqs).then(function (chunks) {
+      var L = window.KRAMA_LOGOS || {};
+      var extra = [];
+      chunks.forEach(function (c) { extra = extra.concat(c); });
+      extra.forEach(function (j) { if (!j.logo && L[j.company]) j.logo = L[j.company]; });
+      if (extra.length) D.jobs = (D.jobs || []).concat(extra);
+      // Recompute category counts now that the full set is present.
+      try {
+        var counts = {};
+        (D.jobs || []).forEach(function (j) { if (j.category) counts[j.category] = (counts[j.category] || 0) + 1; });
+        if (D.categories) D.categories = D.categories.map(function (c) { return Object.assign({}, c, { count: counts[c.name] || c.count }); });
+      } catch (e) {}
+    }).catch(function () {}).then(function () { if (onDone) onDone(); });
   }
 
   // ── Auth helpers ─────────────────────────────────────────────────────────
@@ -548,7 +581,7 @@
   }
 
   window.KRAMA_API  = {
-    init: init, login: login, register: register, requestOtp: requestOtp, requestEmailCode: requestEmailCode, authMethods: authMethods, logout: logout,
+    init: init, loadRestJobs: loadRestJobs, login: login, register: register, requestOtp: requestOtp, requestEmailCode: requestEmailCode, authMethods: authMethods, logout: logout,
     joinWaitlist: joinWaitlist,
     socialLogin: socialLogin,
     forgotPassword: forgotPassword, resetPassword: resetPassword,
