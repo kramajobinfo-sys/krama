@@ -7,6 +7,7 @@ use App\Helpers\MailConfig;
 use App\Models\Job;
 use App\Models\JobAlert;
 use App\Services\SocialPostService;
+use App\Services\TelegramService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -67,19 +68,18 @@ class NotifyJobPublished implements ShouldQueue
 
     private function sendFollowerEmails(Job $job): void
     {
-        if (! MailConfig::isConfigured()) return;
-
         $job->loadMissing(['company:id,name', 'location:id,name']);
 
         $followers = DB::table('company_followers')
             ->join('users', 'users.id', '=', 'company_followers.candidate_id')
             ->where('company_followers.company_id', $job->company_id)
-            ->select('users.id', 'users.name', 'users.email')
+            ->select('users.id', 'users.name', 'users.email', 'users.telegram_chat_id')
             ->get();
 
         if ($followers->isEmpty()) return;
 
-        MailConfig::applyFromDb();
+        $mailOk = MailConfig::isConfigured();
+        if ($mailOk) MailConfig::applyFromDb();
 
         // Canonical slug URL — /jobs/{id} 404s for crawlers and the SPA resolves by slug,
         // so the id form produced a dead "View job" link in these emails.
@@ -89,30 +89,33 @@ class NotifyJobPublished implements ShouldQueue
         $companyName  = $job->company->name ?? '';
 
         foreach ($followers as $candidate) {
-            if (! $candidate->email) continue;
-            try {
-                [$subject, $html] = EmailTemplates::newJobFromFollowedCompany(
-                    $candidate->name,
-                    $companyName,
-                    $job->title,
-                    $locationName,
-                    $jobType,
-                    $jobUrl
-                );
-                Mail::html($html, fn ($m) => $m->to($candidate->email, $candidate->name)->subject($subject));
-            } catch (\Exception $e) {
-                Log::warning("Follower email failed for candidate {$candidate->id}: " . $e->getMessage());
+            if ($mailOk && $candidate->email) {
+                try {
+                    [$subject, $html] = EmailTemplates::newJobFromFollowedCompany(
+                        $candidate->name, $companyName, $job->title, $locationName, $jobType, $jobUrl
+                    );
+                    Mail::html($html, fn ($m) => $m->to($candidate->email, $candidate->name)->subject($subject));
+                } catch (\Exception $e) {
+                    Log::warning("Follower email failed for candidate {$candidate->id}: " . $e->getMessage());
+                }
+            }
+            // Telegram DM — only for followers who linked their Telegram (no-op if the bot is off).
+            if (! empty($candidate->telegram_chat_id)) {
+                try {
+                    TelegramService::notifyChat($candidate->telegram_chat_id,
+                        $this->alertTelegramText($job, $companyName, $locationName, $jobType, $jobUrl, true));
+                } catch (\Throwable $e) {
+                    Log::warning("Follower Telegram failed for candidate {$candidate->id}: " . $e->getMessage());
+                }
             }
         }
     }
 
     private function sendJobAlertEmails(Job $job): void
     {
-        if (! MailConfig::isConfigured()) return;
-
         $job->loadMissing(['category:id,name', 'location:id,name', 'company:id,name']);
 
-        $alerts = JobAlert::with('candidate:id,name,email')
+        $alerts = JobAlert::with('candidate:id,name,email,telegram_chat_id')
             ->where(function ($q) use ($job) {
                 $q->whereNull('category_id')->orWhere('category_id', $job->category_id);
             })
@@ -133,7 +136,8 @@ class NotifyJobPublished implements ShouldQueue
 
         if ($alerts->isEmpty()) return;
 
-        MailConfig::applyFromDb();
+        $mailOk = MailConfig::isConfigured();
+        if ($mailOk) MailConfig::applyFromDb();
 
         // Canonical slug URL — see the note in the follower-email path above.
         $jobUrl = SocialPostService::jobUrl($job);
@@ -141,26 +145,47 @@ class NotifyJobPublished implements ShouldQueue
         $jobType = $job->job_type ?? 'full_time';
         $companyName = $job->company->name ?? '';
 
-        // Deduplicate by candidate so a candidate with multiple matching alerts gets one email.
+        // Deduplicate by candidate so a candidate with multiple matching alerts is notified once.
         $seen = [];
         foreach ($alerts as $alert) {
             $candidate = $alert->candidate;
-            if (! $candidate || ! $candidate->email || isset($seen[$candidate->id])) continue;
+            if (! $candidate || isset($seen[$candidate->id])) continue;
             $seen[$candidate->id] = true;
 
-            try {
-                [$subject, $html] = EmailTemplates::jobAlertMatch(
-                    $candidate->name,
-                    $job->title,
-                    $companyName,
-                    $locationName,
-                    $jobType,
-                    $jobUrl
-                );
-                Mail::html($html, fn ($m) => $m->to($candidate->email, $candidate->name)->subject($subject));
-            } catch (\Exception $e) {
-                Log::warning("Job alert email failed for candidate {$candidate->id}: " . $e->getMessage());
+            if ($mailOk && $candidate->email) {
+                try {
+                    [$subject, $html] = EmailTemplates::jobAlertMatch(
+                        $candidate->name, $job->title, $companyName, $locationName, $jobType, $jobUrl
+                    );
+                    Mail::html($html, fn ($m) => $m->to($candidate->email, $candidate->name)->subject($subject));
+                } catch (\Exception $e) {
+                    Log::warning("Job alert email failed for candidate {$candidate->id}: " . $e->getMessage());
+                }
+            }
+            // Telegram DM — only for candidates who linked their Telegram (no-op if the bot is off).
+            if (! empty($candidate->telegram_chat_id)) {
+                try {
+                    TelegramService::notifyChat($candidate->telegram_chat_id,
+                        $this->alertTelegramText($job, $companyName, $locationName, $jobType, $jobUrl, false));
+                } catch (\Throwable $e) {
+                    Log::warning("Job alert Telegram failed for candidate {$candidate->id}: " . $e->getMessage());
+                }
             }
         }
+    }
+
+    // Compact HTML message for a Telegram job-alert / followed-company DM (sent HTML parse mode).
+    private function alertTelegramText(Job $job, string $companyName, string $locName, string $jobType, string $url, bool $follow): string
+    {
+        $typeLabel = ['full_time' => 'Full-time', 'part_time' => 'Part-time', 'contract' => 'Contract', 'internship' => 'Internship'][$jobType] ?? $jobType;
+        $meta = array_filter([$locName, $typeLabel]);
+        $e = fn ($s) => htmlspecialchars((string) $s, ENT_NOQUOTES, 'UTF-8');
+        $lines = [$follow ? '📣 New job from a company you follow' : '🔔 New job matching your alert', ''];
+        $lines[] = '💼 <b>' . $e($job->title) . '</b>';
+        if ($companyName) $lines[] = '🏢 ' . $e($companyName);
+        if ($meta)        $lines[] = '📍 ' . $e(implode('  ·  ', $meta));
+        $lines[] = '';
+        $lines[] = $url;
+        return implode("\n", $lines);
     }
 }
