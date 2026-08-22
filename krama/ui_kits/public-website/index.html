@@ -52,6 +52,14 @@
 <link rel="stylesheet" href="../../styles.css">
 <link rel="icon" type="image/png" href="../../assets/favicon.png">
 <link rel="apple-touch-icon" href="../../assets/apple-touch-icon.png">
+<!-- PWA: installable app. Root-absolute paths bypass <base> and resolve at the origin root
+     (kramajob.com/…); the service worker is registered at the end of <body>. -->
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#0C7E6B">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Krama">
+<link rel="apple-touch-icon" href="/krama/assets/icon-192.png">
 <!-- All `defer` so none of them block the first paint. Deferred scripts still execute in
      document order and are guaranteed to finish before DOMContentLoaded, which is what the
      boot code at the end of <body> waits for. -->
@@ -184,5 +192,17 @@ function mount(){
 }
 mount();
 });
+</script>
+<!-- PWA service worker: registered only on the production host, where /sw.js and
+     /manifest.webmanifest are served from the origin root (scope "/"). Skipped in local
+     dev (served from a subfolder), so no 404s there. Failures are swallowed. -->
+<script>
+(function(){
+  if (!('serviceWorker' in navigator)) return;
+  if (!/(^|\.)kramajob\.com$/.test(location.hostname)) return;
+  window.addEventListener('load', function(){
+    navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(function(){});
+  });
+})();
 </script>
 </body></html>

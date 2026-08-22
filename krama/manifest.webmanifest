@@ -1,0 +1,18 @@
+{
+  "name": "Krama — Jobs & Hiring in Cambodia",
+  "short_name": "Krama",
+  "description": "Find and apply to verified jobs across Cambodia — or hire great talent.",
+  "start_url": "/?src=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "lang": "en",
+  "dir": "ltr",
+  "background_color": "#F6F5F1",
+  "theme_color": "#0C7E6B",
+  "categories": ["business", "productivity"],
+  "icons": [
+    { "src": "/krama/assets/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/krama/assets/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
