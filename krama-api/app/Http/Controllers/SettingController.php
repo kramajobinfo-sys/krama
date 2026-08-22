@@ -25,6 +25,14 @@ class SettingController extends Controller
             'claude_api_key' => 'nullable|string|max:255',
             'claude_model'   => 'nullable|string|max:80',
         ],
+        // Opt-in "Match me by my profile (AI)" job alerts, fired from NotifyJobPublished.
+        // daily_cap = max AI scoring calls per day (0 = feature off); score_threshold = the
+        // 0-100 AI fit score at/above which a candidate is notified. `count`/`count_date`
+        // are the runtime counter (managed by the job) and are intentionally NOT editable.
+        'ai_match' => [
+            'daily_cap'       => 'integer|min:0|max:100000',
+            'score_threshold' => 'integer|min:0|max:100',
+        ],
         'chat' => [
             'enabled'        => 'boolean',
             'botName'        => 'string|max:80',

@@ -5592,6 +5592,35 @@
         .catch(function (e) { alert('Save failed: ' + (e && e.message ? e.message : 'Unknown error')); });
     };
 
+    // ── AI job matching (ai_match group) — daily budget + notify threshold ──────
+    const MATCH_DEFAULTS = { daily_cap: 30, score_threshold: 70 };
+    const [m, setM] = React.useState(MATCH_DEFAULTS);
+    const [mUsage, setMUsage] = React.useState({ count: 0, count_date: "" });
+    const [mSaved, setMSaved] = React.useState(false);
+    React.useEffect(function () {
+      window.KRAMA_ADMIN_API.fetchSettings('ai_match')
+        .then(function (d) {
+          d = d || {};
+          setM({
+            daily_cap: (d.daily_cap === undefined || d.daily_cap === "") ? 30 : Number(d.daily_cap),
+            score_threshold: (d.score_threshold === undefined || d.score_threshold === "") ? 70 : Number(d.score_threshold),
+          });
+          setMUsage({ count: Number(d.count || 0), count_date: d.count_date || "" });
+        })
+        .catch(function () {});
+    }, []);
+    const setMatch = function (k, v) { setM(function (x) { return Object.assign({}, x, { [k]: v }); }); setMSaved(false); };
+    const saveMatch = function () {
+      window.KRAMA_ADMIN_API.updateSettings('ai_match', {
+        daily_cap: m.daily_cap === "" ? 0 : Number(m.daily_cap),
+        score_threshold: m.score_threshold === "" ? 70 : Number(m.score_threshold),
+      })
+        .then(function () { setMSaved(true); })
+        .catch(function (e) { alert('Save failed: ' + (e && e.message ? e.message : 'Unknown error')); });
+    };
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const usedToday = mUsage.count_date === todayStr ? mUsage.count : 0;
+
     const provider = a.provider || "gemini";
     const meta = AI_PROVIDERS.filter(function (p) { return p[0] === provider; })[0] || AI_PROVIDERS[0];
     const keyField = provider === "gemini" ? "gemini_api_key" : "claude_api_key";
@@ -5643,6 +5672,40 @@
           <p style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", margin: "10px 0 0" }}>
             Get a key at <strong>{meta[2]}</strong>. If the selected provider has no key but the other one does, Krama uses the one that is configured.
           </p>
+        </Card>
+
+        {/* AI job matching — "Match me by my profile" opt-in alerts (ai_match group). */}
+        <Card padding={24} style={{ marginTop: 18 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+            <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 36, height: 36, borderRadius: "var(--radius-md)", background: "var(--info-subtle)", color: "var(--info)" }}>{I("wand-sparkles", 18)}</span>
+            <h3 style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: "var(--text-strong)" }}>AI job matching</h3>
+            <Badge tone={Number(m.daily_cap) > 0 ? "success" : "neutral"} style={{ marginLeft: "auto" }}>{Number(m.daily_cap) > 0 ? "On" : "Off"}</Badge>
+          </div>
+          <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", margin: "0 0 18px" }}>
+            When a candidate turns on <strong>&ldquo;Match me by my profile (AI)&rdquo;</strong>, each newly published job is AI-scored against their résumé and strong matches are notified (email / Telegram / push). One AI call per publish; the daily cap protects your provider&rsquo;s free quota.
+          </p>
+
+          {mSaved ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: "var(--success-subtle)", border: "1px solid var(--success-border)", borderRadius: "var(--radius-md)", color: "var(--success)", fontWeight: 600, fontSize: "var(--text-sm)", marginBottom: 16 }}>
+              {I("circle-check-big", 16)} Saved.
+            </div>
+          ) : null}
+
+          <div className="krm-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+            <div>
+              <Input label="Daily AI-scoring cap" type="number" min="0" max="100000"
+                value={m.daily_cap} onChange={function (e) { setMatch("daily_cap", e.target.value); }} />
+              <p style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", margin: "6px 2px 0" }}>Max AI calls per day (one per published job). <strong>0 turns the feature off.</strong> Used today: <strong>{usedToday}</strong>{Number(m.daily_cap) > 0 ? " / " + Number(m.daily_cap) : ""}.</p>
+            </div>
+            <div>
+              <Input label="Match threshold (0–100)" type="number" min="0" max="100"
+                value={m.score_threshold} onChange={function (e) { setMatch("score_threshold", e.target.value); }} />
+              <p style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", margin: "6px 2px 0" }}>Notify only when the AI fit score is at or above this. Higher = fewer, stronger matches (default 70).</p>
+            </div>
+          </div>
+          <div style={{ marginTop: 18 }}>
+            <Button variant="primary" iconLeft={I("check", 16)} onClick={saveMatch}>Save matching settings</Button>
+          </div>
         </Card>
       </div>
     );

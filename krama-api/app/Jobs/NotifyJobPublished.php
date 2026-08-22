@@ -211,8 +211,9 @@ class NotifyJobPublished implements ShouldQueue
     // Candidates AI-scored per publish (a cheap deterministic pre-filter ranks the
     // opted-in pool down to this many, so one AI batch call covers a whole publish).
     private const AI_POOL_MAX = 12;
-    // AI score (0-100) at or above which we notify.
-    private const AI_SCORE_THRESHOLD = 70;
+    // Defaults, overridable by admin via the `ai_match` settings group.
+    private const AI_SCORE_THRESHOLD = 70;  // AI score (0-100) at/above which we notify
+    private const AI_DAILY_CAP       = 30;  // max AI scoring calls per day
 
     /**
      * "Match me by my profile (AI)": notify opted-in candidates whose résumé the AI
@@ -272,6 +273,10 @@ class NotifyJobPublished implements ShouldQueue
         $mailOk = MailConfig::isConfigured();
         if ($mailOk) MailConfig::applyFromDb();
 
+        // Admin-tunable notify threshold (ai_match/score_threshold), default 70.
+        $threshold = (int) (\App\Models\Setting::where('group', 'ai_match')->where('key', 'score_threshold')->value('value') ?? self::AI_SCORE_THRESHOLD);
+        if ($threshold < 0 || $threshold > 100) $threshold = self::AI_SCORE_THRESHOLD;
+
         $jobUrl       = SocialPostService::jobUrl($job);
         $locationName = $job->location->name ?? '';
         $jobType      = $job->job_type ?? 'full_time';
@@ -279,7 +284,7 @@ class NotifyJobPublished implements ShouldQueue
 
         foreach ($pool as $resume) {
             $score = $scores[$resume->id]['score'] ?? 0;
-            if ($score < self::AI_SCORE_THRESHOLD) continue;
+            if ($score < $threshold) continue;
 
             $candidate = $optIns->get((int) $resume->candidate_id);
             if (! $candidate || ! $candidate->candidate) continue;
@@ -323,8 +328,9 @@ class NotifyJobPublished implements ShouldQueue
         $today = now()->toDateString();
         $rows  = \App\Models\Setting::where('group', 'ai_match')->pluck('value', 'key')->all();
 
-        $cap = (int) ($rows['daily_cap'] ?? 30);
-        if ($cap <= 0) $cap = 30;
+        // Absent → default cap; explicit 0 → feature disabled by the admin.
+        $cap = (isset($rows['daily_cap']) && $rows['daily_cap'] !== '') ? (int) $rows['daily_cap'] : self::AI_DAILY_CAP;
+        if ($cap <= 0) return false;
 
         $count = ($rows['count_date'] ?? '') === $today ? (int) ($rows['count'] ?? 0) : 0;
         if ($count >= $cap) return false;
