@@ -20,7 +20,7 @@ class TelegramDailyDigest extends Command
 {
     protected $signature = 'telegram:daily-digest {--hours=24 : Look-back window} {--force : Ignore the digest_enabled toggle} {--dry-run : Print the message instead of sending}';
 
-    protected $description = 'Post a digest of newly published jobs to the Telegram channel.';
+    protected $description = 'Post a digest of newly published jobs to the Telegram channel + forum group.';
 
     public function handle(): int
     {
@@ -32,10 +32,17 @@ class TelegramDailyDigest extends Command
             return self::SUCCESS;
         }
 
-        $channel = trim((string) ($cfg['telegram_channel'] ?? ''));
-        $token   = TelegramService::botToken();
-        if ($channel === '' || $token === '') {
-            $this->warn('Telegram channel or bot token is not configured — nothing sent.');
+        $token = TelegramService::botToken();
+
+        // The digest fans out to every configured Telegram destination: the broadcast channel
+        // (@kramajob) and the forum group's General topic (@kramajobforum). Both reuse the
+        // shared bot; each is included only when its chat id is set.
+        $targets = [];
+        if (($channel = trim((string) ($cfg['telegram_channel'] ?? ''))) !== '') $targets['channel'] = $channel;
+        if (($forum   = trim((string) ($cfg['telegram_forum_chat'] ?? ''))) !== '') $targets['forum'] = $forum;
+
+        if ($token === '' || ! $targets) {
+            $this->warn('No Telegram channel/forum or bot token configured — nothing sent.');
             return self::SUCCESS;
         }
 
@@ -65,20 +72,26 @@ class TelegramDailyDigest extends Command
 
         if ($this->option('dry-run')) {
             $this->line("---- digest preview (" . $jobs->count() . " of " . $totalNew . " new) ----");
+            $this->line('targets: ' . implode(', ', array_map(fn ($k, $v) => "$k=$v", array_keys($targets), $targets)));
             $this->line($text);
             $this->line('---- end preview (not sent) ----');
             return self::SUCCESS;
         }
 
-        $res = TelegramService::sendMessage($token, $channel, $text);
-
-        if (empty($res['ok'])) {
-            $this->error('Digest send failed: ' . ($res['error'] ?? 'unknown error'));
-            return self::FAILURE;
+        // Post the same digest to each destination; one failing target doesn't block the others.
+        $sent = 0;
+        foreach ($targets as $label => $chatId) {
+            $res = TelegramService::sendMessage($token, $chatId, $text);
+            if (! empty($res['ok'])) {
+                $sent++;
+                $this->info('Digest posted to ' . $label . ' (' . $chatId . ').');
+            } else {
+                $this->error('Digest to ' . $label . ' (' . $chatId . ') failed: ' . ($res['error'] ?? 'unknown error'));
+            }
         }
 
-        $this->info('Digest posted to ' . $channel . ' (' . $jobs->count() . ' of ' . $totalNew . ' new jobs).');
-        return self::SUCCESS;
+        $this->info('Done — ' . $jobs->count() . ' of ' . $totalNew . ' new jobs, sent to ' . $sent . '/' . count($targets) . ' destinations.');
+        return $sent > 0 ? self::SUCCESS : self::FAILURE;
     }
 
     private function buildDigest($jobs, int $totalNew): string

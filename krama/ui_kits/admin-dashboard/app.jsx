@@ -8199,7 +8199,7 @@
             fieldRow("Forum group", inp("telegram_forum_chat", "text", "@kramajobforum or -1003880735522"), "A supergroup with Topics enabled where the shared bot is an admin with “Manage Topics”. Each published job is posted into a topic named after its category (created automatically the first time)."))}
 
           {platformCard("digest", "Telegram — daily jobs digest", "newspaper",
-            fieldRow("Jobs per digest", inp("digest_count", "number", "10"), "Posts one message each morning (08:00 Phnom Penh) to the Telegram channel above, summarising the day's newest jobs. Turns the channel into a daily destination. Skipped on days with no new jobs."))}
+            fieldRow("Jobs per digest", inp("digest_count", "number", "10"), "Posts one message each morning (08:00 Phnom Penh) summarising the day's newest jobs — to both the channel and the forum group configured above. Turns them into a daily destination. Skipped on days with no new jobs."))}
 
           {platformCard("facebook", "Facebook Page", "facebook",
             <React.Fragment>
