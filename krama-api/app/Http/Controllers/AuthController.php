@@ -490,41 +490,10 @@ class AuthController extends Controller
         ]);
     }
 
-    /** Purge a candidate's personal data + anonymise the user row, in one transaction. */
+    /** Purge a candidate's personal data + anonymise the user row (shared eraser). */
     private function purgeCandidate(User $user): void
     {
-        // Remove the stored CV file(s) before deleting the résumé rows.
-        foreach (Resume::where('candidate_id', $user->id)->get() as $resume) {
-            if ($resume->file_url && ! str_starts_with($resume->file_url, 'http')) {
-                try { Storage::disk('local')->delete($resume->file_url); } catch (\Throwable $e) {}
-            }
-        }
-        // Remove the avatar file.
-        if ($user->avatar_url && str_contains($user->avatar_url, '/storage/avatars/')) {
-            try { Storage::disk('public')->delete(str_replace(url('/storage') . '/', '', $user->avatar_url)); } catch (\Throwable $e) {}
-        }
-
-        DB::transaction(function () use ($user) {
-            $id = $user->id;
-            DB::table('resumes')->where('candidate_id', $id)->delete();
-            DB::table('job_alerts')->where('candidate_id', $id)->delete();
-            DB::table('company_followers')->where('candidate_id', $id)->delete();
-            DB::table('saved_jobs')->where('candidate_id', $id)->delete();
-            DB::table('push_subscriptions')->where('user_id', $id)->delete();
-            $user->authTokens()->delete();
-
-            // Anonymise the user row — strips PII while keeping applications/messages valid.
-            $user->forceFill([
-                'name'          => 'Deleted user',
-                'email'         => 'deleted_' . $id . '@krama.deleted',
-                'phone'         => null,
-                'bio'           => null,
-                'avatar_url'    => null,
-                'password_hash' => Hash::make(Str::random(40)),
-                'status'        => 'suspended', // deactivated; PII above is scrubbed
-            ])->save();
-        });
-
+        \App\Services\AccountEraser::erase($user);
         Log::info("Candidate account #{$user->id} deleted (self-service).");
     }
 

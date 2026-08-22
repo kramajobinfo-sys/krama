@@ -155,6 +155,7 @@
     { id: "cvmatch", label: "CV match", icon: "git-compare-arrows" },
     { id: "brand", label: "Brand", icon: "palette" },
     { id: "settings", label: "Settings", icon: "settings" },
+    { id: "deletion", label: "Deletion requests", icon: "user-x" },
   ];
 
   // Which permission each nav item needs. Items without an entry require `site_settings`
@@ -8010,6 +8011,91 @@
     );
   }
 
+  // Account & data deletion requests (compliance loop). Candidates self-delete; employers and
+  // anyone who can't sign in land here as a request an admin completes (erases personal data)
+  // or rejects.
+  function DeletionRequests() {
+    const adm = window.KRAMA_ADMIN_API;
+    const [rows, setRows] = React.useState([]);
+    const [pending, setPending] = React.useState(0);
+    const [filter, setFilter] = React.useState("pending");
+    const [loading, setLoading] = React.useState(true);
+    const [busyId, setBusyId] = React.useState(null);
+
+    const load = React.useCallback(function () {
+      setLoading(true);
+      adm.fetchDeletionRequests(filter).then(function (d) {
+        setRows(d.data || []); setPending(d.pending || 0); setLoading(false);
+      }).catch(function () { setLoading(false); });
+    }, [filter]);
+    React.useEffect(function () { load(); }, [load]);
+
+    const complete = function (r) {
+      if (!window.confirm("Complete this request?\n\nThis permanently erases " + r.email + "'s personal data (name, email, phone, résumé, alerts) and cannot be undone. Company and billing records are kept.")) return;
+      setBusyId(r.id);
+      adm.completeDeletionRequest(r.id).then(function () { setBusyId(null); load(); })
+        .catch(function (e) { setBusyId(null); alert((e && e.message) || "Failed."); });
+    };
+    const reject = function (r) {
+      if (!window.confirm("Reject this deletion request from " + r.email + "?")) return;
+      setBusyId(r.id);
+      adm.rejectDeletionRequest(r.id).then(function () { setBusyId(null); load(); })
+        .catch(function (e) { setBusyId(null); alert((e && e.message) || "Failed."); });
+    };
+
+    const fmtDate = function (s) { if (!s) return "—"; var d = new Date(s); return isNaN(d) ? "—" : d.toLocaleDateString(); };
+    const tone = { pending: "warning", done: "success", rejected: "neutral" };
+
+    return (
+      <div className="krm-page-pad" style={{ padding: 28, maxWidth: 1000 }}>
+        <ScreenHead title="Account deletion requests" sub="Requests from employers (and anyone who can't sign in). Candidates delete themselves instantly." />
+
+        <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+          {["pending", "all", "done", "rejected"].map(function (f) {
+            const on = filter === f;
+            return <button key={f} onClick={function () { setFilter(f); }} style={{ padding: "7px 14px", borderRadius: 999, cursor: "pointer", border: "1px solid " + (on ? "var(--brand)" : "var(--border)"), background: on ? "var(--brand-subtle)" : "var(--surface-card)", color: on ? "var(--text-brand)" : "var(--text-body)", fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)", fontWeight: 700, textTransform: "capitalize" }}>{f}{f === "pending" && pending > 0 ? " (" + pending + ")" : ""}</button>;
+          })}
+        </div>
+
+        {loading ? (
+          <div style={{ padding: 28, color: "var(--text-muted)" }}>Loading…</div>
+        ) : rows.length === 0 ? (
+          <Card padding={28}><div style={{ color: "var(--text-muted)", textAlign: "center" }}>No {filter === "all" ? "" : filter + " "}requests.</div></Card>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {rows.map(function (r) {
+              return (
+                <Card key={r.id} padding={18}>
+                  <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                        <span style={{ fontWeight: 700, color: "var(--text-strong)" }}>{r.email}</span>
+                        <Badge tone={tone[r.status] || "neutral"} style={{ textTransform: "capitalize" }}>{r.status}</Badge>
+                        {r.role && <Badge tone="neutral" style={{ textTransform: "capitalize" }}>{r.role}</Badge>}
+                        {r.already_erased && <Badge tone="success">Erased</Badge>}
+                      </div>
+                      <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginTop: 4 }}>
+                        Requested {fmtDate(r.created_at)}{r.handled_at ? " · handled " + fmtDate(r.handled_at) : ""}
+                        {r.user ? " · account: " + r.user.name + " (" + r.user.status + ")" : " · account not found"}
+                      </div>
+                      {r.reason && <div style={{ fontSize: "var(--text-sm)", color: "var(--text-body)", marginTop: 6, fontStyle: "italic" }}>“{r.reason}”</div>}
+                    </div>
+                    {r.status === "pending" && (
+                      <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                        <Button variant="primary" size="sm" style={{ background: "var(--danger)", borderColor: "var(--danger)" }} disabled={busyId === r.id} onClick={function () { complete(r); }}>{busyId === r.id ? "Working…" : "Complete & erase"}</Button>
+                        <Button variant="ghost" size="sm" disabled={busyId === r.id} onClick={function () { reject(r); }}>Reject</Button>
+                      </div>
+                    )}
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   function App() {
     const [page, setPage] = React.useState("dashboard");
     const [authUser, setAuthUser] = React.useState(null);
@@ -8060,7 +8146,7 @@
 
     if (!authUser) return <AdminLogin onLogin={setAuthUser} />;
 
-    const titles = { dashboard: "Overview", jobs: "Job management", companies: "Company management", candidates: "Candidates", resumes: "Resume Builder", reviews: "Company reviews", forum: "Community forum", homepage: "Homepage content", seo: "SEO", feeds: "Feeds", ai: "AI provider", support: "Support chat", chat: "Chat agent", social: "Social login", email: "Email settings", telegram: "Telegram notifications", sms: "SMS gateway", social_post: "Social posting", payments: "Payment settings", coupons: "Coupons & referrals", reports: "Reports", audit: "Audit log", cvmatch: "CV match", banners: "Promotional banner", brand: "Brand settings", settings: "Settings · Users & roles", profile: "My Profile" };
+    const titles = { dashboard: "Overview", jobs: "Job management", companies: "Company management", candidates: "Candidates", resumes: "Resume Builder", reviews: "Company reviews", forum: "Community forum", homepage: "Homepage content", seo: "SEO", feeds: "Feeds", ai: "AI provider", support: "Support chat", chat: "Chat agent", social: "Social login", email: "Email settings", telegram: "Telegram notifications", sms: "SMS gateway", social_post: "Social posting", payments: "Payment settings", coupons: "Coupons & referrals", reports: "Reports", audit: "Audit log", cvmatch: "CV match", banners: "Promotional banner", brand: "Brand settings", settings: "Settings · Users & roles", deletion: "Account deletion requests", profile: "My Profile" };
     return (
       <div style={{ display: "flex", minHeight: "100vh", background: "var(--surface-page)" }}>
         {sidebarOpen && <div className="krm-sidebar-backdrop open" onClick={() => setSidebarOpen(false)} />}
@@ -8093,6 +8179,7 @@
           {page === "cvmatch" && <CvMatch />}
           {page === "brand" && <Brand />}
           {page === "settings" && <Settings authUser={authUser} />}
+          {page === "deletion" && <DeletionRequests />}
           {page === "profile" && <MyProfile user={authUser} onUserUpdate={u => setAuthUser(u)} />}
         </div>
       </div>

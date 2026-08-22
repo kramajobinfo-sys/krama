@@ -20,6 +20,7 @@ use App\Http\Controllers\CompanyReviewController;
 use App\Http\Controllers\MessageController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\JobAlertController;
+use App\Http\Controllers\AdminAccountDeletionController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\RecommendationController;
 use App\Http\Controllers\UploadController;
@@ -394,6 +395,11 @@ Route::middleware(['auth:api', 'permission:site_settings'])->group(function () {
     Route::post('admin/users',                      [UserController::class, 'adminCreateUser']);
     Route::patch('admin/users/{id}',                [UserController::class, 'adminUpdateUser']);
     Route::delete('admin/users/{id}',               [UserController::class, 'adminDeleteUser']);
+
+    // Admin: account & data deletion requests (compliance loop for employer/other requests)
+    Route::get('admin/deletion-requests',                    [AdminAccountDeletionController::class, 'index']);
+    Route::post('admin/deletion-requests/{id}/complete',    [AdminAccountDeletionController::class, 'complete']);
+    Route::post('admin/deletion-requests/{id}/reject',      [AdminAccountDeletionController::class, 'reject']);
 
     // Admin: dashboard overview stats (accurate counts + revenue + monthly series)
     Route::get('admin/stats',                       [\App\Http\Controllers\AdminStatsController::class, 'index']);

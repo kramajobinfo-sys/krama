@@ -248,6 +248,10 @@
     updateUser: function (id, data) { return req("PATCH", "/admin/users/" + id, data); },
     changeUserPassword: function (id, password) { return req("PATCH", "/admin/users/" + id, { password: password }); },
     deleteUser: function (id) { return req("DELETE", "/admin/users/" + id); },
+    // Account & data deletion requests (compliance)
+    fetchDeletionRequests: function (status) { return req("GET", "/admin/deletion-requests?status=" + (status || "pending")); },
+    completeDeletionRequest: function (id) { return req("POST", "/admin/deletion-requests/" + id + "/complete", {}); },
+    rejectDeletionRequest: function (id) { return req("POST", "/admin/deletion-requests/" + id + "/reject", {}); },
     // Per-role permissions (manage_roles). fetchRoles -> { roles:[{slug,permissions[]}], catalog:[{group,perms[]}] }.
     fetchRoles: function () { return req("GET", "/admin/roles"); },
     updateRolePermissions: function (roleId, permissions) { return req("PUT", "/admin/roles/" + roleId + "/permissions", { permissions: permissions }); },
