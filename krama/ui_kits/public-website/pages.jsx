@@ -515,7 +515,8 @@
         <Section n={5} h="Data Deletion" id="data-deletion">
           <P>You can request deletion of your account and associated personal data at any time:</P>
           <List items={[
-            "From your Krama profile settings, or",
+            "In the app or website, from Profile → Delete account (candidates are removed immediately), or",
+            "Via our account deletion page at kramajob.com/account/delete, or",
             "By emailing info@kramajob.com with the subject “Data deletion request”.",
           ]} />
           <P>

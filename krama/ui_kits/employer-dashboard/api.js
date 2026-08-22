@@ -298,6 +298,7 @@
     fetchSubscription: function () { return req("GET", "/employer/subscription"); },
     fetchPayments: function (page) { return req("GET", "/employer/payments?per_page=10&page=" + (page || 1)); },
     changePassword: function (currentPassword, newPassword) { return req("POST", "/auth/me/password", { current_password: currentPassword, password: newPassword, password_confirmation: newPassword }); },
+    deleteAccount: function (password, reason) { return req("POST", "/auth/me/delete", { password: password, reason: reason || "" }); },
     subscribe: function (planId, method, currency, couponCode) {
       var body = { plan_id: planId, method: method };
       if (currency) body.currency = currency;

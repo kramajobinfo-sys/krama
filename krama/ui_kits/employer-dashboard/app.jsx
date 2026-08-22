@@ -777,6 +777,19 @@
     const [conPwd, setConPwd] = React.useState("");
     const [pwdBusy, setPwdBusy] = React.useState(false);
     const [pwdMsg, setPwdMsg] = React.useState(null);
+    const [delOpen, setDelOpen] = React.useState(false);
+    const [delPwd, setDelPwd] = React.useState("");
+    const [delBusy, setDelBusy] = React.useState(false);
+    const [delMsg, setDelMsg] = React.useState(null); // { ok, text }
+    function deleteAcct() {
+      setDelBusy(true); setDelMsg(null);
+      emp.deleteAccount(delPwd).then((r) => {
+        setDelBusy(false); setDelPwd("");
+        // Employer deletion is handled as a reviewed request (company + billing data), so the
+        // account stays active until the team processes it — show the server's confirmation.
+        setDelMsg({ ok: true, text: (r && r.message) || "We've received your deletion request." });
+      }).catch(e => { setDelBusy(false); setDelMsg({ ok: false, text: (e && e.message) || "Could not submit your request." }); });
+    }
     function changePwd() {
       if (!curPwd || !newPwd || !conPwd) { setPwdMsg({ ok: false, text: "All fields are required." }); return; }
       if (newPwd !== conPwd) { setPwdMsg({ ok: false, text: "New passwords do not match." }); return; }
@@ -915,6 +928,28 @@
             {tgConnected && <Button variant="ghost" onClick={tgDisconnect} disabled={tgBusy}>Disconnect</Button>}
           </div>
           {tgMsg && <div style={{ marginTop: 12, fontSize: "var(--text-sm)", color: tgMsg.ok ? "var(--success)" : "var(--danger)", fontWeight: 600 }}>{tgMsg.text}</div>}
+        </Card>
+
+        {/* Danger zone — request account & data deletion (satisfies app-store deletion policy). */}
+        <Card padding={24} style={{ marginTop: 20, borderColor: "var(--danger)" }}>
+          <h3 style={{ fontSize: "var(--text-base)", fontWeight: 700, color: "var(--danger)", marginBottom: 4 }}>Delete account</h3>
+          <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginBottom: 16 }}>
+            Request deletion of your account and personal data. Because an employer account is linked to your company, jobs and billing, our team reviews and completes the request within 30 days (some records may be retained where the law requires).
+          </p>
+          {delMsg && delMsg.ok ? (
+            <div style={{ fontSize: "var(--text-sm)", color: "var(--success)", fontWeight: 600 }}>{delMsg.text}</div>
+          ) : !delOpen ? (
+            <Button variant="outline" style={{ color: "var(--danger)", borderColor: "var(--danger)" }} onClick={() => { setDelOpen(true); setDelMsg(null); }}>Request account deletion</Button>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <Input label="Confirm your password" type="password" value={delPwd} onChange={e => setDelPwd(e.target.value)} placeholder="••••••••" />
+              {delMsg && !delMsg.ok && <div style={{ fontSize: "var(--text-sm)", color: "var(--danger)", fontWeight: 600 }}>{delMsg.text}</div>}
+              <div style={{ display: "flex", gap: 10 }}>
+                <Button variant="primary" style={{ background: "var(--danger)", borderColor: "var(--danger)" }} disabled={delBusy || !delPwd} onClick={deleteAcct}>{delBusy ? "Submitting…" : "Submit request"}</Button>
+                <Button variant="ghost" disabled={delBusy} onClick={() => { setDelOpen(false); setDelPwd(""); setDelMsg(null); }}>Cancel</Button>
+              </div>
+            </div>
+          )}
         </Card>
       </div>
     );

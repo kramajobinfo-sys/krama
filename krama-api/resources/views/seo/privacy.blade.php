@@ -54,7 +54,8 @@
     <h2 id="data-deletion">5. Data Deletion</h2>
     <p>You can request deletion of your account and associated personal data at any time:</p>
     <ul>
-      <li>From your Krama profile settings, or</li>
+      <li>In the app or website, from <strong>Profile → Delete account</strong> (candidates are deleted immediately), or</li>
+      <li>Via our <a href="{{ url('/account/delete') }}">account deletion page</a>, or</li>
       <li>By emailing <a href="mailto:info@kramajob.com">info@kramajob.com</a> with the subject “Data deletion request”.</li>
     </ul>
     <p>Once we verify your request, we will delete your personal data within 30 days, except information we are required to retain for legal, accounting, or fraud-prevention purposes.</p>

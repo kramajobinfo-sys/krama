@@ -11382,7 +11382,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       h: "Data Deletion",
       id: "data-deletion"
     }, /*#__PURE__*/React.createElement(P, null, "You can request deletion of your account and associated personal data at any time:"), /*#__PURE__*/React.createElement(List, {
-      items: ["From your Krama profile settings, or", "By emailing info@kramajob.com with the subject “Data deletion request”."]
+      items: ["In the app or website, from Profile → Delete account (candidates are removed immediately), or", "Via our account deletion page at kramajob.com/account/delete, or", "By emailing info@kramajob.com with the subject “Data deletion request”."]
     }), /*#__PURE__*/React.createElement(P, null, "Once we verify your request, we will delete your personal data within 30 days, except information we are required to retain for legal, accounting, or fraud-prevention purposes.")), /*#__PURE__*/React.createElement(Section, {
       n: 6,
       h: "Cookies and Similar Technologies"
