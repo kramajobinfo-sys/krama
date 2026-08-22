@@ -696,6 +696,9 @@
                 <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: 6, display: "flex", alignItems: "center", gap: 5 }}>{I("info", 12)} Created as pending — it shows in public category filters once approved.</div>
               </div>
             )}
+            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", borderRadius: "var(--radius-md)", background: "var(--brand-subtle)", color: "var(--brand)", fontSize: "var(--text-xs)", fontWeight: 600 }}>
+              {I("badge-dollar-sign", 14)} Add a salary range — listings with pay get far more applicants and feed the Salary Guide. Leave blank only if truly negotiable.
+            </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 14 }}>
               <Input label="Salary min" type="number" value={form.salary_min} onChange={function (e) { set("salary_min", e.target.value); }} />
               <Input label="Salary max" type="number" value={form.salary_max} onChange={function (e) { set("salary_max", e.target.value); }} />

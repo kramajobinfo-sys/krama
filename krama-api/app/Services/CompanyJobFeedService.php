@@ -6,6 +6,7 @@ use App\Models\CompanyJobFeed;
 use App\Models\Job;
 use App\Models\Location;
 use App\Support\HtmlSanitizer;
+use App\Support\SalaryParser;
 
 /**
  * Imports an employer's OWN careers / ATS feed as NATIVE draft jobs under their
@@ -49,12 +50,20 @@ class CompanyJobFeedService
                     'map_location' => ($locId === null && $locName !== '') ? mb_substr($locName, 0, 500) : null,
                 ];
 
+                // Capture salary — an explicit feed field first, else parse it out of the body.
+                $sal = SalaryParser::parse($it['salary'] ?? '') ?: SalaryParser::fromDescription($it['description'] ?? '');
+
                 $existing = Job::where('company_id', $company->id)->where('import_ref', $ref)->first();
                 if ($existing) {
                     // Refresh content only — never override the employer's status / edits to title-slug.
+                    // Only fill salary when the row has none, so a manual entry is never clobbered.
+                    if ($sal && $existing->salary_min === null && $existing->salary_max === null) {
+                        $fields += self::salaryFields($sal);
+                    }
                     $existing->fill($fields)->save();
                     $updated++;
                 } else {
+                    if ($sal) $fields += self::salaryFields($sal);
                     Job::create(array_merge($fields, [
                         'company_id' => $company->id,
                         'user_id'    => $company->user_id,
@@ -113,6 +122,7 @@ class CompanyJobFeedService
                 'description' => $desc,
                 'location'    => self::firstXml($e, ['location', 'region', 'city']),
                 'job_type'    => self::firstXml($e, ['job_type', 'type', 'employmentType']),
+                'salary'      => self::firstXml($e, ['salary', 'compensation', 'salary_text']),
             ];
         }
         return $items;
@@ -152,12 +162,21 @@ class CompanyJobFeedService
             if (isset($r['location'])) $loc = is_array($r['location']) ? (string) ($r['location']['name'] ?? '') : (string) $r['location'];
             elseif (isset($r['categories']['location'])) $loc = (string) $r['categories']['location'];
 
+            $salary = '';
+            if (isset($r['baseSalary']['value'])) {
+                $v = $r['baseSalary']['value'];
+                $salary = is_array($v) ? trim(($v['minValue'] ?? '') . '-' . ($v['maxValue'] ?? '') . ' ' . ($r['baseSalary']['currency'] ?? '') . ' /' . ($v['unitText'] ?? '')) : (string) $v;
+            } elseif (isset($r['salary'])) {
+                $salary = is_array($r['salary']) ? '' : (string) $r['salary'];
+            }
+
             $items[] = [
                 'ref'         => substr(hash('sha256', $id), 0, 40),
                 'title'       => $title,
                 'description' => $desc,
                 'location'    => $loc,
                 'job_type'    => (string) ($r['metadata']['employment_type'] ?? $r['categories']['commitment'] ?? ''),
+                'salary'      => $salary,
             ];
         }
         return $items;
@@ -187,6 +206,17 @@ class CompanyJobFeedService
         if ($v === '') return null;
         if (! preg_match('/<[a-z][\s\S]*>/i', $v)) $v = '<p>' . nl2br(e($v)) . '</p>';
         return HtmlSanitizer::clean($v);
+    }
+
+    /** Map a SalaryParser result to the Job's structured salary columns. */
+    private static function salaryFields(array $sal): array
+    {
+        return [
+            'salary_min'      => $sal['min'],
+            'salary_max'      => $sal['max'],
+            'salary_currency' => $sal['currency'],
+            'salary_period'   => $sal['period'],
+        ];
     }
 
     private static function jobType(string $v): ?string

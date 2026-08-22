@@ -138,6 +138,7 @@
     "e.g. Renewable Energy": "ឧ. ថាមពលកកើតឡើងវិញ",
     "Salary min": "ប្រាក់ខែអប្បបរមា",
     "Salary max": "ប្រាក់ខែអតិបរមា",
+    "Add a salary range — listings with pay get far more applicants and feed Cambodia's Salary Guide. Leave blank only if truly negotiable.": "បញ្ចូលចន្លោះប្រាក់ខែ — ការងារដែលបង្ហាញប្រាក់ខែ ទទួលបានពាក្យសុំច្រើនជាង ហើយចូលរួមក្នុងមគ្គុទ្ទេសក៍ប្រាក់ខែកម្ពុជា។ ទុកទទេ តែពេលអាចចរចាបាន។",
     "Currency": "រូបិយប័ណ្ណ",
     "Per": "ក្នុងមួយ",
     "Hour": "ម៉ោង",
@@ -378,6 +379,7 @@
     "e.g. Renewable Energy": "例如：可再生能源",
     "Salary min": "最低薪资",
     "Salary max": "最高薪资",
+    "Add a salary range — listings with pay get far more applicants and feed Cambodia's Salary Guide. Leave blank only if truly negotiable.": "填写薪资范围 — 标明薪资的职位申请者明显更多，并纳入柬埔寨薪资指南。仅在面议时留空。",
     "Currency": "币种",
     "Per": "每",
     "Hour": "小时",
@@ -1304,6 +1306,9 @@
                 <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: 6, display: "flex", alignItems: "center", gap: 5 }}>{I("info", 12)} Added to your job now; it appears in public category filters once an admin approves it.</div>
               </div>
             )}
+            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", borderRadius: "var(--radius-md)", background: "var(--brand-subtle)", color: "var(--brand)", fontSize: "var(--text-xs)", fontWeight: 600 }}>
+              {I("badge-dollar-sign", 14)} {T("Add a salary range — listings with pay get far more applicants and feed Cambodia's Salary Guide. Leave blank only if truly negotiable.")}
+            </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 12 }}>
               <Input label={T("Salary min")} type="number" value={form.salary_min} onChange={(e) => set("salary_min", e.target.value)} placeholder="800" />
               <Input label={T("Salary max")} type="number" value={form.salary_max} onChange={(e) => set("salary_max", e.target.value)} placeholder="1500" />

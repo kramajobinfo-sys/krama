@@ -32,11 +32,6 @@ class SalaryGuideService
     // of listings would be misleading. Raise as coverage grows.
     private const MIN_TOTAL = 25;
 
-    // Tighter band for a salary parsed out of free-text (noisier than a structured field):
-    // Cambodian monthly pay realistically sits in this window.
-    private const TEXT_MIN = 50;
-    private const TEXT_MAX = 6000;
-
     // Experience-level rows are rendered in this order (jobs.experience_level is a slug).
     private const LEVEL_ORDER = [
         'entry'      => 'Entry level',
@@ -67,7 +62,7 @@ class SalaryGuideService
 
         foreach ($jobs as $j) {
             $usd = $this->monthlyUsd($j, $fx);
-            if ($usd === null) $usd = $this->fromText($j);
+            if ($usd === null) $usd = $this->fromText($j, $fx);
             if ($usd === null) continue;
 
             $all[] = $usd;
@@ -108,63 +103,50 @@ class SalaryGuideService
     }
 
     /**
-     * Best-effort salary from the listing text when the structured field is empty. Conservative
-     * by design: only $-tagged amounts that sit near a salary cue, within a plausible monthly
-     * band, so unrelated figures (bonuses, fees) don't leak in. Returns a monthly-USD midpoint
-     * or null. (Most Cambodian posts write e.g. "ប្រាក់ខែ $250–$400" or "Salary: $500".)
+     * Best-effort salary from the listing text when the structured field is empty — shares the
+     * cue-windowed parser used at capture time (SalaryParser), then normalises to monthly USD.
+     * Returns a monthly-USD midpoint or null.
      */
-    private function fromText(Job $j): ?float
+    private function fromText(Job $j, float $fx): ?float
     {
-        $t = strtolower(strip_tags((string) $j->description . ' ' . (string) $j->requirements . ' ' . (string) $j->benefits));
-        if ($t === '' || ! preg_match('/salary|remunerat|wage|\bpay\b|ប្រាក់ខែ/u', $t)) return null;
-
-        if (! preg_match_all('/\$\s?([0-9][0-9,\.]{1,6})/', $t, $m)) return null;
-
-        $nums = [];
-        foreach ($m[1] as $raw) {
-            $n = (float) preg_replace('/[^0-9]/', '', $raw);
-            if ($n >= self::TEXT_MIN && $n <= self::TEXT_MAX) $nums[] = $n;
-        }
-        if (! $nums) return null;
-
-        $mid = (min($nums) + max($nums)) / 2;
-        return ($mid >= self::MIN_MONTHLY && $mid <= self::MAX_MONTHLY) ? $mid : null;
+        $p = \App\Support\SalaryParser::fromDescription($j->description, $j->requirements, $j->benefits);
+        if (! $p) return null;
+        return $this->normalizeMonthlyUsd($p['min'], $p['max'], $p['currency'], $p['period'], $fx);
     }
 
-    /**
-     * Normalise one job's pay to a monthly-USD midpoint, or null if it can't be trusted.
-     * Uses the midpoint of the range when both ends are present.
-     */
+    /** Normalise one job's structured pay to a monthly-USD midpoint, or null if untrustworthy. */
     private function monthlyUsd(Job $j, float $fx): ?float
     {
         $min = is_numeric($j->salary_min) ? (float) $j->salary_min : null;
         $max = is_numeric($j->salary_max) ? (float) $j->salary_max : null;
 
+        return $this->normalizeMonthlyUsd($min, $max, (string) ($j->salary_currency ?: 'USD'), (string) ($j->salary_period ?: 'month'), $fx);
+    }
+
+    /** Midpoint of a (min,max) pay range converted to monthly USD; null if out of band / unknown currency. */
+    private function normalizeMonthlyUsd(?float $min, ?float $max, string $currency, string $period, float $fx): ?float
+    {
         $vals = array_values(array_filter([$min, $max], fn ($v) => $v !== null && $v > 0));
         if (! $vals) return null;
         $mid = array_sum($vals) / count($vals);
 
-        // Currency → USD.
-        $cur = strtoupper(trim((string) ($j->salary_currency ?: 'USD')));
+        $cur = strtoupper(trim($currency));
         if ($cur === 'KHR') {
             $mid = $mid / $fx;
         } elseif ($cur !== 'USD' && $cur !== '') {
-            return null; // unknown currency — don't guess
+            return null;
         }
 
-        // Period → month.
         $mult = [
             'hour' => 22 * 8, 'hourly' => 22 * 8,
             'day' => 22, 'daily' => 22,
             'week' => 52 / 12, 'weekly' => 52 / 12,
             'month' => 1, 'monthly' => 1,
             'year' => 1 / 12, 'yearly' => 1 / 12, 'annual' => 1 / 12, 'annually' => 1 / 12,
-        ][strtolower(trim((string) ($j->salary_period ?: 'month')))] ?? 1;
-        $mid = $mid * $mult;
+        ][strtolower(trim($period))] ?? 1;
+        $mid *= $mult;
 
-        if ($mid < self::MIN_MONTHLY || $mid > self::MAX_MONTHLY) return null;
-
-        return $mid;
+        return ($mid >= self::MIN_MONTHLY && $mid <= self::MAX_MONTHLY) ? $mid : null;
     }
 
     /** Median + inter-quartile range (p25–p75) + min/max, rounded to whole dollars. */
