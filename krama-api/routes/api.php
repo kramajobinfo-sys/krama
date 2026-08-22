@@ -95,6 +95,7 @@ Route::get('jobs/{id}', [JobController::class, 'show']);
 
 // Aggregated external listings (read-only; link back to source)
 Route::get('external-jobs',      [\App\Http\Controllers\FeedSourceController::class, 'publicJobs']);
+Route::get('push/vapid-public-key', [\App\Http\Controllers\PushSubscriptionController::class, 'vapidPublicKey']);
 Route::get('external-companies', [\App\Http\Controllers\FeedSourceController::class, 'publicCompanies']);
 
 // Public "notify me when jobs launch" capture (empty-state waitlist)
@@ -171,6 +172,8 @@ Route::middleware('auth:api')->group(function () {
     Route::get('candidate/alerts',              [JobAlertController::class, 'index']);
     Route::post('candidate/alerts',             [JobAlertController::class, 'store']);
     Route::delete('candidate/alerts/{id}',      [JobAlertController::class, 'destroy']);
+    Route::post('candidate/push-subscription',   [\App\Http\Controllers\PushSubscriptionController::class, 'store']);
+    Route::delete('candidate/push-subscription', [\App\Http\Controllers\PushSubscriptionController::class, 'destroy']);
 
     // Messaging (candidate + employer)
     Route::get('conversations/unread',          [MessageController::class, 'unreadCount']);

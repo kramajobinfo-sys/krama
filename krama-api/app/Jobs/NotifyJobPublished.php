@@ -8,6 +8,7 @@ use App\Models\Job;
 use App\Models\JobAlert;
 use App\Services\SocialPostService;
 use App\Services\TelegramService;
+use App\Services\WebPushService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -108,6 +109,13 @@ class NotifyJobPublished implements ShouldQueue
                     Log::warning("Follower Telegram failed for candidate {$candidate->id}: " . $e->getMessage());
                 }
             }
+            // Web push — to every device this follower subscribed (no-op if none / VAPID unset).
+            WebPushService::sendToUser((int) $candidate->id, [
+                'title' => '📣 ' . ($companyName ?: 'A company you follow') . ' is hiring',
+                'body'  => $job->title . ($locationName ? ' · ' . $locationName : ''),
+                'url'   => $jobUrl,
+                'icon'  => '/krama/assets/icon-192.png',
+            ]);
         }
     }
 
@@ -171,6 +179,13 @@ class NotifyJobPublished implements ShouldQueue
                     Log::warning("Job alert Telegram failed for candidate {$candidate->id}: " . $e->getMessage());
                 }
             }
+            // Web push — to every device this candidate subscribed (no-op if none / VAPID unset).
+            WebPushService::sendToUser((int) $candidate->id, [
+                'title' => '🔔 New job matching your alert',
+                'body'  => $job->title . ($companyName ? ' — ' . $companyName : ''),
+                'url'   => $jobUrl,
+                'icon'  => '/krama/assets/icon-192.png',
+            ]);
         }
     }
 

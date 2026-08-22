@@ -8,7 +8,7 @@
  *   - Cross-origin requests (Google Fonts, Telegram, etc.) are left untouched.
  * Bump CACHE to force old caches to clear on the next activate.
  */
-const CACHE = 'krama-shell-v1';
+const CACHE = 'krama-shell-v2';
 
 self.addEventListener('install', function () {
   self.skipWaiting();
@@ -59,4 +59,35 @@ self.addEventListener('fetch', function (event) {
       return cached || network;
     })());
   }
+});
+
+/* ── Web push: job-alert / followed-company notifications ────────────────────── */
+self.addEventListener('push', function (event) {
+  let data = {};
+  try { data = event.data ? event.data.json() : {}; } catch (e) { data = {}; }
+  const title = data.title || 'Krama';
+  const options = {
+    body: data.body || '',
+    icon: data.icon || '/krama/assets/icon-192.png',
+    badge: '/krama/assets/icon-192.png',
+    data: { url: data.url || '/' },
+    tag: data.tag || undefined,          // collapses duplicates when set
+    renotify: !!data.tag,
+  };
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener('notificationclick', function (event) {
+  event.notification.close();
+  const target = (event.notification.data && event.notification.data.url) || '/';
+  event.waitUntil((async function () {
+    const wins = await clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const w of wins) {
+      if (w.url.indexOf(self.location.origin) === 0 && 'focus' in w) {
+        try { await w.navigate(target); } catch (e) {}
+        return w.focus();
+      }
+    }
+    return clients.openWindow(target);
+  })());
 });

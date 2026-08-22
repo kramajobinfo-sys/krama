@@ -149,6 +149,9 @@ var cand = (function () {
     fetchAlerts: function () { return req("GET", "/candidate/alerts"); },
     createAlert: function (data) { return req("POST", "/candidate/alerts", data); },
     deleteAlert: function (id) { return req("DELETE", "/candidate/alerts/" + id); },
+    // Web push (this device)
+    savePushSubscription: function (sub) { return req("POST", "/candidate/push-subscription", sub); },
+    deletePushSubscription: function (endpoint) { return req("DELETE", "/candidate/push-subscription", { endpoint: endpoint }); },
 
     // Messaging
     fetchConversations: function () { return req("GET", "/conversations"); },

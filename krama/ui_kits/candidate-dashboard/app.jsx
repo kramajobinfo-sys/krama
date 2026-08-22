@@ -1676,6 +1676,48 @@
       });
     }
 
+    // ── Web push (this device) ──────────────────────────────────────────────
+    var [pushState, setPushState] = React.useState("checking"); // checking|unsupported|default|denied|subscribing|subscribed
+    React.useEffect(function () {
+      if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) { setPushState("unsupported"); return; }
+      if (Notification.permission === "denied") { setPushState("denied"); return; }
+      navigator.serviceWorker.getRegistration().then(function (reg) {
+        if (!reg) { setPushState("default"); return; }
+        reg.pushManager.getSubscription().then(function (sub) { setPushState(sub ? "subscribed" : "default"); }).catch(function () { setPushState("default"); });
+      }).catch(function () { setPushState("default"); });
+    }, []);
+    function pushApiBase() { return /^(localhost|127\.0\.0\.1|::1|192\.168\.|10\.)/.test(location.hostname) ? "http://127.0.0.1:8000/api" : (location.protocol + "//" + location.host + "/api"); }
+    function urlB64ToUint8(base64) {
+      var pad = "=".repeat((4 - base64.length % 4) % 4);
+      var b64 = (base64 + pad).replace(/-/g, "+").replace(/_/g, "/");
+      var raw = atob(b64), arr = new Uint8Array(raw.length);
+      for (var i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
+      return arr;
+    }
+    function enablePush() {
+      setPushState("subscribing");
+      Notification.requestPermission().then(function (perm) {
+        if (perm !== "granted") { setPushState(perm === "denied" ? "denied" : "default"); return; }
+        navigator.serviceWorker.register("/sw.js").catch(function () {}).then(function () { return navigator.serviceWorker.ready; })
+          .then(function (reg) {
+            return fetch(pushApiBase() + "/push/vapid-public-key").then(function (r) { return r.json(); }).then(function (j) {
+              if (!j || !j.publicKey) throw new Error("push not configured");
+              return reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64ToUint8(j.publicKey) });
+            });
+          })
+          .then(function (sub) { return cand.savePushSubscription(sub.toJSON()); })
+          .then(function () { setPushState("subscribed"); })
+          .catch(function () { setPushState("default"); alert(T("Could not enable push notifications on this device.")); });
+      });
+    }
+    function disablePush() {
+      navigator.serviceWorker.ready.then(function (reg) { return reg.pushManager.getSubscription(); }).then(function (sub) {
+        if (!sub) { setPushState("default"); return; }
+        var ep = sub.endpoint;
+        return sub.unsubscribe().then(function () { return cand.deletePushSubscription(ep); }).then(function () { setPushState("default"); });
+      }).catch(function () { setPushState("default"); });
+    }
+
     var JOB_TYPES = [{ value: "", label: "Any type" }, { value: "full_time", label: "Full-time" }, { value: "part_time", label: "Part-time" }, { value: "contract", label: "Contract" }, { value: "internship", label: "Internship" }];
     var REMOTE_OPTS = [{ value: "", label: "Any" }, { value: "1", label: "Remote only" }, { value: "0", label: "On-site / hybrid" }];
 
@@ -1709,6 +1751,28 @@
             </Button>
           )}
         </div>
+
+        {/* Push notifications on this device (installable PWA). Hidden where unsupported. */}
+        {pushState !== "unsupported" && pushState !== "checking" && (
+          <Card style={{ marginBottom: 20, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 40, height: 40, borderRadius: "var(--radius-md)", background: "var(--brand-subtle)", color: "var(--brand)", flexShrink: 0 }}>{I("bell-ring", 20)}</span>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: "var(--text-base)", color: "var(--text-strong)" }}>{T("Push notifications")}</div>
+                <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginTop: 2 }}>
+                  {pushState === "subscribed" ? T("On for this device — you'll get matching jobs as a notification.")
+                    : pushState === "denied" ? T("Blocked. Enable notifications for Krama in your browser settings.")
+                    : T("Get matching jobs as a notification on this device, even when Krama is closed.")}
+                </div>
+              </div>
+            </div>
+            {pushState === "subscribed"
+              ? <Button variant="secondary" size="sm" onClick={disablePush}>{T("Turn off")}</Button>
+              : pushState === "denied"
+                ? null
+                : <Button variant="primary" size="sm" disabled={pushState === "subscribing"} onClick={enablePush}>{pushState === "subscribing" ? T("Enabling…") : T("Enable")}</Button>}
+          </Card>
+        )}
 
         {showForm && (
           <Card style={{ marginBottom: 24 }}>
