@@ -8199,7 +8199,18 @@
             fieldRow("Forum group", inp("telegram_forum_chat", "text", "@kramajobforum or -1003880735522"), "A supergroup with Topics enabled where the shared bot is an admin with “Manage Topics”. Each published job is posted into a topic named after its category (created automatically the first time)."))}
 
           {platformCard("digest", "Telegram — daily jobs digest", "newspaper",
-            fieldRow("Jobs per digest", inp("digest_count", "number", "10"), "Posts one message each morning (08:00 Phnom Penh) summarising the day's newest jobs — to both the channel and the forum group configured above. Turns them into a daily destination. Skipped on days with no new jobs."))}
+            <React.Fragment>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", padding: "10px 12px", borderRadius: 8, background: "var(--surface-card)", border: "1px solid var(--border)" }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)" }}>Posts to:</span>
+                {s.telegram_channel
+                  ? <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text)", padding: "2px 8px", borderRadius: 999, background: "var(--surface-input)", border: "1px solid var(--border)" }}>{I("send", 12)} {s.telegram_channel}</span>
+                  : <span style={{ fontSize: 12, color: "var(--text-muted)" }}>channel not set</span>}
+                {s.telegram_forum_chat
+                  ? <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text)", padding: "2px 8px", borderRadius: 999, background: "var(--surface-input)", border: "1px solid var(--border)" }}>{I("hash", 12)} forum ({s.telegram_forum_chat})</span>
+                  : <span style={{ fontSize: 12, color: "var(--text-muted)" }}>forum group not set</span>}
+              </div>
+              {fieldRow("Jobs per digest", inp("digest_count", "number", "10"), "Posts one message each morning (08:00 Phnom Penh) summarising the day's newest jobs, to both destinations above (the channel from the Telegram-channel card and the forum group from the jobs-by-category-topic card). Skipped on days with no new jobs.")}
+            </React.Fragment>)}
 
           {platformCard("facebook", "Facebook Page", "facebook",
             <React.Fragment>
