@@ -74,6 +74,7 @@ var cand = (function () {
     fetchMe: function () { return req("GET", "/auth/me"); },
     updateMe: function (data) { return req("PATCH", "/auth/me", data); },
     changePassword: function (currentPassword, newPassword) { return req("POST", "/auth/me/password", { current_password: currentPassword, password: newPassword, password_confirmation: newPassword }); },
+    deleteAccount: function (password) { return req("POST", "/auth/me/delete", { password: password }); },
     uploadAvatar: function (file) {
       var form = new FormData();
       form.append("avatar", file);

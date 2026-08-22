@@ -1186,6 +1186,22 @@
     var [conPwd, setConPwd] = React.useState("");
     var [pwdBusy, setPwdBusy] = React.useState(false);
     var [pwdMsg, setPwdMsg] = React.useState(null);
+    var [delOpen, setDelOpen] = React.useState(false);
+    var [delPwd, setDelPwd] = React.useState("");
+    var [delBusy, setDelBusy] = React.useState(false);
+    var [delErr, setDelErr] = React.useState("");
+
+    function deleteAccount() {
+      setDelBusy(true); setDelErr("");
+      cand.deleteAccount(delPwd).then(function() {
+        // Deleted — clear the session everywhere and return to the public site.
+        try { localStorage.removeItem("krama_access_token"); localStorage.removeItem("krama_refresh_token"); } catch (e) {}
+        window.location.href = "../public-website/index.html";
+      }).catch(function(e) {
+        setDelBusy(false);
+        setDelErr((e && e.message) || "Could not delete your account.");
+      });
+    }
 
     function changePwd() {
       if (!curPwd || !newPwd || !conPwd) { setPwdMsg({ ok: false, text: "All fields are required." }); return; }
@@ -1292,6 +1308,30 @@
               <Button variant="primary" disabled={pwdBusy} onClick={changePwd}>{pwdBusy ? T("Updating…") : T("Update password")}</Button>
             </div>
           </div>
+        </Card>
+
+        {/* Danger zone — delete account & personal data (satisfies app-store data-deletion policy). */}
+        <Card padding={24} style={{ marginTop: 20, borderColor: "var(--danger)" }}>
+          <h3 style={{ fontSize: "var(--text-base)", fontWeight: 700, color: "var(--danger)", marginBottom: 4 }}>{T("Delete account")}</h3>
+          <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginBottom: 16 }}>
+            {T("Permanently delete your account and personal data — résumé, saved jobs, alerts and profile. This cannot be undone.")}
+          </p>
+          {!delOpen ? (
+            <Button variant="secondary" style={{ color: "var(--danger)", borderColor: "var(--danger)" }} onClick={function(){ setDelOpen(true); setDelErr(""); }}>
+              {T("Delete my account")}
+            </Button>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <Input label={T("Confirm your password to delete")} type="password" value={delPwd} onChange={function(e){ setDelPwd(e.target.value); }} placeholder="••••••••" />
+              {delErr && <div style={{ fontSize: "var(--text-sm)", color: "var(--danger)", fontWeight: 600 }}>{delErr}</div>}
+              <div style={{ display: "flex", gap: 10 }}>
+                <Button variant="primary" style={{ background: "var(--danger)", borderColor: "var(--danger)" }} disabled={delBusy || !delPwd} onClick={deleteAccount}>
+                  {delBusy ? T("Deleting…") : T("Permanently delete")}
+                </Button>
+                <Button variant="ghost" disabled={delBusy} onClick={function(){ setDelOpen(false); setDelPwd(""); setDelErr(""); }}>{T("Cancel")}</Button>
+              </div>
+            </div>
+          )}
         </Card>
       </div>
     );

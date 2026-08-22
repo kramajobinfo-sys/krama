@@ -53,6 +53,7 @@ Route::middleware('auth:api')->prefix('auth')->group(function () {
     Route::get('me',              [AuthController::class, 'me']);
     Route::patch('me',            [AuthController::class, 'updateMe']);
     Route::post('me/password',    [AuthController::class, 'changePassword']);
+    Route::post('me/delete',      [AuthController::class, 'deleteAccount']);
     Route::post('me/avatar',      [AuthController::class, 'uploadAvatar']);
     Route::post('email/resend',   [AuthController::class, 'resendVerification']);
 });

@@ -5,11 +5,15 @@ namespace App\Http\Controllers;
 use App\Helpers\EmailTemplates;
 use App\Helpers\MailConfig;
 use App\Jobs\SendEmailVerificationJob;
+use App\Models\AccountDeletionRequest;
 use App\Models\AuthToken;
+use App\Models\Resume;
 use App\Models\Role;
 use App\Models\Setting;
 use App\Models\User;
+use App\Services\TelegramService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -431,6 +435,97 @@ class AuthController extends Controller
         $user->update(['password_hash' => Hash::make($data['password'])]);
 
         return response()->json(['message' => 'Password updated successfully.']);
+    }
+
+    /**
+     * POST /api/auth/me/delete — delete the signed-in user's account & personal data.
+     *
+     * Candidates are deleted immediately: their résumé/CV, alerts, saved jobs, follows and
+     * push subscriptions are purged, the CV file is removed, and the user row is anonymised
+     * (name/email/phone/photo scrubbed, status set to 'deleted', tokens revoked). Application
+     * and message rows are kept for the employers who legitimately hold them, but they no
+     * longer carry the candidate's identity.
+     *
+     * Employers/admins go through a reviewed request instead — their data is entangled with a
+     * company, its jobs, and financial/invoice records that must be handled carefully and, in
+     * some cases, retained for legal/accounting reasons.
+     */
+    public function deleteAccount(Request $request)
+    {
+        $user = auth()->user();
+        $role = optional($user->role)->slug;
+
+        // Re-authenticate with the password when the account has one (social-only accounts
+        // may not). A deletion is destructive, so require confirmation.
+        if (! empty($user->password_hash)) {
+            $data = $request->validate(['password' => 'required|string']);
+            if (! Hash::check($data['password'], $user->password_hash)) {
+                return response()->json(['message' => 'Password is incorrect.'], 422);
+            }
+        }
+
+        if ($role === 'candidate') {
+            $this->purgeCandidate($user);
+            return response()->json(['message' => 'Your account and personal data have been deleted.', 'deleted' => true]);
+        }
+
+        // Employer / admin / other → log a request for manual handling and notify the team.
+        AccountDeletionRequest::create([
+            'user_id' => $user->id,
+            'email'   => $user->email,
+            'role'    => $role,
+            'reason'  => Str::limit((string) $request->input('reason'), 490, ''),
+            'status'  => 'pending',
+        ]);
+
+        try {
+            TelegramService::notifyAdmin("🗑️ Account deletion requested\nUser #{$user->id} ({$user->email}), role: " . ($role ?: 'unknown'));
+        } catch (\Throwable $e) {
+            Log::warning('Deletion-request notify failed: ' . $e->getMessage());
+        }
+
+        return response()->json([
+            'message'   => "We've received your deletion request. We'll remove your account and personal data within 30 days; we may retain limited records (e.g. invoices) where the law requires.",
+            'requested' => true,
+        ]);
+    }
+
+    /** Purge a candidate's personal data + anonymise the user row, in one transaction. */
+    private function purgeCandidate(User $user): void
+    {
+        // Remove the stored CV file(s) before deleting the résumé rows.
+        foreach (Resume::where('candidate_id', $user->id)->get() as $resume) {
+            if ($resume->file_url && ! str_starts_with($resume->file_url, 'http')) {
+                try { Storage::disk('local')->delete($resume->file_url); } catch (\Throwable $e) {}
+            }
+        }
+        // Remove the avatar file.
+        if ($user->avatar_url && str_contains($user->avatar_url, '/storage/avatars/')) {
+            try { Storage::disk('public')->delete(str_replace(url('/storage') . '/', '', $user->avatar_url)); } catch (\Throwable $e) {}
+        }
+
+        DB::transaction(function () use ($user) {
+            $id = $user->id;
+            DB::table('resumes')->where('candidate_id', $id)->delete();
+            DB::table('job_alerts')->where('candidate_id', $id)->delete();
+            DB::table('company_followers')->where('candidate_id', $id)->delete();
+            DB::table('saved_jobs')->where('candidate_id', $id)->delete();
+            DB::table('push_subscriptions')->where('user_id', $id)->delete();
+            $user->authTokens()->delete();
+
+            // Anonymise the user row — strips PII while keeping applications/messages valid.
+            $user->forceFill([
+                'name'          => 'Deleted user',
+                'email'         => 'deleted_' . $id . '@krama.deleted',
+                'phone'         => null,
+                'bio'           => null,
+                'avatar_url'    => null,
+                'password_hash' => Hash::make(Str::random(40)),
+                'status'        => 'suspended', // deactivated; PII above is scrubbed
+            ])->save();
+        });
+
+        Log::info("Candidate account #{$user->id} deleted (self-service).");
     }
 
     public function uploadAvatar(Request $request)

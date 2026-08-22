@@ -159,6 +159,19 @@ class SeoController extends Controller
         return view('seo.salary', compact('data', 'canonical', 'metaDesc', 'ld', 'robots'));
     }
 
+    /** GET /account/delete — public account & data deletion page (the URL given to Google Play). */
+    public function accountDelete()
+    {
+        $support = trim((string) (\App\Models\Setting::where('group', 'brand')->where('key', 'contactEmail')->value('value'))) ?: 'support@kramajob.com';
+
+        return view('seo.account-delete', [
+            'canonical' => url('/account/delete'),
+            'metaDesc'  => 'How to delete your Krama account and personal data — in the app, or by request.',
+            'ld'        => [],
+            'support'   => $support,
+        ]);
+    }
+
     /** GET /privacy — server-rendered Privacy Policy (public, crawlable; used for Facebook app review). */
     public function privacy()
     {
