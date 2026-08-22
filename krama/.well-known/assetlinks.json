@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.kramajob.twa",
+      "sha256_cert_fingerprints": [
+        "7F:2E:BE:0E:C3:CA:18:C5:76:F5:52:41:C0:CE:DC:6C:61:8B:94:6E:78:8F:C7:FF:49:80:D3:37:E4:80:79:79"
+      ]
+    }
+  }
+]

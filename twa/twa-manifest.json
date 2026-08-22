@@ -1,0 +1,57 @@
+{
+  "packageId": "com.kramajob.twa",
+  "host": "kramajob.com",
+  "name": "Krama — Jobs & Hiring in Cambodia",
+  "launcherName": "Krama",
+  "display": "standalone",
+  "themeColor": "#0C7E6B",
+  "themeColorDark": "#0C7E6B",
+  "navigationColor": "#0C7E6B",
+  "navigationColorDark": "#000000",
+  "navigationDividerColor": "#0C7E6B",
+  "navigationDividerColorDark": "#000000",
+  "backgroundColor": "#F6F5F1",
+  "enableNotifications": true,
+  "startUrl": "/?src=twa",
+  "iconUrl": "https://kramajob.com/krama/assets/icon-512.png",
+  "maskableIconUrl": "https://kramajob.com/krama/assets/icon-512.png",
+  "monochromeIconUrl": "https://kramajob.com/krama/assets/icon-512.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "./android.keystore",
+    "alias": "krama"
+  },
+  "appVersionName": "1.0.0",
+  "appVersionCode": 1,
+  "shortcuts": [
+    {
+      "name": "Find jobs",
+      "shortName": "Jobs",
+      "url": "/?page=jobs&src=twa",
+      "chosenIconUrl": "https://kramajob.com/krama/assets/icon-192.png"
+    },
+    {
+      "name": "Post a job",
+      "shortName": "Post",
+      "url": "/?page=register&src=twa",
+      "chosenIconUrl": "https://kramajob.com/krama/assets/icon-192.png"
+    }
+  ],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://kramajob.com/manifest.webmanifest",
+  "fallbackType": "customtabs",
+  "features": {},
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "minSdkVersion": 21,
+  "orientation": "portrait",
+  "fingerprints": [],
+  "additionalTrustedOrigins": [],
+  "retainedBundles": [],
+  "displayOverride": [],
+  "appVersion": "1.0.0"
+}

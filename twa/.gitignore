@@ -1,0 +1,13 @@
+# Secrets — never commit
+android.keystore
+.signing-password.txt
+*.keystore
+# Build outputs
+*.apk
+*.aab
+*.idsig
+app/build/
+build/
+.gradle/
+node_modules/
+local.properties
