@@ -131,6 +131,12 @@ class SocialPostService
         return implode("\n", $lines);
     }
 
+    /** Public accessor for the formatted salary label (e.g. "$500–$800/month"), or null. */
+    public static function salaryLabel(Job $job): ?string
+    {
+        return self::salary($job);
+    }
+
     private static function salary(Job $job): ?string
     {
         if (! $job->salary_min && ! $job->salary_max) return null;

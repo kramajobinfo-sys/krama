@@ -8099,7 +8099,7 @@
   // ── SMS Gateway Settings ─────────────────────────────────────────────────────
   const SMS_DEFAULTS = { enabled: false, driver: "twilio", twilio_sid: "", twilio_token: "", twilio_from: "", http_url: "", http_method: "GET", http_to_param: "to", http_text_param: "text", http_extra: "", http_header: "" };
 
-  const SOCIAL_POST_DEFAULTS = { enabled: false, telegram_enabled: false, telegram_channel: "", telegram_topics_enabled: false, telegram_forum_chat: "", facebook_enabled: false, facebook_page_id: "", facebook_page_token: "", linkedin_enabled: false, linkedin_token: "", linkedin_author_urn: "" };
+  const SOCIAL_POST_DEFAULTS = { enabled: false, telegram_enabled: false, telegram_channel: "", telegram_topics_enabled: false, telegram_forum_chat: "", digest_enabled: false, digest_count: 10, facebook_enabled: false, facebook_page_id: "", facebook_page_token: "", linkedin_enabled: false, linkedin_token: "", linkedin_author_urn: "" };
 
   function SocialPostingSettings() {
     const adm = window.KRAMA_ADMIN_API;
@@ -8115,6 +8115,7 @@
             enabled: !!d.enabled,
             telegram_enabled: !!d.telegram_enabled, telegram_channel: d.telegram_channel || "",
             telegram_topics_enabled: !!d.telegram_topics_enabled, telegram_forum_chat: d.telegram_forum_chat || "",
+            digest_enabled: !!d.digest_enabled, digest_count: (d.digest_count == null || d.digest_count === "") ? 10 : Number(d.digest_count),
             facebook_enabled: !!d.facebook_enabled, facebook_page_id: d.facebook_page_id || "", facebook_page_token: d.facebook_page_token || "",
             linkedin_enabled: !!d.linkedin_enabled, linkedin_token: d.linkedin_token || "", linkedin_author_urn: d.linkedin_author_urn || "",
           }));
@@ -8131,6 +8132,7 @@
         enabled: s.enabled,
         telegram_enabled: s.telegram_enabled, telegram_channel: s.telegram_channel,
         telegram_topics_enabled: s.telegram_topics_enabled, telegram_forum_chat: s.telegram_forum_chat,
+        digest_enabled: s.digest_enabled, digest_count: (s.digest_count === "" ? 10 : Number(s.digest_count)),
         facebook_enabled: s.facebook_enabled, facebook_page_id: s.facebook_page_id, facebook_page_token: s.facebook_page_token,
         linkedin_enabled: s.linkedin_enabled, linkedin_token: s.linkedin_token, linkedin_author_urn: s.linkedin_author_urn,
       }).then(function () { setSaved(true); }).catch(function (e) { alert("Save failed: " + (e && e.message || "Unknown error")); });
@@ -8195,6 +8197,9 @@
 
           {platformCard("telegram_topics", "Telegram — jobs by category topic", "hash",
             fieldRow("Forum group", inp("telegram_forum_chat", "text", "@kramajobforum or -1003880735522"), "A supergroup with Topics enabled where the shared bot is an admin with “Manage Topics”. Each published job is posted into a topic named after its category (created automatically the first time)."))}
+
+          {platformCard("digest", "Telegram — daily jobs digest", "newspaper",
+            fieldRow("Jobs per digest", inp("digest_count", "number", "10"), "Posts one message each morning (08:00 Phnom Penh) to the Telegram channel above, summarising the day's newest jobs. Turns the channel into a daily destination. Skipped on days with no new jobs."))}
 
           {platformCard("facebook", "Facebook Page", "facebook",
             <React.Fragment>

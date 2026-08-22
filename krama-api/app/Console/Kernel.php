@@ -24,6 +24,8 @@ class Kernel extends ConsoleKernel
         $schedule->command('google:index-all')->dailyAt('02:30')->withoutOverlapping();
         $schedule->command('payments:verify-pending')->everyThreeMinutes()->withoutOverlapping();
         $schedule->command('forum:digest')->dailyAt('08:00');
+        // Morning digest of new jobs to the Telegram channel (08:00 Phnom Penh = 01:00 UTC).
+        $schedule->command('telegram:daily-digest')->dailyAt('08:00')->timezone('Asia/Phnom_Penh')->withoutOverlapping();
         $schedule->command('feeds:import')->everySixHours()->withoutOverlapping();
         // Employer careers/ATS feeds → refresh native draft jobs
         $schedule->call(function () {

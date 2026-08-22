@@ -203,6 +203,8 @@ class SettingController extends Controller
             'telegram_topics_enabled' => 'boolean',               // post jobs into per-category forum topics
             'telegram_forum_chat'     => 'nullable|string|max:64', // forum supergroup id (@name or -100…)
             'telegram_topic_map'      => 'nullable|string|max:8000', // JSON category→topic cache (managed by the app)
+            'digest_enabled'      => 'boolean',                    // post a once-a-day jobs digest to the channel
+            'digest_count'        => 'nullable|integer|min:1|max:25',
             'facebook_enabled'    => 'boolean',
             'facebook_page_id'    => 'nullable|string|max:64',
             'facebook_page_token' => 'nullable|string|max:512',
