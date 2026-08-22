@@ -4239,6 +4239,42 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         setPushState("default");
       });
     }
+
+    // ── AI profile match (opt-in) ───────────────────────────────────────────
+    // A single "ai"-type alert: when on, new jobs are AI-scored against the
+    // candidate's résumé and strong matches are notified — even with no filters set.
+    var [aiSaving, setAiSaving] = React.useState(false);
+    function toggleAiMatch() {
+      var existing = alerts.find(function (a) {
+        return a.type === "ai";
+      });
+      setAiSaving(true);
+      if (existing) {
+        cand.deleteAlert(existing.id).then(function () {
+          setAlerts(function (p) {
+            return p.filter(function (a) {
+              return a.id !== existing.id;
+            });
+          });
+          setAiSaving(false);
+        }).catch(function (e) {
+          alert(e.message || "Failed to update.");
+          setAiSaving(false);
+        });
+      } else {
+        cand.createAlert({
+          type: "ai"
+        }).then(function (r) {
+          setAlerts(function (p) {
+            return [r.data].concat(p);
+          });
+          setAiSaving(false);
+        }).catch(function (e) {
+          alert(e.message || "Failed to update.");
+          setAiSaving(false);
+        });
+      }
+    }
     var JOB_TYPES = [{
       value: "",
       label: "Any type"
@@ -4288,6 +4324,15 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         color: "var(--danger)"
       }
     }, error);
+
+    // The "ai"-type row is the profile-match opt-in, shown as its own toggle — keep it
+    // out of the saved-search list and the 10-alert cap.
+    var aiAlert = alerts.find(function (a) {
+      return a.type === "ai";
+    });
+    var filterAlerts = alerts.filter(function (a) {
+      return a.type !== "ai";
+    });
     return /*#__PURE__*/React.createElement("div", {
       className: "krm-page-pad",
       style: {
@@ -4319,14 +4364,64 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         color: "var(--text-muted)",
         marginTop: 2
       }
-    }, T("Get an email the moment a matching role is posted. Up to 10 alerts."))), alerts.length < 10 && alerts.length > 0 && /*#__PURE__*/React.createElement(Button, {
+    }, T("Get an email the moment a matching role is posted. Up to 10 alerts."))), filterAlerts.length < 10 && filterAlerts.length > 0 && /*#__PURE__*/React.createElement(Button, {
       variant: "primary",
       size: "sm",
       onClick: function () {
         setShowForm(!showForm);
         setFormErr("");
       }
-    }, showForm ? T("Cancel") : T("+ New alert"))), pushState !== "unsupported" && pushState !== "checking" && /*#__PURE__*/React.createElement(Card, {
+    }, showForm ? T("Cancel") : T("+ New alert"))), /*#__PURE__*/React.createElement(Card, {
+      style: {
+        marginBottom: 20,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 14,
+        flexWrap: "wrap",
+        borderColor: aiAlert ? "var(--brand)" : undefined
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        alignItems: "center",
+        gap: 12
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: 40,
+        height: 40,
+        borderRadius: "var(--radius-md)",
+        background: "var(--brand-subtle)",
+        color: "var(--brand)",
+        flexShrink: 0
+      }
+    }, I("sparkles", 20)), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontWeight: 700,
+        fontSize: "var(--text-base)",
+        color: "var(--text-strong)"
+      }
+    }, T("Match me by my profile (AI)")), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: "var(--text-sm)",
+        color: "var(--text-muted)",
+        marginTop: 2
+      }
+    }, aiAlert ? T("On — we'll alert you when a new job strongly fits your résumé, even without a saved filter.") : T("Let AI read your résumé and alert you when a new job is a strong match. Keep your résumé up to date.")))), aiAlert ? /*#__PURE__*/React.createElement(Button, {
+      variant: "secondary",
+      size: "sm",
+      disabled: aiSaving,
+      onClick: toggleAiMatch
+    }, aiSaving ? T("Saving…") : T("Turn off")) : /*#__PURE__*/React.createElement(Button, {
+      variant: "primary",
+      size: "sm",
+      disabled: aiSaving,
+      onClick: toggleAiMatch
+    }, aiSaving ? T("Saving…") : T("Turn on"))), pushState !== "unsupported" && pushState !== "checking" && /*#__PURE__*/React.createElement(Card, {
       style: {
         marginBottom: 20,
         display: "flex",
@@ -4482,17 +4577,17 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       variant: "primary",
       size: "sm",
       disabled: saving
-    }, saving ? T("Saving…") : T("Save alert")))), alerts.length === 0 && !showForm && /*#__PURE__*/React.createElement(EmptyState, {
+    }, saving ? T("Saving…") : T("Save alert")))), filterAlerts.length === 0 && !showForm && /*#__PURE__*/React.createElement(EmptyState, {
       icon: I("bell", 28),
       title: T("No job alerts yet"),
       description: T("Create an alert and we'll email you when a matching role is posted.")
-    }), alerts.length > 0 && /*#__PURE__*/React.createElement("div", {
+    }), filterAlerts.length > 0 && /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
         flexDirection: "column",
         gap: 10
       }
-    }, alerts.map(function (a) {
+    }, filterAlerts.map(function (a) {
       return /*#__PURE__*/React.createElement(Card, {
         key: a.id,
         style: {

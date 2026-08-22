@@ -21,6 +21,7 @@ class JobAlertController extends Controller
             ->map(function ($a) {
                 return [
                     'id'          => $a->id,
+                    'type'        => $a->type ?: 'filter',
                     'keyword'     => $a->keyword,
                     'category'    => $a->category ? ['id' => $a->category->id, 'name' => $a->category->name] : null,
                     'location'    => $a->location ? ['id' => $a->location->id, 'name' => $a->location->name] : null,
@@ -39,7 +40,29 @@ class JobAlertController extends Controller
         $this->requirePermission('save_jobs');
         $user = Auth::user();
 
-        if (JobAlert::where('candidate_id', $user->id)->count() >= 10) {
+        $type = $request->input('type') === 'ai' ? 'ai' : 'filter';
+
+        // 'ai' = "Match me by my profile" opt-in: no filters, one per candidate, and it
+        // doesn't count against the saved-search alert cap.
+        if ($type === 'ai') {
+            $existing = JobAlert::where('candidate_id', $user->id)->where('type', 'ai')->first();
+            if ($existing) {
+                return response()->json([
+                    'message' => 'AI profile matching is already on.',
+                    'data'    => ['id' => $existing->id, 'type' => 'ai'],
+                ], 200);
+            }
+
+            $alert = JobAlert::create(['candidate_id' => $user->id, 'type' => 'ai']);
+            $alert->refresh();
+
+            return response()->json([
+                'message' => 'AI profile matching is on.',
+                'data'    => ['id' => $alert->id, 'type' => 'ai', 'created_at' => $alert->created_at],
+            ], 201);
+        }
+
+        if (JobAlert::where('candidate_id', $user->id)->where('type', '!=', 'ai')->count() >= 10) {
             return response()->json(['message' => 'You can have at most 10 active job alerts.'], 422);
         }
 
@@ -57,7 +80,7 @@ class JobAlertController extends Controller
             return response()->json(['message' => 'Please set at least one filter for the alert.'], 422);
         }
 
-        $alert = JobAlert::create(array_merge($data, ['candidate_id' => $user->id]));
+        $alert = JobAlert::create(array_merge($data, ['candidate_id' => $user->id, 'type' => 'filter']));
         // Model has $timestamps=false and the table fills created_at via ->useCurrent(),
         // so the in-memory instance has no created_at until re-read from the DB.
         $alert->refresh();

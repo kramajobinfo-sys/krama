@@ -10,6 +10,7 @@ class JobAlert extends Model
 
     protected $fillable = [
         'candidate_id',
+        'type',
         'keyword',
         'category_id',
         'location_id',

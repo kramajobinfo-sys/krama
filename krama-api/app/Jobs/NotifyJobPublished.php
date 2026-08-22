@@ -54,20 +54,31 @@ class NotifyJobPublished implements ShouldQueue
             Log::warning('Social post failed for job ' . $job->id . ': ' . $e->getMessage());
         }
 
+        // Track everyone already notified so the AI-match pass never double-pings a
+        // candidate who also matched a saved-search alert or follows the company.
+        $notified = [];
+
         try {
-            $this->sendJobAlertEmails($job);
+            foreach ($this->sendJobAlertEmails($job) as $id) $notified[$id] = true;
         } catch (\Throwable $e) {
             Log::warning('Job alert emails failed for job ' . $job->id . ': ' . $e->getMessage());
         }
 
         try {
-            $this->sendFollowerEmails($job);
+            foreach ($this->sendFollowerEmails($job) as $id) $notified[$id] = true;
         } catch (\Throwable $e) {
             Log::warning('Follower emails failed for job ' . $job->id . ': ' . $e->getMessage());
         }
+
+        try {
+            $this->sendAiMatchAlerts($job, $notified);
+        } catch (\Throwable $e) {
+            Log::warning('AI-match alerts failed for job ' . $job->id . ': ' . $e->getMessage());
+        }
     }
 
-    private function sendFollowerEmails(Job $job): void
+    /** @return int[] candidate ids notified */
+    private function sendFollowerEmails(Job $job): array
     {
         $job->loadMissing(['company:id,name', 'location:id,name']);
 
@@ -77,7 +88,7 @@ class NotifyJobPublished implements ShouldQueue
             ->select('users.id', 'users.name', 'users.email', 'users.telegram_chat_id')
             ->get();
 
-        if ($followers->isEmpty()) return;
+        if ($followers->isEmpty()) return [];
 
         $mailOk = MailConfig::isConfigured();
         if ($mailOk) MailConfig::applyFromDb();
@@ -117,13 +128,17 @@ class NotifyJobPublished implements ShouldQueue
                 'icon'  => '/krama/assets/icon-192.png',
             ]);
         }
+
+        return $followers->pluck('id')->map(fn ($v) => (int) $v)->all();
     }
 
-    private function sendJobAlertEmails(Job $job): void
+    /** @return int[] candidate ids notified */
+    private function sendJobAlertEmails(Job $job): array
     {
         $job->loadMissing(['category:id,name', 'location:id,name', 'company:id,name']);
 
         $alerts = JobAlert::with('candidate:id,name,email,telegram_chat_id')
+            ->where('type', 'filter')  // 'ai' rows carry no filters — handled by sendAiMatchAlerts()
             ->where(function ($q) use ($job) {
                 $q->whereNull('category_id')->orWhere('category_id', $job->category_id);
             })
@@ -142,7 +157,7 @@ class NotifyJobPublished implements ShouldQueue
             })
             ->get();
 
-        if ($alerts->isEmpty()) return;
+        if ($alerts->isEmpty()) return [];
 
         $mailOk = MailConfig::isConfigured();
         if ($mailOk) MailConfig::applyFromDb();
@@ -187,6 +202,141 @@ class NotifyJobPublished implements ShouldQueue
                 'icon'  => '/krama/assets/icon-192.png',
             ]);
         }
+
+        return array_map('intval', array_keys($seen));
+    }
+
+    // ---- AI profile matching -------------------------------------------------
+
+    // Candidates AI-scored per publish (a cheap deterministic pre-filter ranks the
+    // opted-in pool down to this many, so one AI batch call covers a whole publish).
+    private const AI_POOL_MAX = 12;
+    // AI score (0-100) at or above which we notify.
+    private const AI_SCORE_THRESHOLD = 70;
+
+    /**
+     * "Match me by my profile (AI)": notify opted-in candidates whose résumé the AI
+     * scores as a strong fit for this job — even when no saved-search filter matched.
+     *
+     * Cost control: opt-in only, a free deterministic pre-filter trims to AI_POOL_MAX,
+     * ONE batched AI call scores the shortlist, and a per-day cap (Setting ai_match/daily_cap)
+     * caps spend so a burst of publishes can't exhaust the provider's free quota.
+     *
+     * @param array<int,bool> $alreadyNotified candidate ids already pinged this publish
+     */
+    private function sendAiMatchAlerts(Job $job, array $alreadyNotified): void
+    {
+        $optIns = JobAlert::with('candidate:id,name,email,telegram_chat_id')
+            ->where('type', 'ai')
+            ->get()
+            ->filter(fn ($a) => $a->candidate && ! isset($alreadyNotified[$a->candidate->id]))
+            ->keyBy(fn ($a) => (int) $a->candidate->id);
+
+        if ($optIns->isEmpty()) return;
+
+        // Primary (else latest) résumé per opted-in candidate — skip empty résumés.
+        $resumes = \App\Models\Resume::whereIn('candidate_id', $optIns->keys()->all())
+            ->orderByDesc('is_primary')->orderByDesc('id')
+            ->get()
+            ->filter(fn ($r) => trim((string) $r->headline) !== '' || trim((string) $r->summary) !== '')
+            ->unique('candidate_id')   // first per candidate wins (primary, then newest)
+            ->values();
+
+        if ($resumes->isEmpty()) return;
+
+        // Pseudo-résumé standing in for the job, so we can reuse the CV↔CV matcher.
+        $ref = new \App\Models\Resume([
+            'headline' => (string) $job->title,
+            'summary'  => mb_substr(trim(strip_tags((string) $job->description . ' ' . (string) $job->requirements)), 0, 1500),
+        ]);
+
+        // Free deterministic pre-filter → keep the strongest AI_POOL_MAX for the AI batch.
+        $pool = $resumes
+            ->sortByDesc(fn ($r) => \App\Services\CvMatchService::score($ref, $r)['score'])
+            ->take(self::AI_POOL_MAX)
+            ->values();
+
+        // Per-day budget guard — one AI call per publish, capped per day.
+        if (! $this->consumeAiBudget()) {
+            Log::info('AI-match skipped for job ' . $job->id . ': daily AI budget reached.');
+            return;
+        }
+
+        ['provider' => $provider, 'apiKey' => $apiKey, 'model' => $model] = \App\Services\AiConfig::resolve();
+        if ($apiKey === '') return;
+
+        $scores = \App\Services\CvMatchService::scoreAiProvider($provider, $ref, $pool, $apiKey, $model);
+        // Guard against a model returning ids outside the batch.
+        $scores = array_intersect_key($scores, $pool->keyBy('id')->all());
+
+        $mailOk = MailConfig::isConfigured();
+        if ($mailOk) MailConfig::applyFromDb();
+
+        $jobUrl       = SocialPostService::jobUrl($job);
+        $locationName = $job->location->name ?? '';
+        $jobType      = $job->job_type ?? 'full_time';
+        $companyName  = $job->company->name ?? '';
+
+        foreach ($pool as $resume) {
+            $score = $scores[$resume->id]['score'] ?? 0;
+            if ($score < self::AI_SCORE_THRESHOLD) continue;
+
+            $candidate = $optIns->get((int) $resume->candidate_id);
+            if (! $candidate || ! $candidate->candidate) continue;
+            $candidate = $candidate->candidate;
+
+            if ($mailOk && $candidate->email) {
+                try {
+                    [$subject, $html] = EmailTemplates::jobAlertMatch(
+                        $candidate->name, $job->title, $companyName, $locationName, $jobType, $jobUrl
+                    );
+                    Mail::html($html, fn ($m) => $m->to($candidate->email, $candidate->name)->subject($subject));
+                } catch (\Exception $e) {
+                    Log::warning("AI-match email failed for candidate {$candidate->id}: " . $e->getMessage());
+                }
+            }
+            if (! empty($candidate->telegram_chat_id)) {
+                try {
+                    TelegramService::notifyChat($candidate->telegram_chat_id,
+                        $this->alertTelegramText($job, $companyName, $locationName, $jobType, $jobUrl, false));
+                } catch (\Throwable $e) {
+                    Log::warning("AI-match Telegram failed for candidate {$candidate->id}: " . $e->getMessage());
+                }
+            }
+            WebPushService::sendToUser((int) $candidate->id, [
+                'title' => '✨ A new job fits your profile',
+                'body'  => $job->title . ($companyName ? ' — ' . $companyName : ''),
+                'url'   => $jobUrl,
+                'icon'  => '/krama/assets/icon-192.png',
+            ]);
+        }
+    }
+
+    /**
+     * Increment today's AI-match call counter and return whether this call is within
+     * the daily cap. Cap lives in Setting ai_match/daily_cap (default 30); the counter
+     * resets when the stored date rolls over. Free-tier Gemini has a small daily quota,
+     * so this stops a publish storm from burning it — see [[project-ai-provider-keys]].
+     */
+    private function consumeAiBudget(): bool
+    {
+        $today = now()->toDateString();
+        $rows  = \App\Models\Setting::where('group', 'ai_match')->pluck('value', 'key')->all();
+
+        $cap = (int) ($rows['daily_cap'] ?? 30);
+        if ($cap <= 0) $cap = 30;
+
+        $count = ($rows['count_date'] ?? '') === $today ? (int) ($rows['count'] ?? 0) : 0;
+        if ($count >= $cap) return false;
+
+        \App\Models\Setting::updateOrInsert(
+            ['group' => 'ai_match', 'key' => 'count_date'], ['value' => $today]
+        );
+        \App\Models\Setting::updateOrInsert(
+            ['group' => 'ai_match', 'key' => 'count'], ['value' => (string) ($count + 1)]
+        );
+
+        return true;
     }
 
     // Compact HTML message for a Telegram job-alert / followed-company DM (sent HTML parse mode).

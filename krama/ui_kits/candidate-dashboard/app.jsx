@@ -1718,6 +1718,26 @@
       }).catch(function () { setPushState("default"); });
     }
 
+    // ── AI profile match (opt-in) ───────────────────────────────────────────
+    // A single "ai"-type alert: when on, new jobs are AI-scored against the
+    // candidate's résumé and strong matches are notified — even with no filters set.
+    var [aiSaving, setAiSaving] = React.useState(false);
+    function toggleAiMatch() {
+      var existing = alerts.find(function (a) { return a.type === "ai"; });
+      setAiSaving(true);
+      if (existing) {
+        cand.deleteAlert(existing.id).then(function () {
+          setAlerts(function (p) { return p.filter(function (a) { return a.id !== existing.id; }); });
+          setAiSaving(false);
+        }).catch(function (e) { alert(e.message || "Failed to update."); setAiSaving(false); });
+      } else {
+        cand.createAlert({ type: "ai" }).then(function (r) {
+          setAlerts(function (p) { return [r.data].concat(p); });
+          setAiSaving(false);
+        }).catch(function (e) { alert(e.message || "Failed to update."); setAiSaving(false); });
+      }
+    }
+
     var JOB_TYPES = [{ value: "", label: "Any type" }, { value: "full_time", label: "Full-time" }, { value: "part_time", label: "Part-time" }, { value: "contract", label: "Contract" }, { value: "internship", label: "Internship" }];
     var REMOTE_OPTS = [{ value: "", label: "Any" }, { value: "1", label: "Remote only" }, { value: "0", label: "On-site / hybrid" }];
 
@@ -1734,6 +1754,11 @@
     if (loading) return <div className="krm-page-pad" style={{ padding: 28, color: "var(--text-muted)" }}>{T("Loading…")}</div>;
     if (error) return <div className="krm-page-pad" style={{ padding: 28, color: "var(--danger)" }}>{error}</div>;
 
+    // The "ai"-type row is the profile-match opt-in, shown as its own toggle — keep it
+    // out of the saved-search list and the 10-alert cap.
+    var aiAlert = alerts.find(function (a) { return a.type === "ai"; });
+    var filterAlerts = alerts.filter(function (a) { return a.type !== "ai"; });
+
     return (
       <div className="krm-page-pad" style={{ padding: 28 }}>
         <div style={{ maxWidth: 740 }}>
@@ -1745,12 +1770,30 @@
             <div style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: "var(--text-lg)", color: "var(--text-strong)" }}>{T("Your job alerts")}</div>
             <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginTop: 2 }}>{T("Get an email the moment a matching role is posted. Up to 10 alerts.")}</div>
           </div>
-          {alerts.length < 10 && alerts.length > 0 && (
+          {filterAlerts.length < 10 && filterAlerts.length > 0 && (
             <Button variant="primary" size="sm" onClick={function(){ setShowForm(!showForm); setFormErr(""); }}>
               {showForm ? T("Cancel") : T("+ New alert")}
             </Button>
           )}
         </div>
+
+        {/* AI profile match — opt-in. Notifies when a new job strongly fits the candidate's résumé. */}
+        <Card style={{ marginBottom: 20, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14, flexWrap: "wrap", borderColor: aiAlert ? "var(--brand)" : undefined }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 40, height: 40, borderRadius: "var(--radius-md)", background: "var(--brand-subtle)", color: "var(--brand)", flexShrink: 0 }}>{I("sparkles", 20)}</span>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: "var(--text-base)", color: "var(--text-strong)" }}>{T("Match me by my profile (AI)")}</div>
+              <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginTop: 2 }}>
+                {aiAlert
+                  ? T("On — we'll alert you when a new job strongly fits your résumé, even without a saved filter.")
+                  : T("Let AI read your résumé and alert you when a new job is a strong match. Keep your résumé up to date.")}
+              </div>
+            </div>
+          </div>
+          {aiAlert
+            ? <Button variant="secondary" size="sm" disabled={aiSaving} onClick={toggleAiMatch}>{aiSaving ? T("Saving…") : T("Turn off")}</Button>
+            : <Button variant="primary" size="sm" disabled={aiSaving} onClick={toggleAiMatch}>{aiSaving ? T("Saving…") : T("Turn on")}</Button>}
+        </Card>
 
         {/* Push notifications on this device (installable PWA). Hidden where unsupported. */}
         {pushState !== "unsupported" && pushState !== "checking" && (
@@ -1817,12 +1860,12 @@
           </Card>
         )}
 
-        {alerts.length === 0 && !showForm && (
+        {filterAlerts.length === 0 && !showForm && (
           <EmptyState icon={I("bell", 28)} title={T("No job alerts yet")} description={T("Create an alert and we'll email you when a matching role is posted.")} />
         )}
-        {alerts.length > 0 && (
+        {filterAlerts.length > 0 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {alerts.map(function(a) {
+            {filterAlerts.map(function(a) {
               return (
                 <Card key={a.id} style={{ display: "flex", alignItems: "center", gap: 16 }}>
                   <div style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--brand-subtle)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
