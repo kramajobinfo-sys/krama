@@ -233,8 +233,8 @@ mount();
     // iOS share glyph (square with up arrow).
     var SHARE = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#0C7E6B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin:0 3px"><path d="M12 3v13"/><path d="M8 7l4-4 4 4"/><path d="M20 14v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-5"/></svg>';
 
-    // Downward chevron for the arrow that points at Safari's Share button (bottom toolbar).
-    var CHEVRON = '<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#0C7E6B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 2px 5px rgba(0,0,0,.3))"><path d="M12 5v14"/><path d="M6 13l6 6 6-6"/></svg>';
+    // Downward chevron that hangs beneath the banner, nudging toward Safari's Share button.
+    var CHEVRON = '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#0C7E6B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 2px 5px rgba(0,0,0,.28))"><path d="M12 5v14"/><path d="M6 13l6 6 6-6"/></svg>';
 
     var show = function(){
       if (document.getElementById('krm-a2hs')) return;
@@ -250,8 +250,8 @@ mount();
       bar.id = 'krm-a2hs';
       bar.setAttribute('role', 'dialog');
       bar.setAttribute('aria-label', t.title);
-      // Sits above the arrow (which points down at the toolbar).
-      bar.style.cssText = 'position:fixed;left:12px;right:12px;bottom:calc(96px + env(safe-area-inset-bottom));z-index:2147483000;max-width:440px;margin:0 auto;background:#ffffff;color:#1C1B17;border:1px solid #e5e7eb;border-radius:16px;box-shadow:0 8px 30px rgba(16,24,40,.18);padding:12px 14px;display:flex;align-items:center;gap:12px;font-family:-apple-system,BlinkMacSystemFont,\'Plus Jakarta Sans\',sans-serif;transform:translateY(160%);transition:transform .35s cubic-bezier(.22,1,.36,1)';
+      // Lifted well clear of the site's 56px bottom nav bar so nothing feels crowded.
+      bar.style.cssText = 'position:fixed;left:12px;right:12px;bottom:calc(104px + env(safe-area-inset-bottom));z-index:2147483000;max-width:440px;margin:0 auto;background:#ffffff;color:#1C1B17;border:1px solid #e5e7eb;border-radius:16px;box-shadow:0 8px 30px rgba(16,24,40,.18);padding:12px 14px;display:flex;align-items:center;gap:12px;font-family:-apple-system,BlinkMacSystemFont,\'Plus Jakarta Sans\',sans-serif;transform:translateY(200%);transition:transform .35s cubic-bezier(.22,1,.36,1)';
       bar.innerHTML =
         '<img src="/krama/assets/icon-192.png" alt="" width="40" height="40" style="border-radius:10px;flex:0 0 auto"/>' +
         '<div style="flex:1;min-width:0;line-height:1.4">' +
@@ -260,20 +260,19 @@ mount();
         '</div>' +
         '<button aria-label="' + t.close + '" style="flex:0 0 auto;border:none;background:transparent;color:#9ca3af;font-size:22px;line-height:1;cursor:pointer;padding:4px 6px">×</button>';
 
-      // Animated arrow pointing down at Safari's Share button (bottom-centre toolbar).
-      var arrow = document.createElement('div');
-      arrow.id = 'krm-a2hs-arrow';
-      arrow.style.cssText = 'position:fixed;left:50%;bottom:calc(8px + env(safe-area-inset-bottom));z-index:2147483000;pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:3px;opacity:0;transition:opacity .4s ease;animation:krmA2hsBounce 1.2s ease-in-out infinite';
-      arrow.innerHTML = '<span style="font-size:11px;font-weight:800;color:#0B6557;background:#fff;padding:2px 9px;border-radius:999px;box-shadow:0 2px 8px rgba(0,0,0,.18);white-space:nowrap">Share</span>' + CHEVRON;
+      // A slim down-chevron hangs beneath the banner (grouped with it, not floating over the
+      // nav) — a gentle "look to the Share button below" cue. Absolute inside the fixed bar.
+      var chev = document.createElement('div');
+      chev.style.cssText = 'position:absolute;left:50%;bottom:-30px;transform:translateX(-50%);pointer-events:none;animation:krmA2hsBounce 1.2s ease-in-out infinite';
+      chev.innerHTML = CHEVRON;
+      bar.appendChild(chev);
 
       document.body.appendChild(bar);
-      document.body.appendChild(arrow);
-      requestAnimationFrame(function(){ bar.style.transform = 'translateY(0)'; arrow.style.opacity = '1'; });
+      requestAnimationFrame(function(){ bar.style.transform = 'translateY(0)'; });
       var dismiss = function(){
         try { localStorage.setItem(KEY, String(Date.now())); } catch(e){}
-        bar.style.transform = 'translateY(160%)';
-        arrow.style.opacity = '0';
-        setTimeout(function(){ if (bar.parentNode) bar.parentNode.removeChild(bar); if (arrow.parentNode) arrow.parentNode.removeChild(arrow); }, 400);
+        bar.style.transform = 'translateY(200%)';
+        setTimeout(function(){ if (bar.parentNode) bar.parentNode.removeChild(bar); }, 400);
       };
       bar.querySelector('button').addEventListener('click', dismiss);
     };
