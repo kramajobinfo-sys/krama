@@ -384,7 +384,14 @@
       <div>
         <div style={{ fontWeight: 700, color: "var(--text-on-dark)", fontSize: "var(--text-sm)", marginBottom: 12 }}>{t(title)}</div>
         <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
-          {items.map(([label, target]) => <a key={label} href="#" onClick={go(target)} style={{ color: "var(--text-on-dark-mut)", fontSize: "var(--text-sm)", cursor: "pointer", textDecoration: "none" }}>{t(label)}</a>)}
+          {items.map(([label, target]) => {
+            // A target starting with "/" is a real server route (e.g. the /salary SEO page),
+            // not an SPA view — render a plain link instead of in-app navigation.
+            const isUrl = typeof target === "string" && target.charAt(0) === "/";
+            return isUrl
+              ? <a key={label} href={target} style={{ color: "var(--text-on-dark-mut)", fontSize: "var(--text-sm)", textDecoration: "none" }}>{t(label)}</a>
+              : <a key={label} href="#" onClick={go(target)} style={{ color: "var(--text-on-dark-mut)", fontSize: "var(--text-sm)", cursor: "pointer", textDecoration: "none" }}>{t(label)}</a>;
+          })}
         </div>
       </div>
     );
@@ -423,7 +430,7 @@
               </div>
             ) : null}
           </div>
-          {col("For candidates", [["Find jobs", "jobs"], ["Build résumé", "register"], ["Saved jobs", "login"], ["Community", "community"]])}
+          {col("For candidates", [["Find jobs", "jobs"], ["Salary guide", "/salary"], ["Build résumé", "register"], ["Community", "community"]])}
           {col("Employers", [["Employers", "employers"], ["Post a job", "register"], ["Pricing", "pricing"], ["Companies", "companies"]])}
           {col("Company", [["About us", "about"], ["Contact", "contact"], ["Terms", "terms"], ["Privacy", "privacy"]])}
         </div>

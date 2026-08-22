@@ -124,6 +124,7 @@
       <a href="{{ url('/') }}">Home</a>
       <a href="{{ $go('jobs') }}">Find jobs</a>
       <a href="{{ $go('companies') }}">Companies</a>
+      <a href="{{ url('/salary') }}">Salary guide</a>
       <a href="{{ $go('community') }}">Community</a>
       <a href="{{ $go('employers') }}">Employers</a>
     </nav>
@@ -153,8 +154,8 @@
         <div class="foot-col-title">For candidates</div>
         <div class="foot-links">
           <a href="{{ $go('jobs') }}">Find jobs</a>
+          <a href="{{ url('/salary') }}">Salary guide</a>
           <a href="{{ $go('register') }}">Build résumé</a>
-          <a href="{{ $go('login') }}">Saved jobs</a>
           <a href="{{ $go('community') }}">Community</a>
         </div>
       </div>

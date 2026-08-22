@@ -946,17 +946,30 @@
         flexDirection: "column",
         gap: 9
       }
-    }, items.map(([label, target]) => /*#__PURE__*/React.createElement("a", {
-      key: label,
-      href: "#",
-      onClick: go(target),
-      style: {
-        color: "var(--text-on-dark-mut)",
-        fontSize: "var(--text-sm)",
-        cursor: "pointer",
-        textDecoration: "none"
-      }
-    }, t(label)))));
+    }, items.map(([label, target]) => {
+      // A target starting with "/" is a real server route (e.g. the /salary SEO page),
+      // not an SPA view — render a plain link instead of in-app navigation.
+      const isUrl = typeof target === "string" && target.charAt(0) === "/";
+      return isUrl ? /*#__PURE__*/React.createElement("a", {
+        key: label,
+        href: target,
+        style: {
+          color: "var(--text-on-dark-mut)",
+          fontSize: "var(--text-sm)",
+          textDecoration: "none"
+        }
+      }, t(label)) : /*#__PURE__*/React.createElement("a", {
+        key: label,
+        href: "#",
+        onClick: go(target),
+        style: {
+          color: "var(--text-on-dark-mut)",
+          fontSize: "var(--text-sm)",
+          cursor: "pointer",
+          textDecoration: "none"
+        }
+      }, t(label));
+    })));
     return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(FooterBanner, {
       onNav: onNav
     }), /*#__PURE__*/React.createElement("footer", {
@@ -1077,7 +1090,7 @@
       fill: "currentColor"
     }, /*#__PURE__*/React.createElement("path", {
       d: "M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"
-    }))) : null) : null), col("For candidates", [["Find jobs", "jobs"], ["Build résumé", "register"], ["Saved jobs", "login"], ["Community", "community"]]), col("Employers", [["Employers", "employers"], ["Post a job", "register"], ["Pricing", "pricing"], ["Companies", "companies"]]), col("Company", [["About us", "about"], ["Contact", "contact"], ["Terms", "terms"], ["Privacy", "privacy"]])), /*#__PURE__*/React.createElement("div", {
+    }))) : null) : null), col("For candidates", [["Find jobs", "jobs"], ["Salary guide", "/salary"], ["Build résumé", "register"], ["Community", "community"]]), col("Employers", [["Employers", "employers"], ["Post a job", "register"], ["Pricing", "pricing"], ["Companies", "companies"]]), col("Company", [["About us", "about"], ["Contact", "contact"], ["Terms", "terms"], ["Privacy", "privacy"]])), /*#__PURE__*/React.createElement("div", {
       className: "krm-footer-bottom",
       style: {
         position: "relative",

@@ -5,6 +5,7 @@ use App\Http\Controllers\SeoController;
 
 // ── SEO: server-rendered, crawlable pages for search engines + Google for Jobs ──
 Route::get('/sitemap.xml',           [SeoController::class, 'sitemap']);
+Route::get('/salary',                [SeoController::class, 'salaryGuide']);
 Route::get('/privacy',               [SeoController::class, 'privacy']);
 Route::get('/terms',                 [SeoController::class, 'terms']);
 Route::get('/jobs/{slug}/og.png',    [SeoController::class, 'jobOg']);

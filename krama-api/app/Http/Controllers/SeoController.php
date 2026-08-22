@@ -126,6 +126,39 @@ class SeoController extends Controller
         return view('seo.company', compact('company', 'jobs', 'canonical', 'metaDesc', 'ld'));
     }
 
+    /**
+     * GET /salary — the Cambodia Salary Guide: median monthly pay by category and
+     * experience level, aggregated from live published listings. A crawlable, uniquely
+     * Krama data asset (schema.org Dataset) that answers high-intent "salary" queries.
+     */
+    public function salaryGuide()
+    {
+        $data = Cache::remember('seo.salary_guide.v1', 3600, fn () => app(\App\Services\SalaryGuideService::class)->build());
+
+        $canonical = url('/salary');
+        // Until there's a credible sample the page is a no-index "compiling…" state — we don't
+        // want Google ranking (or users trusting) a median built from a handful of listings.
+        $robots = ($data['sufficient'] ?? false) ? 'index, follow, max-image-preview:large' : 'noindex, follow';
+        $metaDesc = ($data['sufficient'] ?? false)
+            ? 'Cambodia salary guide — median monthly pay by job category and experience level, from '
+                . number_format($data['total']) . ' live listings on Krama. Updated ' . $data['generated_at']->toFormattedDateString() . '.'
+            : 'Cambodia salary insights, compiled from live job listings on Krama. Coming soon.';
+
+        $ld = [
+            '@context'    => 'https://schema.org',
+            '@type'       => 'Dataset',
+            'name'        => 'Cambodia Salary Guide',
+            'description' => 'Median and typical monthly salary ranges across job categories and experience levels in Cambodia, aggregated from live job listings on Krama.',
+            'url'         => $canonical,
+            'creator'     => ['@type' => 'Organization', 'name' => 'Krama'],
+            'dateModified' => $data['generated_at']->toDateString(),
+            'spatialCoverage' => ['@type' => 'Place', 'name' => 'Cambodia'],
+            'measurementTechnique' => 'Median monthly salary from published job listings, normalised to USD/month.',
+        ];
+
+        return view('seo.salary', compact('data', 'canonical', 'metaDesc', 'ld', 'robots'));
+    }
+
     /** GET /privacy — server-rendered Privacy Policy (public, crawlable; used for Facebook app review). */
     public function privacy()
     {
@@ -200,6 +233,12 @@ class SeoController extends Controller
     {
         $urls = [];
         $urls[] = ['loc' => url('/'), 'priority' => '1.0'];
+
+        // Only advertise the salary guide once it has real numbers (see salaryGuide()).
+        $salary = Cache::get('seo.salary_guide.v1');
+        if ($salary && ($salary['sufficient'] ?? false)) {
+            $urls[] = ['loc' => url('/salary'), 'lastmod' => now()->toDateString(), 'priority' => '0.7'];
+        }
 
         Job::where('status', 'published')->select('slug', 'updated_at')->orderByDesc('updated_at')->chunk(500, function ($chunk) use (&$urls) {
             foreach ($chunk as $j) {
