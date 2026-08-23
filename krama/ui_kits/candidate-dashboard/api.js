@@ -29,13 +29,26 @@ var cand = (function () {
     return _refreshing;
   }
 
+  // Retry transient origin failures (Cloudflare 520–524 / 502–504 / network drop) for GET
+  // only, so a brief origin blip self-heals instead of surfacing an error. Never retries
+  // non-GET (avoids double-submits). Backoff: ~0.5s, ~1s.
+  function rfetch(url, opts, tries) {
+    tries = tries || 3;
+    var isGet = !opts || !opts.method || opts.method === "GET";
+    var again = function () { return new Promise(function (res) { setTimeout(res, 500 * (4 - tries)); }).then(function () { return rfetch(url, opts, tries - 1); }); };
+    return fetch(url, opts).then(function (r) {
+      if (isGet && tries > 1 && r.status >= 502 && r.status <= 599) return again();
+      return r;
+    }).catch(function (e) { if (isGet && tries > 1) return again(); throw e; });
+  }
+
   function req(method, path, body, _retried) {
     var opts = {
       method: method,
       headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token() },
     };
     if (body !== undefined) opts.body = JSON.stringify(body);
-    return fetch(BASE + path, opts).then(function (r) {
+    return rfetch(BASE + path, opts).then(function (r) {
       // Access token expired → refresh once and replay the request.
       if (r.status === 401 && !_retried) {
         return refreshToken().then(function () { return req(method, path, body, true); });

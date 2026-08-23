@@ -19,10 +19,23 @@
   }
 
   // ── Raw fetch helpers ────────────────────────────────────────────────────
+  // Retry transient origin failures (Cloudflare 520–524 / 502–504 / network drop) for GET
+  // only, so a brief origin blip self-heals instead of showing a broken landing. Never
+  // retries non-GET (avoids double-submits). Backoff ~0.5s, ~1s.
+  function rfetch(url, opts, tries) {
+    tries = tries || 3;
+    var isGet = !opts || !opts.method || opts.method === "GET";
+    var again = function () { return new Promise(function (res) { setTimeout(res, 500 * (4 - tries)); }).then(function () { return rfetch(url, opts, tries - 1); }); };
+    return fetch(url, opts).then(function (r) {
+      if (isGet && tries > 1 && r.status >= 502 && r.status <= 599) return again();
+      return r;
+    }).catch(function (e) { if (isGet && tries > 1) return again(); throw e; });
+  }
+
   function apiFetch(method, path, body, token) {
     var headers = { "Content-Type": "application/json" };
     if (token) headers["Authorization"] = "Bearer " + token;
-    return fetch(BASE + path, {
+    return rfetch(BASE + path, {
       method: method,
       headers: headers,
       body: body ? JSON.stringify(body) : undefined,
@@ -61,7 +74,7 @@
     var headers = { "Content-Type": "application/json" };
     var tok = getToken();
     if (tok) headers["Authorization"] = "Bearer " + tok;
-    return fetch(BASE + path, {
+    return rfetch(BASE + path, {
       method: method,
       headers: headers,
       body: body ? JSON.stringify(body) : undefined,

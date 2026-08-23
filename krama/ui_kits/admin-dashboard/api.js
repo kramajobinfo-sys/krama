@@ -11,10 +11,22 @@
     return Object.assign({ "Content-Type": "application/json", Authorization: "Bearer " + getToken() }, extra);
   }
 
+  // Retry transient origin failures (Cloudflare 520–524 / 502–504 / network drop) for GET
+  // only, so a brief origin blip self-heals. Never retries non-GET (avoids double-submits).
+  function rfetch(url, opts, tries) {
+    tries = tries || 3;
+    var isGet = !opts || !opts.method || opts.method === "GET";
+    var again = function () { return new Promise(function (res) { setTimeout(res, 500 * (4 - tries)); }).then(function () { return rfetch(url, opts, tries - 1); }); };
+    return fetch(url, opts).then(function (r) {
+      if (isGet && tries > 1 && r.status >= 502 && r.status <= 599) return again();
+      return r;
+    }).catch(function (e) { if (isGet && tries > 1) return again(); throw e; });
+  }
+
   function doReq(method, path, body, tok) {
     var opts = { method: method, headers: headers(tok ? { Authorization: "Bearer " + tok } : {}) };
     if (body !== undefined) opts.body = JSON.stringify(body);
-    return fetch(BASE + path, opts);
+    return rfetch(BASE + path, opts);
   }
 
   var _refreshing = null;
