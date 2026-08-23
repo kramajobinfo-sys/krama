@@ -124,6 +124,10 @@
     fetchCompany: function () { return req("GET", "/employer/company"); },
     updateCompany: function (id, data) { return req("PUT", "/companies/" + id, data); },
     createCompany: function (data) { return req("POST", "/companies", data); },
+    // Claim a company created on the employer's behalf (→ admin approval → ownership transfer)
+    searchClaimable: function (q) { return req("GET", "/employer/claimable?q=" + encodeURIComponent(q || "")); },
+    requestCompanyClaim: function (companyId, message) { return req("POST", "/employer/company-claims", { company_id: companyId, message: message || "" }); },
+    myCompanyClaims: function () { return req("GET", "/employer/company-claims"); },
     // Gallery
     uploadGalleryPhoto: function (id, file) {
       var token = getToken(); var fd = new FormData(); fd.append("photo", file);

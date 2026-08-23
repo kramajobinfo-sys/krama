@@ -264,6 +264,10 @@
     fetchDeletionRequests: function (status) { return req("GET", "/admin/deletion-requests?status=" + (status || "pending")); },
     completeDeletionRequest: function (id) { return req("POST", "/admin/deletion-requests/" + id + "/complete", {}); },
     rejectDeletionRequest: function (id) { return req("POST", "/admin/deletion-requests/" + id + "/reject", {}); },
+    // Company ownership-claim requests
+    fetchCompanyClaims: function (status) { return req("GET", "/admin/company-claims?status=" + (status || "pending")); },
+    approveCompanyClaim: function (id) { return req("POST", "/admin/company-claims/" + id + "/approve", {}); },
+    rejectCompanyClaim: function (id) { return req("POST", "/admin/company-claims/" + id + "/reject", {}); },
     // Per-role permissions (manage_roles). fetchRoles -> { roles:[{slug,permissions[]}], catalog:[{group,perms[]}] }.
     fetchRoles: function () { return req("GET", "/admin/roles"); },
     updateRolePermissions: function (roleId, permissions) { return req("PUT", "/admin/roles/" + roleId + "/permissions", { permissions: permissions }); },

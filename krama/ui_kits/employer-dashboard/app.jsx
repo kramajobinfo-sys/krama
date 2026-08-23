@@ -2424,6 +2424,37 @@
     const [saving, setSaving] = React.useState(false);
     const [err, setErr] = React.useState("");
     const set = (k, v) => setF(function (x) { return Object.assign({}, x, { [k]: v }); });
+
+    // ── Claim an existing company we created on your behalf ──
+    const [cq, setCq] = React.useState("");
+    const [cResults, setCResults] = React.useState([]);
+    const [cSearching, setCSearching] = React.useState(false);
+    const [cMsg, setCMsg] = React.useState(null); // { ok, text }
+    const [myClaim, setMyClaim] = React.useState(null);
+    const cTimer = React.useRef(null);
+    React.useEffect(function () {
+      emp.myCompanyClaims().then(function (d) {
+        var p = (d.data || []).filter(function (x) { return x.status === "pending"; })[0];
+        if (p) setMyClaim(p);
+      }).catch(function () {});
+    }, []);
+    const onSearch = function (v) {
+      setCq(v); setCMsg(null);
+      if (cTimer.current) clearTimeout(cTimer.current);
+      if (v.trim().length < 2) { setCResults([]); return; }
+      setCSearching(true);
+      cTimer.current = setTimeout(function () {
+        emp.searchClaimable(v.trim()).then(function (d) { setCResults(d.data || []); setCSearching(false); })
+          .catch(function () { setCSearching(false); });
+      }, 350);
+    };
+    const requestClaim = function (co) {
+      if (!window.confirm("Request ownership of “" + co.name + "”? An admin will review and grant you access.")) return;
+      emp.requestCompanyClaim(co.id).then(function () {
+        setMyClaim({ status: "pending", company: { id: co.id, name: co.name } });
+        setCResults([]); setCq("");
+      }).catch(function (e) { setCMsg({ ok: false, text: (e && e.message) || "Could not submit the request." }); });
+    };
     const submit = () => {
       if (!f.name.trim()) { setErr("Please enter your company name."); return; }
       setSaving(true); setErr("");
@@ -2449,6 +2480,47 @@
               {err && <div style={{ color: "var(--danger)", fontSize: "var(--text-sm)", fontWeight: 600 }}>{err}</div>}
               <div><Button variant="primary" disabled={saving} onClick={submit}>{saving ? "Creating…" : "Create company profile"}</Button></div>
             </div>
+          </Card>
+
+          {/* Claim a company we already set up on your behalf. */}
+          <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "24px 0 16px" }}>
+            <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
+            <span style={{ fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: ".05em" }}>or</span>
+            <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
+          </div>
+          <Card padding={24}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+              <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: 8, background: "var(--brand-subtle)", color: "var(--brand)" }}>{I("building-2", 18)}</span>
+              <h3 style={{ fontSize: "var(--text-base)", fontWeight: 700, color: "var(--text-strong)", margin: 0 }}>Already have a company on Krama?</h3>
+            </div>
+            <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", margin: "0 0 16px" }}>If we set up your company for you, search for it and request access. An admin will verify and transfer ownership to you.</p>
+
+            {myClaim ? (
+              <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderRadius: "var(--radius-md)", background: "var(--warning-bg, #fff8ec)", border: "1px solid var(--warning-border, #f0d9a8)" }}>
+                {I("clock", 16)}
+                <div style={{ fontSize: "var(--text-sm)", color: "var(--text-strong)", fontWeight: 600 }}>Request pending for “{myClaim.company && myClaim.company.name}” — we'll grant access once it's reviewed.</div>
+              </div>
+            ) : (
+              <React.Fragment>
+                <Input value={cq} onChange={(e) => onSearch(e.target.value)} placeholder="Search your company name…" iconLeft={I("search", 16)} />
+                {cMsg && !cMsg.ok && <div style={{ color: "var(--danger)", fontSize: "var(--text-sm)", fontWeight: 600, marginTop: 8 }}>{cMsg.text}</div>}
+                <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 8 }}>
+                  {cSearching && <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>Searching…</div>}
+                  {!cSearching && cq.trim().length >= 2 && cResults.length === 0 && <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>No matching company found.</div>}
+                  {cResults.map(function (co) {
+                    return (
+                      <div key={co.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "10px 12px", border: "1px solid var(--border)", borderRadius: "var(--radius-md)" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                          {co.logo_url ? <img src={co.logo_url} alt="" width="32" height="32" style={{ borderRadius: 7, objectFit: "cover", flexShrink: 0 }} /> : <span style={{ width: 32, height: 32, borderRadius: 7, background: "var(--surface-sunken, var(--surface-page))", display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: "var(--text-muted)" }}>{I("building-2", 15)}</span>}
+                          <span style={{ fontWeight: 600, color: "var(--text-strong)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{co.name}</span>
+                        </div>
+                        <Button variant="outline" size="sm" style={{ flexShrink: 0 }} onClick={function () { requestClaim(co); }}>Request access</Button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </React.Fragment>
+            )}
           </Card>
         </div>
       </div>

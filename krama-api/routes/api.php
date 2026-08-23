@@ -21,6 +21,7 @@ use App\Http\Controllers\MessageController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\JobAlertController;
 use App\Http\Controllers\AdminAccountDeletionController;
+use App\Http\Controllers\CompanyClaimController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\RecommendationController;
 use App\Http\Controllers\UploadController;
@@ -113,6 +114,10 @@ Route::get('forum/threads/{id}/replies',  [\App\Http\Controllers\ForumReplyContr
 Route::middleware('auth:api')->group(function () {
     // Employer: own company
     Route::get('employer/company',              [CompanyController::class, 'mine']);
+    // Employer: claim a company created on their behalf (→ admin approval → ownership transfer)
+    Route::get('employer/claimable',            [CompanyClaimController::class, 'searchClaimable']);
+    Route::get('employer/company-claims',       [CompanyClaimController::class, 'mine']);
+    Route::post('employer/company-claims',      [CompanyClaimController::class, 'store'])->middleware('throttle:10,1');
     Route::post('companies',                    [CompanyController::class, 'store']);
     Route::put('companies/{id}',                [CompanyController::class, 'update']);
     Route::post('companies/{id}/logo',          [CompanyController::class, 'uploadLogo'])->middleware('throttle:10,1');
@@ -453,6 +458,10 @@ Route::middleware(['auth:api', 'permission:site_settings'])->group(function () {
     Route::delete('admin/companies/{id}/awards/{awardId}',      [CompanyController::class, 'adminDeleteAward']);
     Route::post('admin/companies/{id}/awards/{awardId}/image',  [CompanyController::class, 'adminUploadAwardImage'])->middleware('throttle:20,1');
     // Company access / team (assign users with a role: company_admin = full control)
+    // Admin: company ownership-claim requests (approve = transfer ownership)
+    Route::get('admin/company-claims',                      [CompanyClaimController::class, 'adminIndex']);
+    Route::post('admin/company-claims/{id}/approve',        [CompanyClaimController::class, 'approve']);
+    Route::post('admin/company-claims/{id}/reject',         [CompanyClaimController::class, 'reject']);
     Route::get('admin/companies/{id}/members',              [CompanyController::class, 'adminMembers']);
     Route::post('admin/companies/{id}/members',             [CompanyController::class, 'adminAddMember'])->middleware('throttle:20,1');
     Route::patch('admin/companies/{id}/members/{userId}',   [CompanyController::class, 'adminUpdateMember']);
