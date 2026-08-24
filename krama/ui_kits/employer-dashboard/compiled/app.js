@@ -96,18 +96,23 @@
     };
     React.useEffect(function () {
       if (!open) return;
-      var close = function () {
+      var onScroll = function (e) {
+        // Don't close while scrolling INSIDE the options list — only when the page/background scrolls.
+        if (listRef.current && (listRef.current === e.target || listRef.current.contains(e.target))) return;
+        setOpen(false);
+      };
+      var onResize = function () {
         setOpen(false);
       };
       var onKey = function (e) {
         if (e.key === "Escape") setOpen(false);
       };
-      window.addEventListener("scroll", close, true);
-      window.addEventListener("resize", close);
+      window.addEventListener("scroll", onScroll, true);
+      window.addEventListener("resize", onResize);
       window.addEventListener("keydown", onKey);
       return function () {
-        window.removeEventListener("scroll", close, true);
-        window.removeEventListener("resize", close);
+        window.removeEventListener("scroll", onScroll, true);
+        window.removeEventListener("resize", onResize);
         window.removeEventListener("keydown", onKey);
       };
     }, [open]);
