@@ -172,6 +172,23 @@ class SeoController extends Controller
         ]);
     }
 
+    /** GET /unsubscribe/{token} — one-click marketing unsubscribe (token = {userId}-{HMAC}). */
+    public function unsubscribe(string $token)
+    {
+        [$id, $sig] = array_pad(explode('-', $token, 2), 2, '');
+        abort_if(! ctype_digit($id) || ! hash_equals(\App\Models\EmailCampaign::unsubToken($id), $token), 404);
+
+        $user = \App\Models\User::find((int) $id);
+        if ($user) $user->forceFill(['marketing_opt_out' => true])->save();
+
+        return view('seo.unsubscribe', [
+            'canonical' => url('/unsubscribe'),
+            'metaDesc'  => 'Manage your Krama email preferences.',
+            'ld'        => [],
+            'ok'        => (bool) $user,
+        ]);
+    }
+
     /** GET /privacy — server-rendered Privacy Policy (public, crawlable; used for Facebook app review). */
     public function privacy()
     {

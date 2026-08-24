@@ -7,6 +7,7 @@ use App\Http\Controllers\SeoController;
 Route::get('/sitemap.xml',           [SeoController::class, 'sitemap']);
 Route::get('/salary',                [SeoController::class, 'salaryGuide']);
 Route::get('/account/delete',        [SeoController::class, 'accountDelete']);
+Route::get('/unsubscribe/{token}',   [SeoController::class, 'unsubscribe']);
 Route::get('/privacy',               [SeoController::class, 'privacy']);
 Route::get('/terms',                 [SeoController::class, 'terms']);
 Route::get('/jobs/{slug}/og.png',    [SeoController::class, 'jobOg']);

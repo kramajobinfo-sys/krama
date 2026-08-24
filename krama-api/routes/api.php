@@ -22,6 +22,7 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\JobAlertController;
 use App\Http\Controllers\AdminAccountDeletionController;
 use App\Http\Controllers\CompanyClaimController;
+use App\Http\Controllers\EmailCampaignController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\RecommendationController;
 use App\Http\Controllers\UploadController;
@@ -400,6 +401,13 @@ Route::middleware(['auth:api', 'permission:site_settings'])->group(function () {
     Route::post('admin/users',                      [UserController::class, 'adminCreateUser']);
     Route::patch('admin/users/{id}',                [UserController::class, 'adminUpdateUser']);
     Route::delete('admin/users/{id}',               [UserController::class, 'adminDeleteUser']);
+
+    // Admin: email marketing campaigns
+    Route::get('admin/campaigns',                   [EmailCampaignController::class, 'index']);
+    Route::get('admin/campaigns/audience-count',    [EmailCampaignController::class, 'audienceCount']);
+    Route::post('admin/campaigns',                  [EmailCampaignController::class, 'store'])->middleware('throttle:30,1');
+    Route::post('admin/campaigns/{id}/test',        [EmailCampaignController::class, 'sendTest'])->middleware('throttle:20,1');
+    Route::post('admin/campaigns/{id}/send',        [EmailCampaignController::class, 'send'])->middleware('throttle:10,1');
 
     // Admin: account & data deletion requests (compliance loop for employer/other requests)
     Route::get('admin/deletion-requests',                    [AdminAccountDeletionController::class, 'index']);

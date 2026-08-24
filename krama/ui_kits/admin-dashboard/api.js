@@ -264,6 +264,12 @@
     fetchDeletionRequests: function (status) { return req("GET", "/admin/deletion-requests?status=" + (status || "pending")); },
     completeDeletionRequest: function (id) { return req("POST", "/admin/deletion-requests/" + id + "/complete", {}); },
     rejectDeletionRequest: function (id) { return req("POST", "/admin/deletion-requests/" + id + "/reject", {}); },
+    // Email marketing campaigns
+    fetchCampaigns: function () { return req("GET", "/admin/campaigns"); },
+    campaignAudienceCount: function (audience) { return req("GET", "/admin/campaigns/audience-count?audience=" + encodeURIComponent(audience || "")); },
+    createCampaign: function (data) { return req("POST", "/admin/campaigns", data); },
+    testCampaign: function (id) { return req("POST", "/admin/campaigns/" + id + "/test", {}); },
+    sendCampaign: function (id) { return req("POST", "/admin/campaigns/" + id + "/send", {}); },
     // Company ownership-claim requests
     fetchCompanyClaims: function (status) { return req("GET", "/admin/company-claims?status=" + (status || "pending")); },
     approveCompanyClaim: function (id) { return req("POST", "/admin/company-claims/" + id + "/approve", {}); },

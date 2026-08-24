@@ -155,6 +155,7 @@
     { id: "cvmatch", label: "CV match", icon: "git-compare-arrows" },
     { id: "brand", label: "Brand", icon: "palette" },
     { id: "settings", label: "Settings", icon: "settings" },
+    { id: "campaigns", label: "Email campaigns", icon: "mail" },
     { id: "claims", label: "Company claims", icon: "building-2" },
     { id: "deletion", label: "Deletion requests", icon: "user-x" },
   ];
@@ -8097,6 +8098,93 @@
     );
   }
 
+  // Email marketing campaigns — compose an HTML message, pick a segment, test, then send.
+  function EmailCampaigns() {
+    const adm = window.KRAMA_ADMIN_API;
+    const AUD = [{ v: "all_candidates", l: "All candidates" }, { v: "all_employers", l: "All employers" }, { v: "all_users", l: "All candidates + employers" }];
+    const [subject, setSubject] = React.useState("");
+    const [audience, setAudience] = React.useState("all_candidates");
+    const [body, setBody] = React.useState("");
+    const [count, setCount] = React.useState(null);
+    const [draftId, setDraftId] = React.useState(null);
+    const [busy, setBusy] = React.useState(false);
+    const [msg, setMsg] = React.useState(null);
+    const [list, setList] = React.useState([]);
+    const [smtpOk, setSmtpOk] = React.useState(true);
+
+    const loadList = function () { adm.fetchCampaigns().then(function (d) { setList(d.data || []); setSmtpOk(d.smtp_configured !== false); }).catch(function () {}); };
+    React.useEffect(loadList, []);
+    React.useEffect(function () { adm.campaignAudienceCount(audience).then(function (d) { setCount(d.count); }).catch(function () { setCount(null); }); }, [audience]);
+
+    const saveDraft = function () {
+      if (!subject.trim() || !body.trim()) { setMsg({ ok: false, text: "Subject and message are required." }); return Promise.reject(); }
+      setBusy(true);
+      return adm.createCampaign({ subject: subject.trim(), body: body, audience: audience })
+        .then(function (d) { setBusy(false); setDraftId(d.id); setMsg({ ok: true, text: "Draft saved (" + d.total_recipients + " recipients)." }); loadList(); return d; })
+        .catch(function (e) { setBusy(false); setMsg({ ok: false, text: (e && e.message) || "Failed to save." }); return Promise.reject(e); });
+    };
+    const ensureDraft = function () { return draftId ? Promise.resolve({ id: draftId }) : saveDraft(); };
+    const sendTest = function () { ensureDraft().then(function (d) { setBusy(true); adm.testCampaign(d.id).then(function (r) { setBusy(false); setMsg({ ok: true, text: r.message }); }).catch(function (e) { setBusy(false); setMsg({ ok: false, text: (e && e.message) || "Test failed." }); }); }).catch(function () {}); };
+    const sendNow = function () { ensureDraft().then(function (d) { if (!window.confirm("Send “" + subject + "” to " + (count || 0) + " recipient(s)?\n\nThis cannot be undone.")) return; setBusy(true); adm.sendCampaign(d.id).then(function (r) { setBusy(false); setMsg({ ok: true, text: r.message }); setSubject(""); setBody(""); setDraftId(null); loadList(); }).catch(function (e) { setBusy(false); setMsg({ ok: false, text: (e && e.message) || "Send failed." }); }); }).catch(function () {}); };
+
+    const invalidate = function (setter) { return function (e) { setter(e.target.value); setDraftId(null); }; };
+    const tone = { draft: "neutral", sending: "warning", sent: "success", failed: "danger" };
+    const fmtDate = function (s) { if (!s) return "—"; var d = new Date(s); return isNaN(d) ? "—" : d.toLocaleDateString(); };
+
+    return (
+      <div className="krm-page-pad" style={{ padding: 28, maxWidth: 900 }}>
+        <ScreenHead title="Email campaigns" sub="Compose a message, choose an audience, send a test, then send. Recipients who opted out are skipped; every email carries an unsubscribe link." />
+
+        {!smtpOk && <div style={{ display: "flex", alignItems: "center", gap: 8, background: "var(--danger-bg,#fff5f5)", color: "var(--danger)", border: "1px solid var(--danger-border,#f0c0c0)", borderRadius: 8, padding: "10px 14px", marginBottom: 16, fontSize: "var(--text-sm)" }}>{I("triangle-alert", 16)} SMTP isn't configured — set it up under Email settings before sending.</div>}
+
+        <Card padding={24}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <Input label="Subject" value={subject} onChange={invalidate(setSubject)} placeholder="e.g. Top jobs this week on Krama" />
+            <div>
+              <Select label="Audience" value={audience} onChange={function (e) { setAudience(e.target.value); setDraftId(null); }} options={AUD.map(function (a) { return { value: a.v, label: a.l }; })} />
+              <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: 6 }}>{count == null ? "Counting recipients…" : (count + " recipient(s) will receive this (active accounts, not opted out).")}</div>
+            </div>
+            <div>
+              <Textarea label="Message (HTML)" value={body} onChange={invalidate(setBody)} rows={10} placeholder={"<p>Hi there,</p>\n<p>Here are this week's top jobs on Krama…</p>\n<p><a href=\"https://kramajob.com\">Browse jobs</a></p>"} />
+              <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: 6 }}>Paste HTML. It's wrapped in the branded Krama email shell with a header and an unsubscribe footer automatically.</div>
+            </div>
+            {msg && <div style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: msg.ok ? "var(--success)" : "var(--danger)" }}>{msg.text}</div>}
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <Button variant="secondary" disabled={busy} onClick={sendTest} iconLeft={I("send-horizontal", 15)}>{busy ? "Working…" : "Send test to me"}</Button>
+              <Button variant="primary" disabled={busy || !smtpOk} onClick={sendNow} iconLeft={I("mail", 15)}>{busy ? "Working…" : "Send campaign" + (count != null ? " (" + count + ")" : "")}</Button>
+            </div>
+          </div>
+        </Card>
+
+        <h3 style={{ fontSize: "var(--text-base)", fontWeight: 700, color: "var(--text-strong)", margin: "26px 0 12px" }}>Past campaigns</h3>
+        {list.length === 0 ? (
+          <Card padding={24}><div style={{ color: "var(--text-muted)", textAlign: "center" }}>No campaigns yet.</div></Card>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {list.map(function (c) {
+              return (
+                <Card key={c.id} padding={16}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                        <span style={{ fontWeight: 700, color: "var(--text-strong)" }}>{c.subject}</span>
+                        <Badge tone={tone[c.status] || "neutral"} style={{ textTransform: "capitalize" }}>{c.status}</Badge>
+                      </div>
+                      <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginTop: 4 }}>
+                        {(AUD.filter(function (a) { return a.v === c.audience; })[0] || {}).l || c.audience} · {fmtDate(c.created_at)}
+                        {c.status !== "draft" ? " · " + c.sent_count + "/" + c.total_recipients + " sent" + (c.failed_count ? " · " + c.failed_count + " failed" : "") : ""}
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   // Company ownership-claim requests — an employer asks to own a company we created on their
   // behalf; approving transfers ownership to them.
   function CompanyClaims() {
@@ -8229,7 +8317,7 @@
 
     if (!authUser) return <AdminLogin onLogin={setAuthUser} />;
 
-    const titles = { dashboard: "Overview", jobs: "Job management", companies: "Company management", candidates: "Candidates", resumes: "Resume Builder", reviews: "Company reviews", forum: "Community forum", homepage: "Homepage content", seo: "SEO", feeds: "Feeds", ai: "AI provider", support: "Support chat", chat: "Chat agent", social: "Social login", email: "Email settings", telegram: "Telegram notifications", sms: "SMS gateway", social_post: "Social posting", payments: "Payment settings", coupons: "Coupons & referrals", reports: "Reports", audit: "Audit log", cvmatch: "CV match", banners: "Promotional banner", brand: "Brand settings", settings: "Settings · Users & roles", claims: "Company claims", deletion: "Account deletion requests", profile: "My Profile" };
+    const titles = { dashboard: "Overview", jobs: "Job management", companies: "Company management", candidates: "Candidates", resumes: "Resume Builder", reviews: "Company reviews", forum: "Community forum", homepage: "Homepage content", seo: "SEO", feeds: "Feeds", ai: "AI provider", support: "Support chat", chat: "Chat agent", social: "Social login", email: "Email settings", telegram: "Telegram notifications", sms: "SMS gateway", social_post: "Social posting", payments: "Payment settings", coupons: "Coupons & referrals", reports: "Reports", audit: "Audit log", cvmatch: "CV match", banners: "Promotional banner", brand: "Brand settings", settings: "Settings · Users & roles", campaigns: "Email campaigns", claims: "Company claims", deletion: "Account deletion requests", profile: "My Profile" };
     return (
       <div style={{ display: "flex", minHeight: "100vh", background: "var(--surface-page)" }}>
         {sidebarOpen && <div className="krm-sidebar-backdrop open" onClick={() => setSidebarOpen(false)} />}
@@ -8262,6 +8350,7 @@
           {page === "cvmatch" && <CvMatch />}
           {page === "brand" && <Brand />}
           {page === "settings" && <Settings authUser={authUser} />}
+          {page === "campaigns" && <EmailCampaigns />}
           {page === "claims" && <CompanyClaims />}
           {page === "deletion" && <DeletionRequests />}
           {page === "profile" && <MyProfile user={authUser} onUserUpdate={u => setAuthUser(u)} />}

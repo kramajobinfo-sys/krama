@@ -271,6 +271,37 @@ class EmailTemplates
         return [$subject, $html];
     }
 
+    /**
+     * Branded shell for a MARKETING campaign email. Unlike wrapper(), the footer carries a
+     * required unsubscribe link (compliance) instead of "automated, do not reply". $bodyHtml
+     * is the admin-authored content, inserted as-is.
+     */
+    public static function marketing(string $bodyHtml, string $unsubscribeUrl): string
+    {
+        $fromName = config('mail.from.name', 'Krama');
+        return "
+<!DOCTYPE html>
+<html>
+<head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'></head>
+<body style='margin:0;padding:0;background:#f3f4f6;font-family:system-ui,-apple-system,sans-serif'>
+  <div style='max-width:600px;margin:40px auto;padding:0 16px'>
+    <div style='background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.1)'>
+      <div style='background:#0d9488;padding:24px 32px'>
+        <div style='color:#fff;font-size:20px;font-weight:700'>{$fromName}</div>
+      </div>
+      <div style='padding:32px;color:#374151;font-size:15px;line-height:1.6'>
+        {$bodyHtml}
+      </div>
+      <div style='padding:16px 32px;background:#f9fafb;border-top:1px solid #e5e7eb;font-size:12px;color:#9ca3af;text-align:center'>
+        You're receiving this because you have a {$fromName} account.<br>
+        <a href='{$unsubscribeUrl}' style='color:#6b7280'>Unsubscribe from marketing emails</a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>";
+    }
+
     private static function wrapper(string $heading, string $body): string
     {
         $fromName = config('mail.from.name', 'Krama');
