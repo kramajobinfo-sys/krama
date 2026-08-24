@@ -180,6 +180,8 @@
     // omitted to keep the site load small). Re-fetch the full job on open and merge it in.
     const [full, setFull] = React.useState(job);
     const j = full || job || (D.jobs && D.jobs[0]);
+    // Open the company profile (only for real, non-external companies that have an id).
+    const goCompany = (j && j.companyId != null) ? function () { onNav && onNav("company", { companyId: j.companyId }); } : null;
     const [applied, setApplied] = React.useState(false);
     // Similar jobs view — List by default, with a Grid option.
     const [similarView, setSimilarView] = React.useState("list");
@@ -236,7 +238,9 @@
               <Card padding={28}>
                 {/* Header */}
                 <div style={{ display: "flex", gap: 18 }}>
-                  <Avatar src={j.logo || (window.KRAMA_LOGOS||{})[j.company]} name={j.company} square size={64} />
+                  {goCompany
+                    ? <span onClick={goCompany} style={{ cursor: "pointer", flexShrink: 0 }} title={TR("View company profile")}><Avatar src={j.logo || (window.KRAMA_LOGOS||{})[j.company]} name={j.company} square size={64} /></span>
+                    : <Avatar src={j.logo || (window.KRAMA_LOGOS||{})[j.company]} name={j.company} square size={64} />}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                       <h1 className="krm-jd-title" style={{ fontSize: "var(--text-3xl)", fontWeight: 700, color: "var(--text-strong)" }}>{j.title}</h1>
@@ -376,9 +380,11 @@
 
               <Card padding={20}>
                 <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                  <Avatar src={j.logo || (window.KRAMA_LOGOS||{})[j.company]} name={j.company} square size={44} />
+                  {goCompany
+                    ? <span onClick={goCompany} style={{ cursor: "pointer", flexShrink: 0 }} title={TR("View company profile")}><Avatar src={j.logo || (window.KRAMA_LOGOS||{})[j.company]} name={j.company} square size={44} /></span>
+                    : <Avatar src={j.logo || (window.KRAMA_LOGOS||{})[j.company]} name={j.company} square size={44} />}
                   <div>
-                    <div style={{ fontWeight: 700, color: "var(--text-strong)" }}>{j.company}</div>
+                    <div style={{ fontWeight: 700, color: "var(--text-strong)", cursor: goCompany ? "pointer" : "default" }} onClick={goCompany || undefined}>{j.company}</div>
                     {j.companyIndustry && <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>{j.companyIndustry}</div>}
                   </div>
                 </div>
@@ -392,7 +398,7 @@
                     {I("globe", 14)} {j.companyWebsite.replace(/^https?:\/\//, "")}
                   </a>
                 )}
-                <Button variant="ghost" size="sm" style={{ marginTop: 8, paddingLeft: 0 }} iconRight={I("arrow-right", 14)} onClick={() => onNav && onNav("companies", { company: j.company })}>{TR("View company profile")}</Button>
+                <Button variant="ghost" size="sm" style={{ marginTop: 8, paddingLeft: 0 }} iconRight={I("arrow-right", 14)} onClick={() => goCompany ? goCompany() : (onNav && onNav("companies", { company: j.company }))}>{TR("View company profile")}</Button>
               </Card>
             </aside>
           </div>
