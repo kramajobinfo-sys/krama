@@ -324,6 +324,8 @@ class EmailTemplates
     public static function marketing(string $bodyHtml, string $unsubscribeUrl): string
     {
         $fromName = config('mail.from.name', 'Krama');
+        // Absolute URL to the hosted logo (email clients need a public https image — no data URIs).
+        $logo = rtrim((string) (config('app.url') ?: 'https://kramajob.com'), '/') . '/krama/assets/icon-192.png';
         return "
 <!DOCTYPE html>
 <html>
@@ -331,8 +333,9 @@ class EmailTemplates
 <body style='margin:0;padding:0;background:#f3f4f6;font-family:system-ui,-apple-system,sans-serif'>
   <div style='max-width:600px;margin:40px auto;padding:0 16px'>
     <div style='background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.1)'>
-      <div style='background:#0d9488;padding:24px 32px'>
-        <div style='color:#fff;font-size:20px;font-weight:700'>{$fromName}</div>
+      <div style='background:#0d9488;padding:20px 32px'>
+        <img src='{$logo}' width='34' height='34' alt='' style='vertical-align:middle;border-radius:8px'>
+        <span style='color:#fff;font-size:20px;font-weight:700;vertical-align:middle;margin-left:10px'>{$fromName}</span>
       </div>
       <div style='padding:32px;color:#374151;font-size:15px;line-height:1.6'>
         {$bodyHtml}
