@@ -371,6 +371,8 @@ class EmailTemplates
     private static function wrapper(string $heading, string $body): string
     {
         $fromName = config('mail.from.name', 'Krama');
+        // Same branded header as the marketing shell: logo on a white rounded tile + wordmark.
+        $logo = rtrim((string) (config('app.url') ?: 'https://kramajob.com'), '/') . '/krama/assets/icon-192.png';
         return "
 <!DOCTYPE html>
 <html>
@@ -378,8 +380,9 @@ class EmailTemplates
 <body style='margin:0;padding:0;background:#f3f4f6;font-family:system-ui,-apple-system,sans-serif'>
   <div style='max-width:600px;margin:40px auto;padding:0 16px'>
     <div style='background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.1)'>
-      <div style='background:#0d9488;padding:24px 32px'>
-        <div style='color:#fff;font-size:20px;font-weight:700'>{$fromName}</div>
+      <div style='background:#0d9488;padding:24px 32px;text-align:center'>
+        <img src='{$logo}' width='42' height='42' alt='' style='vertical-align:middle;border-radius:10px;background:#ffffff;padding:5px'>
+        <span style='color:#ffffff;font-size:22px;font-weight:800;letter-spacing:.02em;vertical-align:middle;margin-left:11px'>{$fromName}</span>
       </div>
       <div style='padding:32px'>
         <h2 style='margin:0 0 20px;color:#111827;font-size:18px'>{$heading}</h2>
