@@ -249,6 +249,9 @@
     saveScorecard: function (id, data) { return req("PUT", "/employer/interviews/" + id + "/scorecard", data); },
     fetchUpcomingInterviews: function () { return req("GET", "/employer/interviews/upcoming"); },
 
+    // Hiring analytics — funnel + per-job performance
+    fetchAnalytics: function () { return req("GET", "/employer/analytics"); },
+
     // Candidate search + talent pool
     searchCandidates: function (params) {
       var q = Object.keys(params || {}).filter(function (k) { return params[k] !== "" && params[k] != null; }).map(function (k) { return k + "=" + encodeURIComponent(params[k]); }).join("&");

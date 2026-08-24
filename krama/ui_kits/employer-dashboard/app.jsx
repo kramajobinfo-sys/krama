@@ -615,6 +615,7 @@
     { id: "dashboard", label: "Dashboard", icon: "layout-dashboard" },
     { id: "jobs", label: "Job postings", icon: "briefcase" },
     { id: "applicants", label: "Applicants", icon: "users" },
+    { id: "analytics", label: "Analytics", icon: "bar-chart-3" },
     { id: "cvmatch", label: "CV Match", icon: "git-compare-arrows" },
     { id: "talent", label: "Find candidates", icon: "user-search" },
     { id: "messages", label: "Messages", icon: "message-square" },
@@ -1000,6 +1001,138 @@
   }
 
   const JOB_TYPE_LABELS = { full_time: "Full-time", part_time: "Part-time", contract: "Contract", internship: "Internship", temporary: "Temporary" };
+
+  // Hiring analytics — funnel + weekly trend + per-job performance.
+  function Analytics({ onNav }) {
+    const [data, setData] = React.useState(null);
+    const [loading, setLoading] = React.useState(true);
+    const [err, setErr] = React.useState("");
+    React.useEffect(function () {
+      let alive = true;
+      emp.fetchAnalytics().then(function (d) { if (alive) { setData(d); setLoading(false); } })
+        .catch(function (e) { if (alive) { setErr(e.message || String(e)); setLoading(false); } });
+      return function () { alive = false; };
+    }, []);
+
+    const nf = function (n) { return (n == null ? 0 : n).toLocaleString(); };
+    const fmtWk = function (iso) { var d = new Date(iso); return d.getDate() + "/" + (d.getMonth() + 1); };
+
+    if (loading) return <div className="krm-page-pad" style={{ padding: 28, color: "var(--text-muted)", fontSize: "var(--text-sm)" }}>{T("Loading analytics…")}</div>;
+    if (err) return <div className="krm-page-pad" style={{ padding: 28 }}><Card><div style={{ padding: 22, color: "var(--danger, #c0392b)", fontSize: "var(--text-sm)" }}>{T("Couldn’t load analytics.")} {err}</div></Card></div>;
+
+    const s = data.summary || {};
+    const funnel = data.funnel || [];
+    const trend = data.trend || [];
+    const byJob = data.by_job || [];
+    const noData = (s.total_applications || 0) === 0 && (s.total_views || 0) === 0;
+
+    // Funnel bars — width relative to the largest node (job views); conversion % vs the
+    // "Applied" node so employers read stage-to-stage yield. Views sits above as the source.
+    const applied = (funnel.find(function (f) { return f.key === "applied"; }) || {}).count || 0;
+    const funnelMax = Math.max.apply(null, funnel.map(function (f) { return f.count || 0; }).concat([1]));
+    const stageColor = {
+      views: "var(--text-faint, #9aa)", applied: "var(--brand)", reviewed: "#2f8f7f",
+      shortlisted: "#3a9a86", interview: "#e0912f", offered: "#d97706", hired: "#1f9d55",
+    };
+
+    const trendMax = Math.max.apply(null, trend.map(function (t) { return t.count || 0; }).concat([1]));
+
+    return (
+      <div className="krm-page-pad" style={{ padding: 28, display: "flex", flexDirection: "column", gap: 24 }}>
+        <div>
+          <h1 style={{ fontSize: "var(--text-xl)", fontWeight: 800, color: "var(--text-strong)", margin: 0 }}>{T("Hiring analytics")}</h1>
+          <p style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", margin: "4px 0 0" }}>{T("All-time performance across your job postings. The trend below covers the last 12 weeks.")}</p>
+        </div>
+
+        {noData && (
+          <Card><div style={{ padding: 24, textAlign: "center" }}>
+            <div style={{ color: "var(--brand)", display: "inline-flex", marginBottom: 8 }}>{I("bar-chart-3", 28)}</div>
+            <div style={{ fontWeight: 700, color: "var(--text-strong)", fontSize: "var(--text-md)" }}>{T("No data yet")}</div>
+            <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", margin: "6px 0 14px" }}>{T("Once your jobs get views and applications, your funnel and trends will appear here.")}</div>
+            <Button variant="primary" size="sm" onClick={() => onNav("jobs")}>{T("Manage jobs")}</Button>
+          </div></Card>
+        )}
+
+        <div className="krm-stats-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16 }}>
+          <StatCard label={T("Total applications")} value={nf(s.total_applications)} tone="info" icon={I("users", 22)} />
+          <StatCard label={T("Apply rate")} value={(s.apply_rate != null ? s.apply_rate : 0) + "%"} tone="brand" icon={I("mouse-pointer-click", 22)} />
+          <StatCard label={T("Hires")} value={nf(s.hires)} tone="success" icon={I("user-check", 22)} />
+          <StatCard label={T("Avg. days to hire")} value={s.avg_days_to_hire != null ? String(s.avg_days_to_hire) : "—"} tone="warning" icon={I("clock", 22)} />
+        </div>
+
+        {/* Funnel */}
+        <Card padding={0}>
+          <div style={{ padding: "18px 22px", borderBottom: "1px solid var(--border)" }}>
+            <h2 style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: "var(--text-strong)", margin: 0 }}>{T("Hiring funnel")}</h2>
+          </div>
+          <div style={{ padding: "18px 22px", display: "flex", flexDirection: "column", gap: 12 }}>
+            {funnel.map(function (f, i) {
+              var pct = funnelMax > 0 ? Math.max(2, Math.round((f.count || 0) / funnelMax * 100)) : 2;
+              var conv = (f.key !== "views" && f.key !== "applied" && applied > 0) ? Math.round((f.count || 0) / applied * 100) + "% " + T("of applied") : "";
+              if (f.key === "applied" && s.total_views > 0) conv = (s.apply_rate != null ? s.apply_rate : 0) + "% " + T("of views");
+              return (
+                <div key={f.key}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4 }}>
+                    <span style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-strong)" }}>{T(f.label)}</span>
+                    <span style={{ fontSize: "var(--text-sm)", color: "var(--text-body)" }}>
+                      <span style={{ fontWeight: 700, fontFamily: "var(--font-mono)" }}>{nf(f.count)}</span>
+                      {conv && <span style={{ color: "var(--text-faint)", marginLeft: 8, fontSize: "var(--text-xs)" }}>{conv}</span>}
+                    </span>
+                  </div>
+                  <div style={{ height: 12, borderRadius: 6, background: "var(--surface-sunken, var(--surface-page))", overflow: "hidden" }}>
+                    <div style={{ width: pct + "%", height: "100%", borderRadius: 6, background: stageColor[f.key] || "var(--brand)", transition: "width .3s" }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+
+        {/* Weekly trend */}
+        <Card padding={0}>
+          <div style={{ padding: "18px 22px", borderBottom: "1px solid var(--border)" }}>
+            <h2 style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: "var(--text-strong)", margin: 0 }}>{T("Applications — last 12 weeks")}</h2>
+          </div>
+          <div style={{ padding: "22px 22px 14px", display: "flex", alignItems: "flex-end", gap: 8, height: 160 }}>
+            {trend.map(function (t, i) {
+              var h = trendMax > 0 ? Math.round((t.count || 0) / trendMax * 120) : 0;
+              return (
+                <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, minWidth: 0 }}>
+                  <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", fontFamily: "var(--font-mono)", height: 14 }}>{t.count > 0 ? t.count : ""}</span>
+                  <div title={t.count + " · " + fmtWk(t.week)} style={{ width: "100%", maxWidth: 40, height: Math.max(3, h), borderRadius: "4px 4px 0 0", background: t.count > 0 ? "var(--brand)" : "var(--border)", transition: "height .3s" }} />
+                  <span style={{ fontSize: "var(--text-xs)", color: "var(--text-faint)", whiteSpace: "nowrap" }}>{fmtWk(t.week)}</span>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+
+        {/* Per-job table */}
+        <div className="krm-table-wrap"><Card padding={0}>
+          <div style={{ padding: "18px 22px", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <h2 style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: "var(--text-strong)", margin: 0 }}>{T("Job performance")}</h2>
+            <Button variant="ghost" size="sm" iconRight={I("arrow-right", 14)} onClick={() => onNav("jobs")}>{T("Manage jobs")}</Button>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "2fr 0.8fr 0.9fr 0.9fr 0.9fr 0.8fr", padding: "10px 22px", fontSize: "var(--text-xs)", fontWeight: 700, letterSpacing: ".04em", textTransform: "uppercase", color: "var(--text-faint)", borderBottom: "1px solid var(--border-subtle)" }}>
+            <span>{T("Job title")}</span><span style={{ textAlign: "right" }}>{T("Views")}</span><span style={{ textAlign: "right" }}>{T("Applied")}</span><span style={{ textAlign: "right" }}>{T("Apply %")}</span><span style={{ textAlign: "right" }}>{T("Interview")}</span><span style={{ textAlign: "right" }}>{T("Hired")}</span>
+          </div>
+          {byJob.length === 0 && <div style={{ padding: "26px 22px", color: "var(--text-muted)", fontSize: "var(--text-sm)", textAlign: "center" }}>{T("No jobs yet.")}</div>}
+          {byJob.map(function (j, i) {
+            return (
+              <div key={j.id} style={{ display: "grid", gridTemplateColumns: "2fr 0.8fr 0.9fr 0.9fr 0.9fr 0.8fr", alignItems: "center", padding: "12px 22px", borderBottom: i < byJob.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>
+                <span style={{ fontWeight: 600, color: "var(--text-strong)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{j.title}</span>
+                <span style={{ textAlign: "right", fontFamily: "var(--font-mono)", fontSize: "var(--text-sm)", color: "var(--text-body)" }}>{nf(j.views)}</span>
+                <span style={{ textAlign: "right", fontFamily: "var(--font-mono)", fontSize: "var(--text-sm)", color: "var(--text-body)" }}>{nf(j.applications)}</span>
+                <span style={{ textAlign: "right", fontFamily: "var(--font-mono)", fontSize: "var(--text-sm)", color: j.apply_rate > 0 ? "var(--text-body)" : "var(--text-faint)" }}>{j.apply_rate}%</span>
+                <span style={{ textAlign: "right", fontFamily: "var(--font-mono)", fontSize: "var(--text-sm)", color: "var(--text-body)" }}>{nf(j.interviews)}</span>
+                <span style={{ textAlign: "right", fontFamily: "var(--font-mono)", fontSize: "var(--text-sm)", fontWeight: j.hires > 0 ? 700 : 400, color: j.hires > 0 ? "var(--success, #1f9d55)" : "var(--text-faint)" }}>{nf(j.hires)}</span>
+              </div>
+            );
+          })}
+        </Card></div>
+      </div>
+    );
+  }
 
   function Overview({ jobs, loading, onNav }) {
     const active = jobs.filter((j) => j.status === "published").length;
@@ -5224,6 +5357,7 @@
           {page === "dashboard" && <Overview jobs={jobs} loading={jobsLoading} onNav={setPage} />}
           {page === "jobs" && <JobsManage jobs={jobs} loading={jobsLoading} reload={loadJobs} onPost={handlePost} onPublish={publishJob} sub={sub} quota={quota} onBilling={() => setPage("billing")} onView={(j) => setViewingJob(j)} onEdit={(j) => setPosting({ mode: "edit", job: j })} onClone={(j) => setPosting({ mode: "clone", job: j })} user={authUser} />}
           {page === "applicants" && <Applicants jobs={jobs} onGoToMessages={() => setPage("messages")} />}
+          {page === "analytics" && <Analytics onNav={setPage} />}
           {page === "cvmatch" && <EmployerCvMatch />}
           {page === "talent" && <TalentSearch jobs={jobs} onGoToMessages={() => setPage("messages")} />}
           {page === "team" && isCompanyAdmin(authUser) && <Team user={authUser} />}

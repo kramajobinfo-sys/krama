@@ -219,6 +219,9 @@ Route::middleware('auth:api')->group(function () {
     Route::get('employer/cv-match/history',       [\App\Http\Controllers\EmployerCvMatchController::class, 'history']);
     Route::get('employer/cv-match/history/{id}',  [\App\Http\Controllers\EmployerCvMatchController::class, 'historyShow']);
 
+    // Employer: hiring analytics — funnel + per-job performance (read-only aggregate)
+    Route::get('employer/analytics',                [\App\Http\Controllers\EmployerAnalyticsController::class, 'overview']);
+
     // Employer: applicant pipeline
     Route::get('employer/jobs/{id}/applications',   [ApplicationController::class, 'jobApplications']);
     Route::patch('applications/{id}/stage',         [ApplicationController::class, 'updateStage']);
