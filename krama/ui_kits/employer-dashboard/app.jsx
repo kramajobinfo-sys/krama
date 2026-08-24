@@ -224,6 +224,7 @@
     "Publish a job to start receiving applications.": "ផ្សាយការងារដើម្បីចាប់ផ្តើមទទួលពាក្យសុំ។",
     "Pipeline": "ដំណើរការ",
     "Drag a card between columns, or open it to manage.": "អូសកាតរវាងជួរឈរ ឬបើកវាដើម្បីគ្រប់គ្រង។",
+    "Tap a card to open and manage it.": "ចុចលើកាតដើម្បីបើក និងគ្រប់គ្រង។",
     "Doesn't meet a screening requirement": "មិនត្រូវតាមលក្ខខណ្ឌជ្រើសរើស",
     "Stage": "ដំណាក់កាល",
     "Download CV": "ទាញយក CV",
@@ -465,6 +466,7 @@
     "Publish a job to start receiving applications.": "发布职位即可开始接收申请。",
     "Pipeline": "招聘流程",
     "Drag a card between columns, or open it to manage.": "在各列之间拖动卡片，或打开卡片进行管理。",
+    "Tap a card to open and manage it.": "点按卡片以打开并管理。",
     "Doesn't meet a screening requirement": "不符合筛选条件",
     "Stage": "阶段",
     "Download CV": "下载简历",
@@ -2256,7 +2258,23 @@
   ];
   const STLABEL = STAGES.reduce(function (m, s) { m[s.key] = s.label; return m; }, {});
 
+  // True on phone-width viewports; updates live on resize/rotate. Used to render a more
+  // compact pipeline (smaller heading, tighter stage columns) on mobile.
+  function useIsMobile() {
+    const q = "(max-width: 768px)";
+    const [m, setM] = React.useState(function () { return typeof window !== "undefined" && !!window.matchMedia && window.matchMedia(q).matches; });
+    React.useEffect(function () {
+      if (!window.matchMedia) return;
+      var mq = window.matchMedia(q);
+      var fn = function (e) { setM(e.matches); };
+      mq.addEventListener ? mq.addEventListener("change", fn) : mq.addListener(fn);
+      return function () { mq.removeEventListener ? mq.removeEventListener("change", fn) : mq.removeListener(fn); };
+    }, []);
+    return m;
+  }
+
   function Applicants({ jobs, onGoToMessages }) {
+    const isMobile = useIsMobile();
     const reviewable = jobs.filter((j) => j.status === "published" || j.status === "closed");
     const [jobId, setJobId] = React.useState("");
     const [apps, setApps] = React.useState([]);           // flattened board items (each carries .stage/.tags/.notes_count)
@@ -2359,25 +2377,25 @@
 
     return (
       <div className="krm-page-pad" style={{ padding: 28 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 20, flexWrap: "wrap" }}>
-          <span style={{ fontWeight: 700, color: "var(--text-strong)", fontSize: "var(--text-md)" }}>{T("Pipeline")}</span>
-          <div style={{ width: 280 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 8 : 14, marginBottom: isMobile ? 14 : 20, flexWrap: "wrap" }}>
+          <span style={{ fontWeight: 700, color: "var(--text-strong)", fontSize: isMobile ? "var(--text-sm)" : "var(--text-md)" }}>{T("Pipeline")}</span>
+          <div style={{ width: isMobile ? "100%" : 280 }}>
             <Select value={jobId} onChange={(e) => setJobId(e.target.value)}
               options={reviewable.map((j) => ({ value: String(j.id), label: j.title + " (" + (j.applications_count || 0) + ")" }))} />
           </div>
           <Badge tone="neutral">{apps.length} applicant{apps.length === 1 ? "" : "s"}</Badge>
-          <span style={{ fontSize: "var(--text-xs)", color: "var(--text-faint)" }}>{T("Drag a card between columns, or open it to manage.")}</span>
+          <span style={{ fontSize: "var(--text-xs)", color: "var(--text-faint)" }}>{T(isMobile ? "Tap a card to open and manage it." : "Drag a card between columns, or open it to manage.")}</span>
           {msg && <span style={{ fontSize: "var(--text-sm)", color: "var(--success)", fontWeight: 600 }}>{msg}</span>}
         </div>
         {loading ? <div style={{ color: "var(--text-muted)", fontSize: "var(--text-sm)" }}>{T("Loading…")}</div> : (
-        <div className="krm-pipeline" style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(180px, 1fr))", gap: 12, alignItems: "start", overflowX: "auto", paddingBottom: 6 }}>
+        <div className="krm-pipeline" style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(180px, 1fr))", gap: isMobile ? 8 : 12, alignItems: "start", overflowX: "auto", paddingBottom: 6 }}>
           {STAGES.map((s) => (
             <div key={s.key}
               onDragOver={(e) => { e.preventDefault(); if (overCol !== s.key) setOverCol(s.key); }}
               onDragLeave={() => setOverCol("")}
               onDrop={(e) => { e.preventDefault(); setOverCol(""); var it = apps.find(function (x) { return x.id === dragId; }); if (it) move(it, s.key); setDragId(null); }}
-              style={{ background: "var(--surface-sunken)", borderRadius: "var(--radius-lg)", padding: 10, minHeight: 220, minWidth: 0, outline: overCol === s.key ? "2px dashed var(--brand)" : "none", outlineOffset: -2 }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 6px 10px" }}>
+              style={{ background: "var(--surface-sunken)", borderRadius: "var(--radius-lg)", padding: isMobile ? 8 : 10, minHeight: isMobile ? 0 : 220, minWidth: 0, outline: overCol === s.key ? "2px dashed var(--brand)" : "none", outlineOffset: -2 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: isMobile ? "2px 4px 8px" : "4px 6px 10px" }}>
                 <Badge tone={s.tone}>{T(s.label)}</Badge>
                 <span style={{ fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-muted)" }}>{byStage[s.key].length}</span>
               </div>
@@ -2386,9 +2404,9 @@
                   var c = a.candidate || {};
                   return (
                     <div key={a.id} draggable onDragStart={() => setDragId(a.id)} onDragEnd={() => setDragId(null)} onClick={() => setSel(a)}
-                      style={{ background: "var(--surface-card)", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", padding: 11, boxShadow: "var(--shadow-xs)", cursor: "pointer", opacity: dragId === a.id ? 0.5 : 1 }}>
+                      style={{ background: "var(--surface-card)", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", padding: isMobile ? 9 : 11, boxShadow: "var(--shadow-xs)", cursor: "pointer", opacity: dragId === a.id ? 0.5 : 1 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-                        <Avatar src={c.avatar_url} name={c.name || "?"} size={32} />
+                        <Avatar src={c.avatar_url} name={c.name || "?"} size={isMobile ? 28 : 32} />
                         <div style={{ minWidth: 0 }}>
                           <div style={{ fontWeight: 700, fontSize: "var(--text-sm)", color: "var(--text-strong)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.name || T("Candidate")}</div>
                           <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{a.headline || ""}</div>
@@ -2408,7 +2426,7 @@
                     </div>
                   );
                 })}
-                {byStage[s.key].length === 0 && <div style={{ fontSize: "var(--text-xs)", color: "var(--text-faint)", textAlign: "center", padding: "10px 0" }}>—</div>}
+                {byStage[s.key].length === 0 && <div style={{ fontSize: "var(--text-xs)", color: "var(--text-faint)", textAlign: "center", padding: isMobile ? "4px 0" : "10px 0" }}>—</div>}
               </div>
             </div>
           ))}

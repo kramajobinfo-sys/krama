@@ -239,6 +239,7 @@
     "Publish a job to start receiving applications.": "ផ្សាយការងារដើម្បីចាប់ផ្តើមទទួលពាក្យសុំ។",
     "Pipeline": "ដំណើរការ",
     "Drag a card between columns, or open it to manage.": "អូសកាតរវាងជួរឈរ ឬបើកវាដើម្បីគ្រប់គ្រង។",
+    "Tap a card to open and manage it.": "ចុចលើកាតដើម្បីបើក និងគ្រប់គ្រង។",
     "Doesn't meet a screening requirement": "មិនត្រូវតាមលក្ខខណ្ឌជ្រើសរើស",
     "Stage": "ដំណាក់កាល",
     "Download CV": "ទាញយក CV",
@@ -480,6 +481,7 @@
     "Publish a job to start receiving applications.": "发布职位即可开始接收申请。",
     "Pipeline": "招聘流程",
     "Drag a card between columns, or open it to manage.": "在各列之间拖动卡片，或打开卡片进行管理。",
+    "Tap a card to open and manage it.": "点按卡片以打开并管理。",
     "Doesn't meet a screening requirement": "不符合筛选条件",
     "Stage": "阶段",
     "Download CV": "下载简历",
@@ -6344,10 +6346,32 @@
     m[s.key] = s.label;
     return m;
   }, {});
+
+  // True on phone-width viewports; updates live on resize/rotate. Used to render a more
+  // compact pipeline (smaller heading, tighter stage columns) on mobile.
+  function useIsMobile() {
+    const q = "(max-width: 768px)";
+    const [m, setM] = React.useState(function () {
+      return typeof window !== "undefined" && !!window.matchMedia && window.matchMedia(q).matches;
+    });
+    React.useEffect(function () {
+      if (!window.matchMedia) return;
+      var mq = window.matchMedia(q);
+      var fn = function (e) {
+        setM(e.matches);
+      };
+      mq.addEventListener ? mq.addEventListener("change", fn) : mq.addListener(fn);
+      return function () {
+        mq.removeEventListener ? mq.removeEventListener("change", fn) : mq.removeListener(fn);
+      };
+    }, []);
+    return m;
+  }
   function Applicants({
     jobs,
     onGoToMessages
   }) {
+    const isMobile = useIsMobile();
     const reviewable = jobs.filter(j => j.status === "published" || j.status === "closed");
     const [jobId, setJobId] = React.useState("");
     const [apps, setApps] = React.useState([]); // flattened board items (each carries .stage/.tags/.notes_count)
@@ -6611,19 +6635,19 @@
       style: {
         display: "flex",
         alignItems: "center",
-        gap: 14,
-        marginBottom: 20,
+        gap: isMobile ? 8 : 14,
+        marginBottom: isMobile ? 14 : 20,
         flexWrap: "wrap"
       }
     }, /*#__PURE__*/React.createElement("span", {
       style: {
         fontWeight: 700,
         color: "var(--text-strong)",
-        fontSize: "var(--text-md)"
+        fontSize: isMobile ? "var(--text-sm)" : "var(--text-md)"
       }
     }, T("Pipeline")), /*#__PURE__*/React.createElement("div", {
       style: {
-        width: 280
+        width: isMobile ? "100%" : 280
       }
     }, /*#__PURE__*/React.createElement(Select, {
       value: jobId,
@@ -6639,7 +6663,7 @@
         fontSize: "var(--text-xs)",
         color: "var(--text-faint)"
       }
-    }, T("Drag a card between columns, or open it to manage.")), msg && /*#__PURE__*/React.createElement("span", {
+    }, T(isMobile ? "Tap a card to open and manage it." : "Drag a card between columns, or open it to manage.")), msg && /*#__PURE__*/React.createElement("span", {
       style: {
         fontSize: "var(--text-sm)",
         color: "var(--success)",
@@ -6655,7 +6679,7 @@
       style: {
         display: "grid",
         gridTemplateColumns: "repeat(7, minmax(180px, 1fr))",
-        gap: 12,
+        gap: isMobile ? 8 : 12,
         alignItems: "start",
         overflowX: "auto",
         paddingBottom: 6
@@ -6679,8 +6703,8 @@
       style: {
         background: "var(--surface-sunken)",
         borderRadius: "var(--radius-lg)",
-        padding: 10,
-        minHeight: 220,
+        padding: isMobile ? 8 : 10,
+        minHeight: isMobile ? 0 : 220,
         minWidth: 0,
         outline: overCol === s.key ? "2px dashed var(--brand)" : "none",
         outlineOffset: -2
@@ -6690,7 +6714,7 @@
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        padding: "4px 6px 10px"
+        padding: isMobile ? "2px 4px 8px" : "4px 6px 10px"
       }
     }, /*#__PURE__*/React.createElement(Badge, {
       tone: s.tone
@@ -6718,7 +6742,7 @@
           background: "var(--surface-card)",
           border: "1px solid var(--border)",
           borderRadius: "var(--radius-md)",
-          padding: 11,
+          padding: isMobile ? 9 : 11,
           boxShadow: "var(--shadow-xs)",
           cursor: "pointer",
           opacity: dragId === a.id ? 0.5 : 1
@@ -6732,7 +6756,7 @@
       }, /*#__PURE__*/React.createElement(Avatar, {
         src: c.avatar_url,
         name: c.name || "?",
-        size: 32
+        size: isMobile ? 28 : 32
       }), /*#__PURE__*/React.createElement("div", {
         style: {
           minWidth: 0
@@ -6813,7 +6837,7 @@
         fontSize: "var(--text-xs)",
         color: "var(--text-faint)",
         textAlign: "center",
-        padding: "10px 0"
+        padding: isMobile ? "4px 0" : "10px 0"
       }
     }, "\u2014"))))), sel && /*#__PURE__*/React.createElement("div", {
       onClick: () => setSel(null),
