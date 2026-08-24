@@ -272,6 +272,51 @@ class EmailTemplates
     }
 
     /**
+     * Welcome email on signup. Candidates get a warm intro + a few live "top jobs";
+     * employers get a "post your first job" nudge. Rendered in the marketing shell.
+     *
+     * @param  array<int,array{title:string,company:string,location:string,url:string}>  $topJobs
+     * @return array{0:string,1:string}  [subject, html]
+     */
+    public static function welcome(string $name, ?string $role, array $topJobs, string $unsubscribeUrl): array
+    {
+        $fromName = config('mail.from.name', 'Krama');
+        $home     = rtrim((string) (config('app.frontend_url') ?: config('app.url') ?: 'https://kramajob.com'), '/');
+        $e        = fn ($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
+        $first    = trim(strtok(trim($name) ?: '', ' ')) ?: 'there';
+        $btn      = fn ($label, $url) => "<a href='{$url}' style='display:inline-block;background:#0d9488;color:#fff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:8px;margin:8px 0'>{$label}</a>";
+
+        if ($role === 'employer') {
+            $subject = "Welcome to {$fromName} — let's find you great talent";
+            $body  = "<p style='margin:0 0 16px'>Hi {$e($first)},</p>";
+            $body .= "<p style='margin:0 0 16px'>Welcome to {$fromName}! You're all set to start hiring. Post your first job and reach candidates across Cambodia — with a full applicant tracker, screening questions, and AI matching built in.</p>";
+            $body .= "<p style='margin:0 0 8px'>" . $btn('Post your first job', $home . '/?page=employers') . "</p>";
+            $body .= "<p style='margin:16px 0 0;color:#6b7280;font-size:13px'>Need a hand getting set up? Just reply to this email or reach us in the app.</p>";
+            return [$subject, self::marketing($body, $unsubscribeUrl)];
+        }
+
+        // Candidate (default)
+        $subject = "Welcome to {$fromName} — here are jobs for you";
+        $body  = "<p style='margin:0 0 16px'>Hi {$e($first)},</p>";
+        $body .= "<p style='margin:0 0 16px'>Welcome to {$fromName}! Thousands of verified jobs across Cambodia are waiting. Here's how to get started:</p>";
+
+        if (! empty($topJobs)) {
+            $body .= "<p style='margin:0 0 10px;font-weight:700;color:#111827'>Jobs to get you started</p>";
+            foreach ($topJobs as $j) {
+                $meta = trim($e($j['company']) . ($j['location'] ? ' · ' . $e($j['location']) : ''), ' ·');
+                $body .= "<div style='padding:12px 14px;border:1px solid #e5e7eb;border-radius:10px;margin:0 0 8px'>"
+                    . "<a href='{$e($j['url'])}' style='font-weight:700;color:#0d9488;text-decoration:none'>{$e($j['title'])}</a>"
+                    . ($meta ? "<div style='color:#6b7280;font-size:13px;margin-top:2px'>{$meta}</div>" : '')
+                    . "</div>";
+            }
+        }
+
+        $body .= "<p style='margin:16px 0 8px'>" . $btn('Browse all jobs', $home . '/?page=jobs') . "</p>";
+        $body .= "<p style='margin:16px 0 0;color:#374151'><strong>Tip:</strong> complete your profile and turn on job alerts so the right roles come to you — by email, Telegram, and push.</p>";
+        return [$subject, self::marketing($body, $unsubscribeUrl)];
+    }
+
+    /**
      * Branded shell for a MARKETING campaign email. Unlike wrapper(), the footer carries a
      * required unsubscribe link (compliance) instead of "automated, do not reply". $bodyHtml
      * is the admin-authored content, inserted as-is.

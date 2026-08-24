@@ -280,6 +280,7 @@ class AuthController extends Controller
         if ($email && ! $emailVerifiedAt) {
             SendEmailVerificationJob::dispatch($user)->afterResponse(); // send AFTER the HTTP response so signup isn't blocked on SMTP
         }
+        \App\Jobs\SendWelcomeEmailJob::dispatch($user->id)->afterResponse(); // no-op if the account has no email
 
         $token = JWTAuth::fromUser($user);
 
@@ -771,6 +772,7 @@ class AuthController extends Controller
             $user->updated_at        = now();
             $user->save();
             $user->load('role.permissions');
+            \App\Jobs\SendWelcomeEmailJob::dispatch($user->id)->afterResponse(); // new social signup
         }
 
         $token = JWTAuth::fromUser($user);
