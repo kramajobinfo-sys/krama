@@ -304,10 +304,20 @@ class EmailTemplates
             $body .= "<p style='margin:0 0 10px;font-weight:700;color:#111827'>Jobs to get you started</p>";
             foreach ($topJobs as $j) {
                 $meta = trim($e($j['company']) . ($j['location'] ? ' · ' . $e($j['location']) : ''), ' ·');
-                $body .= "<div style='padding:12px 14px;border:1px solid #e5e7eb;border-radius:10px;margin:0 0 8px'>"
+                // Company logo cell — real logo when we have one, else a teal initial tile.
+                if (! empty($j['logo'])) {
+                    $badge = "<img src='{$e($j['logo'])}' width='44' height='44' alt='' style='width:44px;height:44px;border-radius:8px;object-fit:cover;display:block;border:1px solid #e5e7eb'>";
+                } else {
+                    $initial = strtoupper(mb_substr(trim((string) $j['company']) ?: 'K', 0, 1));
+                    $badge = "<div style='width:44px;height:44px;border-radius:8px;background:#e6f4f1;color:#0d9488;font-weight:800;font-size:18px;text-align:center;line-height:44px'>{$e($initial)}</div>";
+                }
+                $body .= "<table role='presentation' cellpadding='0' cellspacing='0' width='100%' style='border:1px solid #e5e7eb;border-radius:10px;border-collapse:separate;margin:0 0 8px'>"
+                    . "<tr>"
+                    . "<td width='44' style='padding:12px 0 12px 12px;vertical-align:middle'>{$badge}</td>"
+                    . "<td style='padding:12px 14px;vertical-align:middle'>"
                     . "<a href='{$e($j['url'])}' style='font-weight:700;color:#0d9488;text-decoration:none'>{$e($j['title'])}</a>"
                     . ($meta ? "<div style='color:#6b7280;font-size:13px;margin-top:2px'>{$meta}</div>" : '')
-                    . "</div>";
+                    . "</td></tr></table>";
             }
         }
 
@@ -333,9 +343,9 @@ class EmailTemplates
 <body style='margin:0;padding:0;background:#f3f4f6;font-family:system-ui,-apple-system,sans-serif'>
   <div style='max-width:600px;margin:40px auto;padding:0 16px'>
     <div style='background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.1)'>
-      <div style='background:#0d9488;padding:20px 32px'>
-        <img src='{$logo}' width='34' height='34' alt='' style='vertical-align:middle;border-radius:8px'>
-        <span style='color:#fff;font-size:20px;font-weight:700;vertical-align:middle;margin-left:10px'>{$fromName}</span>
+      <div style='background:#0d9488;padding:24px 32px;text-align:center'>
+        <img src='{$logo}' width='42' height='42' alt='' style='vertical-align:middle;border-radius:10px;background:#ffffff;padding:5px'>
+        <span style='color:#ffffff;font-size:22px;font-weight:800;letter-spacing:.02em;vertical-align:middle;margin-left:11px'>{$fromName}</span>
       </div>
       <div style='padding:32px;color:#374151;font-size:15px;line-height:1.6'>
         {$bodyHtml}

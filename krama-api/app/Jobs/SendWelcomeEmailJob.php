@@ -47,12 +47,19 @@ class SendWelcomeEmailJob implements ShouldQueue
                 ->where('status', 'published')
                 ->orderByDesc('is_featured')->orderByDesc('published_at')
                 ->limit(5)->get()
-                ->map(fn ($j) => [
-                    'title'   => $j->title,
-                    'company' => optional($j->company)->name ?: '',
-                    'location' => $j->is_remote ? 'Remote' : (optional($j->location)->name ?: ''),
-                    'url'     => SocialPostService::jobUrl($j),
-                ])->all();
+                ->map(function ($j) {
+                    $logo = optional($j->company)->logo_url;
+                    if ($logo && ! str_starts_with($logo, 'http')) {
+                        $logo = rtrim((string) (config('app.url') ?: 'https://kramajob.com'), '/') . '/' . ltrim($logo, '/');
+                    }
+                    return [
+                        'title'    => $j->title,
+                        'company'  => optional($j->company)->name ?: '',
+                        'location' => $j->is_remote ? 'Remote' : (optional($j->location)->name ?: ''),
+                        'url'      => SocialPostService::jobUrl($j),
+                        'logo'     => $logo ?: null,
+                    ];
+                })->all();
         }
 
         try {
