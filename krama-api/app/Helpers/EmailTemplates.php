@@ -153,14 +153,16 @@ class EmailTemplates
 
     // ── Company follower: new job posted ─────────────────────────────────────
 
-    public static function newJobFromFollowedCompany(string $candidateName, string $companyName, string $jobTitle, string $location, string $jobType, string $jobUrl): array
+    public static function newJobFromFollowedCompany(string $candidateName, string $companyName, string $jobTitle, string $location, string $jobType, string $jobUrl, ?string $companyLogo = null): array
     {
         $subject = "{$companyName} just posted a new job: {$jobTitle}";
         $typeLabel = ucwords(str_replace('_', ' ', $jobType));
+        $logoImg = $companyLogo ? "<img src='" . htmlspecialchars($companyLogo, ENT_QUOTES) . "' width='48' height='48' alt='' style='width:48px;height:48px;border-radius:10px;object-fit:cover;border:1px solid #e5e7eb;display:block;margin-bottom:12px'>" : "";
         $body = "
 <p style='margin:0 0 18px;color:#374151'>Hi {$candidateName},</p>
 <p style='margin:0 0 18px;color:#374151'>A company you follow has just posted a new role:</p>
 <div style='border:1px solid #e5e7eb;border-radius:10px;padding:20px 24px;margin-bottom:24px'>
+  {$logoImg}
   <div style='font-size:15px;color:#6b7280;font-weight:600;margin-bottom:4px'>{$companyName}</div>
   <div style='font-size:18px;font-weight:700;color:#111827;margin-bottom:4px'>{$jobTitle}</div>
   <div style='color:#9ca3af;font-size:14px;margin-bottom:14px'>" . ($location ? "{$location} &bull; " : "") . "{$typeLabel}</div>
@@ -172,14 +174,16 @@ class EmailTemplates
 
     // ── Job alert match ──────────────────────────────────────────────────────
 
-    public static function jobAlertMatch(string $candidateName, string $jobTitle, string $companyName, string $location, string $jobType, string $jobUrl): array
+    public static function jobAlertMatch(string $candidateName, string $jobTitle, string $companyName, string $location, string $jobType, string $jobUrl, ?string $companyLogo = null): array
     {
         $subject = "New job alert: {$jobTitle} at {$companyName}";
         $typeLabel = ucwords(str_replace('_', ' ', $jobType));
+        $logoImg = $companyLogo ? "<img src='" . htmlspecialchars($companyLogo, ENT_QUOTES) . "' width='48' height='48' alt='' style='width:48px;height:48px;border-radius:10px;object-fit:cover;border:1px solid #e5e7eb;display:block;margin-bottom:12px'>" : "";
         $body = "
 <p style='margin:0 0 18px;color:#374151'>Hi {$candidateName},</p>
 <p style='margin:0 0 18px;color:#374151'>A new role matching your job alert has just been posted:</p>
 <div style='border:1px solid #e5e7eb;border-radius:10px;padding:20px 24px;margin-bottom:24px'>
+  {$logoImg}
   <div style='font-size:18px;font-weight:700;color:#111827;margin-bottom:4px'>{$jobTitle}</div>
   <div style='color:#6b7280;font-size:14px;margin-bottom:12px'>{$companyName}" . ($location ? " &bull; {$location}" : "") . " &bull; {$typeLabel}</div>
   <a href='{$jobUrl}' style='display:inline-block;background:#0d9488;color:#fff;font-weight:600;text-decoration:none;padding:10px 22px;border-radius:8px;font-size:14px'>View job &rarr;</a>
@@ -304,12 +308,16 @@ class EmailTemplates
             $body .= "<p style='margin:0 0 10px;font-weight:700;color:#111827'>Jobs to get you started</p>";
             foreach ($topJobs as $j) {
                 $meta = trim($e($j['company']) . ($j['location'] ? ' · ' . $e($j['location']) : ''), ' ·');
-                // Company logo cell — real logo when we have one, else a teal initial tile.
+                // Company logo cell — real logo when we have one, else a teal initial tile;
+                // links to the company profile when we know it.
                 if (! empty($j['logo'])) {
                     $badge = "<img src='{$e($j['logo'])}' width='44' height='44' alt='' style='width:44px;height:44px;border-radius:8px;object-fit:cover;display:block;border:1px solid #e5e7eb'>";
                 } else {
                     $initial = strtoupper(mb_substr(trim((string) $j['company']) ?: 'K', 0, 1));
                     $badge = "<div style='width:44px;height:44px;border-radius:8px;background:#e6f4f1;color:#0d9488;font-weight:800;font-size:18px;text-align:center;line-height:44px'>{$e($initial)}</div>";
+                }
+                if (! empty($j['company_url'])) {
+                    $badge = "<a href='{$e($j['company_url'])}' style='text-decoration:none'>{$badge}</a>";
                 }
                 $body .= "<table role='presentation' cellpadding='0' cellspacing='0' width='100%' style='border:1px solid #e5e7eb;border-radius:10px;border-collapse:separate;margin:0 0 8px'>"
                     . "<tr>"

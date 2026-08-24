@@ -53,11 +53,12 @@ class SendWelcomeEmailJob implements ShouldQueue
                         $logo = rtrim((string) (config('app.url') ?: 'https://kramajob.com'), '/') . '/' . ltrim($logo, '/');
                     }
                     return [
-                        'title'    => $j->title,
-                        'company'  => optional($j->company)->name ?: '',
-                        'location' => $j->is_remote ? 'Remote' : (optional($j->location)->name ?: ''),
-                        'url'      => SocialPostService::jobUrl($j),
-                        'logo'     => $logo ?: null,
+                        'title'       => $j->title,
+                        'company'     => optional($j->company)->name ?: '',
+                        'location'    => $j->is_remote ? 'Remote' : (optional($j->location)->name ?: ''),
+                        'url'         => SocialPostService::jobUrl($j),
+                        'logo'        => $logo ?: null,
+                        'company_url' => $j->company_id ? url('/companies/' . $j->company_id) : null,
                     ];
                 })->all();
         }

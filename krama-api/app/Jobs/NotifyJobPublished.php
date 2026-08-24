@@ -42,7 +42,7 @@ class NotifyJobPublished implements ShouldQueue
 
     public function handle(): void
     {
-        $job = Job::with(['company:id,name', 'location:id,name', 'category:id,name'])->find($this->jobId);
+        $job = Job::with(['company:id,name,logo_url', 'location:id,name', 'category:id,name'])->find($this->jobId);
         if (! $job) {
             return;
         }
@@ -77,10 +77,20 @@ class NotifyJobPublished implements ShouldQueue
         }
     }
 
+    /** Absolute URL to the job's company logo for emails, or null. */
+    private function companyLogoUrl(Job $job): ?string
+    {
+        $logo = optional($job->company)->logo_url;
+        if (! $logo) return null;
+        return str_starts_with($logo, 'http')
+            ? $logo
+            : rtrim((string) (config('app.url') ?: 'https://kramajob.com'), '/') . '/' . ltrim($logo, '/');
+    }
+
     /** @return int[] candidate ids notified */
     private function sendFollowerEmails(Job $job): array
     {
-        $job->loadMissing(['company:id,name', 'location:id,name']);
+        $job->loadMissing(['company:id,name,logo_url', 'location:id,name']);
 
         $followers = DB::table('company_followers')
             ->join('users', 'users.id', '=', 'company_followers.candidate_id')
@@ -104,7 +114,7 @@ class NotifyJobPublished implements ShouldQueue
             if ($mailOk && $candidate->email) {
                 try {
                     [$subject, $html] = EmailTemplates::newJobFromFollowedCompany(
-                        $candidate->name, $companyName, $job->title, $locationName, $jobType, $jobUrl
+                        $candidate->name, $companyName, $job->title, $locationName, $jobType, $jobUrl, $this->companyLogoUrl($job)
                     );
                     Mail::html($html, fn ($m) => $m->to($candidate->email, $candidate->name)->subject($subject));
                 } catch (\Exception $e) {
@@ -135,7 +145,7 @@ class NotifyJobPublished implements ShouldQueue
     /** @return int[] candidate ids notified */
     private function sendJobAlertEmails(Job $job): array
     {
-        $job->loadMissing(['category:id,name', 'location:id,name', 'company:id,name']);
+        $job->loadMissing(['category:id,name', 'location:id,name', 'company:id,name,logo_url']);
 
         $alerts = JobAlert::with('candidate:id,name,email,telegram_chat_id')
             ->where('type', 'filter')  // 'ai' rows carry no filters — handled by sendAiMatchAlerts()
@@ -178,7 +188,7 @@ class NotifyJobPublished implements ShouldQueue
             if ($mailOk && $candidate->email) {
                 try {
                     [$subject, $html] = EmailTemplates::jobAlertMatch(
-                        $candidate->name, $job->title, $companyName, $locationName, $jobType, $jobUrl
+                        $candidate->name, $job->title, $companyName, $locationName, $jobType, $jobUrl, $this->companyLogoUrl($job)
                     );
                     Mail::html($html, fn ($m) => $m->to($candidate->email, $candidate->name)->subject($subject));
                 } catch (\Exception $e) {
@@ -293,7 +303,7 @@ class NotifyJobPublished implements ShouldQueue
             if ($mailOk && $candidate->email) {
                 try {
                     [$subject, $html] = EmailTemplates::jobAlertMatch(
-                        $candidate->name, $job->title, $companyName, $locationName, $jobType, $jobUrl
+                        $candidate->name, $job->title, $companyName, $locationName, $jobType, $jobUrl, $this->companyLogoUrl($job)
                     );
                     Mail::html($html, fn ($m) => $m->to($candidate->email, $candidate->name)->subject($subject));
                 } catch (\Exception $e) {
