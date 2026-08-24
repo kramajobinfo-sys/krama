@@ -82,6 +82,7 @@ class CompanyController extends Controller
         $user = $request->user();
         $this->requirePermission('post_jobs');
         $this->requireEmployerRole($user);
+        $this->requireCompanyCapability('manage_company');
 
         if (Company::where('user_id', $user->id)->exists()) {
             return response()->json(['message' => 'You already have a company profile.'], 422);
@@ -137,6 +138,7 @@ class CompanyController extends Controller
         $user = $request->user();
         $this->requirePermission('post_jobs');
         $this->requireEmployerRole($user);
+        $this->requireCompanyCapability('manage_company');
 
         $company = $this->ownCompany($user, $id);
 
@@ -225,6 +227,7 @@ class CompanyController extends Controller
         $user = $request->user();
         $this->requirePermission('post_jobs');
         $this->requireEmployerRole($user);
+        $this->requireCompanyCapability('manage_company');
 
         $company = $this->ownCompany($user, $id);
 
@@ -338,6 +341,7 @@ class CompanyController extends Controller
         $user = $request->user();
         $this->requirePermission('post_jobs');
         $this->requireEmployerRole($user);
+        $this->requireCompanyCapability('manage_company');
 
         $company = $this->ownCompany($user, $id);
         $photo   = $company->gallery()->findOrFail($photoId);
@@ -405,6 +409,7 @@ class CompanyController extends Controller
         $user = $request->user();
         $this->requirePermission('post_jobs');
         $this->requireEmployerRole($user);
+        $this->requireCompanyCapability('manage_company');
 
         $company = $this->ownCompany($user, $id);
 

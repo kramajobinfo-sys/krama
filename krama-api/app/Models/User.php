@@ -65,6 +65,38 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
             && $this->role->permissions->contains('slug', $slug);
     }
 
+    // ── Company-scoped RBAC ─────────────────────────────────────────────────────
+    // A member's `company_role` maps to a set of capabilities that gate what they can do
+    // WITHIN their company (on top of the global role permissions). The owner (company_role
+    // null — they own the company) and 'company_admin' get everything; other roles are scoped.
+    // 'recruitment' is the legacy slug for 'recruiter'. See TeamController / the requireCompanyCapability
+    // helper on the base Controller.
+    public const COMPANY_ROLE_CAPS = [
+        'company_admin'  => ['manage_jobs', 'approve_jobs', 'view_applicants', 'manage_applicants', 'manage_billing', 'manage_company', 'manage_team'],
+        'recruiter'      => ['manage_jobs', 'view_applicants', 'manage_applicants'],
+        'recruitment'    => ['manage_jobs', 'view_applicants', 'manage_applicants'], // legacy alias
+        'hiring_manager' => ['view_applicants', 'manage_applicants'],
+        'viewer'         => ['view_applicants'],
+    ];
+
+    // All capabilities, granted to the owner and to company_admin.
+    public const COMPANY_ALL_CAPS = ['manage_jobs', 'approve_jobs', 'view_applicants', 'manage_applicants', 'manage_billing', 'manage_company', 'manage_team'];
+
+    // The capabilities this user holds within their company.
+    public function companyCapabilities(): array
+    {
+        // Owner: no company_role set but linked to / owning a company → full control.
+        if (empty($this->company_role)) {
+            return self::COMPANY_ALL_CAPS;
+        }
+        return self::COMPANY_ROLE_CAPS[$this->company_role] ?? [];
+    }
+
+    public function companyCan(string $capability): bool
+    {
+        return in_array($capability, $this->companyCapabilities(), true);
+    }
+
     public function applications()
     {
         return $this->hasMany(Application::class, 'candidate_id');

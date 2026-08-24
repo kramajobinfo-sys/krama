@@ -169,6 +169,7 @@ class PremiumSlotController extends Controller
 
     public function checkout(Request $request)
     {
+        $this->requireCompanyCapability('manage_billing');
         $company = $this->resolveCompany($request->user());
         $cfg     = self::premiumConfig();
 

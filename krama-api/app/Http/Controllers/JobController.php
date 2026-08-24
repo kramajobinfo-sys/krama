@@ -152,6 +152,7 @@ class JobController extends Controller
     public function store(Request $request)
     {
         $this->requirePermission('post_jobs');
+        $this->requireCompanyCapability('manage_jobs');
 
         $user    = $request->user();
         $company = $this->resolveCompany($user);
@@ -502,6 +503,7 @@ class JobController extends Controller
     public function employerAiDraft(Request $request)
     {
         $this->requirePermission('post_jobs');
+        $this->requireCompanyCapability('manage_jobs');
         return $this->runAiDraft($request);
     }
 
@@ -561,6 +563,7 @@ class JobController extends Controller
     public function update(Request $request, $id)
     {
         $this->requirePermission('post_jobs');
+        $this->requireCompanyCapability('manage_jobs');
 
         $job = $this->ownJob($request->user(), $id);
 
@@ -623,6 +626,7 @@ class JobController extends Controller
     public function destroy(Request $request, $id)
     {
         $this->requirePermission('post_jobs');
+        $this->requireCompanyCapability('manage_jobs');
 
         $job = $this->ownJob($request->user(), $id);
 
@@ -641,6 +645,7 @@ class JobController extends Controller
     public function submit(Request $request, $id)
     {
         $this->requirePermission('post_jobs');
+        $this->requireCompanyCapability('manage_jobs');
 
         $user = $request->user();
         $job  = $this->ownJob($user, $id);
@@ -653,7 +658,7 @@ class JobController extends Controller
             'subscription_id' => 'nullable|integer',
         ]);
 
-        $isRecruiter = $user->company_role === 'recruitment';
+        $isRecruiter = in_array($user->company_role, ['recruiter', 'recruitment'], true);
 
         if ($isRecruiter) {
             // Recruiter: send for company admin review — no quota check (not publishing yet)
@@ -674,12 +679,13 @@ class JobController extends Controller
     public function companyApprove(Request $request, $id)
     {
         $this->requirePermission('post_jobs');
+        $this->requireCompanyCapability('approve_jobs');
 
         $user    = $request->user();
         $company = $this->resolveCompany($user);
 
         // Must be company admin (owner or explicit admin role)
-        if ($user->company_role === 'recruitment') {
+        if (in_array($user->company_role, ['recruiter', 'recruitment'], true)) {
             abort(403, 'Only the company admin can approve jobs.');
         }
 
@@ -706,11 +712,12 @@ class JobController extends Controller
     public function companyReject(Request $request, $id)
     {
         $this->requirePermission('post_jobs');
+        $this->requireCompanyCapability('approve_jobs');
 
         $user    = $request->user();
         $company = $this->resolveCompany($user);
 
-        if ($user->company_role === 'recruitment') {
+        if (in_array($user->company_role, ['recruiter', 'recruitment'], true)) {
             abort(403, 'Only the company admin can reject jobs.');
         }
 
@@ -820,6 +827,7 @@ class JobController extends Controller
     public function close(Request $request, $id)
     {
         $this->requirePermission('post_jobs');
+        $this->requireCompanyCapability('manage_jobs');
 
         $job = $this->ownJob($request->user(), $id);
         $job->update(['status' => 'closed']);
@@ -841,7 +849,7 @@ class JobController extends Controller
             ->where('company_id', $company->id);
 
         // Recruiters only see their own jobs
-        if ($user->company_role === 'recruitment') {
+        if (in_array($user->company_role, ['recruiter', 'recruitment'], true)) {
             $q->where('user_id', $user->id);
         }
 
@@ -976,6 +984,7 @@ class JobController extends Controller
     public function boost(Request $request, $id)
     {
         $this->requirePermission('post_jobs');
+        $this->requireCompanyCapability('manage_jobs');
         $user    = $request->user();
         $job     = $this->ownJob($user, $id);
         $company = $this->resolveCompany($user);

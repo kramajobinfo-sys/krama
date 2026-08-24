@@ -285,6 +285,7 @@ class ApplicationController extends Controller
     {
         $user = $request->user();
         $this->requirePermission('view_applicants');
+        $this->requireCompanyCapability('manage_applicants');
 
         $data = $request->validate([
             // 'applied' is allowed so the employer can drag a card back to the first column

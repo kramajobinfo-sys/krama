@@ -1013,23 +1013,28 @@
   }, {
     id: "jobs",
     label: "Job postings",
-    icon: "briefcase"
+    icon: "briefcase",
+    cap: "manage_jobs"
   }, {
     id: "applicants",
     label: "Applicants",
-    icon: "users"
+    icon: "users",
+    cap: "view_applicants"
   }, {
     id: "analytics",
     label: "Analytics",
-    icon: "bar-chart-3"
+    icon: "bar-chart-3",
+    cap: "view_applicants"
   }, {
     id: "cvmatch",
     label: "CV Match",
-    icon: "git-compare-arrows"
+    icon: "git-compare-arrows",
+    cap: "manage_jobs"
   }, {
     id: "talent",
     label: "Find candidates",
-    icon: "user-search"
+    icon: "user-search",
+    cap: "view_applicants"
   }, {
     id: "messages",
     label: "Messages",
@@ -1038,25 +1043,71 @@
     id: "team",
     label: "Team",
     icon: "user-plus",
-    adminOnly: true
+    cap: "manage_team"
   }, {
     id: "company",
     label: "Company profile",
     icon: "building-2",
-    adminOnly: true
+    cap: "manage_company"
   }, {
     id: "billing",
     label: "Plan & billing",
     icon: "credit-card",
-    adminOnly: true
+    cap: "manage_billing"
   }, {
     id: "support",
     label: "Help & support",
     icon: "life-buoy"
   }];
+
+  // ── Company-scoped RBAC (mirrors the backend User::companyCapabilities) ──────────────────
+  // authUser.company_capabilities comes from /auth/me. Fall back to full access when it's
+  // absent (older API response / owner) so nothing is hidden by accident.
+  const ALL_CAPS = ["manage_jobs", "approve_jobs", "view_applicants", "manage_applicants", "manage_billing", "manage_company", "manage_team"];
+  function caps(user) {
+    if (user && Array.isArray(user.company_capabilities)) return user.company_capabilities;
+    return ALL_CAPS;
+  }
+  function can(user, capability) {
+    return caps(user).indexOf(capability) !== -1;
+  }
+  // "Company admin" = can manage the team (owner or company_admin). Used for job-approval UI.
   function isCompanyAdmin(user) {
-    // Owner (no company_role set, owns a company) or explicit company_admin
-    return !user || user.company_role !== "recruitment";
+    return can(user, "manage_team");
+  }
+  const RECRUITER_ROLES = ["recruiter", "recruitment"];
+  function isRecruiterRole(cr) {
+    return RECRUITER_ROLES.indexOf(cr) !== -1;
+  }
+
+  // Assignable team roles (owner is implicit, not assignable). Order = most → least access.
+  const TEAM_ROLES = [{
+    value: "company_admin",
+    label: "Admin",
+    blurb: "Full control — jobs, applicants, billing, company profile & team."
+  }, {
+    value: "recruiter",
+    label: "Recruiter",
+    blurb: "Post & edit jobs (you approve them) and manage applicants."
+  }, {
+    value: "hiring_manager",
+    label: "Hiring manager",
+    blurb: "Review & manage applicants only — can’t post jobs or see billing."
+  }, {
+    value: "viewer",
+    label: "Viewer",
+    blurb: "Read-only access to applicants."
+  }];
+  function roleLabel(cr) {
+    if (!cr) return "Company admin";
+    if (isRecruiterRole(cr)) return "Recruiter";
+    var r = TEAM_ROLES.find(function (x) {
+      return x.value === cr;
+    });
+    return r ? r.label : cr;
+  }
+  function roleTone(cr) {
+    return !cr || cr === "company_admin" ? "brand" : "neutral";
   }
   function Sidebar({
     page,
@@ -1112,7 +1163,7 @@
         gap: 3
       }
     }, NAV.filter(function (n) {
-      return !n.adminOnly || isCompanyAdmin(user);
+      return !n.cap || can(user, n.cap);
     }).map(n => {
       const active = page === n.id;
       return /*#__PURE__*/React.createElement("button", {
@@ -1529,7 +1580,7 @@
       }
     }, /*#__PURE__*/React.createElement(NotificationBell, {
       onNav: onNav
-    }), /*#__PURE__*/React.createElement(Button, {
+    }), can(user, "manage_jobs") && /*#__PURE__*/React.createElement(Button, {
       variant: "primary",
       iconLeft: I("plus", 16),
       onClick: onPost,
@@ -3508,7 +3559,7 @@
     const isEdit = mode === "edit";
     const canSubmit = !isEdit || job && (job.status === "draft" || job.status === "rejected");
     const modalTitle = isEdit ? T("Edit job") : mode === "clone" ? T("Clone job") : T("Post a job");
-    const isRecruiter = user && user.company_role === "recruitment";
+    const isRecruiter = user && isRecruiterRole(user.company_role);
     const submitLabel = isRecruiter ? T("Submit for approval") : T("Publish job");
     const submit = publish => {
       if (!form.title.trim()) {
@@ -4610,7 +4661,7 @@
     };
     const quotaFull = q.limit !== null && q.remaining <= 0;
     const isAdmin = isCompanyAdmin(user);
-    const isRecruiter = user && user.company_role === "recruitment";
+    const isRecruiter = user && isRecruiterRole(user.company_role);
     const [page, setPage] = React.useState(1);
     React.useEffect(function () {
       setPage(1);
@@ -4980,7 +5031,7 @@
       }
     }, /*#__PURE__*/React.createElement(Badge, {
       tone: "accent"
-    }, I("star", 11), " Featured", featuredDaysLeft(j) != null ? " · " + featuredDaysLeft(j) + "d left" : "")) : null), isAdmin && j.poster && j.poster.company_role === "recruitment" && /*#__PURE__*/React.createElement("div", {
+    }, I("star", 11), " Featured", featuredDaysLeft(j) != null ? " · " + featuredDaysLeft(j) + "d left" : "")) : null), isAdmin && j.poster && isRecruiterRole(j.poster.company_role) && /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: "var(--text-xs)",
         color: "var(--text-muted)",
@@ -5080,7 +5131,7 @@
       }
     }, /*#__PURE__*/React.createElement(Badge, {
       tone: "accent"
-    }, I("star", 11), " Featured", featuredDaysLeft(j) != null ? " · " + featuredDaysLeft(j) + "d left" : "")) : null, isAdmin && j.poster && j.poster.company_role === "recruitment" && /*#__PURE__*/React.createElement("div", {
+    }, I("star", 11), " Featured", featuredDaysLeft(j) != null ? " · " + featuredDaysLeft(j) + "d left" : "")) : null, isAdmin && j.poster && isRecruiterRole(j.poster.company_role) && /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: "var(--text-xs)",
         color: "var(--text-muted)",
@@ -12712,7 +12763,7 @@
     const [inviteName, setInviteName] = React.useState("");
     const [inviteEmail, setInviteEmail] = React.useState("");
     const [invitePassword, setInvitePassword] = React.useState("");
-    const [inviteRole, setInviteRole] = React.useState("recruitment");
+    const [inviteRole, setInviteRole] = React.useState("recruiter");
     const [inviting, setInviting] = React.useState(false);
     const [msg, setMsg] = React.useState(null);
     const [pwdModal, setPwdModal] = React.useState(null);
@@ -12745,7 +12796,7 @@
         email: inviteEmail.trim(),
         role: inviteRole
       }).then(function () {
-        flash((inviteRole === "company_admin" ? "Admin" : "Recruiter") + " added. Set their password below.");
+        flash(roleLabel(inviteRole) + " added. Set their password below.");
         setInviteOpen(false);
         setInviteName("");
         setInviteEmail("");
@@ -12801,7 +12852,7 @@
     const recruiters = data ? data.recruiters || [] : [];
     const owner = data ? data.owner : null;
     // Owner (company_role null) and company_admin can manage the team; recruiters can only view.
-    const isTeamAdmin = user && user.company_role !== "recruitment";
+    const isTeamAdmin = can(user, "manage_team");
     return /*#__PURE__*/React.createElement("div", {
       className: "krm-page-pad",
       style: {
@@ -12916,22 +12967,21 @@
         flexShrink: 0
       }
     }, isTeamAdmin ? /*#__PURE__*/React.createElement(Select, {
-      value: r.company_role || "recruitment",
+      value: isRecruiterRole(r.company_role) ? "recruiter" : r.company_role || "recruiter",
       onChange: e => changeRole(r, e.target.value),
-      options: [{
-        value: "company_admin",
-        label: "Admin"
-      }, {
-        value: "recruitment",
-        label: "Recruiter"
-      }],
+      options: TEAM_ROLES.map(function (x) {
+        return {
+          value: x.value,
+          label: x.label
+        };
+      }),
       size: "sm",
       containerStyle: {
-        minWidth: 120
+        minWidth: 150
       }
     }) : /*#__PURE__*/React.createElement(Badge, {
-      tone: r.company_role === "company_admin" ? "brand" : "neutral"
-    }, r.company_role === "company_admin" ? "Admin" : "Recruiter"), isTeamAdmin && /*#__PURE__*/React.createElement(Button, {
+      tone: roleTone(r.company_role)
+    }, roleLabel(r.company_role)), isTeamAdmin && /*#__PURE__*/React.createElement(Button, {
       variant: "secondary",
       size: "sm",
       iconLeft: I("key", 13),
@@ -12966,9 +13016,17 @@
       style: {
         fontSize: "var(--text-sm)",
         color: "var(--text-muted)",
-        lineHeight: 1.6
+        lineHeight: 1.7
       }
-    }, /*#__PURE__*/React.createElement("strong", null, "Company admin"), " \u2014 can manage the company profile, billing, and approve or reject recruiter job postings.", /*#__PURE__*/React.createElement("br", null), /*#__PURE__*/React.createElement("strong", null, "Recruiter"), " \u2014 can create and edit job postings, but each post must be approved by the company admin before it goes live.")), inviteOpen && /*#__PURE__*/React.createElement("div", {
+    }, TEAM_ROLES.map(function (x) {
+      return /*#__PURE__*/React.createElement("div", {
+        key: x.value
+      }, /*#__PURE__*/React.createElement("strong", {
+        style: {
+          color: "var(--text-body)"
+        }
+      }, x.label), " \u2014 ", x.blurb);
+    }))), inviteOpen && /*#__PURE__*/React.createElement("div", {
       onClick: () => setInviteOpen(false),
       style: {
         position: "fixed",
@@ -13010,7 +13068,7 @@
         fontSize: "var(--text-sm)",
         color: "var(--text-muted)"
       }
-    }, "Create an account linked to your company. An ", /*#__PURE__*/React.createElement("strong", null, "Admin"), " has full control; a ", /*#__PURE__*/React.createElement("strong", null, "Recruiter"), " posts jobs that you approve."), /*#__PURE__*/React.createElement(Input, {
+    }, "Create an account linked to your company, then set their access level. You can change it anytime."), /*#__PURE__*/React.createElement(Input, {
       label: "Full name",
       value: inviteName,
       onChange: e => setInviteName(e.target.value),
@@ -13025,14 +13083,24 @@
       label: "Role",
       value: inviteRole,
       onChange: e => setInviteRole(e.target.value),
-      options: [{
-        value: "recruitment",
-        label: "Recruiter (you approve their jobs)"
-      }, {
-        value: "company_admin",
-        label: "Admin (full control)"
-      }]
-    })), /*#__PURE__*/React.createElement("div", {
+      options: TEAM_ROLES.map(function (x) {
+        return {
+          value: x.value,
+          label: x.label + " — " + x.blurb
+        };
+      })
+    }), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: "var(--text-xs)",
+        color: "var(--text-muted)",
+        lineHeight: 1.6,
+        background: "var(--surface-sunken, var(--surface-page))",
+        borderRadius: "var(--radius-md)",
+        padding: "10px 12px"
+      }
+    }, (TEAM_ROLES.find(function (x) {
+      return x.value === inviteRole;
+    }) || TEAM_ROLES[1]).blurb)), /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
         gap: 10,
@@ -15351,7 +15419,7 @@
       jobs: jobs,
       loading: jobsLoading,
       onNav: setPage
-    }), page === "jobs" && /*#__PURE__*/React.createElement(JobsManage, {
+    }), page === "jobs" && can(authUser, "manage_jobs") && /*#__PURE__*/React.createElement(JobsManage, {
       jobs: jobs,
       loading: jobsLoading,
       reload: loadJobs,
@@ -15370,17 +15438,17 @@
         job: j
       }),
       user: authUser
-    }), page === "applicants" && /*#__PURE__*/React.createElement(Applicants, {
+    }), page === "applicants" && can(authUser, "view_applicants") && /*#__PURE__*/React.createElement(Applicants, {
       jobs: jobs,
       onGoToMessages: () => setPage("messages")
-    }), page === "analytics" && /*#__PURE__*/React.createElement(Analytics, {
+    }), page === "analytics" && can(authUser, "view_applicants") && /*#__PURE__*/React.createElement(Analytics, {
       onNav: setPage
-    }), page === "cvmatch" && /*#__PURE__*/React.createElement(EmployerCvMatch, null), page === "talent" && /*#__PURE__*/React.createElement(TalentSearch, {
+    }), page === "cvmatch" && can(authUser, "manage_jobs") && /*#__PURE__*/React.createElement(EmployerCvMatch, null), page === "talent" && can(authUser, "view_applicants") && /*#__PURE__*/React.createElement(TalentSearch, {
       jobs: jobs,
       onGoToMessages: () => setPage("messages")
-    }), page === "team" && isCompanyAdmin(authUser) && /*#__PURE__*/React.createElement(Team, {
+    }), page === "team" && can(authUser, "manage_team") && /*#__PURE__*/React.createElement(Team, {
       user: authUser
-    }), page === "company" && (!companyLoaded ? /*#__PURE__*/React.createElement("div", {
+    }), page === "company" && can(authUser, "manage_company") && (!companyLoaded ? /*#__PURE__*/React.createElement("div", {
       className: "krm-page-pad",
       style: {
         padding: 28,
@@ -15396,7 +15464,7 @@
       }
     })), page === "messages" && /*#__PURE__*/React.createElement(Messages, {
       user: authUser
-    }), page === "billing" && /*#__PURE__*/React.createElement(Billing, {
+    }), page === "billing" && can(authUser, "manage_billing") && /*#__PURE__*/React.createElement(Billing, {
       onSubChange: loadSub
     }), page === "profile" && /*#__PURE__*/React.createElement(MyProfile, {
       user: authUser,

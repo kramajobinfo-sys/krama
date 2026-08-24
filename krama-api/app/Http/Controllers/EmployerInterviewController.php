@@ -81,6 +81,7 @@ class EmployerInterviewController extends Controller
     {
         $user = $request->user();
         $this->requirePermission('view_applicants');
+        $this->requireCompanyCapability('manage_applicants');
         $app = $this->findApp($user, $appId);
 
         $data = $this->validateInterview($request, true);
@@ -103,6 +104,7 @@ class EmployerInterviewController extends Controller
     {
         $user = $request->user();
         $this->requirePermission('view_applicants');
+        $this->requireCompanyCapability('manage_applicants');
         $iv = $this->findInterview($user, $id);
 
         $data = $this->validateInterview($request, false);
@@ -117,6 +119,7 @@ class EmployerInterviewController extends Controller
     {
         $user = $request->user();
         $this->requirePermission('view_applicants');
+        $this->requireCompanyCapability('manage_applicants');
         $this->findInterview($user, $id)->delete();
         return response()->json(['message' => 'Interview removed.']);
     }
@@ -126,6 +129,7 @@ class EmployerInterviewController extends Controller
     {
         $user = $request->user();
         $this->requirePermission('view_applicants');
+        $this->requireCompanyCapability('manage_applicants');
         $iv = $this->findInterview($user, $id);
 
         $data = $request->validate([

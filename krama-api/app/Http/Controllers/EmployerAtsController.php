@@ -168,6 +168,7 @@ class EmployerAtsController extends Controller
     {
         $user = $request->user();
         $this->requirePermission('view_applicants');
+        $this->requireCompanyCapability('manage_applicants');
         $app = $this->findApp($user, $appId);
 
         $data = $request->validate(['body' => 'required|string|max:5000']);
@@ -195,6 +196,7 @@ class EmployerAtsController extends Controller
     {
         $user = $request->user();
         $this->requirePermission('view_applicants');
+        $this->requireCompanyCapability('manage_applicants');
 
         $note = ApplicationNote::where('company_id', $this->employerCompanyId($user))->findOrFail($noteId);
         if ($note->author_id !== $user->id) {
@@ -212,6 +214,7 @@ class EmployerAtsController extends Controller
     {
         $user = $request->user();
         $this->requirePermission('view_applicants');
+        $this->requireCompanyCapability('manage_applicants');
 
         $note = ApplicationNote::where('company_id', $this->employerCompanyId($user))->findOrFail($noteId);
         $isOwner = Company::where('id', $note->company_id)->where('user_id', $user->id)->exists();
@@ -230,6 +233,7 @@ class EmployerAtsController extends Controller
     {
         $user = $request->user();
         $this->requirePermission('view_applicants');
+        $this->requireCompanyCapability('manage_applicants');
         $app = $this->findApp($user, $appId);
 
         $data  = $request->validate(['label' => 'required|string|max:40']);
@@ -251,6 +255,7 @@ class EmployerAtsController extends Controller
     {
         $user = $request->user();
         $this->requirePermission('view_applicants');
+        $this->requireCompanyCapability('manage_applicants');
         $app = $this->findApp($user, $appId);
 
         ApplicationTag::where('application_id', $app->id)->where('id', $tagId)->delete();

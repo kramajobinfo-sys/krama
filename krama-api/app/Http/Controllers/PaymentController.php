@@ -146,6 +146,7 @@ class PaymentController extends Controller
     {
         $user = $request->user();
         $this->requirePermission('post_jobs');
+        $this->requireCompanyCapability('manage_billing');
 
         $company = $this->employerCompany($user);
 
@@ -358,6 +359,7 @@ class PaymentController extends Controller
     public function generateKhqr(Request $request, $id)
     {
         $this->requirePermission('post_jobs');
+        $this->requireCompanyCapability('manage_billing');
 
         $company = $this->employerCompany($request->user());
         $payment = Payment::where('company_id', $company->id)->where('id', $id)->firstOrFail();
@@ -512,6 +514,7 @@ class PaymentController extends Controller
     public function stripeCheckout(Request $request, $id)
     {
         $this->requirePermission('post_jobs');
+        $this->requireCompanyCapability('manage_billing');
 
         $company = $this->employerCompany($request->user());
         $payment = Payment::with('subscription.plan')->where('company_id', $company->id)->where('id', $id)->firstOrFail();
@@ -548,6 +551,7 @@ class PaymentController extends Controller
     public function abaCheckout(Request $request, $id)
     {
         $this->requirePermission('post_jobs');
+        $this->requireCompanyCapability('manage_billing');
 
         $user    = $request->user();
         $company = $this->employerCompany($user);
@@ -603,6 +607,7 @@ class PaymentController extends Controller
     public function abaForm(Request $request, $id)
     {
         $this->requirePermission('post_jobs');
+        $this->requireCompanyCapability('manage_billing');
 
         $user    = $request->user();
         $company = $this->employerCompany($user);

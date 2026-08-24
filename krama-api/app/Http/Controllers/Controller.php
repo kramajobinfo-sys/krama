@@ -34,6 +34,21 @@ class Controller extends BaseController
         }
     }
 
+    /**
+     * Abort with 403 unless the authenticated user holds $capability within their company.
+     * Company-scoped RBAC layered on top of requirePermission(): the global permission gates
+     * the FEATURE (e.g. post_jobs), this gates WHAT a team member may do inside the company
+     * (owner/company_admin get everything; recruiter/hiring_manager/viewer are scoped). See
+     * User::companyCapabilities().
+     */
+    protected function requireCompanyCapability(string $capability): void
+    {
+        $user = auth()->user();
+        if (! $user || ! $user->companyCan($capability)) {
+            abort(403, 'Your team role does not allow this action.');
+        }
+    }
+
     protected function auditLog(string $action, array $context = []): void
     {
         Log::channel('audit')->info($action, array_merge([

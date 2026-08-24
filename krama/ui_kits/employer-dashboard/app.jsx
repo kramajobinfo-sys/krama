@@ -731,22 +731,46 @@
 
   const NAV = [
     { id: "dashboard", label: "Dashboard", icon: "layout-dashboard" },
-    { id: "jobs", label: "Job postings", icon: "briefcase" },
-    { id: "applicants", label: "Applicants", icon: "users" },
-    { id: "analytics", label: "Analytics", icon: "bar-chart-3" },
-    { id: "cvmatch", label: "CV Match", icon: "git-compare-arrows" },
-    { id: "talent", label: "Find candidates", icon: "user-search" },
+    { id: "jobs", label: "Job postings", icon: "briefcase", cap: "manage_jobs" },
+    { id: "applicants", label: "Applicants", icon: "users", cap: "view_applicants" },
+    { id: "analytics", label: "Analytics", icon: "bar-chart-3", cap: "view_applicants" },
+    { id: "cvmatch", label: "CV Match", icon: "git-compare-arrows", cap: "manage_jobs" },
+    { id: "talent", label: "Find candidates", icon: "user-search", cap: "view_applicants" },
     { id: "messages", label: "Messages", icon: "message-square" },
-    { id: "team", label: "Team", icon: "user-plus", adminOnly: true },
-    { id: "company", label: "Company profile", icon: "building-2", adminOnly: true },
-    { id: "billing", label: "Plan & billing", icon: "credit-card", adminOnly: true },
+    { id: "team", label: "Team", icon: "user-plus", cap: "manage_team" },
+    { id: "company", label: "Company profile", icon: "building-2", cap: "manage_company" },
+    { id: "billing", label: "Plan & billing", icon: "credit-card", cap: "manage_billing" },
     { id: "support", label: "Help & support", icon: "life-buoy" },
   ];
 
-  function isCompanyAdmin(user) {
-    // Owner (no company_role set, owns a company) or explicit company_admin
-    return !user || user.company_role !== "recruitment";
+  // ── Company-scoped RBAC (mirrors the backend User::companyCapabilities) ──────────────────
+  // authUser.company_capabilities comes from /auth/me. Fall back to full access when it's
+  // absent (older API response / owner) so nothing is hidden by accident.
+  const ALL_CAPS = ["manage_jobs", "approve_jobs", "view_applicants", "manage_applicants", "manage_billing", "manage_company", "manage_team"];
+  function caps(user) {
+    if (user && Array.isArray(user.company_capabilities)) return user.company_capabilities;
+    return ALL_CAPS;
   }
+  function can(user, capability) { return caps(user).indexOf(capability) !== -1; }
+  // "Company admin" = can manage the team (owner or company_admin). Used for job-approval UI.
+  function isCompanyAdmin(user) { return can(user, "manage_team"); }
+  const RECRUITER_ROLES = ["recruiter", "recruitment"];
+  function isRecruiterRole(cr) { return RECRUITER_ROLES.indexOf(cr) !== -1; }
+
+  // Assignable team roles (owner is implicit, not assignable). Order = most → least access.
+  const TEAM_ROLES = [
+    { value: "company_admin",  label: "Admin",          blurb: "Full control — jobs, applicants, billing, company profile & team." },
+    { value: "recruiter",      label: "Recruiter",      blurb: "Post & edit jobs (you approve them) and manage applicants." },
+    { value: "hiring_manager", label: "Hiring manager", blurb: "Review & manage applicants only — can’t post jobs or see billing." },
+    { value: "viewer",         label: "Viewer",         blurb: "Read-only access to applicants." },
+  ];
+  function roleLabel(cr) {
+    if (!cr) return "Company admin";
+    if (isRecruiterRole(cr)) return "Recruiter";
+    var r = TEAM_ROLES.find(function (x) { return x.value === cr; });
+    return r ? r.label : cr;
+  }
+  function roleTone(cr) { return (!cr || cr === "company_admin") ? "brand" : "neutral"; }
 
   function Sidebar({ page, onNav, company, badges, open, onClose, user, lang, onLang }) {
     badges = badges || {};
@@ -757,7 +781,7 @@
           <span style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: "var(--text-lg)", letterSpacing: ".08em", color: "var(--text-strong)" }}>{window.KRAMA_BRAND_NAME || "KRAMA"}</span>
         </a>
         <nav style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-          {NAV.filter(function(n) { return !n.adminOnly || isCompanyAdmin(user); }).map((n) => {
+          {NAV.filter(function(n) { return !n.cap || can(user, n.cap); }).map((n) => {
             const active = page === n.id;
             return (
               <button key={n.id} onClick={() => { onNav(n.id); onClose && onClose(); }} style={{ display: "flex", alignItems: "center", gap: 11, border: "none", cursor: "pointer", padding: "10px 12px", borderRadius: "var(--radius-md)", textAlign: "left", background: active ? "var(--brand-subtle)" : "transparent", color: active ? "var(--text-brand)" : "var(--text-body)", fontFamily: "var(--font-sans)", fontWeight: active ? 700 : 500, fontSize: "var(--text-base)" }}>
@@ -855,7 +879,7 @@
         <h1 style={{ fontSize: "var(--text-xl)", fontWeight: 700, color: "var(--text-strong)" }}>{title}</h1>
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 14 }}>
           <NotificationBell onNav={onNav} />
-          <Button variant="primary" iconLeft={I("plus", 16)} onClick={onPost} style={{ whiteSpace: "nowrap" }}>{T("Post")}</Button>
+          {can(user, "manage_jobs") && <Button variant="primary" iconLeft={I("plus", 16)} onClick={onPost} style={{ whiteSpace: "nowrap" }}>{T("Post")}</Button>}
           <div style={{ position: "relative" }}>
             <button onClick={() => setOpen(o => !o)} style={{ width: 38, height: 38, borderRadius: "50%", background: "var(--brand)", color: "#fff", border: "2px solid var(--border)", cursor: "pointer", fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: 14, display: "inline-flex", alignItems: "center", justifyContent: "center", overflow: "hidden", padding: 0 }}>
               {user && user.avatar_url
@@ -1506,7 +1530,7 @@
     const isEdit = mode === "edit";
     const canSubmit = !isEdit || (job && (job.status === "draft" || job.status === "rejected"));
     const modalTitle = isEdit ? T("Edit job") : mode === "clone" ? T("Clone job") : T("Post a job");
-    const isRecruiter = user && user.company_role === "recruitment";
+    const isRecruiter = user && isRecruiterRole(user.company_role);
     const submitLabel = isRecruiter ? T("Submit for approval") : T("Publish job");
 
     const submit = (publish) => {
@@ -1793,7 +1817,7 @@
     const q = quota || { used: 0, remaining: null, limit: null };
     const quotaFull = q.limit !== null && q.remaining <= 0;
     const isAdmin = isCompanyAdmin(user);
-    const isRecruiter = user && user.company_role === "recruitment";
+    const isRecruiter = user && isRecruiterRole(user.company_role);
 
     const [page, setPage] = React.useState(1);
     React.useEffect(function () { setPage(1); }, [tab]);
@@ -1936,7 +1960,7 @@
                   <span style={{ fontWeight: 600, color: "var(--text-strong)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>{j.title}</span>
                   {j.is_featured ? <span style={{ flexShrink: 0 }}><Badge tone="accent">{I("star", 11)} Featured{featuredDaysLeft(j) != null ? " · " + featuredDaysLeft(j) + "d left" : ""}</Badge></span> : null}
                 </div>
-                {isAdmin && j.poster && j.poster.company_role === "recruitment" && (
+                {isAdmin && j.poster && isRecruiterRole(j.poster.company_role) && (
                   <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: 2, display: "flex", alignItems: "center", gap: 4 }}>
                     {I("user", 11)} {j.poster.name}
                   </div>
@@ -1970,7 +1994,7 @@
                           <span style={{ flexShrink: 0 }}><StatusBadge status={j.status}>{statusText(j.status)}</StatusBadge></span>
                         </div>
                         {j.is_featured ? <div style={{ marginBottom: 10 }}><Badge tone="accent">{I("star", 11)} Featured{featuredDaysLeft(j) != null ? " · " + featuredDaysLeft(j) + "d left" : ""}</Badge></div> : null}
-                        {isAdmin && j.poster && j.poster.company_role === "recruitment" && (
+                        {isAdmin && j.poster && isRecruiterRole(j.poster.company_role) && (
                           <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginBottom: 10, display: "flex", alignItems: "center", gap: 4 }}>{I("user", 11)} {j.poster.name}</div>
                         )}
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, padding: "12px 0", borderTop: "1px solid var(--border-subtle)", borderBottom: "1px solid var(--border-subtle)", marginBottom: 14 }}>
@@ -4429,7 +4453,7 @@
     const [inviteName, setInviteName] = React.useState("");
     const [inviteEmail, setInviteEmail] = React.useState("");
     const [invitePassword, setInvitePassword] = React.useState("");
-    const [inviteRole, setInviteRole] = React.useState("recruitment");
+    const [inviteRole, setInviteRole] = React.useState("recruiter");
     const [inviting, setInviting] = React.useState(false);
     const [msg, setMsg] = React.useState(null);
     const [pwdModal, setPwdModal] = React.useState(null);
@@ -4449,7 +4473,7 @@
       if (!inviteName.trim() || !inviteEmail.trim()) return;
       setInviting(true);
       emp.inviteRecruiter({ name: inviteName.trim(), email: inviteEmail.trim(), role: inviteRole }).then(function () {
-        flash((inviteRole === "company_admin" ? "Admin" : "Recruiter") + " added. Set their password below.");
+        flash(roleLabel(inviteRole) + " added. Set their password below.");
         setInviteOpen(false); setInviteName(""); setInviteEmail(""); setInvitePassword(""); setInviteRole("recruitment");
         load();
       }).catch(function (e) { flash((e && e.message) || "Failed to add member.", false); }).finally(function () { setInviting(false); });
@@ -4478,7 +4502,7 @@
     const recruiters = data ? (data.recruiters || []) : [];
     const owner = data ? data.owner : null;
     // Owner (company_role null) and company_admin can manage the team; recruiters can only view.
-    const isTeamAdmin = user && user.company_role !== "recruitment";
+    const isTeamAdmin = can(user, "manage_team");
 
     return (
       <div className="krm-page-pad" style={{ padding: 28, maxWidth: 860 }}>
@@ -4516,9 +4540,9 @@
               </div>
               <div className="krm-team-actions" style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
                 {isTeamAdmin ? (
-                  <Select value={r.company_role || "recruitment"} onChange={(e) => changeRole(r, e.target.value)} options={[{ value: "company_admin", label: "Admin" }, { value: "recruitment", label: "Recruiter" }]} size="sm" containerStyle={{ minWidth: 120 }} />
+                  <Select value={isRecruiterRole(r.company_role) ? "recruiter" : (r.company_role || "recruiter")} onChange={(e) => changeRole(r, e.target.value)} options={TEAM_ROLES.map(function (x) { return { value: x.value, label: x.label }; })} size="sm" containerStyle={{ minWidth: 150 }} />
                 ) : (
-                  <Badge tone={r.company_role === "company_admin" ? "brand" : "neutral"}>{r.company_role === "company_admin" ? "Admin" : "Recruiter"}</Badge>
+                  <Badge tone={roleTone(r.company_role)}>{roleLabel(r.company_role)}</Badge>
                 )}
                 {isTeamAdmin && <Button variant="secondary" size="sm" iconLeft={I("key", 13)} onClick={() => { setPwdModal(r); setNewPwd(""); }}>Set password</Button>}
                 {isTeamAdmin && <Button variant="ghost" size="sm" onClick={() => remove(r)}>Remove</Button>}
@@ -4535,9 +4559,10 @@
 
         <Card padding={20} style={{ background: "var(--surface-sunken, var(--surface-page))", border: "1px solid var(--border)" }}>
           <div style={{ fontWeight: 700, color: "var(--text-strong)", marginBottom: 4 }}>How team roles work</div>
-          <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", lineHeight: 1.6 }}>
-            <strong>Company admin</strong> — can manage the company profile, billing, and approve or reject recruiter job postings.<br />
-            <strong>Recruiter</strong> — can create and edit job postings, but each post must be approved by the company admin before it goes live.
+          <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", lineHeight: 1.7 }}>
+            {TEAM_ROLES.map(function (x) {
+              return <div key={x.value}><strong style={{ color: "var(--text-body)" }}>{x.label}</strong> — {x.blurb}</div>;
+            })}
           </div>
         </Card>
 
@@ -4547,10 +4572,11 @@
             <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", maxWidth: 420, background: "var(--surface-card)", borderRadius: "var(--radius-xl)", boxShadow: "var(--shadow-xl)", overflow: "hidden" }}>
               <div style={{ padding: "18px 22px", borderBottom: "1px solid var(--border)", fontWeight: 700, fontSize: "var(--text-md)", color: "var(--text-strong)" }}>Add team member</div>
               <div style={{ padding: "18px 22px", display: "flex", flexDirection: "column", gap: 14 }}>
-                <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>Create an account linked to your company. An <strong>Admin</strong> has full control; a <strong>Recruiter</strong> posts jobs that you approve.</div>
+                <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>Create an account linked to your company, then set their access level. You can change it anytime.</div>
                 <Input label="Full name" value={inviteName} onChange={(e) => setInviteName(e.target.value)} placeholder="e.g. Sokha Dara" />
                 <Input label="Email address" type="email" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} placeholder="member@company.com" />
-                <Select label="Role" value={inviteRole} onChange={(e) => setInviteRole(e.target.value)} options={[{ value: "recruitment", label: "Recruiter (you approve their jobs)" }, { value: "company_admin", label: "Admin (full control)" }]} />
+                <Select label="Role" value={inviteRole} onChange={(e) => setInviteRole(e.target.value)} options={TEAM_ROLES.map(function (x) { return { value: x.value, label: x.label + " — " + x.blurb }; })} />
+                <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", lineHeight: 1.6, background: "var(--surface-sunken, var(--surface-page))", borderRadius: "var(--radius-md)", padding: "10px 12px" }}>{(TEAM_ROLES.find(function (x) { return x.value === inviteRole; }) || TEAM_ROLES[1]).blurb}</div>
               </div>
               <div style={{ display: "flex", gap: 10, padding: "14px 22px", borderTop: "1px solid var(--border)" }}>
                 <Button variant="ghost" onClick={() => setInviteOpen(false)} style={{ flex: 1 }}>Cancel</Button>
@@ -5489,19 +5515,19 @@
         <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
           <Topbar title={titles[page] || page} user={authUser} onLogout={handleLogout} onPost={handlePost} onNav={setPage} onMenu={() => setSidebarOpen(o => !o)} />
           {page === "dashboard" && <Overview jobs={jobs} loading={jobsLoading} onNav={setPage} />}
-          {page === "jobs" && <JobsManage jobs={jobs} loading={jobsLoading} reload={loadJobs} onPost={handlePost} onPublish={publishJob} sub={sub} quota={quota} onBilling={() => setPage("billing")} onView={(j) => setViewingJob(j)} onEdit={(j) => setPosting({ mode: "edit", job: j })} onClone={(j) => setPosting({ mode: "clone", job: j })} user={authUser} />}
-          {page === "applicants" && <Applicants jobs={jobs} onGoToMessages={() => setPage("messages")} />}
-          {page === "analytics" && <Analytics onNav={setPage} />}
-          {page === "cvmatch" && <EmployerCvMatch />}
-          {page === "talent" && <TalentSearch jobs={jobs} onGoToMessages={() => setPage("messages")} />}
-          {page === "team" && isCompanyAdmin(authUser) && <Team user={authUser} />}
-          {page === "company" && (!companyLoaded
+          {page === "jobs" && can(authUser, "manage_jobs") && <JobsManage jobs={jobs} loading={jobsLoading} reload={loadJobs} onPost={handlePost} onPublish={publishJob} sub={sub} quota={quota} onBilling={() => setPage("billing")} onView={(j) => setViewingJob(j)} onEdit={(j) => setPosting({ mode: "edit", job: j })} onClone={(j) => setPosting({ mode: "clone", job: j })} user={authUser} />}
+          {page === "applicants" && can(authUser, "view_applicants") && <Applicants jobs={jobs} onGoToMessages={() => setPage("messages")} />}
+          {page === "analytics" && can(authUser, "view_applicants") && <Analytics onNav={setPage} />}
+          {page === "cvmatch" && can(authUser, "manage_jobs") && <EmployerCvMatch />}
+          {page === "talent" && can(authUser, "view_applicants") && <TalentSearch jobs={jobs} onGoToMessages={() => setPage("messages")} />}
+          {page === "team" && can(authUser, "manage_team") && <Team user={authUser} />}
+          {page === "company" && can(authUser, "manage_company") && (!companyLoaded
             ? <div className="krm-page-pad" style={{ padding: 28, color: "var(--text-muted)" }}>Loading…</div>
             : company
               ? <CompanyProfile company={company} onSaved={setCompany} jobs={jobs} />
               : <CreateCompanyForm onCreated={function (c) { setCompany(c); }} />)}
           {page === "messages" && <Messages user={authUser} />}
-          {page === "billing" && <Billing onSubChange={loadSub} />}
+          {page === "billing" && can(authUser, "manage_billing") && <Billing onSubChange={loadSub} />}
           {page === "profile" && <MyProfile user={authUser} onUserUpdate={u => setAuthUser(u)} />}
           {page === "support" && <HelpSupport user={authUser} onRead={function () { setSupportUnread(0); }} />}
         </div>

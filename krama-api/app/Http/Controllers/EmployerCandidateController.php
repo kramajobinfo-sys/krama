@@ -219,6 +219,7 @@ class EmployerCandidateController extends Controller
     {
         $user = $request->user();
         $this->requirePermission('view_applicants');
+        $this->requireCompanyCapability('manage_applicants');
         $companyId = $this->employerCompanyId($user);
 
         $candidate = $this->visibleCandidates()->findOrFail($id);

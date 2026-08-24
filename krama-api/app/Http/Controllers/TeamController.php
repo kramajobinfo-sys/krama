@@ -70,10 +70,10 @@ class TeamController extends Controller
         $data = $request->validate([
             'name'  => 'required|string|max:120',
             'email' => 'required|email|max:190|unique:users,email',
-            'role'  => 'sometimes|in:company_admin,recruitment',
+            'role'  => 'sometimes|in:company_admin,recruiter,hiring_manager,viewer',
         ]);
-        // Default to recruiter (limited); 'company_admin' grants full control (FB-Page-style admin).
-        $role = $data['role'] ?? 'recruitment';
+        // Default to recruiter (posts jobs for admin approval + manages applicants).
+        $role = $data['role'] ?? 'recruiter';
 
         // Find the employer role id (role_id = 4 in the seeded DB)
         $employerRole = Role::where('slug', 'employer')->first();
@@ -99,8 +99,10 @@ class TeamController extends Controller
             'role'         => $role,
         ]);
 
+        $roleLabels = ['company_admin' => 'Admin', 'recruiter' => 'Recruiter', 'hiring_manager' => 'Hiring manager', 'viewer' => 'Viewer'];
+
         return response()->json([
-            'message'   => ($role === 'company_admin' ? 'Admin' : 'Recruiter') . ' added. They can log in and reset their password.',
+            'message'   => ($roleLabels[$role] ?? 'Member') . ' added. They can log in and reset their password.',
             'recruiter' => $recruiter->only('id', 'name', 'email', 'company_role', 'status', 'created_at'),
         ], 201);
     }
@@ -136,7 +138,7 @@ class TeamController extends Controller
         $this->requireCompanyAdmin($user, $company);
 
         $data = $request->validate([
-            'role' => 'required|in:company_admin,recruitment',
+            'role' => 'required|in:company_admin,recruiter,hiring_manager,viewer',
         ]);
 
         $member = User::where('company_id', $company->id)->where('id', $id)->firstOrFail();

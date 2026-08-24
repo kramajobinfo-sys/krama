@@ -28,6 +28,7 @@ class CompanyJobFeedController extends Controller
     public function save(Request $request)
     {
         $this->requirePermission('post_jobs');
+        $this->requireCompanyCapability('manage_jobs');
         $company = $this->company($request->user());
 
         $data = $request->validate([
@@ -48,6 +49,7 @@ class CompanyJobFeedController extends Controller
     public function sync(Request $request)
     {
         $this->requirePermission('post_jobs');
+        $this->requireCompanyCapability('manage_jobs');
         $company = $this->company($request->user());
         $feed = CompanyJobFeed::where('company_id', $company->id)->first();
         abort_if(! $feed, 422, 'Connect a feed URL first.');
@@ -61,6 +63,7 @@ class CompanyJobFeedController extends Controller
     public function destroy(Request $request)
     {
         $this->requirePermission('post_jobs');
+        $this->requireCompanyCapability('manage_jobs');
         $company = $this->company($request->user());
         CompanyJobFeed::where('company_id', $company->id)->delete();
 
