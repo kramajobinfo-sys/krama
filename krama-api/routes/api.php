@@ -402,6 +402,7 @@ Route::middleware(['auth:api', 'permission:site_settings'])->group(function () {
     // Admin: candidate management
     Route::get('admin/candidates',                  [UserController::class, 'adminCandidates']);
     Route::patch('admin/candidates/{id}/status',    [UserController::class, 'setStatus']);
+    Route::patch('admin/candidates/{id}/premium',   [UserController::class, 'setPremium']);
     // Admin: all-user management (super_admin only for role changes)
     Route::get('admin/users',                       [UserController::class, 'adminUsers']);
     Route::post('admin/users',                      [UserController::class, 'adminCreateUser']);

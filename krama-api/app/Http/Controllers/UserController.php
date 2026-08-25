@@ -18,7 +18,7 @@ class UserController extends Controller
 
         $q = User::query()
             ->select(['id', 'name', 'email', 'phone', 'avatar_url', 'status',
-                       'role_id', 'email_verified_at', 'last_active_at', 'created_at'])
+                       'role_id', 'email_verified_at', 'last_active_at', 'created_at', 'candidate_premium_until'])
             ->whereHas('role', fn ($r) => $r->where('slug', 'candidate'))
             ->withCount('applications');
 
@@ -58,6 +58,37 @@ class UserController extends Controller
         ]);
 
         return response()->json(['message' => 'Candidate ' . $data['status'] . '.', 'status' => $data['status']]);
+    }
+
+    // PATCH /api/admin/candidates/{id}/premium — grant or revoke candidate Premium.
+    // { months: 1..36 } grants (extends from the later of now / current expiry); { months: 0 } revokes.
+    public function setPremium(Request $request, $id)
+    {
+        $this->requirePermission('suspend_users');
+
+        $data = $request->validate(['months' => 'required|integer|min:0|max:36']);
+
+        $user = User::whereHas('role', fn ($r) => $r->where('slug', 'candidate'))->findOrFail($id);
+
+        if ((int) $data['months'] === 0) {
+            $until = null;
+        } else {
+            $base = ($user->candidate_premium_until && $user->candidate_premium_until->isFuture())
+                ? $user->candidate_premium_until : now();
+            $until = $base->copy()->addMonths((int) $data['months']);
+        }
+        $user->forceFill(['candidate_premium_until' => $until])->save();
+
+        $this->auditLog('candidate.premium_changed', [
+            'user_id' => $user->id, 'user_email' => $user->email,
+            'months' => (int) $data['months'], 'until' => optional($until)->toDateTimeString(),
+        ]);
+
+        return response()->json([
+            'message'                 => $until ? ('Premium granted until ' . $until->toFormattedDateString() . '.') : 'Premium revoked.',
+            'candidate_premium_until' => optional($until)->toIso8601String(),
+            'is_premium'              => $until !== null,
+        ]);
     }
 
     // GET /api/admin/users — all users across all roles

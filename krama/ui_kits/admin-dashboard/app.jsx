@@ -1942,6 +1942,18 @@
         .catch(function (e) { flashMsg("Error: " + ((e && e.message) || "Could not delete.")); });
     };
 
+    const isPremium = (c) => !!(c.candidate_premium_until && new Date(c.candidate_premium_until) > new Date());
+    const togglePremium = (c) => {
+      var prem = isPremium(c);
+      if (prem) {
+        if (!window.confirm("Remove Premium from “" + c.name + "”?")) return;
+        adm.setCandidatePremium(c.id, 0).then(function (r) { flashMsg(r.message || "Premium revoked."); load(); }).catch(function (e) { flashMsg("Error: " + (e && e.message)); });
+      } else {
+        if (!window.confirm("Grant “" + c.name + "” 12 months of Premium?")) return;
+        adm.setCandidatePremium(c.id, 12).then(function (r) { flashMsg(r.message || "Premium granted."); load(); }).catch(function (e) { flashMsg("Error: " + (e && e.message)); });
+      }
+    };
+
     const runSearch = () => { setPage(1); setQuery(search.trim()); };
     const setFilter = (s) => { setPage(1); setStatus(s); };
 
@@ -1978,19 +1990,23 @@
         {actionMsg && <div style={{ padding: "10px 14px", background: "var(--success-subtle)", color: "var(--success)", borderRadius: "var(--radius-md)", marginBottom: 14, fontWeight: 600, fontSize: "var(--text-sm)" }}>{actionMsg}</div>}
 
         <div className="krm-table-wrap"><Card padding={0}>
-          <div style={{ display: "grid", gridTemplateColumns: "2fr 2fr 1.2fr 0.8fr 1fr 150px", padding: "12px 20px", fontSize: "var(--text-xs)", fontWeight: 700, letterSpacing: ".04em", textTransform: "uppercase", color: "var(--text-faint)", borderBottom: "1px solid var(--border)" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1.8fr 1.8fr 1fr 0.7fr 1.1fr 250px", padding: "12px 20px", fontSize: "var(--text-xs)", fontWeight: 700, letterSpacing: ".04em", textTransform: "uppercase", color: "var(--text-faint)", borderBottom: "1px solid var(--border)" }}>
             <span>Name</span><span>Email</span><span>Joined</span><span>Applied</span><span>Status</span><span style={{ textAlign: "right" }}>Actions</span>
           </div>
           {loading && <div style={{ padding: "28px 20px", color: "var(--text-muted)", fontSize: "var(--text-sm)", textAlign: "center" }}>Loading…</div>}
           {!loading && rows.length === 0 && <div style={{ padding: "28px 20px", color: "var(--text-muted)", fontSize: "var(--text-sm)", textAlign: "center" }}>No candidates found.</div>}
           {!loading && rows.map((c, i) => (
-            <div key={c.id} style={{ display: "grid", gridTemplateColumns: "2fr 2fr 1.2fr 0.8fr 1fr 150px", alignItems: "center", padding: "14px 20px", borderBottom: i < rows.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>
+            <div key={c.id} style={{ display: "grid", gridTemplateColumns: "1.8fr 1.8fr 1fr 0.7fr 1.1fr 250px", alignItems: "center", padding: "14px 20px", borderBottom: i < rows.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}><Avatar name={c.name} size={34} /><span style={{ fontWeight: 600, color: "var(--text-strong)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.name}</span></div>
               <span style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.email}</span>
               <span style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>{fmtDate(c.created_at)}</span>
               <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-sm)", color: "var(--text-body)" }}>{c.applications_count || 0}</span>
-              <span><Badge tone={c.status === "active" ? "success" : "danger"}>{c.status === "active" ? "Active" : "Suspended"}</Badge></span>
+              <span style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                <Badge tone={c.status === "active" ? "success" : "danger"}>{c.status === "active" ? "Active" : "Suspended"}</Badge>
+                {isPremium(c) && <span title={"Premium until " + fmtDate(c.candidate_premium_until)} style={{ display: "inline-flex", alignItems: "center", gap: 3, background: "linear-gradient(180deg,#F7CE63,#D99A1F)", color: "#4a3300", fontWeight: 700, fontSize: "var(--text-2xs, 11px)", padding: "2px 8px", borderRadius: 999 }}>{I("crown", 11)} Premium</span>}
+              </span>
               <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+                <Button variant="ghost" size="sm" onClick={() => togglePremium(c)} title={isPremium(c) ? "Remove Premium" : "Grant 12 months Premium"} style={{ color: isPremium(c) ? "var(--text-muted)" : "var(--text-brand)" }}>{isPremium(c) ? "Unpremium" : "Premium"}</Button>
                 <Button variant="secondary" size="sm" onClick={() => toggleStatus(c)}>{c.status === "active" ? "Suspend" : "Activate"}</Button>
                 <Button variant="ghost" size="sm" onClick={() => deleteUser(c)} style={{ color: "var(--danger)" }}>Delete</Button>
               </div>

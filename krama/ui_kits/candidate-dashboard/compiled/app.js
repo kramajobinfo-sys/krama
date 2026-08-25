@@ -320,6 +320,19 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     "When an employer views your profile, you'll see them here. Complete your profile and add your CV to get discovered.": "នៅពេលនិយោជកមើលប្រវត្តិរូបរបស់អ្នក អ្នកនឹងឃើញនៅទីនេះ។ បំពេញប្រវត្តិរូប និងបន្ថែម CV ដើម្បីត្រូវបានរកឃើញ។",
     "viewed": "បានមើល",
     "Verified": "បានផ្ទៀងផ្ទាត់",
+    "Premium": "ព្រីមៀម",
+    "more employer viewed you": "និយោជកទៀតបានមើលអ្នក",
+    "more employers viewed you": "និយោជកទៀតបានមើលអ្នក",
+    "Upgrade to Premium to see everyone who viewed your profile.": "ដំឡើងទៅ Premium ដើម្បីមើលអ្នកទាំងអស់ដែលបានមើលប្រវត្តិរូបរបស់អ្នក។",
+    "Upgrade to Premium": "ដំឡើងទៅ Premium",
+    "Krama Premium": "Krama Premium",
+    "Stand out and see who's interested in you.": "លេចធ្លោ និងដឹងថានរណាចាប់អារម្មណ៍លើអ្នក។",
+    "See every employer who viewed your profile": "មើលនិយោជកគ្រប់រូបដែលបានមើលប្រវត្តិរូបរបស់អ្នក",
+    "Know which companies are interested — and follow up": "ដឹងថាក្រុមហ៊ុនណាចាប់អារម្មណ៍ ហើយតាមដានបន្ត",
+    "Priority visibility in employer searches": "អាទិភាពក្នុងការស្វែងរករបស់និយោជក",
+    "Premium is rolling out. Message us via Help & support to get early access for your account.": "Premium កំពុងដាក់ឱ្យប្រើ។ ផ្ញើសារមកយើងតាម ជំនួយ & គាំទ្រ ដើម្បីទទួលបានសិទ្ធិមុនគេ។",
+    "Maybe later": "ពេលក្រោយ",
+    "Contact us": "ទាក់ទងយើង",
     // Dashboard / overview
     "Applied jobs": "ការងារបានដាក់ពាក្យ",
     "Interviews": "ការសម្ភាសន៍",
@@ -552,6 +565,19 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     "When an employer views your profile, you'll see them here. Complete your profile and add your CV to get discovered.": "当有雇主查看你的资料时，会显示在这里。完善资料并上传简历，更容易被发现。",
     "viewed": "查看了",
     "Verified": "已认证",
+    "Premium": "高级会员",
+    "more employer viewed you": "位雇主查看了你",
+    "more employers viewed you": "位雇主查看了你",
+    "Upgrade to Premium to see everyone who viewed your profile.": "升级到高级会员，查看所有查看过你资料的人。",
+    "Upgrade to Premium": "升级到高级会员",
+    "Krama Premium": "Krama 高级会员",
+    "Stand out and see who's interested in you.": "脱颖而出，了解谁对你感兴趣。",
+    "See every employer who viewed your profile": "查看所有查看过你资料的雇主",
+    "Know which companies are interested — and follow up": "了解哪些公司感兴趣 —— 并及时跟进",
+    "Priority visibility in employer searches": "在雇主搜索中优先展示",
+    "Premium is rolling out. Message us via Help & support to get early access for your account.": "高级会员正在推出。通过「帮助与支持」联系我们，为你的账户抢先开通。",
+    "Maybe later": "以后再说",
+    "Contact us": "联系我们",
     // Dashboard / overview
     "Applied jobs": "已申请职位",
     "Interviews": "面试",
@@ -4445,11 +4471,16 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     onNav
   }) {
     var [viewers, setViewers] = React.useState([]);
+    var [locked, setLocked] = React.useState(0);
+    var [isPremium, setIsPremium] = React.useState(false);
     var [loading, setLoading] = React.useState(true);
     var [error, setError] = React.useState("");
+    var [showUpgrade, setShowUpgrade] = React.useState(false);
     React.useEffect(function () {
       cand.fetchProfileViews().then(function (r) {
         setViewers(r.viewers || []);
+        setLocked(r.locked_count || 0);
+        setIsPremium(!!r.is_premium);
         setLoading(false);
       }).catch(function (e) {
         setError(e.message);
@@ -4497,9 +4528,13 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       }
     }, /*#__PURE__*/React.createElement("div", {
       style: {
-        marginBottom: 22
+        marginBottom: 22,
+        display: "flex",
+        alignItems: "flex-start",
+        justifyContent: "space-between",
+        gap: 12
       }
-    }, /*#__PURE__*/React.createElement("div", {
+    }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
       style: {
         fontFamily: "var(--font-sans)",
         fontWeight: 700,
@@ -4512,7 +4547,20 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         color: "var(--text-muted)",
         marginTop: 2
       }
-    }, T("Employers who opened your profile from candidate search. A complete profile gets viewed more."))), viewers.length === 0 ? /*#__PURE__*/React.createElement(EmptyState, {
+    }, T("Employers who opened your profile from candidate search. A complete profile gets viewed more."))), isPremium && /*#__PURE__*/React.createElement("span", {
+      style: {
+        flexShrink: 0,
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 5,
+        background: "linear-gradient(180deg,#F7CE63,#D99A1F)",
+        color: "#4a3300",
+        fontWeight: 700,
+        fontSize: "var(--text-xs)",
+        padding: "5px 11px",
+        borderRadius: 999
+      }
+    }, I("crown", 13), " ", T("Premium"))), viewers.length === 0 && locked === 0 ? /*#__PURE__*/React.createElement(EmptyState, {
       icon: I("eye", 28),
       title: T("No profile views yet"),
       description: T("When an employer views your profile, you'll see them here. Complete your profile and add your CV to get discovered.")
@@ -4581,7 +4629,226 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
           flexShrink: 0
         }
       }, I("chevron-right", 18)));
-    }))));
+    }), locked > 0 && /*#__PURE__*/React.createElement("div", {
+      style: {
+        position: "relative",
+        marginTop: 2
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        flexDirection: "column",
+        gap: 10,
+        filter: "blur(3px)",
+        opacity: 0.55,
+        pointerEvents: "none",
+        userSelect: "none"
+      },
+      "aria-hidden": "true"
+    }, Array.from({
+      length: Math.min(locked, 3)
+    }).map(function (_, i) {
+      return /*#__PURE__*/React.createElement(Card, {
+        key: i,
+        style: {
+          display: "flex",
+          alignItems: "center",
+          gap: 16
+        }
+      }, /*#__PURE__*/React.createElement("div", {
+        style: {
+          width: 48,
+          height: 48,
+          borderRadius: 10,
+          background: "var(--surface-sunken, #e9ecef)",
+          flexShrink: 0
+        }
+      }), /*#__PURE__*/React.createElement("div", {
+        style: {
+          flex: 1
+        }
+      }, /*#__PURE__*/React.createElement("div", {
+        style: {
+          height: 12,
+          width: "42%",
+          background: "var(--surface-sunken, #e9ecef)",
+          borderRadius: 6
+        }
+      }), /*#__PURE__*/React.createElement("div", {
+        style: {
+          height: 10,
+          width: "60%",
+          background: "var(--surface-sunken, #eef1f3)",
+          borderRadius: 6,
+          marginTop: 8
+        }
+      })));
+    })), /*#__PURE__*/React.createElement("div", {
+      style: {
+        position: "absolute",
+        inset: 0,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 12
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        textAlign: "center",
+        background: "var(--surface-card)",
+        border: "1px solid var(--border)",
+        borderRadius: "var(--radius-lg)",
+        boxShadow: "var(--shadow-lg, 0 10px 30px -12px rgba(16,24,40,.25))",
+        padding: "20px 24px",
+        maxWidth: 420
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        background: "linear-gradient(180deg,#F7CE63,#D99A1F)",
+        color: "#4a3300",
+        marginBottom: 8
+      }
+    }, I("lock", 18)), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontWeight: 700,
+        color: "var(--text-strong)",
+        fontSize: "var(--text-md)"
+      }
+    }, locked, " ", locked === 1 ? T("more employer viewed you") : T("more employers viewed you")), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: "var(--text-sm)",
+        color: "var(--text-muted)",
+        margin: "6px 0 14px",
+        lineHeight: 1.5
+      }
+    }, T("Upgrade to Premium to see everyone who viewed your profile.")), /*#__PURE__*/React.createElement(Button, {
+      variant: "primary",
+      iconLeft: I("crown", 15),
+      onClick: function () {
+        setShowUpgrade(true);
+      }
+    }, T("Upgrade to Premium"))))))), showUpgrade && /*#__PURE__*/React.createElement("div", {
+      onClick: function () {
+        setShowUpgrade(false);
+      },
+      style: {
+        position: "fixed",
+        inset: 0,
+        zIndex: 300,
+        background: "var(--surface-overlay, rgba(17,24,39,.55))",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 20
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      onClick: function (e) {
+        e.stopPropagation();
+      },
+      style: {
+        width: "100%",
+        maxWidth: 440,
+        background: "var(--surface-card)",
+        borderRadius: "var(--radius-xl)",
+        boxShadow: "var(--shadow-xl)",
+        overflow: "hidden"
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        background: "linear-gradient(135deg,#0C7E6B,#0B6557)",
+        color: "#fff",
+        padding: "24px 24px 20px",
+        textAlign: "center"
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        background: "linear-gradient(180deg,#F7CE63,#D99A1F)",
+        color: "#4a3300",
+        marginBottom: 10
+      }
+    }, I("crown", 22)), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontWeight: 800,
+        fontSize: "var(--text-lg)"
+      }
+    }, T("Krama Premium")), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: "var(--text-sm)",
+        color: "rgba(255,255,255,.9)",
+        marginTop: 4
+      }
+    }, T("Stand out and see who's interested in you."))), /*#__PURE__*/React.createElement("div", {
+      style: {
+        padding: "20px 24px"
+      }
+    }, [T("See every employer who viewed your profile"), T("Know which companies are interested — and follow up"), T("Priority visibility in employer searches")].map(function (b, i) {
+      return /*#__PURE__*/React.createElement("div", {
+        key: i,
+        style: {
+          display: "flex",
+          alignItems: "flex-start",
+          gap: 10,
+          marginBottom: 12
+        }
+      }, /*#__PURE__*/React.createElement("span", {
+        style: {
+          color: "var(--text-brand)",
+          flexShrink: 0,
+          marginTop: 1
+        }
+      }, I("check-circle-2", 17)), /*#__PURE__*/React.createElement("span", {
+        style: {
+          fontSize: "var(--text-sm)",
+          color: "var(--text-body)"
+        }
+      }, b));
+    }), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: "var(--text-xs)",
+        color: "var(--text-muted)",
+        background: "var(--surface-sunken, var(--surface-page))",
+        borderRadius: "var(--radius-md)",
+        padding: "10px 12px",
+        marginTop: 6,
+        lineHeight: 1.6
+      }
+    }, T("Premium is rolling out. Message us via Help & support to get early access for your account.")), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        gap: 10,
+        marginTop: 18
+      }
+    }, /*#__PURE__*/React.createElement(Button, {
+      variant: "ghost",
+      style: {
+        flex: 1
+      },
+      onClick: function () {
+        setShowUpgrade(false);
+      }
+    }, T("Maybe later")), /*#__PURE__*/React.createElement(Button, {
+      variant: "primary",
+      style: {
+        flex: 1
+      },
+      iconLeft: I("life-buoy", 15),
+      onClick: function () {
+        setShowUpgrade(false);
+        if (onNav) onNav("support");
+      }
+    }, T("Contact us")))))));
   }
 
   // ── JobAlerts ──────────────────────────────────────────────────────────────

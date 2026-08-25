@@ -29,7 +29,14 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
         'created_at'               => 'datetime',
         'updated_at'               => 'datetime',
         'allow_candidate_messages' => 'boolean',
+        'candidate_premium_until'  => 'datetime',
     ];
+
+    // Candidate Premium is active while candidate_premium_until is in the future.
+    public function isCandidatePremium(): bool
+    {
+        return $this->candidate_premium_until !== null && $this->candidate_premium_until->isFuture();
+    }
 
     // jwt-auth requires these two methods
     public function getJWTIdentifier()

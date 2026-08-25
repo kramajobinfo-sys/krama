@@ -9,8 +9,12 @@ use Illuminate\Http\Request;
 // the employer talent search. Read-only; the write side lives in EmployerCandidateController.
 class CandidateProfileViewController extends Controller
 {
+    // Free candidates see only the most recent few viewers; Premium unlocks the rest.
+    private const FREE_LIMIT = 3;
+
     // GET /api/candidate/profile-views — viewer companies (newest first) + a "new since last
-    // seen" count, then advances the seen marker so the badge clears.
+    // seen" count, then advances the seen marker so the badge clears. Gated: free candidates
+    // get the FREE_LIMIT most recent viewers plus a locked_count; Premium gets everything.
     public function index(Request $request)
     {
         $this->requirePermission('save_jobs');
@@ -27,7 +31,14 @@ class CandidateProfileViewController extends Controller
             return ! $seenAt || ($r->last_viewed_at && $r->last_viewed_at->gt($seenAt));
         })->count();
 
-        $viewers = $rows->map(function ($r) {
+        $isPremium = $user->isCandidatePremium();
+        $total = $rows->count();
+        // Free: only reveal the most recent FREE_LIMIT — locked viewers' identities are
+        // never sent to the client, so the paywall can't be bypassed.
+        $visible = $isPremium ? $rows : $rows->take(self::FREE_LIMIT);
+        $lockedCount = $isPremium ? 0 : max(0, $total - $visible->count());
+
+        $viewers = $visible->map(function ($r) {
             $c = $r->company;
             return [
                 'company_id'     => $r->company_id,
@@ -44,9 +55,11 @@ class CandidateProfileViewController extends Controller
         $user->forceFill(['profile_views_seen_at' => now()])->save();
 
         return response()->json([
-            'total'     => $viewers->count(),
-            'new_count' => $newCount,
-            'viewers'   => $viewers,
+            'total'        => $total,
+            'new_count'    => $newCount,
+            'is_premium'   => $isPremium,
+            'locked_count' => $lockedCount,
+            'viewers'      => $viewers,
         ]);
     }
 

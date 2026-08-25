@@ -889,6 +889,7 @@ class AuthController extends Controller
             'company_role'  => $user->company_role,
             'company_capabilities' => $user->companyCapabilities(),
             'cv_visibility' => $user->cv_visibility ?? 'employers',
+            'is_candidate_premium' => $user->isCandidatePremium(),
             'allow_candidate_messages' => (bool) $user->allow_candidate_messages,
             'role'          => $role ? ['id' => $role->id, 'slug' => $role->slug, 'name' => $role->name] : null,
             'permissions'   => $permissions,
