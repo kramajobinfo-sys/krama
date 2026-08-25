@@ -150,6 +150,13 @@
     "Profile strength": "កម្រិតប្រវត្តិរូប", "Profile complete": "ប្រវត្តិរូបពេញលេញ", "Sign out": "ចាកចេញ",
     "Welcome back": "សូមស្វាគមន៍ត្រឡប់មកវិញ", "Recommended for you": "បានណែនាំសម្រាប់អ្នក",
     "Companies I follow": "ក្រុមហ៊ុនដែលខ្ញុំតាមដាន",
+    "Who viewed you": "អ្នកដែលមើលប្រវត្តិរូប",
+    "Who viewed your profile": "អ្នកដែលបានមើលប្រវត្តិរូបរបស់អ្នក",
+    "Employers who opened your profile from candidate search. A complete profile gets viewed more.": "និយោជកដែលបានបើកប្រវត្តិរូបរបស់អ្នកពីការស្វែងរកបេក្ខជន។ ប្រវត្តិរូបពេញលេញ ត្រូវបានមើលកាន់តែច្រើន។",
+    "No profile views yet": "មិនទាន់មានការមើលប្រវត្តិរូបនៅឡើយ",
+    "When an employer views your profile, you'll see them here. Complete your profile and add your CV to get discovered.": "នៅពេលនិយោជកមើលប្រវត្តិរូបរបស់អ្នក អ្នកនឹងឃើញនៅទីនេះ។ បំពេញប្រវត្តិរូប និងបន្ថែម CV ដើម្បីត្រូវបានរកឃើញ។",
+    "viewed": "បានមើល",
+    "Verified": "បានផ្ទៀងផ្ទាត់",
     // Dashboard / overview
     "Applied jobs": "ការងារបានដាក់ពាក្យ", "Interviews": "ការសម្ភាសន៍", "Application pipeline": "ដំណើរការពាក្យសុំ",
     "Applied": "បានដាក់ពាក្យ", "Reviewed": "បានពិនិត្យ", "Shortlisted": "បានជ្រើសរើស", "Interview": "សម្ភាសន៍", "Offered": "បានផ្តល់ជូន",
@@ -260,6 +267,13 @@
     "Welcome back": "欢迎回来",
     "Recommended for you": "为你推荐",
     "Companies I follow": "我关注的公司",
+    "Who viewed you": "谁看过你",
+    "Who viewed your profile": "谁查看了你的资料",
+    "Employers who opened your profile from candidate search. A complete profile gets viewed more.": "从人才搜索中打开你资料的雇主。资料越完整，被查看得越多。",
+    "No profile views yet": "还没有人查看你的资料",
+    "When an employer views your profile, you'll see them here. Complete your profile and add your CV to get discovered.": "当有雇主查看你的资料时，会显示在这里。完善资料并上传简历，更容易被发现。",
+    "viewed": "查看了",
+    "Verified": "已认证",
     // Dashboard / overview
     "Applied jobs": "已申请职位",
     "Interviews": "面试",
@@ -654,6 +668,7 @@
       { id: "recommended",  label: "Recommended",      icon: "sparkles" },
       { id: "invitations",  label: "Invitations",      icon: "mail-plus" },
       { id: "following",    label: "Following",         icon: "heart" },
+      { id: "profileviews", label: "Who viewed you",   icon: "eye",       badge: badges.profileViews },
       { id: "alerts",       label: "Job alerts",       icon: "bell" },
       { id: "messages",     label: "Messages",          icon: "message-square", badge: badges.messages },
       { id: "resume",       label: "Résumé builder",  icon: "file-text" },
@@ -1776,6 +1791,71 @@
     );
   }
 
+  // ── Who viewed your profile ──────────────────────────────────────────────────
+  function ProfileViews({ onNav }) {
+    var [viewers, setViewers] = React.useState([]);
+    var [loading, setLoading] = React.useState(true);
+    var [error, setError] = React.useState("");
+
+    React.useEffect(function() {
+      cand.fetchProfileViews().then(function(r) {
+        setViewers(r.viewers || []);
+        setLoading(false);
+      }).catch(function(e) { setError(e.message); setLoading(false); });
+    }, []);
+
+    // "3 days ago" style relative time.
+    function ago(iso) {
+      if (!iso) return "";
+      var d = new Date(iso); if (isNaN(d)) return "";
+      var s = Math.floor((Date.now() - d.getTime()) / 1000);
+      if (s < 3600) return T("just now");
+      if (s < 86400) { var h = Math.floor(s / 3600); return h + (h === 1 ? T(" hour ago") : T(" hours ago")); }
+      var dd = Math.floor(s / 86400);
+      if (dd < 30) return dd + (dd === 1 ? T(" day ago") : T(" days ago"));
+      return d.toLocaleDateString();
+    }
+
+    if (loading) return <div className="krm-page-pad" style={{ padding: 28, color: "var(--text-muted)" }}>{T("Loading…")}</div>;
+    if (error) return <div className="krm-page-pad" style={{ padding: 28, color: "var(--danger)" }}>{error}</div>;
+
+    return (
+      <div className="krm-page-pad" style={{ padding: 28 }}>
+        <div style={{ maxWidth: 740 }}>
+          <div style={{ marginBottom: 22 }}>
+            <div style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: "var(--text-lg)", color: "var(--text-strong)" }}>{T("Who viewed your profile")}</div>
+            <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginTop: 2 }}>{T("Employers who opened your profile from candidate search. A complete profile gets viewed more.")}</div>
+          </div>
+
+          {viewers.length === 0 ? (
+            <EmptyState icon={I("eye", 28)} title={T("No profile views yet")} description={T("When an employer views your profile, you'll see them here. Complete your profile and add your CV to get discovered.")} />
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {viewers.map(function(v) {
+                return (
+                  <Card key={v.company_id} style={{ display: "flex", alignItems: "center", gap: 16, cursor: v.company_id ? "pointer" : "default" }} onClick={function(){ if (v.company_id) window.open(window.location.origin + "/companies/" + v.company_id, "_blank", "noopener"); }}>
+                    <Avatar src={v.logo_url} name={v.company} square size={48} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <span style={{ fontWeight: 700, color: "var(--text-strong)", fontSize: "var(--text-sm)" }}>{v.company}</span>
+                        {v.is_verified && <span title={T("Verified")} style={{ display: "inline-flex", color: "var(--text-brand)" }}>{I("badge-check", 15)}</span>}
+                      </div>
+                      <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: 2 }}>
+                        {v.industry ? v.industry + " · " : ""}{ago(v.last_viewed_at)}
+                        {v.view_count > 1 && <span style={{ marginLeft: 8, color: "var(--text-brand)", fontWeight: 600 }}>{T("viewed")} {v.view_count}×</span>}
+                      </div>
+                    </div>
+                    <span style={{ color: "var(--text-faint)", display: "inline-flex", flexShrink: 0 }}>{I("chevron-right", 18)}</span>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   // ── JobAlerts ──────────────────────────────────────────────────────────────
   function JobAlerts() {
     var { Card, Button, Input, Badge, EmptyState } = window.KramaDesignSystem_1a6f65;
@@ -2617,12 +2697,12 @@
     var [resume, setResume] = React.useState(null);   // for the profile-completion meter
     var [showOnboarding, setShowOnboarding] = React.useState(false);
     var onboardCheckedRef = React.useRef(false);
-    var [badges, setBadges] = React.useState({ applications: 0, saved: 0, messages: 0, support: 0 });
+    var [badges, setBadges] = React.useState({ applications: 0, saved: 0, messages: 0, support: 0, profileViews: 0 });
     var [sidebarOpen, setSidebarOpen] = React.useState(false);
     // Which tab the Applications page opens on (set by the dashboard "Interviews" stat).
     var [appsInitialTab, setAppsInitialTab] = React.useState("all");
     // Normal navigation resets the applications tab to "all"; the Interviews stat deep-links.
-    function navTo(p) { setAppsInitialTab("all"); setPage(p); }
+    function navTo(p) { setAppsInitialTab("all"); if (p === "profileviews") setBadges(function(b){ return Object.assign({}, b, { profileViews: 0 }); }); setPage(p); }
     function goApplications(t) { setAppsInitialTab(t || "all"); setPage("applications"); }
 
     React.useEffect(function() {
@@ -2638,6 +2718,9 @@
       if (!authUser) return;
       Promise.all([cand.fetchApplications("", 1), cand.fetchSavedJobs(1)]).then(function(r) {
         setBadges(function(b) { return Object.assign({}, b, { applications: r[0].total || 0, saved: r[1].total || 0 }); });
+      }).catch(function(){});
+      cand.fetchProfileViewCount().then(function(d) {
+        setBadges(function(b) { return Object.assign({}, b, { profileViews: d.new_count || 0 }); });
       }).catch(function(){});
     }, [authUser]);
 
@@ -2695,7 +2778,7 @@
     if (authLoading) return <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", color: "var(--text-muted)" }}>{T("Loading…")}</div>;
     if (!authUser) return <CandidateLogin onLogin={function(u){ setAuthUser(u); }} />;
 
-    var titles = { dashboard: T("Welcome back") + ", " + (authUser.name.split(" ")[0]), cv: T("My Digital CV"), applications: T("My applications"), saved: T("Saved jobs"), recommended: T("Recommended for you"), invitations: T("Invitations"), following: T("Companies I follow"), alerts: T("Job alerts"), messages: T("Messages"), resume: T("Résumé builder"), support: T("Help & support"), profile: T("Profile") };
+    var titles = { dashboard: T("Welcome back") + ", " + (authUser.name.split(" ")[0]), cv: T("My Digital CV"), applications: T("My applications"), saved: T("Saved jobs"), recommended: T("Recommended for you"), invitations: T("Invitations"), following: T("Companies I follow"), profileviews: T("Who viewed your profile"), alerts: T("Job alerts"), messages: T("Messages"), resume: T("Résumé builder"), support: T("Help & support"), profile: T("Profile") };
 
     return (
       <div style={{ display: "flex", minHeight: "100vh", background: "var(--surface-page)" }}>
@@ -2712,6 +2795,7 @@
             {page === "recommended"  && <Recommended />}
             {page === "invitations"  && <Invitations />}
             {page === "following"    && <Following />}
+            {page === "profileviews" && <ProfileViews onNav={navTo} />}
             {page === "alerts"       && <JobAlerts />}
             {page === "messages"     && <Messages user={authUser} />}
             {page === "resume"       && <ResumeBuilder onResumeSaved={reloadResume} />}

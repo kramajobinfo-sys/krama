@@ -313,6 +313,13 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     "Welcome back": "សូមស្វាគមន៍ត្រឡប់មកវិញ",
     "Recommended for you": "បានណែនាំសម្រាប់អ្នក",
     "Companies I follow": "ក្រុមហ៊ុនដែលខ្ញុំតាមដាន",
+    "Who viewed you": "អ្នកដែលមើលប្រវត្តិរូប",
+    "Who viewed your profile": "អ្នកដែលបានមើលប្រវត្តិរូបរបស់អ្នក",
+    "Employers who opened your profile from candidate search. A complete profile gets viewed more.": "និយោជកដែលបានបើកប្រវត្តិរូបរបស់អ្នកពីការស្វែងរកបេក្ខជន។ ប្រវត្តិរូបពេញលេញ ត្រូវបានមើលកាន់តែច្រើន។",
+    "No profile views yet": "មិនទាន់មានការមើលប្រវត្តិរូបនៅឡើយ",
+    "When an employer views your profile, you'll see them here. Complete your profile and add your CV to get discovered.": "នៅពេលនិយោជកមើលប្រវត្តិរូបរបស់អ្នក អ្នកនឹងឃើញនៅទីនេះ។ បំពេញប្រវត្តិរូប និងបន្ថែម CV ដើម្បីត្រូវបានរកឃើញ។",
+    "viewed": "បានមើល",
+    "Verified": "បានផ្ទៀងផ្ទាត់",
     // Dashboard / overview
     "Applied jobs": "ការងារបានដាក់ពាក្យ",
     "Interviews": "ការសម្ភាសន៍",
@@ -531,6 +538,13 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     "Welcome back": "欢迎回来",
     "Recommended for you": "为你推荐",
     "Companies I follow": "我关注的公司",
+    "Who viewed you": "谁看过你",
+    "Who viewed your profile": "谁查看了你的资料",
+    "Employers who opened your profile from candidate search. A complete profile gets viewed more.": "从人才搜索中打开你资料的雇主。资料越完整，被查看得越多。",
+    "No profile views yet": "还没有人查看你的资料",
+    "When an employer views your profile, you'll see them here. Complete your profile and add your CV to get discovered.": "当有雇主查看你的资料时，会显示在这里。完善资料并上传简历，更容易被发现。",
+    "viewed": "查看了",
+    "Verified": "已认证",
     // Dashboard / overview
     "Applied jobs": "已申请职位",
     "Interviews": "面试",
@@ -1280,6 +1294,11 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       id: "following",
       label: "Following",
       icon: "heart"
+    }, {
+      id: "profileviews",
+      label: "Who viewed you",
+      icon: "eye",
+      badge: badges.profileViews
     }, {
       id: "alerts",
       label: "Job alerts",
@@ -4407,6 +4426,150 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     }))));
   }
 
+  // ── Who viewed your profile ──────────────────────────────────────────────────
+  function ProfileViews({
+    onNav
+  }) {
+    var [viewers, setViewers] = React.useState([]);
+    var [loading, setLoading] = React.useState(true);
+    var [error, setError] = React.useState("");
+    React.useEffect(function () {
+      cand.fetchProfileViews().then(function (r) {
+        setViewers(r.viewers || []);
+        setLoading(false);
+      }).catch(function (e) {
+        setError(e.message);
+        setLoading(false);
+      });
+    }, []);
+
+    // "3 days ago" style relative time.
+    function ago(iso) {
+      if (!iso) return "";
+      var d = new Date(iso);
+      if (isNaN(d)) return "";
+      var s = Math.floor((Date.now() - d.getTime()) / 1000);
+      if (s < 3600) return T("just now");
+      if (s < 86400) {
+        var h = Math.floor(s / 3600);
+        return h + (h === 1 ? T(" hour ago") : T(" hours ago"));
+      }
+      var dd = Math.floor(s / 86400);
+      if (dd < 30) return dd + (dd === 1 ? T(" day ago") : T(" days ago"));
+      return d.toLocaleDateString();
+    }
+    if (loading) return /*#__PURE__*/React.createElement("div", {
+      className: "krm-page-pad",
+      style: {
+        padding: 28,
+        color: "var(--text-muted)"
+      }
+    }, T("Loading…"));
+    if (error) return /*#__PURE__*/React.createElement("div", {
+      className: "krm-page-pad",
+      style: {
+        padding: 28,
+        color: "var(--danger)"
+      }
+    }, error);
+    return /*#__PURE__*/React.createElement("div", {
+      className: "krm-page-pad",
+      style: {
+        padding: 28
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        maxWidth: 740
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        marginBottom: 22
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontFamily: "var(--font-sans)",
+        fontWeight: 700,
+        fontSize: "var(--text-lg)",
+        color: "var(--text-strong)"
+      }
+    }, T("Who viewed your profile")), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: "var(--text-sm)",
+        color: "var(--text-muted)",
+        marginTop: 2
+      }
+    }, T("Employers who opened your profile from candidate search. A complete profile gets viewed more."))), viewers.length === 0 ? /*#__PURE__*/React.createElement(EmptyState, {
+      icon: I("eye", 28),
+      title: T("No profile views yet"),
+      description: T("When an employer views your profile, you'll see them here. Complete your profile and add your CV to get discovered.")
+    }) : /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        flexDirection: "column",
+        gap: 10
+      }
+    }, viewers.map(function (v) {
+      return /*#__PURE__*/React.createElement(Card, {
+        key: v.company_id,
+        style: {
+          display: "flex",
+          alignItems: "center",
+          gap: 16,
+          cursor: v.company_id ? "pointer" : "default"
+        },
+        onClick: function () {
+          if (v.company_id) window.open(window.location.origin + "/companies/" + v.company_id, "_blank", "noopener");
+        }
+      }, /*#__PURE__*/React.createElement(Avatar, {
+        src: v.logo_url,
+        name: v.company,
+        square: true,
+        size: 48
+      }), /*#__PURE__*/React.createElement("div", {
+        style: {
+          flex: 1,
+          minWidth: 0
+        }
+      }, /*#__PURE__*/React.createElement("div", {
+        style: {
+          display: "flex",
+          alignItems: "center",
+          gap: 6
+        }
+      }, /*#__PURE__*/React.createElement("span", {
+        style: {
+          fontWeight: 700,
+          color: "var(--text-strong)",
+          fontSize: "var(--text-sm)"
+        }
+      }, v.company), v.is_verified && /*#__PURE__*/React.createElement("span", {
+        title: T("Verified"),
+        style: {
+          display: "inline-flex",
+          color: "var(--text-brand)"
+        }
+      }, I("badge-check", 15))), /*#__PURE__*/React.createElement("div", {
+        style: {
+          fontSize: "var(--text-xs)",
+          color: "var(--text-muted)",
+          marginTop: 2
+        }
+      }, v.industry ? v.industry + " · " : "", ago(v.last_viewed_at), v.view_count > 1 && /*#__PURE__*/React.createElement("span", {
+        style: {
+          marginLeft: 8,
+          color: "var(--text-brand)",
+          fontWeight: 600
+        }
+      }, T("viewed"), " ", v.view_count, "\xD7"))), /*#__PURE__*/React.createElement("span", {
+        style: {
+          color: "var(--text-faint)",
+          display: "inline-flex",
+          flexShrink: 0
+        }
+      }, I("chevron-right", 18)));
+    }))));
+  }
+
   // ── JobAlerts ──────────────────────────────────────────────────────────────
   function JobAlerts() {
     var {
@@ -6204,7 +6367,8 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       applications: 0,
       saved: 0,
       messages: 0,
-      support: 0
+      support: 0,
+      profileViews: 0
     });
     var [sidebarOpen, setSidebarOpen] = React.useState(false);
     // Which tab the Applications page opens on (set by the dashboard "Interviews" stat).
@@ -6212,6 +6376,11 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     // Normal navigation resets the applications tab to "all"; the Interviews stat deep-links.
     function navTo(p) {
       setAppsInitialTab("all");
+      if (p === "profileviews") setBadges(function (b) {
+        return Object.assign({}, b, {
+          profileViews: 0
+        });
+      });
       setPage(p);
     }
     function goApplications(t) {
@@ -6241,6 +6410,13 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
           return Object.assign({}, b, {
             applications: r[0].total || 0,
             saved: r[1].total || 0
+          });
+        });
+      }).catch(function () {});
+      cand.fetchProfileViewCount().then(function (d) {
+        setBadges(function (b) {
+          return Object.assign({}, b, {
+            profileViews: d.new_count || 0
           });
         });
       }).catch(function () {});
@@ -6337,6 +6513,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       recommended: T("Recommended for you"),
       invitations: T("Invitations"),
       following: T("Companies I follow"),
+      profileviews: T("Who viewed your profile"),
       alerts: T("Job alerts"),
       messages: T("Messages"),
       resume: T("Résumé builder"),
@@ -6424,7 +6601,9 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
           });
         });
       }
-    }), page === "recommended" && /*#__PURE__*/React.createElement(Recommended, null), page === "invitations" && /*#__PURE__*/React.createElement(Invitations, null), page === "following" && /*#__PURE__*/React.createElement(Following, null), page === "alerts" && /*#__PURE__*/React.createElement(JobAlerts, null), page === "messages" && /*#__PURE__*/React.createElement(Messages, {
+    }), page === "recommended" && /*#__PURE__*/React.createElement(Recommended, null), page === "invitations" && /*#__PURE__*/React.createElement(Invitations, null), page === "following" && /*#__PURE__*/React.createElement(Following, null), page === "profileviews" && /*#__PURE__*/React.createElement(ProfileViews, {
+      onNav: navTo
+    }), page === "alerts" && /*#__PURE__*/React.createElement(JobAlerts, null), page === "messages" && /*#__PURE__*/React.createElement(Messages, {
       user: authUser
     }), page === "resume" && /*#__PURE__*/React.createElement(ResumeBuilder, {
       onResumeSaved: reloadResume

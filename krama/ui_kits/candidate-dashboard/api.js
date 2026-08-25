@@ -156,6 +156,8 @@ var cand = (function () {
 
     // Company following
     fetchFollowing: function () { return req("GET", "/candidate/following"); },
+    fetchProfileViews: function () { return req("GET", "/candidate/profile-views"); },
+    fetchProfileViewCount: function () { return req("GET", "/candidate/profile-views/count"); },
     followCompany: function (id) { return req("POST", "/companies/" + id + "/follow"); },
     unfollowCompany: function (id) { return req("DELETE", "/companies/" + id + "/follow"); },
 

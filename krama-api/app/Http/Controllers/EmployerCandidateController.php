@@ -9,6 +9,7 @@ use App\Models\CandidateInvitation;
 use App\Models\Company;
 use App\Models\Job;
 use App\Models\Notification;
+use App\Models\ProfileView;
 use App\Models\Resume;
 use App\Models\Role;
 use App\Models\SavedCandidate;
@@ -156,6 +157,9 @@ class EmployerCandidateController extends Controller
         $companyId = $this->employerCompanyId($user);
 
         $candidate = $this->visibleCandidates()->findOrFail($id);
+
+        // Log "who viewed your profile" (best-effort; never break the profile view).
+        try { ProfileView::record((int) $candidate->id, (int) $companyId); } catch (\Throwable $e) {}
 
         $resume = Resume::where('candidate_id', $candidate->id)
             ->orderByDesc('is_primary')->orderByDesc('updated_at')->first();

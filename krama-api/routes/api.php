@@ -175,6 +175,8 @@ Route::middleware('auth:api')->group(function () {
     Route::delete('companies/{id}/follow',      [CompanyFollowerController::class, 'unfollow']);
     Route::get('companies/{id}/follow',         [CompanyFollowerController::class, 'status']);
     Route::get('candidate/following',           [CompanyFollowerController::class, 'myFollowing']);
+    Route::get('candidate/profile-views',       [\App\Http\Controllers\CandidateProfileViewController::class, 'index']);
+    Route::get('candidate/profile-views/count', [\App\Http\Controllers\CandidateProfileViewController::class, 'count']);
 
     // Candidate: job alerts
     Route::get('candidate/alerts',              [JobAlertController::class, 'index']);
