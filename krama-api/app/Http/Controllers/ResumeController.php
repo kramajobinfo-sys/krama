@@ -207,7 +207,10 @@ class ResumeController extends Controller
         $user   = $request->user();
         $resume = Resume::where('candidate_id', $user->id)->orderByDesc('is_primary')->orderByDesc('id')->first();
 
-        $pdf = \App\Services\CvPdfService::pdf($user, $resume);
+        $template = (string) $request->query('template', 'modern');
+        if (! array_key_exists($template, \App\Services\CvPdfService::TEMPLATES)) $template = 'modern';
+
+        $pdf = \App\Services\CvPdfService::pdf($user, $resume, $template);
         $filename = \App\Services\CvPdfService::filename($user);
 
         return response($pdf, 200, [

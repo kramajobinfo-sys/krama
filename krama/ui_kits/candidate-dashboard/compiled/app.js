@@ -501,6 +501,10 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     "Download PDF": "ទាញយក PDF",
     "Preparing…": "កំពុងរៀបចំ…",
     "Couldn't generate the PDF. Please try again.": "មិនអាចបង្កើត PDF បានទេ។ សូមព្យាយាមម្តងទៀត។",
+    "Download as PDF": "ទាញយកជា PDF",
+    "Modern": "ទំនើប",
+    "Classic": "បុរាណ",
+    "Creative": "ច្នៃប្រឌិត",
     "Your CV is private, so this link won't open. Set visibility to Employers or Public in your Profile to share it.": "CV របស់អ្នកជាឯកជន ដូច្នេះតំណនេះនឹងមិនបើកទេ។ កំណត់ភាពមើលឃើញទៅ និយោជក ឬ សាធារណៈ ក្នុងប្រវត្តិរូប ដើម្បីចែករំលែក។"
   };
   try {
@@ -729,6 +733,10 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     "Download PDF": "下载 PDF",
     "Preparing…": "正在准备…",
     "Couldn't generate the PDF. Please try again.": "无法生成 PDF，请重试。",
+    "Download as PDF": "下载为 PDF",
+    "Modern": "现代",
+    "Classic": "经典",
+    "Creative": "创意",
     "Your CV is private, so this link won't open. Set visibility to Employers or Public in your Profile to share it.": "你的简历为私密状态，此链接无法打开。请在个人档案中将可见性设为「仅雇主」或「公开」后再分享。"
   };
   try {
@@ -6232,7 +6240,8 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     var [link, setLink] = React.useState(null);
     var [loading, setLoading] = React.useState(true);
     var [copied, setCopied] = React.useState(false);
-    var [pdfBusy, setPdfBusy] = React.useState(false);
+    var [pdfBusy, setPdfBusy] = React.useState("");
+    var [pdfStyle, setPdfStyle] = React.useState("modern");
     React.useEffect(function () {
       cand.fetchCvLink().then(function (d) {
         setLink(d);
@@ -6241,10 +6250,10 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         setLoading(false);
       });
     }, []);
-    function downloadPdf() {
+    function downloadPdf(style) {
       if (pdfBusy) return;
-      setPdfBusy(true);
-      cand.downloadResumePdf().then(function (blob) {
+      setPdfBusy(style || pdfStyle);
+      cand.downloadResumePdf(style || pdfStyle).then(function (blob) {
         var u = URL.createObjectURL(blob);
         var a = document.createElement("a");
         a.href = u;
@@ -6255,9 +6264,9 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         setTimeout(function () {
           URL.revokeObjectURL(u);
         }, 4000);
-        setPdfBusy(false);
+        setPdfBusy("");
       }).catch(function () {
-        setPdfBusy(false);
+        setPdfBusy("");
         alert(T("Couldn't generate the PDF. Please try again."));
       });
     }
@@ -6366,10 +6375,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       onClick: copy
     }, copied ? T("Copied!") : T("Copy link"))), /*#__PURE__*/React.createElement("div", {
       style: {
-        marginTop: 12,
-        display: "flex",
-        gap: 8,
-        flexWrap: "wrap"
+        marginTop: 12
       }
     }, /*#__PURE__*/React.createElement(Button, {
       variant: "primary",
@@ -6377,12 +6383,46 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       onClick: function () {
         if (url) window.open(url, "_blank", "noopener");
       }
-    }, T("Open public CV")), /*#__PURE__*/React.createElement(Button, {
-      variant: "secondary",
-      iconLeft: I("download", 15),
-      disabled: pdfBusy,
-      onClick: downloadPdf
-    }, pdfBusy ? T("Preparing…") : T("Download PDF")))))));
+    }, T("Open public CV"))), /*#__PURE__*/React.createElement("div", {
+      style: {
+        marginTop: 16
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: "var(--text-xs)",
+        fontWeight: 700,
+        color: "var(--text-faint)",
+        textTransform: "uppercase",
+        letterSpacing: ".04em",
+        marginBottom: 8
+      }
+    }, T("Download as PDF")), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        gap: 8,
+        flexWrap: "wrap"
+      }
+    }, [{
+      k: "modern",
+      l: T("Modern")
+    }, {
+      k: "classic",
+      l: T("Classic")
+    }, {
+      k: "creative",
+      l: T("Creative")
+    }].map(function (s) {
+      return /*#__PURE__*/React.createElement(Button, {
+        key: s.k,
+        variant: "secondary",
+        size: "sm",
+        iconLeft: I("download", 14),
+        disabled: !!pdfBusy,
+        onClick: function () {
+          downloadPdf(s.k);
+        }
+      }, pdfBusy === s.k ? T("Preparing…") : s.l);
+    })))))));
   }
   function App() {
     var [page, setPage] = React.useState("dashboard");

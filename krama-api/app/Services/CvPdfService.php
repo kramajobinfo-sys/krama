@@ -19,8 +19,16 @@ class CvPdfService
         return $slug . '-cv.pdf';
     }
 
-    public static function pdf(User $user, ?Resume $resume): string
+    // template → Blade view. 'modern' is the default; extra styles map to their own views.
+    public const TEMPLATES = [
+        'modern'   => 'pdf.cv',
+        'classic'  => 'pdf.cv-classic',
+        'creative' => 'pdf.cv-creative',
+    ];
+
+    public static function pdf(User $user, ?Resume $resume, string $template = 'modern'): string
     {
+        $viewName = self::TEMPLATES[$template] ?? self::TEMPLATES['modern'];
         $view = self::viewData($user, $resume);
 
         $tmp = storage_path('app/mpdf');
@@ -51,7 +59,7 @@ class CvPdfService
             ],
         ]);
         $mpdf->SetTitle($user->name . ' — CV');
-        $mpdf->WriteHTML(view('pdf.cv', $view)->render());
+        $mpdf->WriteHTML(view($viewName, $view)->render());
 
         return $mpdf->Output('', \Mpdf\Output\Destination::STRING_RETURN);
     }

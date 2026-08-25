@@ -119,9 +119,11 @@ var cand = (function () {
         return r.blob();
       });
     },
-    // Generated PDF résumé (from the structured data) — returns a Blob.
-    downloadResumePdf: function () {
-      return fetch(BASE + "/candidate/resume/pdf", {
+    // Generated PDF résumé (from the structured data) — returns a Blob. `template` is
+    // one of modern|classic|creative.
+    downloadResumePdf: function (template) {
+      var q = template ? ("?template=" + encodeURIComponent(template)) : "";
+      return fetch(BASE + "/candidate/resume/pdf" + q, {
         headers: { "Authorization": "Bearer " + token() },
       }).then(function (r) {
         if (!r.ok) throw new Error("HTTP " + r.status);
