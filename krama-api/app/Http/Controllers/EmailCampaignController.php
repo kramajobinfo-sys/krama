@@ -30,6 +30,7 @@ class EmailCampaignController extends Controller
                 'id' => $c->id, 'subject' => $c->subject, 'audience' => $c->audience,
                 'status' => $c->status, 'total_recipients' => $c->total_recipients,
                 'sent_count' => $c->sent_count, 'failed_count' => $c->failed_count,
+                'opens' => (int) ($c->opens ?? 0), 'clicks' => (int) ($c->clicks ?? 0),
                 'created_at' => $c->created_at, 'sent_at' => $c->sent_at,
             ]),
             'smtp_configured' => MailConfig::isConfigured(),

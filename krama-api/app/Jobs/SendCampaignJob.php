@@ -47,7 +47,8 @@ class SendCampaignJob implements ShouldQueue
             foreach ($users as $u) {
                 if (! $u->email) continue;
                 try {
-                    $html = EmailTemplates::marketing($c->body, EmailCampaign::unsubUrl($u->id));
+                    $body = \App\Support\EmailTracking::apply($c->id, $u->id, $c->body);
+                    $html = EmailTemplates::marketing($body, EmailCampaign::unsubUrl($u->id));
                     Mail::html($html, fn ($m) => $m->to($u->email, $u->name)->subject($c->subject));
                     $sent++;
                 } catch (\Throwable $e) {

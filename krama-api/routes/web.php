@@ -10,6 +10,9 @@ Route::get('/career',                [SeoController::class, 'careerList']);
 Route::get('/career/{slug}',         [SeoController::class, 'careerArticle']);
 Route::get('/account/delete',        [SeoController::class, 'accountDelete']);
 Route::get('/unsubscribe/{token}',   [SeoController::class, 'unsubscribe']);
+// Email open/click tracking (hit from marketing emails; token is HMAC-signed).
+Route::get('/e/o/{campaign}/{token}', [\App\Http\Controllers\EmailTrackingController::class, 'open'])->whereNumber('campaign');
+Route::get('/e/c/{campaign}/{token}', [\App\Http\Controllers\EmailTrackingController::class, 'click'])->whereNumber('campaign');
 Route::get('/privacy',               [SeoController::class, 'privacy']);
 Route::get('/terms',                 [SeoController::class, 'terms']);
 Route::get('/jobs/{slug}/og.png',    [SeoController::class, 'jobOg']);

@@ -8433,6 +8433,12 @@
                         {(AUD.filter(function (a) { return a.v === c.audience; })[0] || {}).l || c.audience} · {fmtDate(c.created_at)}
                         {c.status !== "draft" ? " · " + c.sent_count + "/" + c.total_recipients + " sent" + (c.failed_count ? " · " + c.failed_count + " failed" : "") : ""}
                       </div>
+                      {(c.status === "sent" || c.status === "sending") && c.sent_count > 0 && (
+                        <div style={{ display: "flex", gap: 16, marginTop: 8, fontSize: "var(--text-sm)" }}>
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: 5, color: "var(--text-body)" }} title="Unique opens">{I("mail-open", 14)} <strong>{c.opens || 0}</strong> <span style={{ color: "var(--text-faint)" }}>opened ({Math.round((c.opens || 0) / c.sent_count * 100)}%)</span></span>
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: 5, color: "var(--text-body)" }} title="Unique clicks">{I("mouse-pointer-click", 14)} <strong>{c.clicks || 0}</strong> <span style={{ color: "var(--text-faint)" }}>clicked ({Math.round((c.clicks || 0) / c.sent_count * 100)}%)</span></span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </Card>
