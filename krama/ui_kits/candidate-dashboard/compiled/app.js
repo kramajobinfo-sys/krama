@@ -498,6 +498,9 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     "Copy link": "ចម្លងតំណ",
     "Copied!": "បានចម្លង!",
     "Open public CV": "បើក CV សាធារណៈ",
+    "Download PDF": "ទាញយក PDF",
+    "Preparing…": "កំពុងរៀបចំ…",
+    "Couldn't generate the PDF. Please try again.": "មិនអាចបង្កើត PDF បានទេ។ សូមព្យាយាមម្តងទៀត។",
     "Your CV is private, so this link won't open. Set visibility to Employers or Public in your Profile to share it.": "CV របស់អ្នកជាឯកជន ដូច្នេះតំណនេះនឹងមិនបើកទេ។ កំណត់ភាពមើលឃើញទៅ និយោជក ឬ សាធារណៈ ក្នុងប្រវត្តិរូប ដើម្បីចែករំលែក។"
   };
   try {
@@ -723,6 +726,9 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     "Copy link": "复制链接",
     "Copied!": "已复制！",
     "Open public CV": "打开公开简历",
+    "Download PDF": "下载 PDF",
+    "Preparing…": "正在准备…",
+    "Couldn't generate the PDF. Please try again.": "无法生成 PDF，请重试。",
     "Your CV is private, so this link won't open. Set visibility to Employers or Public in your Profile to share it.": "你的简历为私密状态，此链接无法打开。请在个人档案中将可见性设为「仅雇主」或「公开」后再分享。"
   };
   try {
@@ -6226,6 +6232,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     var [link, setLink] = React.useState(null);
     var [loading, setLoading] = React.useState(true);
     var [copied, setCopied] = React.useState(false);
+    var [pdfBusy, setPdfBusy] = React.useState(false);
     React.useEffect(function () {
       cand.fetchCvLink().then(function (d) {
         setLink(d);
@@ -6234,6 +6241,26 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         setLoading(false);
       });
     }, []);
+    function downloadPdf() {
+      if (pdfBusy) return;
+      setPdfBusy(true);
+      cand.downloadResumePdf().then(function (blob) {
+        var u = URL.createObjectURL(blob);
+        var a = document.createElement("a");
+        a.href = u;
+        a.download = (user && user.name ? user.name.replace(/\s+/g, "-").toLowerCase() : "cv") + "-cv.pdf";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(function () {
+          URL.revokeObjectURL(u);
+        }, 4000);
+        setPdfBusy(false);
+      }).catch(function () {
+        setPdfBusy(false);
+        alert(T("Couldn't generate the PDF. Please try again."));
+      });
+    }
     function copy() {
       if (!link || !link.url) return;
       try {
@@ -6339,7 +6366,10 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       onClick: copy
     }, copied ? T("Copied!") : T("Copy link"))), /*#__PURE__*/React.createElement("div", {
       style: {
-        marginTop: 12
+        marginTop: 12,
+        display: "flex",
+        gap: 8,
+        flexWrap: "wrap"
       }
     }, /*#__PURE__*/React.createElement(Button, {
       variant: "primary",
@@ -6347,7 +6377,12 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       onClick: function () {
         if (url) window.open(url, "_blank", "noopener");
       }
-    }, T("Open public CV")))))));
+    }, T("Open public CV")), /*#__PURE__*/React.createElement(Button, {
+      variant: "secondary",
+      iconLeft: I("download", 15),
+      disabled: pdfBusy,
+      onClick: downloadPdf
+    }, pdfBusy ? T("Preparing…") : T("Download PDF")))))));
   }
   function App() {
     var [page, setPage] = React.useState("dashboard");

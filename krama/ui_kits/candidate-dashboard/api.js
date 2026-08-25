@@ -119,6 +119,15 @@ var cand = (function () {
         return r.blob();
       });
     },
+    // Generated PDF résumé (from the structured data) — returns a Blob.
+    downloadResumePdf: function () {
+      return fetch(BASE + "/candidate/resume/pdf", {
+        headers: { "Authorization": "Bearer " + token() },
+      }).then(function (r) {
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        return r.blob();
+      });
+    },
 
     // Applications
     fetchApplications: function (stage, page) {

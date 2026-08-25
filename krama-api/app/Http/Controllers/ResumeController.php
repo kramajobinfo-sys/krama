@@ -200,6 +200,22 @@ class ResumeController extends Controller
         }, $filename, ['Content-Type' => $disk->mimeType($resume->file_url)]);
     }
 
+    // GET /api/candidate/resume/pdf — generate a formatted PDF résumé from the structured data.
+    public function downloadPdf(Request $request)
+    {
+        $this->requirePermission('save_jobs');
+        $user   = $request->user();
+        $resume = Resume::where('candidate_id', $user->id)->orderByDesc('is_primary')->orderByDesc('id')->first();
+
+        $pdf = \App\Services\CvPdfService::pdf($user, $resume);
+        $filename = \App\Services\CvPdfService::filename($user);
+
+        return response($pdf, 200, [
+            'Content-Type'        => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ]);
+    }
+
     // Append a stable download_url to the resume payload
     private function withDownloadUrl(?Resume $resume): ?array
     {

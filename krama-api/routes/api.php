@@ -211,6 +211,7 @@ Route::middleware('auth:api')->group(function () {
     Route::put('candidate/resume',              [ResumeController::class, 'save']);
     Route::post('candidate/resume/upload',      [ResumeController::class, 'upload'])->middleware('throttle:10,1');
     Route::get('candidate/resume/cv',           [ResumeController::class, 'downloadCv'])->name('resume.download');
+    Route::get('candidate/resume/pdf',          [ResumeController::class, 'downloadPdf'])->middleware('throttle:30,1');
     Route::get('candidate/cv-link',             [ResumeController::class, 'cvLink']);
 
     // Employer: CV match (credits-based; deterministic + AI)

@@ -235,6 +235,7 @@
     "My Digital CV": "CV ឌីជីថលរបស់ខ្ញុំ", "Share your CV with a link or QR code.": "ចែករំលែក CV របស់អ្នកជាមួយតំណ ឬកូដ QR។",
     "Scan the code or share the link — anyone can view your CV, no login needed.": "ស្កេនកូដ ឬចែករំលែកតំណ — នរណាក៏អាចមើល CV របស់អ្នកបាន ដោយមិនចាំបាច់ចូល។",
     "Copy link": "ចម្លងតំណ", "Copied!": "បានចម្លង!", "Open public CV": "បើក CV សាធារណៈ",
+    "Download PDF": "ទាញយក PDF", "Preparing…": "កំពុងរៀបចំ…", "Couldn't generate the PDF. Please try again.": "មិនអាចបង្កើត PDF បានទេ។ សូមព្យាយាមម្តងទៀត។",
     "Your CV is private, so this link won't open. Set visibility to Employers or Public in your Profile to share it.": "CV របស់អ្នកជាឯកជន ដូច្នេះតំណនេះនឹងមិនបើកទេ។ កំណត់ភាពមើលឃើញទៅ និយោជក ឬ សាធារណៈ ក្នុងប្រវត្តិរូប ដើម្បីចែករំលែក។",
   };
   try { if (window.KRAMA_I18N && window.KRAMA_I18N.km) { Object.assign(window.KRAMA_I18N.km, CAND_KM); } else { window.KRAMA_I18N = { km: CAND_KM }; } } catch (e) {}
@@ -452,6 +453,7 @@
     "Copy link": "复制链接",
     "Copied!": "已复制！",
     "Open public CV": "打开公开简历",
+    "Download PDF": "下载 PDF", "Preparing…": "正在准备…", "Couldn't generate the PDF. Please try again.": "无法生成 PDF，请重试。",
     "Your CV is private, so this link won't open. Set visibility to Employers or Public in your Profile to share it.": "你的简历为私密状态，此链接无法打开。请在个人档案中将可见性设为「仅雇主」或「公开」后再分享。"
   };
   try { if (window.KRAMA_I18N && window.KRAMA_I18N.zh) { Object.assign(window.KRAMA_I18N.zh, CAND_ZH); } else if (window.KRAMA_I18N) { window.KRAMA_I18N.zh = CAND_ZH; } } catch (e) {}
@@ -2644,9 +2646,23 @@
     var [link, setLink] = React.useState(null);
     var [loading, setLoading] = React.useState(true);
     var [copied, setCopied] = React.useState(false);
+    var [pdfBusy, setPdfBusy] = React.useState(false);
     React.useEffect(function () {
       cand.fetchCvLink().then(function (d) { setLink(d); setLoading(false); }).catch(function () { setLoading(false); });
     }, []);
+    function downloadPdf() {
+      if (pdfBusy) return;
+      setPdfBusy(true);
+      cand.downloadResumePdf().then(function (blob) {
+        var u = URL.createObjectURL(blob);
+        var a = document.createElement("a");
+        a.href = u;
+        a.download = ((user && user.name ? user.name.replace(/\s+/g, "-").toLowerCase() : "cv")) + "-cv.pdf";
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(function () { URL.revokeObjectURL(u); }, 4000);
+        setPdfBusy(false);
+      }).catch(function () { setPdfBusy(false); alert(T("Couldn't generate the PDF. Please try again.")); });
+    }
     function copy() {
       if (!link || !link.url) return;
       try { navigator.clipboard.writeText(link.url); } catch (e) {}
@@ -2675,8 +2691,9 @@
                   <input readOnly value={url} onClick={function (e) { e.target.select(); }} style={{ flex: 1, minWidth: 180, height: 40, padding: "0 12px", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)", color: "var(--text-body)", background: "var(--surface-page)" }} />
                   <Button variant="secondary" iconLeft={I(copied ? "check" : "copy", 15)} onClick={copy}>{copied ? T("Copied!") : T("Copy link")}</Button>
                 </div>
-                <div style={{ marginTop: 12 }}>
+                <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
                   <Button variant="primary" iconLeft={I("external-link", 15)} onClick={function () { if (url) window.open(url, "_blank", "noopener"); }}>{T("Open public CV")}</Button>
+                  <Button variant="secondary" iconLeft={I("download", 15)} disabled={pdfBusy} onClick={downloadPdf}>{pdfBusy ? T("Preparing…") : T("Download PDF")}</Button>
                 </div>
               </div>
             </div>
