@@ -12,14 +12,14 @@
 <script defer src="../public-website/i18n.js?v=18"></script>
 <script>window.KramaCandidateApp = null;</script>
 <script defer src="../../vendor/lucide.min.js?v=1"></script>
-<script defer src="api.js?v=24"></script>
+<script defer src="api.js?v=25"></script>
 <!-- babel.min.js removed: app.jsx is precompiled to compiled/app.js at build time
      (node krama/build-jsx.js ui_kits/candidate-dashboard app.jsx). It was 3MB of parser shipped to
      every user, which then compiled the whole app in the browser on every page load.
      All `defer` so none of them block the first paint; deferred scripts still execute in
      document order and finish before DOMContentLoaded, which the boot code waits for.
      compiled/app.js MUST stay last. -->
-<script defer src="compiled/app.js?v=68"></script>
+<script defer src="compiled/app.js?v=69"></script>
 <style>html,body{margin:0;background:var(--surface-page)}</style>
 </head>
 <body>

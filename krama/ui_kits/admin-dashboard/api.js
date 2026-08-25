@@ -249,6 +249,8 @@
     },
     setCandidateStatus: function (id, status) { return req("PATCH", "/admin/candidates/" + id + "/status", { status: status }); },
     setCandidatePremium: function (id, months) { return req("PATCH", "/admin/candidates/" + id + "/premium", { months: months }); },
+    getCandidatePremiumConfig: function () { return req("GET", "/admin/candidate-premium-config"); },
+    saveCandidatePremiumConfig: function (data) { return req("PUT", "/admin/candidate-premium-config", data); },
 
     // All users (requires manage_users permission)
     fetchUsers: function (role, page, search) {

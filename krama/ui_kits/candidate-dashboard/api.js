@@ -169,6 +169,10 @@ var cand = (function () {
     fetchFollowing: function () { return req("GET", "/candidate/following"); },
     fetchProfileViews: function () { return req("GET", "/candidate/profile-views"); },
     fetchProfileViewCount: function () { return req("GET", "/candidate/profile-views/count"); },
+    premiumStatus: function () { return req("GET", "/candidate/premium"); },
+    premiumCheckout: function () { return req("POST", "/candidate/premium/checkout", {}); },
+    premiumKhqr: function (id) { return req("POST", "/candidate/premium/" + id + "/khqr", {}); },
+    premiumVerify: function (id) { return req("GET", "/candidate/premium/" + id + "/verify"); },
     followCompany: function (id) { return req("POST", "/companies/" + id + "/follow"); },
     unfollowCompany: function (id) { return req("DELETE", "/companies/" + id + "/follow"); },
 

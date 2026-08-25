@@ -60,6 +60,33 @@ class UserController extends Controller
         return response()->json(['message' => 'Candidate ' . $data['status'] . '.', 'status' => $data['status']]);
     }
 
+    // GET /api/admin/candidate-premium-config — pricing for self-serve Candidate Premium.
+    public function premiumConfig()
+    {
+        $this->requirePermission('suspend_users');
+        $s = \App\Models\Setting::where('group', 'candidate_premium')->pluck('value', 'key')->toArray();
+        return response()->json([
+            'price'    => (float) ($s['price'] ?? 5),
+            'currency' => strtoupper($s['currency'] ?? 'USD'),
+            'months'   => max(1, (int) ($s['months'] ?? 3)),
+        ]);
+    }
+
+    // PUT /api/admin/candidate-premium-config
+    public function savePremiumConfig(Request $request)
+    {
+        $this->requirePermission('site_settings');
+        $data = $request->validate([
+            'price'    => 'required|numeric|min:0|max:100000',
+            'currency' => 'required|in:USD,KHR',
+            'months'   => 'required|integer|min:1|max:36',
+        ]);
+        foreach (['price' => (string) $data['price'], 'currency' => $data['currency'], 'months' => (string) $data['months']] as $k => $v) {
+            \App\Models\Setting::updateOrCreate(['group' => 'candidate_premium', 'key' => $k], ['value' => $v]);
+        }
+        return response()->json(['message' => 'Candidate Premium pricing saved.']);
+    }
+
     // PATCH /api/admin/candidates/{id}/premium — grant or revoke candidate Premium.
     // { months: 1..36 } grants (extends from the later of now / current expiry); { months: 0 } revokes.
     public function setPremium(Request $request, $id)

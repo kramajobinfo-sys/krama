@@ -92,6 +92,18 @@ class PaymentService
                         \App\Models\PremiumWaitlist::where('company_id', $payment->company_id)->delete();
                     }
                 }
+            } elseif ($payment->purpose === 'candidate_premium') {
+                // Candidate Premium — extend candidate_premium_until by the purchased months,
+                // stacking from the later of now / current expiry so renewals add on.
+                if ($payment->candidate_id) {
+                    $months = max(1, (int) $payment->credits);
+                    $u = \App\Models\User::find($payment->candidate_id);
+                    if ($u) {
+                        $base = ($u->candidate_premium_until && $u->candidate_premium_until->isFuture())
+                            ? $u->candidate_premium_until->copy() : now();
+                        $u->forceFill(['candidate_premium_until' => $base->addMonths($months)])->save();
+                    }
+                }
             } elseif ($payment->subscription_id) {
                 Subscription::where('id', $payment->subscription_id)
                     ->update(['status' => 'active']);

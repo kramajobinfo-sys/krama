@@ -333,6 +333,15 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     "Premium is rolling out. Message us via Help & support to get early access for your account.": "Premium កំពុងដាក់ឱ្យប្រើ។ ផ្ញើសារមកយើងតាម ជំនួយ & គាំទ្រ ដើម្បីទទួលបានសិទ្ធិមុនគេ។",
     "Maybe later": "ពេលក្រោយ",
     "Contact us": "ទាក់ទងយើង",
+    "month": "ខែ",
+    "months": "ខែ",
+    "Pay with KHQR": "បង់ប្រាក់ដោយ KHQR",
+    "Scan with any Cambodian banking app to pay": "ស្កេនដោយកម្មវិធីធនាគារកម្ពុជាណាមួយ ដើម្បីបង់",
+    "Waiting for payment…": "កំពុងរង់ចាំការទូទាត់…",
+    "Cancel": "បោះបង់",
+    "You're Premium!": "អ្នកបានក្លាយជា Premium!",
+    "You can now see everyone who viewed your profile.": "ឥឡូវអ្នកអាចមើលអ្នកទាំងអស់ដែលបានមើលប្រវត្តិរូបរបស់អ្នក។",
+    "View all": "មើលទាំងអស់",
     // Dashboard / overview
     "Applied jobs": "ការងារបានដាក់ពាក្យ",
     "Interviews": "ការសម្ភាសន៍",
@@ -578,6 +587,15 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     "Premium is rolling out. Message us via Help & support to get early access for your account.": "高级会员正在推出。通过「帮助与支持」联系我们，为你的账户抢先开通。",
     "Maybe later": "以后再说",
     "Contact us": "联系我们",
+    "month": "个月",
+    "months": "个月",
+    "Pay with KHQR": "使用 KHQR 支付",
+    "Scan with any Cambodian banking app to pay": "用任意柬埔寨银行 App 扫码支付",
+    "Waiting for payment…": "等待支付…",
+    "Cancel": "取消",
+    "You're Premium!": "你已是高级会员！",
+    "You can now see everyone who viewed your profile.": "现在你可以查看所有查看过你资料的人。",
+    "View all": "查看全部",
     // Dashboard / overview
     "Applied jobs": "已申请职位",
     "Interviews": "面试",
@@ -4476,7 +4494,13 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     var [loading, setLoading] = React.useState(true);
     var [error, setError] = React.useState("");
     var [showUpgrade, setShowUpgrade] = React.useState(false);
-    React.useEffect(function () {
+    var [prem, setPrem] = React.useState(null); // {price,currency,months,khqr_enabled}
+    var [step, setStep] = React.useState("benefits"); // benefits | qr | success
+    var [pay, setPay] = React.useState(null); // {id, qr, amount, currency}
+    var [payBusy, setPayBusy] = React.useState(false);
+    var [payErr, setPayErr] = React.useState("");
+    var pollRef = React.useRef(null);
+    var reload = function () {
       cand.fetchProfileViews().then(function (r) {
         setViewers(r.viewers || []);
         setLocked(r.locked_count || 0);
@@ -4486,7 +4510,57 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         setError(e.message);
         setLoading(false);
       });
+    };
+    React.useEffect(function () {
+      reload();
+      cand.premiumStatus().then(setPrem).catch(function () {});
+      return function () {
+        if (pollRef.current) clearInterval(pollRef.current);
+      };
     }, []);
+    var money = function (cur, amt) {
+      return String(cur).toUpperCase() === "KHR" ? "៛" + Math.round(amt).toLocaleString() : "$" + Number(amt).toFixed(2);
+    };
+    var startBuy = function () {
+      setPayBusy(true);
+      setPayErr("");
+      cand.premiumCheckout().then(function (c) {
+        return cand.premiumKhqr(c.payment_id).then(function (k) {
+          setPay({
+            id: c.payment_id,
+            qr: k.qr,
+            amount: k.amount,
+            currency: k.currency
+          });
+          setStep("qr");
+          setPayBusy(false);
+          pollRef.current = setInterval(function () {
+            cand.premiumVerify(c.payment_id).then(function (v) {
+              if (v.status === "paid") {
+                clearInterval(pollRef.current);
+                pollRef.current = null;
+                setStep("success");
+                setIsPremium(true);
+                reload();
+              }
+            }).catch(function () {});
+          }, 3500);
+        });
+      }).catch(function (e) {
+        setPayBusy(false);
+        setPayErr(e && e.message || "Couldn't start the payment.");
+      });
+    };
+    var closeUpgrade = function () {
+      if (pollRef.current) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
+      setShowUpgrade(false);
+      setStep("benefits");
+      setPay(null);
+      setPayErr("");
+    };
 
     // "3 days ago" style relative time.
     function ago(iso) {
@@ -4734,9 +4808,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         setShowUpgrade(true);
       }
     }, T("Upgrade to Premium"))))))), showUpgrade && /*#__PURE__*/React.createElement("div", {
-      onClick: function () {
-        setShowUpgrade(false);
-      },
+      onClick: closeUpgrade,
       style: {
         position: "fixed",
         inset: 0,
@@ -4789,7 +4861,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         color: "rgba(255,255,255,.9)",
         marginTop: 4
       }
-    }, T("Stand out and see who's interested in you."))), /*#__PURE__*/React.createElement("div", {
+    }, T("Stand out and see who's interested in you."))), step === "benefits" && /*#__PURE__*/React.createElement("div", {
       style: {
         padding: "20px 24px"
       }
@@ -4814,7 +4886,45 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
           color: "var(--text-body)"
         }
       }, b));
-    }), /*#__PURE__*/React.createElement("div", {
+    }), payErr && /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: "var(--text-sm)",
+        color: "var(--danger)",
+        marginTop: 6
+      }
+    }, payErr), prem && prem.khqr_enabled ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+      style: {
+        textAlign: "center",
+        margin: "14px 0 4px"
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: "var(--text-2xl, 24px)",
+        fontWeight: 800,
+        color: "var(--text-strong)"
+      }
+    }, money(prem.currency, prem.price)), /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: "var(--text-sm)",
+        color: "var(--text-muted)"
+      }
+    }, " / ", prem.months, " ", prem.months === 1 ? T("month") : T("months"))), /*#__PURE__*/React.createElement(Button, {
+      variant: "primary",
+      style: {
+        width: "100%",
+        marginTop: 10
+      },
+      disabled: payBusy,
+      iconLeft: I("qr-code", 15),
+      onClick: startBuy
+    }, payBusy ? T("Preparing…") : T("Pay with KHQR")), /*#__PURE__*/React.createElement(Button, {
+      variant: "ghost",
+      style: {
+        width: "100%",
+        marginTop: 8
+      },
+      onClick: closeUpgrade
+    }, T("Maybe later"))) : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: "var(--text-xs)",
         color: "var(--text-muted)",
@@ -4835,9 +4945,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       style: {
         flex: 1
       },
-      onClick: function () {
-        setShowUpgrade(false);
-      }
+      onClick: closeUpgrade
     }, T("Maybe later")), /*#__PURE__*/React.createElement(Button, {
       variant: "primary",
       style: {
@@ -4845,10 +4953,85 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       },
       iconLeft: I("life-buoy", 15),
       onClick: function () {
-        setShowUpgrade(false);
+        closeUpgrade();
         if (onNav) onNav("support");
       }
-    }, T("Contact us")))))));
+    }, T("Contact us"))))), step === "qr" && pay && /*#__PURE__*/React.createElement("div", {
+      style: {
+        padding: "22px 24px",
+        textAlign: "center"
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: "var(--text-sm)",
+        color: "var(--text-muted)",
+        marginBottom: 14
+      }
+    }, T("Scan with any Cambodian banking app to pay"), " ", money(pay.currency, pay.amount), "."), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "inline-block",
+        padding: 14,
+        background: "#fff",
+        border: "1px solid var(--border)",
+        borderRadius: "var(--radius-lg)"
+      }
+    }, /*#__PURE__*/React.createElement(QrCanvas, {
+      value: pay.qr,
+      size: 200
+    })), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+        marginTop: 16,
+        color: "var(--text-muted)",
+        fontSize: "var(--text-sm)"
+      }
+    }, /*#__PURE__*/React.createElement("style", null, "@keyframes krmCvPremSpin{to{transform:rotate(360deg)}}"), /*#__PURE__*/React.createElement("span", {
+      style: {
+        display: "inline-flex",
+        animation: "krmCvPremSpin 1s linear infinite"
+      }
+    }, I("loader-2", 16)), " ", T("Waiting for payment…")), /*#__PURE__*/React.createElement(Button, {
+      variant: "ghost",
+      style: {
+        marginTop: 12
+      },
+      onClick: closeUpgrade
+    }, T("Cancel"))), step === "success" && /*#__PURE__*/React.createElement("div", {
+      style: {
+        padding: "28px 24px",
+        textAlign: "center"
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: 52,
+        height: 52,
+        borderRadius: 26,
+        background: "var(--success-subtle, #dcfce7)",
+        color: "var(--success, #16a34a)",
+        marginBottom: 12
+      }
+    }, I("check-circle-2", 28)), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontWeight: 800,
+        fontSize: "var(--text-md)",
+        color: "var(--text-strong)"
+      }
+    }, T("You're Premium!")), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: "var(--text-sm)",
+        color: "var(--text-muted)",
+        margin: "6px 0 16px"
+      }
+    }, T("You can now see everyone who viewed your profile.")), /*#__PURE__*/React.createElement(Button, {
+      variant: "primary",
+      onClick: closeUpgrade
+    }, T("View all"))))));
   }
 
   // ── JobAlerts ──────────────────────────────────────────────────────────────

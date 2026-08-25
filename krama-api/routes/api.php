@@ -177,6 +177,11 @@ Route::middleware('auth:api')->group(function () {
     Route::get('candidate/following',           [CompanyFollowerController::class, 'myFollowing']);
     Route::get('candidate/profile-views',       [\App\Http\Controllers\CandidateProfileViewController::class, 'index']);
     Route::get('candidate/profile-views/count', [\App\Http\Controllers\CandidateProfileViewController::class, 'count']);
+    // Candidate Premium self-serve purchase (KHQR)
+    Route::get('candidate/premium',                 [\App\Http\Controllers\CandidatePremiumController::class, 'status']);
+    Route::post('candidate/premium/checkout',       [\App\Http\Controllers\CandidatePremiumController::class, 'checkout'])->middleware('throttle:20,1');
+    Route::post('candidate/premium/{id}/khqr',      [\App\Http\Controllers\CandidatePremiumController::class, 'khqr'])->whereNumber('id')->middleware('throttle:20,1');
+    Route::get('candidate/premium/{id}/verify',     [\App\Http\Controllers\CandidatePremiumController::class, 'verify'])->whereNumber('id')->middleware('throttle:60,1');
 
     // Candidate: job alerts
     Route::get('candidate/alerts',              [JobAlertController::class, 'index']);
@@ -403,6 +408,8 @@ Route::middleware(['auth:api', 'permission:site_settings'])->group(function () {
     Route::get('admin/candidates',                  [UserController::class, 'adminCandidates']);
     Route::patch('admin/candidates/{id}/status',    [UserController::class, 'setStatus']);
     Route::patch('admin/candidates/{id}/premium',   [UserController::class, 'setPremium']);
+    Route::get('admin/candidate-premium-config',    [UserController::class, 'premiumConfig']);
+    Route::put('admin/candidate-premium-config',    [UserController::class, 'savePremiumConfig']);
     // Admin: all-user management (super_admin only for role changes)
     Route::get('admin/users',                       [UserController::class, 'adminUsers']);
     Route::post('admin/users',                      [UserController::class, 'adminCreateUser']);

@@ -1912,7 +1912,16 @@
     const [query, setQuery] = React.useState("");
     const [loading, setLoading] = React.useState(true);
     const [actionMsg, setActionMsg] = React.useState("");
+    const [pcfg, setPcfg] = React.useState(null);       // candidate premium pricing config
+    const [pcfgMsg, setPcfgMsg] = React.useState("");
     const PER_PAGE = 10;
+
+    React.useEffect(function () { adm.getCandidatePremiumConfig().then(setPcfg).catch(function () {}); }, []);
+    const savePcfg = function () {
+      adm.saveCandidatePremiumConfig({ price: Number(pcfg.price), currency: pcfg.currency, months: parseInt(pcfg.months, 10) })
+        .then(function (r) { setPcfgMsg(r.message || "Saved."); setTimeout(function () { setPcfgMsg(""); }, 2500); })
+        .catch(function (e) { setPcfgMsg("Error: " + (e && e.message)); });
+    };
 
     const load = React.useCallback(function () {
       setLoading(true);
@@ -1962,6 +1971,22 @@
     return (
       <div className="krm-page-pad" style={{ padding: 28 }}>
         <ScreenHead title="Candidates" sub={total + " registered candidate" + (total === 1 ? "" : "s") + ". Activate or suspend access."} />
+
+        {pcfg && (
+          <Card padding={16} style={{ marginBottom: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 8, minWidth: 200 }}>
+                <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 30, height: 30, borderRadius: 15, background: "linear-gradient(180deg,#F7CE63,#D99A1F)", color: "#4a3300" }}>{I("crown", 15)}</span>
+                <div><div style={{ fontWeight: 700, color: "var(--text-strong)", fontSize: "var(--text-sm)" }}>Candidate Premium</div><div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>Self-serve KHQR price</div></div>
+              </div>
+              <div style={{ width: 110 }}><Input label="Price" type="number" value={String(pcfg.price)} onChange={(e) => setPcfg(Object.assign({}, pcfg, { price: e.target.value }))} /></div>
+              <div style={{ width: 110 }}><Select label="Currency" value={pcfg.currency} onChange={(e) => setPcfg(Object.assign({}, pcfg, { currency: e.target.value }))} options={[{ value: "USD", label: "USD" }, { value: "KHR", label: "KHR" }]} /></div>
+              <div style={{ width: 110 }}><Input label="Months" type="number" value={String(pcfg.months)} onChange={(e) => setPcfg(Object.assign({}, pcfg, { months: e.target.value }))} /></div>
+              <Button variant="secondary" size="sm" onClick={savePcfg} style={{ alignSelf: "flex-end" }}>Save price</Button>
+              {pcfgMsg && <span style={{ fontSize: "var(--text-sm)", color: "var(--success)", fontWeight: 600, alignSelf: "flex-end" }}>{pcfgMsg}</span>}
+            </div>
+          </Card>
+        )}
 
         {/* toolbar: search + status filter */}
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>

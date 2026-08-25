@@ -170,6 +170,14 @@
     "Premium is rolling out. Message us via Help & support to get early access for your account.": "Premium កំពុងដាក់ឱ្យប្រើ។ ផ្ញើសារមកយើងតាម ជំនួយ & គាំទ្រ ដើម្បីទទួលបានសិទ្ធិមុនគេ។",
     "Maybe later": "ពេលក្រោយ",
     "Contact us": "ទាក់ទងយើង",
+    "month": "ខែ", "months": "ខែ",
+    "Pay with KHQR": "បង់ប្រាក់ដោយ KHQR",
+    "Scan with any Cambodian banking app to pay": "ស្កេនដោយកម្មវិធីធនាគារកម្ពុជាណាមួយ ដើម្បីបង់",
+    "Waiting for payment…": "កំពុងរង់ចាំការទូទាត់…",
+    "Cancel": "បោះបង់",
+    "You're Premium!": "អ្នកបានក្លាយជា Premium!",
+    "You can now see everyone who viewed your profile.": "ឥឡូវអ្នកអាចមើលអ្នកទាំងអស់ដែលបានមើលប្រវត្តិរូបរបស់អ្នក។",
+    "View all": "មើលទាំងអស់",
     // Dashboard / overview
     "Applied jobs": "ការងារបានដាក់ពាក្យ", "Interviews": "ការសម្ភាសន៍", "Application pipeline": "ដំណើរការពាក្យសុំ",
     "Applied": "បានដាក់ពាក្យ", "Reviewed": "បានពិនិត្យ", "Shortlisted": "បានជ្រើសរើស", "Interview": "សម្ភាសន៍", "Offered": "បានផ្តល់ជូន",
@@ -302,6 +310,14 @@
     "Premium is rolling out. Message us via Help & support to get early access for your account.": "高级会员正在推出。通过「帮助与支持」联系我们，为你的账户抢先开通。",
     "Maybe later": "以后再说",
     "Contact us": "联系我们",
+    "month": "个月", "months": "个月",
+    "Pay with KHQR": "使用 KHQR 支付",
+    "Scan with any Cambodian banking app to pay": "用任意柬埔寨银行 App 扫码支付",
+    "Waiting for payment…": "等待支付…",
+    "Cancel": "取消",
+    "You're Premium!": "你已是高级会员！",
+    "You can now see everyone who viewed your profile.": "现在你可以查看所有查看过你资料的人。",
+    "View all": "查看全部",
     // Dashboard / overview
     "Applied jobs": "已申请职位",
     "Interviews": "面试",
@@ -1829,15 +1845,50 @@
     var [loading, setLoading] = React.useState(true);
     var [error, setError] = React.useState("");
     var [showUpgrade, setShowUpgrade] = React.useState(false);
+    var [prem, setPrem] = React.useState(null);          // {price,currency,months,khqr_enabled}
+    var [step, setStep] = React.useState("benefits");    // benefits | qr | success
+    var [pay, setPay] = React.useState(null);            // {id, qr, amount, currency}
+    var [payBusy, setPayBusy] = React.useState(false);
+    var [payErr, setPayErr] = React.useState("");
+    var pollRef = React.useRef(null);
 
-    React.useEffect(function() {
+    var reload = function() {
       cand.fetchProfileViews().then(function(r) {
         setViewers(r.viewers || []);
         setLocked(r.locked_count || 0);
         setIsPremium(!!r.is_premium);
         setLoading(false);
       }).catch(function(e) { setError(e.message); setLoading(false); });
+    };
+    React.useEffect(function() {
+      reload();
+      cand.premiumStatus().then(setPrem).catch(function(){});
+      return function() { if (pollRef.current) clearInterval(pollRef.current); };
     }, []);
+
+    var money = function(cur, amt) { return String(cur).toUpperCase() === "KHR" ? ("៛" + Math.round(amt).toLocaleString()) : ("$" + Number(amt).toFixed(2)); };
+
+    var startBuy = function() {
+      setPayBusy(true); setPayErr("");
+      cand.premiumCheckout().then(function(c) {
+        return cand.premiumKhqr(c.payment_id).then(function(k) {
+          setPay({ id: c.payment_id, qr: k.qr, amount: k.amount, currency: k.currency });
+          setStep("qr"); setPayBusy(false);
+          pollRef.current = setInterval(function() {
+            cand.premiumVerify(c.payment_id).then(function(v) {
+              if (v.status === "paid") {
+                clearInterval(pollRef.current); pollRef.current = null;
+                setStep("success"); setIsPremium(true); reload();
+              }
+            }).catch(function(){});
+          }, 3500);
+        });
+      }).catch(function(e) { setPayBusy(false); setPayErr((e && e.message) || "Couldn't start the payment."); });
+    };
+    var closeUpgrade = function() {
+      if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+      setShowUpgrade(false); setStep("benefits"); setPay(null); setPayErr("");
+    };
 
     // "3 days ago" style relative time.
     function ago(iso) {
@@ -1920,27 +1971,67 @@
         </div>
 
         {showUpgrade && (
-          <div onClick={function(){ setShowUpgrade(false); }} style={{ position: "fixed", inset: 0, zIndex: 300, background: "var(--surface-overlay, rgba(17,24,39,.55))", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+          <div onClick={closeUpgrade} style={{ position: "fixed", inset: 0, zIndex: 300, background: "var(--surface-overlay, rgba(17,24,39,.55))", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
             <div onClick={function(e){ e.stopPropagation(); }} style={{ width: "100%", maxWidth: 440, background: "var(--surface-card)", borderRadius: "var(--radius-xl)", boxShadow: "var(--shadow-xl)", overflow: "hidden" }}>
               <div style={{ background: "linear-gradient(135deg,#0C7E6B,#0B6557)", color: "#fff", padding: "24px 24px 20px", textAlign: "center" }}>
                 <div style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 48, height: 48, borderRadius: 24, background: "linear-gradient(180deg,#F7CE63,#D99A1F)", color: "#4a3300", marginBottom: 10 }}>{I("crown", 22)}</div>
                 <div style={{ fontWeight: 800, fontSize: "var(--text-lg)" }}>{T("Krama Premium")}</div>
                 <div style={{ fontSize: "var(--text-sm)", color: "rgba(255,255,255,.9)", marginTop: 4 }}>{T("Stand out and see who's interested in you.")}</div>
               </div>
-              <div style={{ padding: "20px 24px" }}>
-                {[
-                  T("See every employer who viewed your profile"),
-                  T("Know which companies are interested — and follow up"),
-                  T("Priority visibility in employer searches"),
-                ].map(function(b, i){
-                  return <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 12 }}><span style={{ color: "var(--text-brand)", flexShrink: 0, marginTop: 1 }}>{I("check-circle-2", 17)}</span><span style={{ fontSize: "var(--text-sm)", color: "var(--text-body)" }}>{b}</span></div>;
-                })}
-                <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", background: "var(--surface-sunken, var(--surface-page))", borderRadius: "var(--radius-md)", padding: "10px 12px", marginTop: 6, lineHeight: 1.6 }}>{T("Premium is rolling out. Message us via Help & support to get early access for your account.")}</div>
-                <div style={{ display: "flex", gap: 10, marginTop: 18 }}>
-                  <Button variant="ghost" style={{ flex: 1 }} onClick={function(){ setShowUpgrade(false); }}>{T("Maybe later")}</Button>
-                  <Button variant="primary" style={{ flex: 1 }} iconLeft={I("life-buoy", 15)} onClick={function(){ setShowUpgrade(false); if (onNav) onNav("support"); }}>{T("Contact us")}</Button>
+
+              {step === "benefits" && (
+                <div style={{ padding: "20px 24px" }}>
+                  {[
+                    T("See every employer who viewed your profile"),
+                    T("Know which companies are interested — and follow up"),
+                    T("Priority visibility in employer searches"),
+                  ].map(function(b, i){
+                    return <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 12 }}><span style={{ color: "var(--text-brand)", flexShrink: 0, marginTop: 1 }}>{I("check-circle-2", 17)}</span><span style={{ fontSize: "var(--text-sm)", color: "var(--text-body)" }}>{b}</span></div>;
+                  })}
+                  {payErr && <div style={{ fontSize: "var(--text-sm)", color: "var(--danger)", marginTop: 6 }}>{payErr}</div>}
+                  {prem && prem.khqr_enabled ? (
+                    <React.Fragment>
+                      <div style={{ textAlign: "center", margin: "14px 0 4px" }}>
+                        <span style={{ fontSize: "var(--text-2xl, 24px)", fontWeight: 800, color: "var(--text-strong)" }}>{money(prem.currency, prem.price)}</span>
+                        <span style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}> / {prem.months} {prem.months === 1 ? T("month") : T("months")}</span>
+                      </div>
+                      <Button variant="primary" style={{ width: "100%", marginTop: 10 }} disabled={payBusy} iconLeft={I("qr-code", 15)} onClick={startBuy}>{payBusy ? T("Preparing…") : T("Pay with KHQR")}</Button>
+                      <Button variant="ghost" style={{ width: "100%", marginTop: 8 }} onClick={closeUpgrade}>{T("Maybe later")}</Button>
+                    </React.Fragment>
+                  ) : (
+                    <React.Fragment>
+                      <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", background: "var(--surface-sunken, var(--surface-page))", borderRadius: "var(--radius-md)", padding: "10px 12px", marginTop: 6, lineHeight: 1.6 }}>{T("Premium is rolling out. Message us via Help & support to get early access for your account.")}</div>
+                      <div style={{ display: "flex", gap: 10, marginTop: 18 }}>
+                        <Button variant="ghost" style={{ flex: 1 }} onClick={closeUpgrade}>{T("Maybe later")}</Button>
+                        <Button variant="primary" style={{ flex: 1 }} iconLeft={I("life-buoy", 15)} onClick={function(){ closeUpgrade(); if (onNav) onNav("support"); }}>{T("Contact us")}</Button>
+                      </div>
+                    </React.Fragment>
+                  )}
                 </div>
-              </div>
+              )}
+
+              {step === "qr" && pay && (
+                <div style={{ padding: "22px 24px", textAlign: "center" }}>
+                  <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginBottom: 14 }}>{T("Scan with any Cambodian banking app to pay")} {money(pay.currency, pay.amount)}.</div>
+                  <div style={{ display: "inline-block", padding: 14, background: "#fff", border: "1px solid var(--border)", borderRadius: "var(--radius-lg)" }}>
+                    <QrCanvas value={pay.qr} size={200} />
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 16, color: "var(--text-muted)", fontSize: "var(--text-sm)" }}>
+                    <style>{"@keyframes krmCvPremSpin{to{transform:rotate(360deg)}}"}</style>
+                    <span style={{ display: "inline-flex", animation: "krmCvPremSpin 1s linear infinite" }}>{I("loader-2", 16)}</span> {T("Waiting for payment…")}
+                  </div>
+                  <Button variant="ghost" style={{ marginTop: 12 }} onClick={closeUpgrade}>{T("Cancel")}</Button>
+                </div>
+              )}
+
+              {step === "success" && (
+                <div style={{ padding: "28px 24px", textAlign: "center" }}>
+                  <div style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 52, height: 52, borderRadius: 26, background: "var(--success-subtle, #dcfce7)", color: "var(--success, #16a34a)", marginBottom: 12 }}>{I("check-circle-2", 28)}</div>
+                  <div style={{ fontWeight: 800, fontSize: "var(--text-md)", color: "var(--text-strong)" }}>{T("You're Premium!")}</div>
+                  <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", margin: "6px 0 16px" }}>{T("You can now see everyone who viewed your profile.")}</div>
+                  <Button variant="primary" onClick={closeUpgrade}>{T("View all")}</Button>
+                </div>
+              )}
             </div>
           </div>
         )}
