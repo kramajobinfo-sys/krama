@@ -412,6 +412,13 @@ Route::middleware(['auth:api', 'permission:site_settings'])->group(function () {
     Route::post('admin/campaigns/{id}/test',        [EmailCampaignController::class, 'sendTest'])->middleware('throttle:20,1');
     Route::post('admin/campaigns/{id}/send',        [EmailCampaignController::class, 'send'])->middleware('throttle:10,1');
 
+    // Admin: career-advice content hub (articles). Public rendering = /career + /career/{slug}.
+    Route::get('admin/articles',            [\App\Http\Controllers\ArticleController::class, 'adminIndex']);
+    Route::get('admin/articles/{id}',       [\App\Http\Controllers\ArticleController::class, 'adminShow'])->whereNumber('id');
+    Route::post('admin/articles',           [\App\Http\Controllers\ArticleController::class, 'store'])->middleware('throttle:60,1');
+    Route::put('admin/articles/{id}',       [\App\Http\Controllers\ArticleController::class, 'update'])->whereNumber('id');
+    Route::delete('admin/articles/{id}',    [\App\Http\Controllers\ArticleController::class, 'destroy'])->whereNumber('id');
+
     // Admin: account & data deletion requests (compliance loop for employer/other requests)
     Route::get('admin/deletion-requests',                    [AdminAccountDeletionController::class, 'index']);
     Route::post('admin/deletion-requests/{id}/complete',    [AdminAccountDeletionController::class, 'complete']);

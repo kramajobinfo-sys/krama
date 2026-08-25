@@ -270,6 +270,13 @@
     createCampaign: function (data) { return req("POST", "/admin/campaigns", data); },
     testCampaign: function (id) { return req("POST", "/admin/campaigns/" + id + "/test", {}); },
     sendCampaign: function (id) { return req("POST", "/admin/campaigns/" + id + "/send", {}); },
+
+    // Career-advice articles (content hub)
+    fetchArticles: function () { return req("GET", "/admin/articles"); },
+    fetchArticle: function (id) { return req("GET", "/admin/articles/" + id); },
+    createArticle: function (data) { return req("POST", "/admin/articles", data); },
+    updateArticle: function (id, data) { return req("PUT", "/admin/articles/" + id, data); },
+    deleteArticle: function (id) { return req("DELETE", "/admin/articles/" + id); },
     // Company ownership-claim requests
     fetchCompanyClaims: function (status) { return req("GET", "/admin/company-claims?status=" + (status || "pending")); },
     approveCompanyClaim: function (id) { return req("POST", "/admin/company-claims/" + id + "/approve", {}); },

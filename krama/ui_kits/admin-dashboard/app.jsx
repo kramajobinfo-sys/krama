@@ -286,6 +286,7 @@
     { id: "brand", label: "Brand", icon: "palette" },
     { id: "settings", label: "Settings", icon: "settings" },
     { id: "campaigns", label: "Email campaigns", icon: "mail" },
+    { id: "articles", label: "Career articles", icon: "newspaper" },
     { id: "claims", label: "Company claims", icon: "building-2" },
     { id: "deletion", label: "Deletion requests", icon: "user-x" },
   ];
@@ -8228,6 +8229,118 @@
     );
   }
 
+  // Career-advice content hub — author articles served at /career + /career/{slug} for SEO.
+  function ArticleEditor({ initial, onCancel, onSaved }) {
+    const adm = window.KRAMA_ADMIN_API;
+    const [f, setF] = React.useState(initial);
+    const [busy, setBusy] = React.useState(false);
+    const [msg, setMsg] = React.useState(null);
+    const set = function (k) { return function (e) { setF(Object.assign({}, f, { [k]: e.target.value })); }; };
+    const isEdit = !!f.id;
+    const CATS = ["Career advice", "CV & résumé", "Interview tips", "Job search", "Workplace", "Salary & pay"];
+
+    const save = function () {
+      if (!(f.title || "").trim()) { setMsg({ ok: false, text: "Title is required." }); return; }
+      setBusy(true);
+      var payload = {
+        title: f.title, category: f.category || null, excerpt: f.excerpt || null,
+        body: f.body || null, cover_image: f.cover_image || null, author_name: f.author_name || null,
+        meta_description: f.meta_description || null, status: f.status || "draft", slug: f.slug || null,
+      };
+      var p = isEdit ? adm.updateArticle(f.id, payload) : adm.createArticle(payload);
+      p.then(function () { setBusy(false); onSaved(); })
+       .catch(function (e) { setBusy(false); setMsg({ ok: false, text: (e && e.message) || "Save failed." }); });
+    };
+    const del = function () {
+      if (!isEdit || !window.confirm("Delete “" + f.title + "”? This cannot be undone.")) return;
+      setBusy(true);
+      adm.deleteArticle(f.id).then(function () { setBusy(false); onSaved(); }).catch(function (e) { setBusy(false); setMsg({ ok: false, text: (e && e.message) || "Delete failed." }); });
+    };
+    const liveUrl = (f.status === "published" && f.slug) ? (window.location.origin + "/career/" + f.slug) : null;
+
+    return (
+      <div className="krm-page-pad" style={{ padding: 28, maxWidth: 820 }}>
+        <button onClick={onCancel} style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: "var(--text-sm)", fontWeight: 600, marginBottom: 12, padding: 0 }}>{I("arrow-left", 15)} Back to articles</button>
+        <ScreenHead title={isEdit ? "Edit article" : "New article"} sub="Published articles appear at /career and are added to the sitemap. Body accepts HTML (sanitized on save)." />
+        <Card padding={24}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <Input label="Title" value={f.title || ""} onChange={set("title")} placeholder="e.g. How to prepare for a job interview in Cambodia" />
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+              <div>
+                <Select label="Category" value={f.category || ""} onChange={set("category")} options={[{ value: "", label: "— None —" }].concat((f.category && CATS.indexOf(f.category) === -1 ? [f.category] : []).concat(CATS).map(function (c) { return { value: c, label: c }; }))} />
+              </div>
+              <Input label="Author name" value={f.author_name || ""} onChange={set("author_name")} placeholder="Krama Team" />
+            </div>
+            <Textarea label="Excerpt (short summary for the card + search snippet)" value={f.excerpt || ""} onChange={set("excerpt")} rows={2} placeholder="One or two sentences summarising the article." />
+            <Textarea label="Body (HTML)" value={f.body || ""} onChange={set("body")} rows={14} placeholder={"<h2>Section heading</h2>\n<p>Your advice…</p>\n<ul><li>Tip one</li><li>Tip two</li></ul>"} />
+            <Input label="Cover image URL (optional)" value={f.cover_image || ""} onChange={set("cover_image")} placeholder="https://… or /storage/…" />
+            <Input label="Meta description (optional — falls back to the excerpt)" value={f.meta_description || ""} onChange={set("meta_description")} placeholder="Shown in Google results; ~155 characters." />
+            <Select label="Status" value={f.status || "draft"} onChange={set("status")} options={[{ value: "draft", label: "Draft (hidden)" }, { value: "published", label: "Published (live at /career)" }]} />
+            {liveUrl && <a href={liveUrl} target="_blank" rel="noopener" style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-brand)" }}>View live ↗</a>}
+            {msg && <div style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: msg.ok ? "var(--success)" : "var(--danger)" }}>{msg.text}</div>}
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+              <Button variant="primary" disabled={busy} onClick={save} iconLeft={I("check", 15)}>{busy ? "Saving…" : (isEdit ? "Save changes" : "Create article")}</Button>
+              <Button variant="ghost" disabled={busy} onClick={onCancel}>Cancel</Button>
+              {isEdit && <Button variant="ghost" disabled={busy} onClick={del} style={{ marginLeft: "auto", color: "var(--danger)" }} iconLeft={I("trash-2", 15)}>Delete</Button>}
+            </div>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  function CareerArticles() {
+    const adm = window.KRAMA_ADMIN_API;
+    const [list, setList] = React.useState([]);
+    const [loading, setLoading] = React.useState(true);
+    const [editing, setEditing] = React.useState(null);
+    const loadList = function () { adm.fetchArticles().then(function (d) { setList(d.articles || []); setLoading(false); }).catch(function () { setLoading(false); }); };
+    React.useEffect(loadList, []);
+
+    const openNew = function () { setEditing({ title: "", category: "", excerpt: "", body: "", cover_image: "", author_name: "", meta_description: "", status: "draft" }); };
+    const openEdit = function (a) { adm.fetchArticle(a.id).then(function (full) { setEditing(full); }).catch(function () {}); };
+    const done = function () { setEditing(null); setLoading(true); loadList(); };
+    const fmtDate = function (s) { if (!s) return "—"; var d = new Date(s); return isNaN(d) ? "—" : d.toLocaleDateString(); };
+
+    if (editing) return <ArticleEditor initial={editing} onCancel={function () { setEditing(null); }} onSaved={done} />;
+
+    return (
+      <div className="krm-page-pad" style={{ padding: 28, maxWidth: 900 }}>
+        <ScreenHead title="Career articles" sub="Author career-advice articles for the SEO content hub at /career. Drafts stay private until published." action={<Button variant="primary" iconLeft={I("plus", 15)} onClick={openNew}>New article</Button>} />
+        {loading ? (
+          <Card padding={24}><div style={{ color: "var(--text-muted)", textAlign: "center" }}>Loading…</div></Card>
+        ) : list.length === 0 ? (
+          <Card padding={28}><div style={{ textAlign: "center", color: "var(--text-muted)" }}><div style={{ color: "var(--text-brand)", display: "inline-flex", marginBottom: 8 }}>{I("newspaper", 26)}</div><div style={{ fontWeight: 700, color: "var(--text-strong)" }}>No articles yet</div><div style={{ fontSize: "var(--text-sm)", margin: "6px 0 14px" }}>Write your first career-advice article to start building the SEO hub.</div><Button variant="primary" size="sm" onClick={openNew}>New article</Button></div></Card>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {list.map(function (a) {
+              return (
+                <Card key={a.id} padding={16}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                        <span style={{ fontWeight: 700, color: "var(--text-strong)" }}>{a.title}</span>
+                        <Badge tone={a.status === "published" ? "success" : "neutral"}>{a.status === "published" ? "Published" : "Draft"}</Badge>
+                        {a.category && <Badge tone="brand">{a.category}</Badge>}
+                      </div>
+                      <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: 4 }}>
+                        {a.author_name || "Krama Team"} · {a.status === "published" ? ("Published " + fmtDate(a.published_at)) : ("Updated " + fmtDate(a.updated_at))} · {a.views || 0} views
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                      {a.status === "published" && <a href={window.location.origin + "/career/" + a.slug} target="_blank" rel="noopener"><Button variant="ghost" size="sm" iconLeft={I("external-link", 14)}>View</Button></a>}
+                      <Button variant="secondary" size="sm" iconLeft={I("pencil", 14)} onClick={function () { openEdit(a); }}>Edit</Button>
+                    </div>
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   // Email marketing campaigns — compose an HTML message, pick a segment, test, then send.
   function EmailCampaigns() {
     const adm = window.KRAMA_ADMIN_API;
@@ -8481,6 +8594,7 @@
           {page === "brand" && <Brand />}
           {page === "settings" && <Settings authUser={authUser} />}
           {page === "campaigns" && <EmailCampaigns />}
+          {page === "articles" && <CareerArticles />}
           {page === "claims" && <CompanyClaims />}
           {page === "deletion" && <DeletionRequests />}
           {page === "profile" && <MyProfile user={authUser} onUserUpdate={u => setAuthUser(u)} />}

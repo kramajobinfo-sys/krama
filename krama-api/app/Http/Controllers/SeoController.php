@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Article;
 use App\Models\Company;
 use App\Models\Job;
 use App\Services\OgImageService;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 /**
@@ -131,6 +133,72 @@ class SeoController extends Controller
      * experience level, aggregated from live published listings. A crawlable, uniquely
      * Krama data asset (schema.org Dataset) that answers high-intent "salary" queries.
      */
+    /** GET /career — the career-advice hub: index of published articles, grouped by category. */
+    public function careerList()
+    {
+        $articles = Article::where('status', 'published')
+            ->orderByDesc('published_at')
+            ->get(['id', 'title', 'slug', 'category', 'excerpt', 'cover_image', 'author_name', 'published_at']);
+
+        $canonical = url('/career');
+        $count = $articles->count();
+        // Self-gate like the salary guide: don't invite Google to an empty hub.
+        $robots = $count > 0 ? 'index, follow, max-image-preview:large' : 'noindex, follow';
+        $metaDesc = 'Career advice for Cambodia — CV & résumé tips, interview prep, and job-search guidance from Krama.';
+
+        $ld = [
+            '@context' => 'https://schema.org',
+            '@type'    => 'CollectionPage',
+            'name'     => 'Career Advice — Krama',
+            'url'      => $canonical,
+            'about'    => 'Job search, CV and interview advice for Cambodia',
+        ];
+
+        return view('seo.career-list', compact('articles', 'canonical', 'metaDesc', 'ld', 'robots'));
+    }
+
+    /** GET /career/{slug} — a single published article with Article JSON-LD. */
+    public function careerArticle(string $slug)
+    {
+        $article = Article::where('slug', $slug)->where('status', 'published')->first();
+        abort_if(! $article, 404);
+
+        // Best-effort view counter (never let it break the page).
+        try { DB::table('articles')->where('id', $article->id)->increment('views'); } catch (\Throwable $e) {}
+
+        $related = Article::where('status', 'published')
+            ->where('id', '!=', $article->id)
+            ->when($article->category, fn ($q) => $q->where('category', $article->category))
+            ->orderByDesc('published_at')
+            ->limit(3)
+            ->get(['title', 'slug', 'category', 'excerpt', 'published_at']);
+
+        $canonical = url('/career/' . $article->slug);
+        $metaDesc = $article->meta_description
+            ?: Str::limit(trim(strip_tags($article->excerpt ?: $article->body)), 155, '…');
+        $img = $article->cover_image
+            ? (Str::startsWith($article->cover_image, 'http') ? $article->cover_image : url(ltrim($article->cover_image, '/')))
+            : url('/krama/assets/og-image.png');
+
+        $ld = [
+            '@context'      => 'https://schema.org',
+            '@type'         => 'Article',
+            'headline'      => $article->title,
+            'description'   => $metaDesc,
+            'image'         => $img,
+            'author'        => ['@type' => 'Organization', 'name' => $article->author_name ?: 'Krama'],
+            'publisher'     => ['@type' => 'Organization', 'name' => 'Krama', 'logo' => ['@type' => 'ImageObject', 'url' => url('/krama/assets/icon-192.png')]],
+            'datePublished' => optional($article->published_at)->toIso8601String(),
+            'dateModified'  => optional($article->updated_at)->toIso8601String(),
+            'mainEntityOfPage' => $canonical,
+        ];
+
+        $robots = 'index, follow, max-image-preview:large';
+        $ogImage = $img;
+
+        return view('seo.career-article', compact('article', 'related', 'canonical', 'metaDesc', 'ld', 'robots', 'ogImage'));
+    }
+
     public function salaryGuide()
     {
         $data = Cache::remember('seo.salary_guide.v1', 3600, fn () => app(\App\Services\SalaryGuideService::class)->build());
@@ -268,6 +336,16 @@ class SeoController extends Controller
         $salary = Cache::get('seo.salary_guide.v1');
         if ($salary && ($salary['sufficient'] ?? false)) {
             $urls[] = ['loc' => url('/salary'), 'lastmod' => now()->toDateString(), 'priority' => '0.7'];
+        }
+
+        // Career-advice hub + each published article (only if the hub has content).
+        $articles = Article::where('status', 'published')->select('slug', 'updated_at')->orderByDesc('published_at')->get();
+        if ($articles->isNotEmpty()) {
+            $urls[] = ['loc' => url('/career'), 'lastmod' => optional($articles->first()->updated_at)->toDateString(), 'priority' => '0.6'];
+            foreach ($articles as $a) {
+                if (! $a->slug) continue;
+                $urls[] = ['loc' => url('/career/' . $a->slug), 'lastmod' => optional($a->updated_at)->toDateString(), 'priority' => '0.6'];
+            }
         }
 
         Job::where('status', 'published')->select('slug', 'updated_at')->orderByDesc('updated_at')->chunk(500, function ($chunk) use (&$urls) {
