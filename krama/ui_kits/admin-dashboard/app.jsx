@@ -8425,6 +8425,8 @@
     const [lists, setLists] = React.useState([]);
     const [sendMode, setSendMode] = React.useState("now");   // now | schedule
     const [scheduleAt, setScheduleAt] = React.useState("");
+    const [batchOn, setBatchOn] = React.useState(false);
+    const [batchSize, setBatchSize] = React.useState("100");
     const [showUpload, setShowUpload] = React.useState(false);
 
     const loadList = function () { adm.fetchCampaigns().then(function (d) { setList(d.data || []); setSmtpOk(d.smtp_configured !== false); }).catch(function () {}); };
@@ -8459,7 +8461,7 @@
     const saveDraft = function () {
       if (!validComposer()) return Promise.reject();
       setBusy(true);
-      return adm.createCampaign({ subject: subject.trim(), body: body, audience: audience, list_id: audience === "list" ? Number(listId) : null })
+      return adm.createCampaign({ subject: subject.trim(), body: body, audience: audience, list_id: audience === "list" ? Number(listId) : null, batch_size: (audience === "list" && batchOn && Number(batchSize) > 0) ? Number(batchSize) : null })
         .then(function (d) { setBusy(false); setDraftId(d.id); loadList(); return d; })
         .catch(function (e) { setBusy(false); setMsg({ ok: false, text: (e && e.message) || "Failed to save." }); return Promise.reject(e); });
     };
@@ -8519,6 +8521,19 @@
             </div>
             {msg && <div style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: msg.ok ? "var(--success)" : "var(--danger)" }}>{msg.text}</div>}
 
+            {audience === "list" && (
+              <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", background: "var(--surface-sunken, var(--surface-page))", borderRadius: "var(--radius-md)", padding: "10px 14px" }}>
+                <label style={{ display: "inline-flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: "var(--text-sm)", color: "var(--text-body)", fontWeight: 600 }}>
+                  <input type="checkbox" checked={batchOn} onChange={function (e) { setBatchOn(e.target.checked); dirty(); }} /> Send in daily batches
+                </label>
+                {batchOn && <React.Fragment>
+                  <span style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>of</span>
+                  <input type="number" min="1" value={batchSize} onChange={function (e) { setBatchSize(e.target.value); dirty(); }} style={{ width: 90, height: 36, padding: "0 10px", border: "1px solid var(--border-strong)", borderRadius: "var(--radius-md)", fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)", background: "var(--surface-card)", color: "var(--text-body)" }} />
+                  <span style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>emails/day{count != null && Number(batchSize) > 0 ? " · ~" + Math.ceil(count / Number(batchSize)) + " day(s)" : ""} — protects deliverability</span>
+                </React.Fragment>}
+              </div>
+            )}
+
             <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "center" }}>
               {[["now", "Send now"], ["schedule", "Schedule"]].map(function (m) {
                 return <label key={m[0]} style={{ display: "inline-flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: "var(--text-sm)", color: "var(--text-body)", fontWeight: 600 }}><input type="radio" name="sendmode" checked={sendMode === m[0]} onChange={function () { setSendMode(m[0]); }} /> {m[1]}</label>;
@@ -8561,7 +8576,8 @@
                       </div>
                       <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginTop: 4 }}>
                         {(AUD.filter(function (a) { return a.v === c.audience; })[0] || {}).l || c.audience} · {fmtDate(c.created_at)}
-                        {c.status === "scheduled" ? " · sends " + fmtDT(c.scheduled_at) : ""}
+                        {c.batch_size ? " · " + c.batch_size + "/day" : ""}
+                        {c.status === "scheduled" ? " · next " + fmtDT(c.scheduled_at) : ""}
                         {(c.status === "sent" || c.status === "sending") ? " · " + c.sent_count + "/" + c.total_recipients + " sent" + (c.failed_count ? " · " + c.failed_count + " failed" : "") : ""}
                       </div>
                       {(c.status === "sent" || c.status === "sending") && c.sent_count > 0 && (

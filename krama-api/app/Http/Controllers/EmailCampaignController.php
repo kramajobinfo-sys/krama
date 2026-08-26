@@ -31,6 +31,7 @@ class EmailCampaignController extends Controller
             'data' => $rows->map(fn ($c) => [
                 'id' => $c->id, 'subject' => $c->subject, 'audience' => $c->audience,
                 'list_id' => $c->list_id, 'template_id' => $c->template_id,
+                'batch_size' => $c->batch_size,
                 'status' => $c->status, 'scheduled_at' => $c->scheduled_at,
                 'total_recipients' => $c->total_recipients,
                 'sent_count' => $c->sent_count, 'failed_count' => $c->failed_count,
@@ -74,6 +75,7 @@ class EmailCampaignController extends Controller
             'audience'    => 'required|in:' . implode(',', self::AUDIENCES),
             'list_id'     => 'nullable|integer|required_if:audience,list',
             'template_id' => 'nullable|integer',
+            'batch_size'  => 'nullable|integer|min:1|max:100000',
         ]);
 
         $c = EmailCampaign::create([
@@ -82,6 +84,8 @@ class EmailCampaignController extends Controller
             'audience'         => $data['audience'],
             'list_id'          => $data['audience'] === 'list' ? $data['list_id'] : null,
             'template_id'      => $data['template_id'] ?? null,
+            // Daily-batch sending only applies to custom lists.
+            'batch_size'       => ($data['audience'] === 'list' && ! empty($data['batch_size'])) ? (int) $data['batch_size'] : null,
             'status'           => 'draft',
             'total_recipients' => 0,
             'created_by'       => $request->user()->id,
@@ -131,10 +135,11 @@ class EmailCampaignController extends Controller
         $total = $this->recipientCount($c);
         if ($total < 1) return response()->json(['message' => 'This campaign has no recipients.'], 422);
 
-        $c->update(['status' => 'sending', 'scheduled_at' => null, 'total_recipients' => $total, 'sent_count' => 0, 'failed_count' => 0]);
+        $c->update(['status' => 'sending', 'scheduled_at' => null, 'total_recipients' => $total, 'sent_count' => 0, 'failed_count' => 0, 'batch_cursor' => 0]);
         SendCampaignJob::dispatch($c->id);
 
-        return response()->json(['message' => "Sending to {$total} recipient(s). Delivery runs in the background.", 'total_recipients' => $total]);
+        $note = $c->batch_size ? " First batch of {$c->batch_size}/day starts now." : '';
+        return response()->json(['message' => "Sending to {$total} recipient(s). Delivery runs in the background." . $note, 'total_recipients' => $total]);
     }
 
     // POST /api/admin/campaigns/{id}/schedule  { scheduled_at }
@@ -155,9 +160,10 @@ class EmailCampaignController extends Controller
         if ($total < 1) return response()->json(['message' => 'This campaign has no recipients.'], 422);
 
         $when = \Illuminate\Support\Carbon::parse($data['scheduled_at']);
-        $c->update(['status' => 'scheduled', 'scheduled_at' => $when, 'total_recipients' => $total]);
+        $c->update(['status' => 'scheduled', 'scheduled_at' => $when, 'total_recipients' => $total, 'sent_count' => 0, 'failed_count' => 0, 'batch_cursor' => 0]);
 
-        return response()->json(['message' => 'Scheduled for ' . $when->toDayDateTimeString() . '.', 'scheduled_at' => $when->toIso8601String()]);
+        $note = $c->batch_size ? (' Then ' . $c->batch_size . '/day until all ' . $total . ' are sent.') : '';
+        return response()->json(['message' => 'Scheduled for ' . $when->toDayDateTimeString() . '.' . $note, 'scheduled_at' => $when->toIso8601String()]);
     }
 
     // POST /api/admin/campaigns/{id}/cancel — revert a scheduled campaign to draft.

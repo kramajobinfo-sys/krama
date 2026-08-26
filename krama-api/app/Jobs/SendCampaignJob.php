@@ -42,20 +42,43 @@ class SendCampaignJob implements ShouldQueue
         }
         MailConfig::applyFromDb();
 
-        $sent = 0; $failed = 0;
+        // Counts accumulate across daily batches (see below), so start from what's stored.
+        $sent = (int) $c->sent_count; $failed = (int) $c->failed_count;
 
         if ($c->audience === 'list') {
-            // Custom uploaded list (e.g. 700 organizations). Track/unsubscribe by recipient id.
-            \App\Models\EmailListRecipient::where('list_id', $c->list_id)->where('unsubscribed', false)
-                ->select('id', 'email', 'name', 'org')->chunkById(100, function ($rows) use ($c, &$sent, &$failed) {
+            $batch = (int) ($c->batch_size ?? 0);
+            $cursor = (int) ($c->batch_cursor ?? 0);
+            $base = \App\Models\EmailListRecipient::where('list_id', $c->list_id)->where('id', '>', $cursor)->orderBy('id');
+
+            if ($batch > 0) {
+                // Daily batch: send the next $batch recipients, advancing the cursor past every
+                // row we look at (incl. unsubscribed) so progress can't stall or repeat.
+                $rows = (clone $base)->limit($batch)->select('id', 'email', 'name', 'org', 'unsubscribed')->get();
+                foreach ($rows as $r) {
+                    if (! $r->unsubscribed && $r->email) {
+                        if ($this->deliver($c, $r->id, $r->email, $r->name, $r->org, \App\Models\EmailListRecipient::unsubUrl($r->id))) $sent++; else $failed++;
+                        usleep(100000);
+                    }
+                    $cursor = $r->id;
+                }
+                $c->update(['sent_count' => $sent, 'failed_count' => $failed, 'batch_cursor' => $cursor]);
+
+                if (\App\Models\EmailListRecipient::where('list_id', $c->list_id)->where('id', '>', $cursor)->exists()) {
+                    // More to go — hand back to the scheduler for tomorrow.
+                    $c->update(['status' => 'scheduled', 'scheduled_at' => now()->addDay()]);
+                    Log::info("Campaign {$c->id} batch sent up to recipient {$cursor}; next batch ~24h.");
+                    return;
+                }
+            } else {
+                (clone $base)->where('unsubscribed', false)->select('id', 'email', 'name', 'org')->chunkById(100, function ($rows) use ($c, &$sent, &$failed) {
                     foreach ($rows as $r) {
                         if (! $r->email) continue;
-                        $unsub = \App\Models\EmailListRecipient::unsubUrl($r->id);
-                        if ($this->deliver($c, $r->id, $r->email, $r->name, $r->org, $unsub)) $sent++; else $failed++;
+                        if ($this->deliver($c, $r->id, $r->email, $r->name, $r->org, \App\Models\EmailListRecipient::unsubUrl($r->id))) $sent++; else $failed++;
                         usleep(100000);
                     }
                     $c->update(['sent_count' => $sent, 'failed_count' => $failed]);
                 });
+            }
         } else {
             self::audienceQuery($c->audience)->select('id', 'name', 'email')->chunkById(100, function ($users) use ($c, &$sent, &$failed) {
                 foreach ($users as $u) {

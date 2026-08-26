@@ -10,7 +10,7 @@ class EmailCampaign extends Model
 
     protected $fillable = [
         'subject', 'body', 'audience', 'status',
-        'template_id', 'list_id', 'scheduled_at',
+        'template_id', 'list_id', 'scheduled_at', 'batch_size', 'batch_cursor',
         'total_recipients', 'sent_count', 'failed_count',
         'created_by', 'created_at', 'sent_at',
     ];

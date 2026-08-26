@@ -23,8 +23,9 @@ class DispatchDueCampaigns extends Command
 
         foreach ($due as $c) {
             // Compare-and-swap: only the caller that flips scheduled→sending dispatches.
+            // Don't reset sent/failed here — batched campaigns accumulate across daily runs.
             $claimed = EmailCampaign::where('id', $c->id)->where('status', 'scheduled')
-                ->update(['status' => 'sending', 'sent_count' => 0, 'failed_count' => 0]);
+                ->update(['status' => 'sending']);
             if ($claimed === 1) {
                 SendCampaignJob::dispatch($c->id);
                 Log::info("Scheduled campaign {$c->id} dispatched.");
