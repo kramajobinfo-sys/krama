@@ -42,6 +42,18 @@ class EmailCampaignController extends Controller
         ]);
     }
 
+    // GET /api/admin/campaigns/{id} — full record (incl. body) for duplicating into a new draft.
+    public function show(Request $request, $id)
+    {
+        $this->requirePermission('site_settings');
+        $c = EmailCampaign::findOrFail($id);
+        return response()->json([
+            'id' => $c->id, 'subject' => $c->subject, 'body' => $c->body,
+            'audience' => $c->audience, 'list_id' => $c->list_id,
+            'template_id' => $c->template_id, 'batch_size' => $c->batch_size,
+        ]);
+    }
+
     // GET /api/admin/campaigns/audience-count?audience=…&list_id=…
     public function audienceCount(Request $request)
     {

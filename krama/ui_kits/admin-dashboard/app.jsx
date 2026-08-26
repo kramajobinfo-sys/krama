@@ -8484,6 +8484,16 @@
       }).catch(function () {});
     };
     const cancelScheduled = function (c) { if (!window.confirm("Cancel the scheduled send for “" + c.subject + "”?")) return; adm.cancelCampaign(c.id).then(loadList).catch(function () {}); };
+    const duplicate = function (c) {
+      adm.fetchCampaign(c.id).then(function (d) {
+        setSubject(d.subject || ""); setBody(d.body || "");
+        setAudience(d.audience || "all_candidates"); setListId(d.list_id ? String(d.list_id) : "");
+        setBatchOn(!!d.batch_size); setBatchSize(d.batch_size ? String(d.batch_size) : "100");
+        setSendMode("now"); setScheduleAt(""); setDraftId(null);
+        setMsg({ ok: true, text: "Loaded a copy of “" + d.subject + "” — edit and send/schedule as a new campaign." });
+        try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch (e) { window.scrollTo(0, 0); }
+      }).catch(function (e) { setMsg({ ok: false, text: (e && e.message) || "Couldn't load that campaign." }); });
+    };
 
     const tone = { draft: "neutral", scheduled: "info", sending: "warning", sent: "success", failed: "danger" };
     const fmtDate = function (s) { if (!s) return "—"; var d = new Date(s); return isNaN(d) ? "—" : d.toLocaleDateString(); };
@@ -8587,7 +8597,10 @@
                         </div>
                       )}
                     </div>
-                    {c.status === "scheduled" && <Button variant="ghost" size="sm" onClick={function () { cancelScheduled(c); }} style={{ color: "var(--danger)", flexShrink: 0 }}>Cancel</Button>}
+                    <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                      <Button variant="secondary" size="sm" iconLeft={I("copy", 13)} onClick={function () { duplicate(c); }}>Duplicate</Button>
+                      {c.status === "scheduled" && <Button variant="ghost" size="sm" onClick={function () { cancelScheduled(c); }} style={{ color: "var(--danger)" }}>Cancel</Button>}
+                    </div>
                   </div>
                 </Card>
               );

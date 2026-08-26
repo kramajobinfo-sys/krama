@@ -269,6 +269,7 @@
     rejectDeletionRequest: function (id) { return req("POST", "/admin/deletion-requests/" + id + "/reject", {}); },
     // Email marketing campaigns
     fetchCampaigns: function () { return req("GET", "/admin/campaigns"); },
+    fetchCampaign: function (id) { return req("GET", "/admin/campaigns/" + id); },
     campaignAudienceCount: function (audience, listId) { return req("GET", "/admin/campaigns/audience-count?audience=" + encodeURIComponent(audience || "") + (listId ? "&list_id=" + listId : "")); },
     createCampaign: function (data) { return req("POST", "/admin/campaigns", data); },
     testCampaign: function (id) { return req("POST", "/admin/campaigns/" + id + "/test", {}); },
