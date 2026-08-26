@@ -8383,11 +8383,37 @@
   }
 
   // Email marketing campaigns — compose an HTML message, pick a segment, test, then send.
+  // Parse pasted/uploaded CSV into [{email,name,org}]. Handles a header row (email/name/org
+  // columns in any order), a headerless email-first CSV, or a plain one-email-per-line list.
+  function parseRecipientCsv(text) {
+    var lines = String(text || "").split(/\r?\n/).map(function (l) { return l.trim(); }).filter(Boolean);
+    if (!lines.length) return [];
+    var split = function (l) { return l.split(",").map(function (c) { return c.trim().replace(/^"|"$/g, ""); }); };
+    var ei = 0, ni = 1, oi = 2, start = 0;
+    if (/email|e-mail/i.test(lines[0]) && lines[0].indexOf("@") === -1) {
+      var cols = split(lines[0]).map(function (c) { return c.toLowerCase(); });
+      var find = function (names) { for (var i = 0; i < cols.length; i++) if (names.indexOf(cols[i]) !== -1) return i; return -1; };
+      ei = find(["email", "e-mail", "email address"]); if (ei < 0) ei = 0;
+      ni = find(["name", "contact", "contact name", "contact_name", "full name"]);
+      oi = find(["org", "organization", "organisation", "company", "org name"]);
+      start = 1;
+    }
+    var out = [];
+    for (var i = start; i < lines.length; i++) {
+      var parts = split(lines[i]);
+      var email = (parts[ei] || (parts.length === 1 ? parts[0] : "")).trim();
+      if (!email || email.indexOf("@") === -1) continue;
+      out.push({ email: email, name: (ni >= 0 ? parts[ni] : "") || "", org: (oi >= 0 ? parts[oi] : "") || "" });
+    }
+    return out;
+  }
+
   function EmailCampaigns() {
     const adm = window.KRAMA_ADMIN_API;
-    const AUD = [{ v: "all_candidates", l: "All candidates" }, { v: "all_employers", l: "All employers" }, { v: "all_users", l: "All candidates + employers" }];
+    const AUD = [{ v: "all_candidates", l: "All candidates" }, { v: "all_employers", l: "All employers" }, { v: "all_users", l: "All candidates + employers" }, { v: "list", l: "Custom list (upload)" }];
     const [subject, setSubject] = React.useState("");
     const [audience, setAudience] = React.useState("all_candidates");
+    const [listId, setListId] = React.useState("");
     const [body, setBody] = React.useState("");
     const [count, setCount] = React.useState(null);
     const [draftId, setDraftId] = React.useState(null);
@@ -8395,52 +8421,131 @@
     const [msg, setMsg] = React.useState(null);
     const [list, setList] = React.useState([]);
     const [smtpOk, setSmtpOk] = React.useState(true);
+    const [templates, setTemplates] = React.useState([]);
+    const [lists, setLists] = React.useState([]);
+    const [sendMode, setSendMode] = React.useState("now");   // now | schedule
+    const [scheduleAt, setScheduleAt] = React.useState("");
+    const [showUpload, setShowUpload] = React.useState(false);
 
     const loadList = function () { adm.fetchCampaigns().then(function (d) { setList(d.data || []); setSmtpOk(d.smtp_configured !== false); }).catch(function () {}); };
-    React.useEffect(loadList, []);
-    React.useEffect(function () { adm.campaignAudienceCount(audience).then(function (d) { setCount(d.count); }).catch(function () { setCount(null); }); }, [audience]);
+    const loadTemplates = function () { adm.fetchEmailTemplates().then(function (d) { setTemplates(d.data || []); }).catch(function () {}); };
+    const loadLists = function () { adm.fetchEmailLists().then(function (d) { setLists(d.data || []); }).catch(function () {}); };
+    React.useEffect(function () { loadList(); loadTemplates(); loadLists(); }, []);
+    React.useEffect(function () {
+      if (audience === "list" && !listId) { setCount(null); return; }
+      adm.campaignAudienceCount(audience, audience === "list" ? listId : null).then(function (d) { setCount(d.count); }).catch(function () { setCount(null); });
+    }, [audience, listId]);
 
+    const dirty = function () { setDraftId(null); };
+    const invalidate = function (setter) { return function (e) { setter(e.target.value); dirty(); }; };
+    const loadTemplate = function (id) {
+      var t = templates.filter(function (x) { return String(x.id) === String(id); })[0];
+      if (t) { setSubject(t.subject); setBody(t.body); dirty(); setMsg({ ok: true, text: "Template loaded." }); }
+    };
+    const saveTemplate = function () {
+      if (!subject.trim() || !body.trim()) { setMsg({ ok: false, text: "Add a subject and message first." }); return; }
+      var name = window.prompt("Template name:", subject.trim().slice(0, 60));
+      if (!name) return;
+      adm.createEmailTemplate({ name: name, subject: subject.trim(), body: body }).then(function () { loadTemplates(); setMsg({ ok: true, text: "Template saved." }); }).catch(function (e) { setMsg({ ok: false, text: (e && e.message) || "Failed." }); });
+    };
+    const deleteTemplate = function (t) { if (!window.confirm("Delete template “" + t.name + "”?")) return; adm.deleteEmailTemplate(t.id).then(loadTemplates).catch(function () {}); };
+    const deleteEmailList = function (l) { if (!window.confirm("Delete list “" + l.name + "” (" + l.recipient_count + " recipients)?")) return; adm.deleteEmailList(l.id).then(function () { loadLists(); if (String(listId) === String(l.id)) setListId(""); }).catch(function () {}); };
+
+    const validComposer = function () {
+      if (!subject.trim() || !body.trim()) { setMsg({ ok: false, text: "Subject and message are required." }); return false; }
+      if (audience === "list" && !listId) { setMsg({ ok: false, text: "Choose a recipient list (or upload one)." }); return false; }
+      return true;
+    };
     const saveDraft = function () {
-      if (!subject.trim() || !body.trim()) { setMsg({ ok: false, text: "Subject and message are required." }); return Promise.reject(); }
+      if (!validComposer()) return Promise.reject();
       setBusy(true);
-      return adm.createCampaign({ subject: subject.trim(), body: body, audience: audience })
-        .then(function (d) { setBusy(false); setDraftId(d.id); setMsg({ ok: true, text: "Draft saved (" + d.total_recipients + " recipients)." }); loadList(); return d; })
+      return adm.createCampaign({ subject: subject.trim(), body: body, audience: audience, list_id: audience === "list" ? Number(listId) : null })
+        .then(function (d) { setBusy(false); setDraftId(d.id); loadList(); return d; })
         .catch(function (e) { setBusy(false); setMsg({ ok: false, text: (e && e.message) || "Failed to save." }); return Promise.reject(e); });
     };
     const ensureDraft = function () { return draftId ? Promise.resolve({ id: draftId }) : saveDraft(); };
     const sendTest = function () { ensureDraft().then(function (d) { setBusy(true); adm.testCampaign(d.id).then(function (r) { setBusy(false); setMsg({ ok: true, text: r.message }); }).catch(function (e) { setBusy(false); setMsg({ ok: false, text: (e && e.message) || "Test failed." }); }); }).catch(function () {}); };
-    const sendNow = function () { ensureDraft().then(function (d) { if (!window.confirm("Send “" + subject + "” to " + (count || 0) + " recipient(s)?\n\nThis cannot be undone.")) return; setBusy(true); adm.sendCampaign(d.id).then(function (r) { setBusy(false); setMsg({ ok: true, text: r.message }); setSubject(""); setBody(""); setDraftId(null); loadList(); }).catch(function (e) { setBusy(false); setMsg({ ok: false, text: (e && e.message) || "Send failed." }); }); }).catch(function () {}); };
+    const reset = function () { setSubject(""); setBody(""); setDraftId(null); setScheduleAt(""); setSendMode("now"); };
+    const sendNow = function () {
+      ensureDraft().then(function (d) {
+        if (!window.confirm("Send “" + subject + "” to " + (count || 0) + " recipient(s) now?\n\nThis cannot be undone.")) return;
+        setBusy(true);
+        adm.sendCampaign(d.id).then(function (r) { setBusy(false); setMsg({ ok: true, text: r.message }); reset(); loadList(); }).catch(function (e) { setBusy(false); setMsg({ ok: false, text: (e && e.message) || "Send failed." }); });
+      }).catch(function () {});
+    };
+    const scheduleSend = function () {
+      if (!scheduleAt) { setMsg({ ok: false, text: "Pick a date & time." }); return; }
+      var iso = new Date(scheduleAt).toISOString();
+      ensureDraft().then(function (d) {
+        setBusy(true);
+        adm.scheduleCampaign(d.id, iso).then(function (r) { setBusy(false); setMsg({ ok: true, text: r.message }); reset(); loadList(); }).catch(function (e) { setBusy(false); setMsg({ ok: false, text: (e && e.message) || "Schedule failed." }); });
+      }).catch(function () {});
+    };
+    const cancelScheduled = function (c) { if (!window.confirm("Cancel the scheduled send for “" + c.subject + "”?")) return; adm.cancelCampaign(c.id).then(loadList).catch(function () {}); };
 
-    const invalidate = function (setter) { return function (e) { setter(e.target.value); setDraftId(null); }; };
-    const tone = { draft: "neutral", sending: "warning", sent: "success", failed: "danger" };
+    const tone = { draft: "neutral", scheduled: "info", sending: "warning", sent: "success", failed: "danger" };
     const fmtDate = function (s) { if (!s) return "—"; var d = new Date(s); return isNaN(d) ? "—" : d.toLocaleDateString(); };
+    const fmtDT = function (s) { if (!s) return "—"; var d = new Date(s); return isNaN(d) ? "—" : d.toLocaleString(); };
+    const selectedList = lists.filter(function (l) { return String(l.id) === String(listId); })[0];
 
     return (
       <div className="krm-page-pad" style={{ padding: 28, maxWidth: 900 }}>
-        <ScreenHead title="Email campaigns" sub="Compose a message, choose an audience, send a test, then send. Recipients who opted out are skipped; every email carries an unsubscribe link." />
+        <ScreenHead title="Email campaigns" sub="Compose or load a template, pick an audience or uploaded list, then send now or schedule. Every email carries an unsubscribe link; opted-out recipients are skipped." />
 
         {!smtpOk && <div style={{ display: "flex", alignItems: "center", gap: 8, background: "var(--danger-bg,#fff5f5)", color: "var(--danger)", border: "1px solid var(--danger-border,#f0c0c0)", borderRadius: 8, padding: "10px 14px", marginBottom: 16, fontSize: "var(--text-sm)" }}>{I("triangle-alert", 16)} SMTP isn't configured — set it up under Email settings before sending.</div>}
 
         <Card padding={24}>
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <Input label="Subject" value={subject} onChange={invalidate(setSubject)} placeholder="e.g. Top jobs this week on Krama" />
+            {templates.length > 0 && (
+              <div style={{ display: "flex", alignItems: "flex-end", gap: 10, flexWrap: "wrap" }}>
+                <div style={{ minWidth: 240, flex: 1 }}><Select label="Load a saved template" value="" onChange={function (e) { if (e.target.value) loadTemplate(e.target.value); }} options={[{ value: "", label: "— Start from scratch —" }].concat(templates.map(function (t) { return { value: String(t.id), label: t.name }; }))} /></div>
+              </div>
+            )}
+            <Input label="Subject" value={subject} onChange={invalidate(setSubject)} placeholder="e.g. Partner with Krama, {{org}}" />
             <div>
-              <Select label="Audience" value={audience} onChange={function (e) { setAudience(e.target.value); setDraftId(null); }} options={AUD.map(function (a) { return { value: a.v, label: a.l }; })} />
-              <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: 6 }}>{count == null ? "Counting recipients…" : (count + " recipient(s) will receive this (active accounts, not opted out).")}</div>
+              <Select label="Audience" value={audience} onChange={function (e) { setAudience(e.target.value); dirty(); }} options={AUD.map(function (a) { return { value: a.v, label: a.l }; })} />
+              {audience === "list" ? (
+                <div style={{ display: "flex", alignItems: "flex-end", gap: 10, marginTop: 10, flexWrap: "wrap" }}>
+                  <div style={{ minWidth: 220, flex: 1 }}><Select label="Recipient list" value={listId} onChange={function (e) { setListId(e.target.value); dirty(); }} options={[{ value: "", label: "— Choose a list —" }].concat(lists.map(function (l) { return { value: String(l.id), label: l.name + " (" + l.recipient_count + ")" }; }))} /></div>
+                  <Button variant="secondary" size="sm" iconLeft={I("upload", 14)} onClick={function () { setShowUpload(true); }}>Upload CSV</Button>
+                  {selectedList && <Button variant="ghost" size="sm" onClick={function () { deleteEmailList(selectedList); }} style={{ color: "var(--danger)" }}>Delete list</Button>}
+                </div>
+              ) : null}
+              <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: 6 }}>{count == null ? (audience === "list" && !listId ? "Choose a list to see the recipient count." : "Counting recipients…") : (count + " recipient(s) will receive this.")}</div>
             </div>
             <div>
-              <Textarea label="Message (HTML)" value={body} onChange={invalidate(setBody)} rows={10} placeholder={"<p>Hi there,</p>\n<p>Here are this week's top jobs on Krama…</p>\n<p><a href=\"https://kramajob.com\">Browse jobs</a></p>"} />
-              <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: 6 }}>Paste HTML. It's wrapped in the branded Krama email shell with a header and an unsubscribe footer automatically.</div>
+              <Textarea label="Message (HTML)" value={body} onChange={invalidate(setBody)} rows={10} placeholder={"<p>Dear {{name}},</p>\n<p>We invite {{org}} to post jobs on Krama…</p>\n<p><a href=\"https://kramajob.com/employers\">Learn more</a></p>"} />
+              <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: 6 }}>Wrapped in the branded Krama shell (header + unsubscribe footer). Merge fields: <code>{"{{name}}"}</code> and <code>{"{{org}}"}</code>. Links + opens are tracked.</div>
             </div>
             {msg && <div style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: msg.ok ? "var(--success)" : "var(--danger)" }}>{msg.text}</div>}
+
+            <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "center" }}>
+              {[["now", "Send now"], ["schedule", "Schedule"]].map(function (m) {
+                return <label key={m[0]} style={{ display: "inline-flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: "var(--text-sm)", color: "var(--text-body)", fontWeight: 600 }}><input type="radio" name="sendmode" checked={sendMode === m[0]} onChange={function () { setSendMode(m[0]); }} /> {m[1]}</label>;
+              })}
+              {sendMode === "schedule" && <input type="datetime-local" value={scheduleAt} onChange={function (e) { setScheduleAt(e.target.value); }} style={{ height: 40, padding: "0 12px", border: "1px solid var(--border-strong)", borderRadius: "var(--radius-md)", fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)", background: "var(--surface-card)", color: "var(--text-body)" }} />}
+            </div>
+
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <Button variant="ghost" disabled={busy} onClick={saveTemplate} iconLeft={I("save", 15)}>Save as template</Button>
               <Button variant="secondary" disabled={busy} onClick={sendTest} iconLeft={I("send-horizontal", 15)}>{busy ? "Working…" : "Send test to me"}</Button>
-              <Button variant="primary" disabled={busy || !smtpOk} onClick={sendNow} iconLeft={I("mail", 15)}>{busy ? "Working…" : "Send campaign" + (count != null ? " (" + count + ")" : "")}</Button>
+              {sendMode === "now"
+                ? <Button variant="primary" disabled={busy || !smtpOk} onClick={sendNow} iconLeft={I("mail", 15)}>{busy ? "Working…" : "Send campaign" + (count != null ? " (" + count + ")" : "")}</Button>
+                : <Button variant="primary" disabled={busy || !smtpOk} onClick={scheduleSend} iconLeft={I("clock", 15)}>{busy ? "Working…" : "Schedule send" + (count != null ? " (" + count + ")" : "")}</Button>}
             </div>
           </div>
         </Card>
 
-        <h3 style={{ fontSize: "var(--text-base)", fontWeight: 700, color: "var(--text-strong)", margin: "26px 0 12px" }}>Past campaigns</h3>
+        {templates.length > 0 && (
+          <div style={{ marginTop: 14, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+            <span style={{ fontSize: "var(--text-xs)", color: "var(--text-faint)", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".04em" }}>Templates:</span>
+            {templates.map(function (t) {
+              return <span key={t.id} style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "var(--surface-sunken, var(--surface-page))", border: "1px solid var(--border)", borderRadius: 999, padding: "3px 6px 3px 11px", fontSize: "var(--text-xs)", color: "var(--text-body)" }}>{t.name}<button onClick={function () { deleteTemplate(t); }} title="Delete" style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--text-faint)", display: "inline-flex", padding: 2 }}>{I("x", 12)}</button></span>;
+            })}
+          </div>
+        )}
+
+        <h3 style={{ fontSize: "var(--text-base)", fontWeight: 700, color: "var(--text-strong)", margin: "26px 0 12px" }}>Campaigns</h3>
         {list.length === 0 ? (
           <Card padding={24}><div style={{ color: "var(--text-muted)", textAlign: "center" }}>No campaigns yet.</div></Card>
         ) : (
@@ -8456,7 +8561,8 @@
                       </div>
                       <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginTop: 4 }}>
                         {(AUD.filter(function (a) { return a.v === c.audience; })[0] || {}).l || c.audience} · {fmtDate(c.created_at)}
-                        {c.status !== "draft" ? " · " + c.sent_count + "/" + c.total_recipients + " sent" + (c.failed_count ? " · " + c.failed_count + " failed" : "") : ""}
+                        {c.status === "scheduled" ? " · sends " + fmtDT(c.scheduled_at) : ""}
+                        {(c.status === "sent" || c.status === "sending") ? " · " + c.sent_count + "/" + c.total_recipients + " sent" + (c.failed_count ? " · " + c.failed_count + " failed" : "") : ""}
                       </div>
                       {(c.status === "sent" || c.status === "sending") && c.sent_count > 0 && (
                         <div style={{ display: "flex", gap: 16, marginTop: 8, fontSize: "var(--text-sm)" }}>
@@ -8465,12 +8571,59 @@
                         </div>
                       )}
                     </div>
+                    {c.status === "scheduled" && <Button variant="ghost" size="sm" onClick={function () { cancelScheduled(c); }} style={{ color: "var(--danger)", flexShrink: 0 }}>Cancel</Button>}
                   </div>
                 </Card>
               );
             })}
           </div>
         )}
+
+        {showUpload && <CsvUploadModal onClose={function () { setShowUpload(false); }} onCreated={function (l) { setShowUpload(false); loadLists(); setAudience("list"); setListId(String(l.id)); dirty(); setMsg({ ok: true, text: "List “" + l.name + "” created with " + l.recipient_count + " recipients" + (l.skipped ? " (" + l.skipped + " skipped)" : "") + "." }); }} />}
+      </div>
+    );
+  }
+
+  // Upload/paste a CSV of recipients → creates a recipient list.
+  function CsvUploadModal({ onClose, onCreated }) {
+    const adm = window.KRAMA_ADMIN_API;
+    const [name, setName] = React.useState("");
+    const [text, setText] = React.useState("");
+    const [busy, setBusy] = React.useState(false);
+    const [err, setErr] = React.useState("");
+    const parsed = parseRecipientCsv(text);
+
+    const onFile = function (e) {
+      var f = e.target.files && e.target.files[0]; if (!f) return;
+      if (!name) setName(f.name.replace(/\.[^.]+$/, ""));
+      var r = new FileReader(); r.onload = function () { setText(String(r.result || "")); }; r.readAsText(f);
+    };
+    const save = function () {
+      if (!name.trim()) { setErr("Give the list a name."); return; }
+      if (!parsed.length) { setErr("No valid email addresses found."); return; }
+      setBusy(true); setErr("");
+      adm.createEmailList({ name: name.trim(), recipients: parsed }).then(function (l) { setBusy(false); onCreated(l); }).catch(function (e) { setBusy(false); setErr((e && e.message) || "Upload failed."); });
+    };
+
+    return (
+      <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 300, background: "var(--surface-overlay, rgba(17,24,39,.55))", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+        <div onClick={function (e) { e.stopPropagation(); }} style={{ width: "100%", maxWidth: 520, background: "var(--surface-card)", borderRadius: "var(--radius-xl)", boxShadow: "var(--shadow-xl)", overflow: "hidden" }}>
+          <div style={{ padding: "18px 22px", borderBottom: "1px solid var(--border)", fontWeight: 700, fontSize: "var(--text-md)", color: "var(--text-strong)" }}>Upload recipient list</div>
+          <div style={{ padding: "18px 22px", display: "flex", flexDirection: "column", gap: 14 }}>
+            <Input label="List name" value={name} onChange={function (e) { setName(e.target.value); }} placeholder="e.g. Organizations — August 2026" />
+            <div>
+              <label style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-strong)" }}>CSV file</label>
+              <div style={{ marginTop: 6 }}><input type="file" accept=".csv,text/csv,text/plain" onChange={onFile} style={{ fontSize: "var(--text-sm)" }} /></div>
+            </div>
+            <Textarea label="…or paste rows" value={text} onChange={function (e) { setText(e.target.value); }} rows={6} placeholder={"email,name,org\njane@ngo.org,Jane Doe,Green NGO\ninfo@school.edu,,City School"} />
+            <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>Columns: <code>email</code>, <code>name</code>, <code>org</code> (a header row is detected automatically; email-only lists work too). <strong style={{ color: "var(--text-body)" }}>{parsed.length}</strong> valid recipient(s) detected.</div>
+            {err && <div style={{ fontSize: "var(--text-sm)", color: "var(--danger)", fontWeight: 600 }}>{err}</div>}
+          </div>
+          <div style={{ display: "flex", gap: 10, padding: "14px 22px", borderTop: "1px solid var(--border)" }}>
+            <Button variant="ghost" onClick={onClose} style={{ flex: 1 }}>Cancel</Button>
+            <Button variant="primary" style={{ flex: 1 }} disabled={busy || !parsed.length} onClick={save}>{busy ? "Uploading…" : "Create list (" + parsed.length + ")"}</Button>
+          </div>
+        </div>
       </div>
     );
   }

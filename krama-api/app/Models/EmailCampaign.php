@@ -10,8 +10,13 @@ class EmailCampaign extends Model
 
     protected $fillable = [
         'subject', 'body', 'audience', 'status',
+        'template_id', 'list_id', 'scheduled_at',
         'total_recipients', 'sent_count', 'failed_count',
         'created_by', 'created_at', 'sent_at',
+    ];
+
+    protected $casts = [
+        'scheduled_at' => 'datetime',
     ];
 
     // Unsubscribe token — {userId}-{HMAC}, stable + non-enumerable, no DB column (same

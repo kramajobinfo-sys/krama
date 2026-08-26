@@ -43,25 +43,48 @@ class SendCampaignJob implements ShouldQueue
         MailConfig::applyFromDb();
 
         $sent = 0; $failed = 0;
-        self::audienceQuery($c->audience)->select('id', 'name', 'email')->chunkById(100, function ($users) use ($c, &$sent, &$failed) {
-            foreach ($users as $u) {
-                if (! $u->email) continue;
-                try {
-                    $body = \App\Support\EmailTracking::apply($c->id, $u->id, $c->body);
-                    $html = EmailTemplates::marketing($body, EmailCampaign::unsubUrl($u->id));
-                    Mail::html($html, fn ($m) => $m->to($u->email, $u->name)->subject($c->subject));
-                    $sent++;
-                } catch (\Throwable $e) {
-                    $failed++;
-                    Log::warning("Campaign {$c->id} to user {$u->id} failed: " . $e->getMessage());
+
+        if ($c->audience === 'list') {
+            // Custom uploaded list (e.g. 700 organizations). Track/unsubscribe by recipient id.
+            \App\Models\EmailListRecipient::where('list_id', $c->list_id)->where('unsubscribed', false)
+                ->select('id', 'email', 'name', 'org')->chunkById(100, function ($rows) use ($c, &$sent, &$failed) {
+                    foreach ($rows as $r) {
+                        if (! $r->email) continue;
+                        $unsub = \App\Models\EmailListRecipient::unsubUrl($r->id);
+                        if ($this->deliver($c, $r->id, $r->email, $r->name, $r->org, $unsub)) $sent++; else $failed++;
+                        usleep(100000);
+                    }
+                    $c->update(['sent_count' => $sent, 'failed_count' => $failed]);
+                });
+        } else {
+            self::audienceQuery($c->audience)->select('id', 'name', 'email')->chunkById(100, function ($users) use ($c, &$sent, &$failed) {
+                foreach ($users as $u) {
+                    if (! $u->email) continue;
+                    if ($this->deliver($c, $u->id, $u->email, $u->name, '', EmailCampaign::unsubUrl($u->id))) $sent++; else $failed++;
+                    usleep(100000); // ~10/sec — gentle on the SMTP gateway
                 }
-                usleep(100000); // ~10/sec — gentle on the SMTP gateway
-            }
-            $c->update(['sent_count' => $sent, 'failed_count' => $failed]);
-        });
+                $c->update(['sent_count' => $sent, 'failed_count' => $failed]);
+            });
+        }
 
         $c->update(['status' => 'sent', 'sent_at' => now(), 'sent_count' => $sent, 'failed_count' => $failed]);
         Log::info("Campaign {$c->id} sent: {$sent} ok, {$failed} failed.");
+    }
+
+    // Merge fields + tracking + branded shell, then send. Returns true on success.
+    private function deliver(EmailCampaign $c, int $trackId, string $email, ?string $name, ?string $org, string $unsubUrl): bool
+    {
+        $vars = ['{{name}}' => trim((string) $name) ?: 'there', '{{org}}' => trim((string) $org) ?: (trim((string) $name) ?: '')];
+        try {
+            $subject = strtr($c->subject, $vars);
+            $body = \App\Support\EmailTracking::apply($c->id, $trackId, strtr($c->body, $vars));
+            $html = EmailTemplates::marketing($body, $unsubUrl);
+            Mail::html($html, fn ($m) => $m->to($email, $name ?: null)->subject($subject));
+            return true;
+        } catch (\Throwable $e) {
+            Log::warning("Campaign {$c->id} to {$email} failed: " . $e->getMessage());
+            return false;
+        }
     }
 
     /**

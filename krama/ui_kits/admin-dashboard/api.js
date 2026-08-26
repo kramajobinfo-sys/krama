@@ -269,10 +269,21 @@
     rejectDeletionRequest: function (id) { return req("POST", "/admin/deletion-requests/" + id + "/reject", {}); },
     // Email marketing campaigns
     fetchCampaigns: function () { return req("GET", "/admin/campaigns"); },
-    campaignAudienceCount: function (audience) { return req("GET", "/admin/campaigns/audience-count?audience=" + encodeURIComponent(audience || "")); },
+    campaignAudienceCount: function (audience, listId) { return req("GET", "/admin/campaigns/audience-count?audience=" + encodeURIComponent(audience || "") + (listId ? "&list_id=" + listId : "")); },
     createCampaign: function (data) { return req("POST", "/admin/campaigns", data); },
     testCampaign: function (id) { return req("POST", "/admin/campaigns/" + id + "/test", {}); },
     sendCampaign: function (id) { return req("POST", "/admin/campaigns/" + id + "/send", {}); },
+    scheduleCampaign: function (id, scheduledAt) { return req("POST", "/admin/campaigns/" + id + "/schedule", { scheduled_at: scheduledAt }); },
+    cancelCampaign: function (id) { return req("POST", "/admin/campaigns/" + id + "/cancel", {}); },
+    // Email templates
+    fetchEmailTemplates: function () { return req("GET", "/admin/email-templates"); },
+    createEmailTemplate: function (data) { return req("POST", "/admin/email-templates", data); },
+    updateEmailTemplate: function (id, data) { return req("PUT", "/admin/email-templates/" + id, data); },
+    deleteEmailTemplate: function (id) { return req("DELETE", "/admin/email-templates/" + id); },
+    // Recipient lists
+    fetchEmailLists: function () { return req("GET", "/admin/email-lists"); },
+    createEmailList: function (data) { return req("POST", "/admin/email-lists", data); },
+    deleteEmailList: function (id) { return req("DELETE", "/admin/email-lists/" + id); },
 
     // Career-advice articles (content hub)
     fetchArticles: function () { return req("GET", "/admin/articles"); },

@@ -257,6 +257,23 @@ class SeoController extends Controller
         ]);
     }
 
+    // GET /unsubscribe-list/{token} — opt a custom-list recipient out of outreach emails.
+    public function unsubscribeList(string $token)
+    {
+        [$id, $sig] = array_pad(explode('-', $token, 2), 2, '');
+        abort_if(! ctype_digit($id) || ! hash_equals(\App\Models\EmailListRecipient::unsubToken($id), $token), 404);
+
+        $r = \App\Models\EmailListRecipient::find((int) $id);
+        if ($r) $r->forceFill(['unsubscribed' => true])->save();
+
+        return view('seo.unsubscribe', [
+            'canonical' => url('/unsubscribe'),
+            'metaDesc'  => 'Manage your Krama email preferences.',
+            'ld'        => [],
+            'ok'        => (bool) $r,
+        ]);
+    }
+
     /** GET /privacy — server-rendered Privacy Policy (public, crawlable; used for Facebook app review). */
     public function privacy()
     {

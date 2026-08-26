@@ -422,6 +422,18 @@ Route::middleware(['auth:api', 'permission:site_settings'])->group(function () {
     Route::post('admin/campaigns',                  [EmailCampaignController::class, 'store'])->middleware('throttle:30,1');
     Route::post('admin/campaigns/{id}/test',        [EmailCampaignController::class, 'sendTest'])->middleware('throttle:20,1');
     Route::post('admin/campaigns/{id}/send',        [EmailCampaignController::class, 'send'])->middleware('throttle:10,1');
+    Route::post('admin/campaigns/{id}/schedule',    [EmailCampaignController::class, 'schedule'])->middleware('throttle:30,1');
+    Route::post('admin/campaigns/{id}/cancel',      [EmailCampaignController::class, 'cancel']);
+    // Reusable email templates
+    Route::get('admin/email-templates',             [\App\Http\Controllers\EmailTemplateController::class, 'index']);
+    Route::post('admin/email-templates',            [\App\Http\Controllers\EmailTemplateController::class, 'store'])->middleware('throttle:60,1');
+    Route::put('admin/email-templates/{id}',        [\App\Http\Controllers\EmailTemplateController::class, 'update'])->whereNumber('id');
+    Route::delete('admin/email-templates/{id}',     [\App\Http\Controllers\EmailTemplateController::class, 'destroy'])->whereNumber('id');
+    // Uploaded recipient lists
+    Route::get('admin/email-lists',                 [\App\Http\Controllers\EmailListController::class, 'index']);
+    Route::post('admin/email-lists',                [\App\Http\Controllers\EmailListController::class, 'store'])->middleware('throttle:30,1');
+    Route::get('admin/email-lists/{id}',            [\App\Http\Controllers\EmailListController::class, 'show'])->whereNumber('id');
+    Route::delete('admin/email-lists/{id}',         [\App\Http\Controllers\EmailListController::class, 'destroy'])->whereNumber('id');
 
     // Admin: career-advice content hub (articles). Public rendering = /career + /career/{slug}.
     Route::get('admin/articles',            [\App\Http\Controllers\ArticleController::class, 'adminIndex']);
