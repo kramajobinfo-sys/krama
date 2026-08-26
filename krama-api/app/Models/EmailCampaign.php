@@ -19,6 +19,19 @@ class EmailCampaign extends Model
         'scheduled_at' => 'datetime',
     ];
 
+    // Substitute merge fields in a subject/body. Tolerant of spacing + case + common aliases,
+    // so {{name}}, {{ Name }}, {{full_name}}, {{org}}, {{organization}}, {{company}} all work.
+    public static function merge(string $text, ?string $name, ?string $org): string
+    {
+        $name = trim((string) $name);
+        $org  = trim((string) $org);
+        $nameVal = $name !== '' ? $name : 'there';
+        $orgVal  = $org !== '' ? $org : ($name !== '' ? $name : 'your organization');
+        $text = preg_replace('/\{\{\s*(name|full[_ ]?name|contact[_ ]?name|contact)\s*\}\}/i', $nameVal, $text);
+        $text = preg_replace('/\{\{\s*(org|organi[sz]ation|company)\s*\}\}/i', $orgVal, $text);
+        return $text;
+    }
+
     // Unsubscribe token — {userId}-{HMAC}, stable + non-enumerable, no DB column (same
     // pattern as the Digital-CV token). Verified with hash_equals in the unsubscribe route.
     public static function unsubToken($userId): string

@@ -74,10 +74,9 @@ class SendCampaignJob implements ShouldQueue
     // Merge fields + tracking + branded shell, then send. Returns true on success.
     private function deliver(EmailCampaign $c, int $trackId, string $email, ?string $name, ?string $org, string $unsubUrl): bool
     {
-        $vars = ['{{name}}' => trim((string) $name) ?: 'there', '{{org}}' => trim((string) $org) ?: (trim((string) $name) ?: '')];
         try {
-            $subject = strtr($c->subject, $vars);
-            $body = \App\Support\EmailTracking::apply($c->id, $trackId, strtr($c->body, $vars));
+            $subject = EmailCampaign::merge($c->subject, $name, $org);
+            $body = \App\Support\EmailTracking::apply($c->id, $trackId, EmailCampaign::merge($c->body, $name, $org));
             $html = EmailTemplates::marketing($body, $unsubUrl);
             Mail::html($html, fn ($m) => $m->to($email, $name ?: null)->subject($subject));
             return true;

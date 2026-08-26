@@ -103,10 +103,10 @@ class EmailCampaignController extends Controller
 
         MailConfig::applyFromDb();
         try {
-            // Preview merge fields with the admin's own name.
-            $body = strtr($c->body, ['{{name}}' => $request->user()->name ?: 'there', '{{org}}' => 'Your Organization']);
+            // Preview merge fields with the admin's own name + a sample org.
+            $body = EmailCampaign::merge($c->body, $request->user()->name ?: 'there', 'Your Organization');
             $html = EmailTemplates::marketing($body, EmailCampaign::unsubUrl($request->user()->id));
-            $subject = strtr($c->subject, ['{{name}}' => $request->user()->name ?: 'there', '{{org}}' => 'Your Organization']);
+            $subject = EmailCampaign::merge($c->subject, $request->user()->name ?: 'there', 'Your Organization');
             Mail::html($html, fn ($m) => $m->to($to)->subject('[TEST] ' . $subject));
         } catch (\Throwable $e) {
             return response()->json(['message' => 'Test send failed: ' . $e->getMessage()], 502);
