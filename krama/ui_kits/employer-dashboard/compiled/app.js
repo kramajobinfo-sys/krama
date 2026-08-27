@@ -14095,14 +14095,17 @@
   function PremiumSlotCard() {
     const [st, setSt] = React.useState(null);
     const [loading, setLoading] = React.useState(true);
+    const [err, setErr] = React.useState("");
     const [modal, setModal] = React.useState(false);
     const [flash, setFlash] = React.useState("");
     const load = React.useCallback(function () {
       setLoading(true);
+      setErr("");
       emp.premiumSlotStatus().then(function (d) {
         setSt(d);
         setLoading(false);
-      }).catch(function () {
+      }).catch(function (e) {
+        setErr(e && e.message || "Couldn't load the premium slot. Please try again.");
         setLoading(false);
       });
     }, []);
@@ -14168,12 +14171,34 @@
       style: {
         padding: "18px 22px"
       }
-    }, loading || !st ? /*#__PURE__*/React.createElement("div", {
+    }, loading ? /*#__PURE__*/React.createElement("div", {
       style: {
         color: "var(--text-muted)",
         fontSize: "var(--text-sm)"
       }
-    }, "Loading\u2026") : st.paid_active ? /*#__PURE__*/React.createElement("div", {
+    }, "Loading\u2026") : err ? /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+        flexWrap: "wrap",
+        fontSize: "var(--text-sm)",
+        color: "var(--text-muted)"
+      }
+    }, /*#__PURE__*/React.createElement("span", null, err), /*#__PURE__*/React.createElement("button", {
+      onClick: load,
+      style: {
+        background: "none",
+        border: "1px solid var(--border-strong)",
+        borderRadius: "var(--radius-md)",
+        padding: "5px 14px",
+        cursor: "pointer",
+        fontFamily: "var(--font-sans)",
+        fontSize: "var(--text-xs)",
+        fontWeight: 600,
+        color: "var(--text-body)"
+      }
+    }, "Retry")) : !st ? null : st.paid_active ? /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
         alignItems: "center",

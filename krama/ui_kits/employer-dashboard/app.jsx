@@ -4978,11 +4978,12 @@
   function PremiumSlotCard() {
     const [st, setSt] = React.useState(null);
     const [loading, setLoading] = React.useState(true);
+    const [err, setErr] = React.useState("");
     const [modal, setModal] = React.useState(false);
     const [flash, setFlash] = React.useState("");
     const load = React.useCallback(function () {
-      setLoading(true);
-      emp.premiumSlotStatus().then(function (d) { setSt(d); setLoading(false); }).catch(function () { setLoading(false); });
+      setLoading(true); setErr("");
+      emp.premiumSlotStatus().then(function (d) { setSt(d); setLoading(false); }).catch(function (e) { setErr((e && e.message) || "Couldn't load the premium slot. Please try again."); setLoading(false); });
     }, []);
     React.useEffect(function () { load(); }, [load]);
     const joinWl = function () { emp.premiumSlotJoinWaitlist().then(function () { setFlash("You're on the premium waitlist — we'll let you know when a slot opens."); load(); }).catch(function (e) { setFlash((e && e.message) || "Could not join the waitlist."); }); };
@@ -4997,9 +4998,14 @@
             <div style={{ fontWeight: 700, color: "var(--text-strong)" }}>Premium homepage slot</div>
           </div>
           <div style={{ padding: "18px 22px" }}>
-            {loading || !st ? (
+            {loading ? (
               <div style={{ color: "var(--text-muted)", fontSize: "var(--text-sm)" }}>Loading…</div>
-            ) : st.paid_active ? (
+            ) : err ? (
+              <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>
+                <span>{err}</span>
+                <button onClick={load} style={{ background: "none", border: "1px solid var(--border-strong)", borderRadius: "var(--radius-md)", padding: "5px 14px", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: "var(--text-xs)", fontWeight: 600, color: "var(--text-body)" }}>Retry</button>
+              </div>
+            ) : !st ? null : st.paid_active ? (
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
                 <div style={{ fontSize: "var(--text-sm)", color: "var(--text-body)", lineHeight: 1.6 }}>
                   <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "var(--text-brand)", fontWeight: 700 }}>{I("check-circle", 15)} Your company is Premium featured</span>
