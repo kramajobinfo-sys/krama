@@ -277,6 +277,7 @@
     sendCampaign: function (id) { return req("POST", "/admin/campaigns/" + id + "/send", {}); },
     scheduleCampaign: function (id, scheduledAt) { return req("POST", "/admin/campaigns/" + id + "/schedule", { scheduled_at: scheduledAt }); },
     cancelCampaign: function (id) { return req("POST", "/admin/campaigns/" + id + "/cancel", {}); },
+    deleteCampaign: function (id) { return req("DELETE", "/admin/campaigns/" + id); },
     // Email templates
     fetchEmailTemplates: function () { return req("GET", "/admin/email-templates"); },
     createEmailTemplate: function (data) { return req("POST", "/admin/email-templates", data); },

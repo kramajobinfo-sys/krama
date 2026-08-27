@@ -221,4 +221,19 @@ class EmailCampaignController extends Controller
         $c->update(['status' => 'draft', 'scheduled_at' => null]);
         return response()->json(['message' => 'Schedule cancelled; back to draft.']);
     }
+
+    // DELETE /api/admin/campaigns/{id} — remove a campaign (and its open/click events).
+    // Blocked while actively sending so we don't yank a row out from under a running job;
+    // cancel/finish first. Drafts, scheduled, sent and failed campaigns can all be deleted.
+    public function destroy(Request $request, $id)
+    {
+        $this->requirePermission('site_settings');
+        $c = EmailCampaign::findOrFail($id);
+        if ($c->status === 'sending') {
+            return response()->json(['message' => 'This campaign is currently sending — wait until it finishes to delete it.'], 422);
+        }
+        \DB::table('email_campaign_events')->where('campaign_id', $c->id)->delete();
+        $c->delete();
+        return response()->json(['message' => 'Campaign deleted.']);
+    }
 }
