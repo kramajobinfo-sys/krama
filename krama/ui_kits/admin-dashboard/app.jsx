@@ -8453,6 +8453,7 @@
     const [showUpload, setShowUpload] = React.useState(false);
     const [preview, setPreview] = React.useState(null);   // { subject, html } when the preview modal is open
     const [resetKey, setResetKey] = React.useState(0);    // remounts the RichEditor when body is set programmatically
+    const [loadedTemplateId, setLoadedTemplateId] = React.useState(null); // the template currently loaded (null = new/scratch) → enables "Update"
 
     const loadList = function () { adm.fetchCampaigns().then(function (d) { setList(d.data || []); setSmtpOk(d.smtp_configured !== false); }).catch(function () {}); };
     const loadTemplates = function () { adm.fetchEmailTemplates().then(function (d) { setTemplates(d.data || []); }).catch(function () {}); };
@@ -8467,15 +8468,26 @@
     const invalidate = function (setter) { return function (e) { setter(e.target.value); dirty(); }; };
     const loadTemplate = function (id) {
       var t = templates.filter(function (x) { return String(x.id) === String(id); })[0];
-      if (t) { setSubject(t.subject); setBody(t.body); setResetKey(function (k) { return k + 1; }); dirty(); setMsg({ ok: true, text: "Template loaded." }); }
+      if (t) { setSubject(t.subject); setBody(t.body); setResetKey(function (k) { return k + 1; }); setLoadedTemplateId(t.id); dirty(); setMsg({ ok: true, text: "Template “" + t.name + "” loaded — edit and Update it, or Save as new." }); }
     };
     const saveTemplate = function () {
       if (!subject.trim() || !body.trim()) { setMsg({ ok: false, text: "Add a subject and message first." }); return; }
       var name = window.prompt("Template name:", subject.trim().slice(0, 60));
       if (!name) return;
-      adm.createEmailTemplate({ name: name, subject: subject.trim(), body: body }).then(function () { loadTemplates(); setMsg({ ok: true, text: "Template saved." }); }).catch(function (e) { setMsg({ ok: false, text: (e && e.message) || "Failed." }); });
+      adm.createEmailTemplate({ name: name, subject: subject.trim(), body: body }).then(function (t) { loadTemplates(); if (t && t.id) setLoadedTemplateId(t.id); setMsg({ ok: true, text: "Template saved." }); }).catch(function (e) { setMsg({ ok: false, text: (e && e.message) || "Failed." }); });
     };
-    const deleteTemplate = function (t) { if (!window.confirm("Delete template “" + t.name + "”?")) return; adm.deleteEmailTemplate(t.id).then(loadTemplates).catch(function () {}); };
+    // Overwrite the currently-loaded template in place (keeps its name). Backend sanitizes body.
+    const updateTemplate = function () {
+      var t = templates.filter(function (x) { return String(x.id) === String(loadedTemplateId); })[0];
+      if (!t) { setLoadedTemplateId(null); return; }
+      if (!subject.trim() || !body.trim()) { setMsg({ ok: false, text: "Add a subject and message first." }); return; }
+      if (!window.confirm("Update template “" + t.name + "” with the current subject and message?")) return;
+      setBusy(true);
+      adm.updateEmailTemplate(t.id, { name: t.name, subject: subject.trim(), body: body })
+        .then(function () { setBusy(false); loadTemplates(); setMsg({ ok: true, text: "Template “" + t.name + "” updated." }); })
+        .catch(function (e) { setBusy(false); setMsg({ ok: false, text: (e && e.message) || "Update failed." }); });
+    };
+    const deleteTemplate = function (t) { if (!window.confirm("Delete template “" + t.name + "”?")) return; adm.deleteEmailTemplate(t.id).then(function () { if (String(loadedTemplateId) === String(t.id)) setLoadedTemplateId(null); loadTemplates(); }).catch(function () {}); };
     const deleteEmailList = function (l) { if (!window.confirm("Delete list “" + l.name + "” (" + l.recipient_count + " recipients)?")) return; adm.deleteEmailList(l.id).then(function () { loadLists(); if (String(listId) === String(l.id)) setListId(""); }).catch(function () {}); };
 
     const validComposer = function () {
@@ -8498,7 +8510,7 @@
       setBusy(true);
       adm.previewCampaign(subject.trim(), body).then(function (r) { setBusy(false); setPreview({ subject: r.subject, html: r.html }); }).catch(function (e) { setBusy(false); setMsg({ ok: false, text: (e && e.message) || "Preview failed." }); });
     };
-    const reset = function () { setSubject(""); setBody(""); setResetKey(function (k) { return k + 1; }); setDraftId(null); setScheduleAt(""); setSendMode("now"); };
+    const reset = function () { setSubject(""); setBody(""); setResetKey(function (k) { return k + 1; }); setLoadedTemplateId(null); setDraftId(null); setScheduleAt(""); setSendMode("now"); };
     const sendNow = function () {
       ensureDraft().then(function (d) {
         if (!window.confirm("Send “" + subject + "” to " + (count || 0) + " recipient(s) now?\n\nThis cannot be undone.")) return;
@@ -8517,7 +8529,7 @@
     const cancelScheduled = function (c) { if (!window.confirm("Cancel the scheduled send for “" + c.subject + "”?")) return; adm.cancelCampaign(c.id).then(loadList).catch(function () {}); };
     const duplicate = function (c) {
       adm.fetchCampaign(c.id).then(function (d) {
-        setSubject(d.subject || ""); setBody(d.body || ""); setResetKey(function (k) { return k + 1; });
+        setSubject(d.subject || ""); setBody(d.body || ""); setResetKey(function (k) { return k + 1; }); setLoadedTemplateId(null);
         setAudience(d.audience || "all_candidates"); setListId(d.list_id ? String(d.list_id) : "");
         setBatchOn(!!d.batch_size); setBatchSize(d.batch_size ? String(d.batch_size) : "100");
         setSendMode("now"); setScheduleAt(""); setDraftId(null);
@@ -8541,7 +8553,7 @@
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             {templates.length > 0 && (
               <div style={{ display: "flex", alignItems: "flex-end", gap: 10, flexWrap: "wrap" }}>
-                <div style={{ minWidth: 240, flex: 1 }}><Select label="Load a saved template" value="" onChange={function (e) { if (e.target.value) loadTemplate(e.target.value); }} options={[{ value: "", label: "— Start from scratch —" }].concat(templates.map(function (t) { return { value: String(t.id), label: t.name }; }))} /></div>
+                <div style={{ minWidth: 240, flex: 1 }}><Select label="Load a saved template" value={loadedTemplateId ? String(loadedTemplateId) : ""} onChange={function (e) { if (e.target.value) loadTemplate(e.target.value); else setLoadedTemplateId(null); }} options={[{ value: "", label: "— Start from scratch —" }].concat(templates.map(function (t) { return { value: String(t.id), label: t.name }; }))} /></div>
               </div>
             )}
             <Input label="Subject" value={subject} onChange={invalidate(setSubject)} placeholder="e.g. Partner with Krama, {{org}}" />
@@ -8583,7 +8595,8 @@
             </div>
 
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <Button variant="ghost" disabled={busy} onClick={saveTemplate} iconLeft={I("save", 15)}>Save as template</Button>
+              {(function () { var t = templates.filter(function (x) { return String(x.id) === String(loadedTemplateId); })[0]; return t ? <Button variant="secondary" disabled={busy} onClick={updateTemplate} iconLeft={I("save", 15)}>{"Update “" + t.name + "”"}</Button> : null; })()}
+              <Button variant="ghost" disabled={busy} onClick={saveTemplate} iconLeft={I("copy", 15)}>{loadedTemplateId ? "Save as new" : "Save as template"}</Button>
               <Button variant="ghost" disabled={busy} onClick={doPreview} iconLeft={I("eye", 15)}>Preview</Button>
               <Button variant="secondary" disabled={busy} onClick={sendTest} iconLeft={I("send-horizontal", 15)}>{busy ? "Working…" : "Send test to me"}</Button>
               {sendMode === "now"
