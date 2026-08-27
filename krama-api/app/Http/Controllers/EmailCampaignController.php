@@ -107,6 +107,25 @@ class EmailCampaignController extends Controller
         return response()->json(['message' => 'Campaign saved as draft.', 'id' => $c->id, 'total_recipients' => $c->total_recipients], 201);
     }
 
+    // POST /api/admin/campaigns/preview — render the email exactly as recipients see it
+    // (branded shell + merge fields filled with sample values). No draft is created/sent.
+    public function preview(Request $request)
+    {
+        $this->requirePermission('site_settings');
+        $data = $request->validate([
+            'subject' => 'nullable|string|max:200',
+            'body'    => 'required|string|max:100000',
+        ]);
+
+        $sampleName = $request->user()->name ?: 'Sok Dara';
+        $sampleOrg  = 'Your Organization';
+        $subject = EmailCampaign::merge((string) ($data['subject'] ?? ''), $sampleName, $sampleOrg);
+        $body    = EmailCampaign::merge($data['body'], $sampleName, $sampleOrg);
+        $html    = EmailTemplates::marketing($body, EmailCampaign::unsubUrl($request->user()->id));
+
+        return response()->json(['subject' => $subject, 'html' => $html]);
+    }
+
     // POST /api/admin/campaigns/{id}/test — send the campaign to the admin's own email.
     public function sendTest(Request $request, $id)
     {

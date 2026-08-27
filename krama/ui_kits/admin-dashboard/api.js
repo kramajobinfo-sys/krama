@@ -272,6 +272,7 @@
     fetchCampaign: function (id) { return req("GET", "/admin/campaigns/" + id); },
     campaignAudienceCount: function (audience, listId) { return req("GET", "/admin/campaigns/audience-count?audience=" + encodeURIComponent(audience || "") + (listId ? "&list_id=" + listId : "")); },
     createCampaign: function (data) { return req("POST", "/admin/campaigns", data); },
+    previewCampaign: function (subject, body) { return req("POST", "/admin/campaigns/preview", { subject: subject, body: body }); },
     testCampaign: function (id) { return req("POST", "/admin/campaigns/" + id + "/test", {}); },
     sendCampaign: function (id) { return req("POST", "/admin/campaigns/" + id + "/send", {}); },
     scheduleCampaign: function (id, scheduledAt) { return req("POST", "/admin/campaigns/" + id + "/schedule", { scheduled_at: scheduledAt }); },

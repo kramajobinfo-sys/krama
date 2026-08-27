@@ -8428,6 +8428,7 @@
     const [batchOn, setBatchOn] = React.useState(false);
     const [batchSize, setBatchSize] = React.useState("100");
     const [showUpload, setShowUpload] = React.useState(false);
+    const [preview, setPreview] = React.useState(null);   // { subject, html } when the preview modal is open
 
     const loadList = function () { adm.fetchCampaigns().then(function (d) { setList(d.data || []); setSmtpOk(d.smtp_configured !== false); }).catch(function () {}); };
     const loadTemplates = function () { adm.fetchEmailTemplates().then(function (d) { setTemplates(d.data || []); }).catch(function () {}); };
@@ -8467,6 +8468,12 @@
     };
     const ensureDraft = function () { return draftId ? Promise.resolve({ id: draftId }) : saveDraft(); };
     const sendTest = function () { ensureDraft().then(function (d) { setBusy(true); adm.testCampaign(d.id).then(function (r) { setBusy(false); setMsg({ ok: true, text: r.message }); }).catch(function (e) { setBusy(false); setMsg({ ok: false, text: (e && e.message) || "Test failed." }); }); }).catch(function () {}); };
+    // Render the branded email (with sample merge fields) without saving a draft or sending anything.
+    const doPreview = function () {
+      if (!subject.trim() || !body.trim()) { setMsg({ ok: false, text: "Add a subject and message to preview." }); return; }
+      setBusy(true);
+      adm.previewCampaign(subject.trim(), body).then(function (r) { setBusy(false); setPreview({ subject: r.subject, html: r.html }); }).catch(function (e) { setBusy(false); setMsg({ ok: false, text: (e && e.message) || "Preview failed." }); });
+    };
     const reset = function () { setSubject(""); setBody(""); setDraftId(null); setScheduleAt(""); setSendMode("now"); };
     const sendNow = function () {
       ensureDraft().then(function (d) {
@@ -8553,6 +8560,7 @@
 
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
               <Button variant="ghost" disabled={busy} onClick={saveTemplate} iconLeft={I("save", 15)}>Save as template</Button>
+              <Button variant="ghost" disabled={busy} onClick={doPreview} iconLeft={I("eye", 15)}>Preview</Button>
               <Button variant="secondary" disabled={busy} onClick={sendTest} iconLeft={I("send-horizontal", 15)}>{busy ? "Working…" : "Send test to me"}</Button>
               {sendMode === "now"
                 ? <Button variant="primary" disabled={busy || !smtpOk} onClick={sendNow} iconLeft={I("mail", 15)}>{busy ? "Working…" : "Send campaign" + (count != null ? " (" + count + ")" : "")}</Button>
@@ -8609,6 +8617,7 @@
         )}
 
         {showUpload && <CsvUploadModal onClose={function () { setShowUpload(false); }} onCreated={function (l) { setShowUpload(false); loadLists(); setAudience("list"); setListId(String(l.id)); dirty(); setMsg({ ok: true, text: "List “" + l.name + "” created with " + l.recipient_count + " recipients" + (l.skipped ? " (" + l.skipped + " skipped)" : "") + "." }); }} />}
+        {preview && <CampaignPreviewModal subject={preview.subject} html={preview.html} onClose={function () { setPreview(null); }} />}
       </div>
     );
   }
@@ -8651,6 +8660,37 @@
           <div style={{ display: "flex", gap: 10, padding: "14px 22px", borderTop: "1px solid var(--border)" }}>
             <Button variant="ghost" onClick={onClose} style={{ flex: 1 }}>Cancel</Button>
             <Button variant="primary" style={{ flex: 1 }} disabled={busy || !parsed.length} onClick={save}>{busy ? "Uploading…" : "Create list (" + parsed.length + ")"}</Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Full-fidelity preview of a campaign email — the branded shell exactly as recipients see it,
+  // rendered in a sandboxed iframe so its styles can't leak into the admin app. Merge fields are
+  // filled server-side with sample values; nothing is saved or sent.
+  function CampaignPreviewModal({ subject, html, onClose }) {
+    React.useEffect(function () {
+      var onKey = function (e) { if (e.key === "Escape") onClose(); };
+      window.addEventListener("keydown", onKey);
+      return function () { window.removeEventListener("keydown", onKey); };
+    }, []);
+    return (
+      <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 300, background: "var(--surface-overlay, rgba(17,24,39,.55))", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+        <div onClick={function (e) { e.stopPropagation(); }} style={{ width: "100%", maxWidth: 680, maxHeight: "90vh", background: "var(--surface-card)", borderRadius: "var(--radius-xl)", boxShadow: "var(--shadow-xl)", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "16px 22px", borderBottom: "1px solid var(--border)" }}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: "var(--text-xs)", color: "var(--text-faint)", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".04em" }}>Email preview</div>
+              <div style={{ fontWeight: 700, fontSize: "var(--text-md)", color: "var(--text-strong)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{subject || "(no subject)"}</div>
+            </div>
+            <button onClick={onClose} title="Close" style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--text-faint)", display: "inline-flex", padding: 4, flexShrink: 0 }}>{I("x", 20)}</button>
+          </div>
+          <div style={{ flex: 1, overflow: "auto", background: "var(--surface-sunken, #f3f4f6)", padding: 0 }}>
+            <iframe title="Email preview" sandbox="" srcDoc={html} style={{ width: "100%", height: "62vh", border: "none", background: "#fff", display: "block" }} />
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, padding: "12px 22px", borderTop: "1px solid var(--border)" }}>
+            <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>Sample merge values shown. Nothing has been saved or sent.</span>
+            <Button variant="secondary" onClick={onClose}>Close</Button>
           </div>
         </div>
       </div>

@@ -420,6 +420,7 @@ Route::middleware(['auth:api', 'permission:site_settings'])->group(function () {
     Route::get('admin/campaigns',                   [EmailCampaignController::class, 'index']);
     Route::get('admin/campaigns/audience-count',    [EmailCampaignController::class, 'audienceCount']);
     Route::get('admin/campaigns/{id}',              [EmailCampaignController::class, 'show'])->whereNumber('id');
+    Route::post('admin/campaigns/preview',          [EmailCampaignController::class, 'preview'])->middleware('throttle:60,1');
     Route::post('admin/campaigns',                  [EmailCampaignController::class, 'store'])->middleware('throttle:30,1');
     Route::post('admin/campaigns/{id}/test',        [EmailCampaignController::class, 'sendTest'])->middleware('throttle:20,1');
     Route::post('admin/campaigns/{id}/send',        [EmailCampaignController::class, 'send'])->middleware('throttle:10,1');
