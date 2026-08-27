@@ -137,11 +137,24 @@ class EmailCampaignController extends Controller
         if (! MailConfig::isConfigured()) return response()->json(['message' => 'SMTP is not configured (Email settings).'], 422);
 
         MailConfig::applyFromDb();
+
+        // Merge with a REAL representative recipient so the test reflects an actual send:
+        // the first person in the chosen list (list audience) or the first matching user
+        // (with their real company for {{org}}). Falls back to the admin's own name.
+        $sampleName = $request->user()->name ?: 'there';
+        $sampleOrg  = '';
+        if ($c->audience === 'list' && $c->list_id) {
+            $r = EmailListRecipient::where('list_id', $c->list_id)->orderBy('id')->first();
+            if ($r) { $sampleName = $r->name ?: $sampleName; $sampleOrg = (string) $r->org; }
+        } else {
+            $u = SendCampaignJob::audienceQuery($c->audience)->first();
+            if ($u) { $sampleName = $u->name ?: $sampleName; $sampleOrg = SendCampaignJob::orgNameForUser($u); }
+        }
+
         try {
-            // Preview merge fields with the admin's own name + a sample org.
-            $body = EmailCampaign::merge($c->body, $request->user()->name ?: 'there', 'Your Organization');
+            $body = EmailCampaign::merge($c->body, $sampleName, $sampleOrg);
             $html = EmailTemplates::marketing($body, EmailCampaign::unsubUrl($request->user()->id));
-            $subject = EmailCampaign::merge($c->subject, $request->user()->name ?: 'there', 'Your Organization');
+            $subject = EmailCampaign::merge($c->subject, $sampleName, $sampleOrg);
             Mail::html($html, fn ($m) => $m->to($to)->subject('[TEST] ' . $subject));
         } catch (\Throwable $e) {
             return response()->json(['message' => 'Test send failed: ' . $e->getMessage()], 502);

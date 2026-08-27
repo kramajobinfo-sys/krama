@@ -116,6 +116,15 @@ class SendCampaignJob implements ShouldQueue
      * Owned company (companies.user_id) is preferred; team members fall back to users.company_id.
      * Two queries per 100-user chunk — no per-recipient N+1.
      */
+    // Single user's company name (owned company preferred, else their linked company_id).
+    // Used by the test-send preview so it shows the same {{org}} a real recipient would get.
+    public static function orgNameForUser($user): string
+    {
+        $name = \App\Models\Company::where('user_id', $user->id)->value('name');
+        if (! $name && ! empty($user->company_id)) $name = \App\Models\Company::whereKey($user->company_id)->value('name');
+        return (string) $name;
+    }
+
     private static function resolveOrgNames($users): array
     {
         $userIds    = $users->pluck('id')->all();
