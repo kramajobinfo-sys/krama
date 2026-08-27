@@ -104,9 +104,17 @@ class SendCampaignJob implements ShouldQueue
             $body = \App\Support\EmailTracking::apply($c->id, $trackId, EmailCampaign::merge($c->body, $name, $org));
             $html = EmailTemplates::marketing($body, $unsubUrl);
             Mail::html($html, fn ($m) => $m->to($email, $name ?: null)->subject($subject));
+            // Clear any prior failure for this recipient (e.g. a later batch/re-send that succeeded).
+            \DB::table('email_campaign_failures')->where('campaign_id', $c->id)->where('email', $email)->delete();
             return true;
         } catch (\Throwable $e) {
             Log::warning("Campaign {$c->id} to {$email} failed: " . $e->getMessage());
+            // Record the failed recipient so it can be exported + re-sent later. One row per
+            // (campaign, email); updated if it fails again.
+            \DB::table('email_campaign_failures')->updateOrInsert(
+                ['campaign_id' => $c->id, 'email' => $email],
+                ['name' => $name, 'org' => $org, 'error' => mb_substr($e->getMessage(), 0, 500), 'created_at' => now()]
+            );
             return false;
         }
     }

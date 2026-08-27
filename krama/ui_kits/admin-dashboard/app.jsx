@@ -8549,6 +8549,23 @@
       if (!window.confirm("Delete campaign “" + c.subject + "”?\n\nThis removes it and its open/click stats. This cannot be undone.")) return;
       adm.deleteCampaign(c.id).then(function (r) { if (String(draftId) === String(c.id)) reset(); loadList(); setMsg({ ok: true, text: (r && r.message) || "Campaign deleted." }); }).catch(function (e) { setMsg({ ok: false, text: (e && e.message) || "Delete failed." }); });
     };
+    // Download the recipients this campaign failed to send to, as a CSV (email,name,org,error).
+    // The email/name/org columns match the upload format, so it can be re-uploaded to re-send.
+    const exportFailures = function (c) {
+      adm.fetchCampaignFailures(c.id).then(function (d) {
+        var rows = d.data || [];
+        if (!rows.length) { setMsg({ ok: true, text: "No recorded failures for “" + c.subject + "”." }); return; }
+        var esc = function (v) { v = (v == null ? "" : String(v)); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+        var csv = "email,name,org,error\n" + rows.map(function (r) { return [esc(r.email), esc(r.name), esc(r.org), esc(r.error)].join(","); }).join("\n");
+        var blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });   // BOM so Excel reads Khmer/UTF-8
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement("a");
+        a.href = url; a.download = "campaign-" + c.id + "-failed.csv";
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        setTimeout(function () { URL.revokeObjectURL(url); }, 1500);
+        setMsg({ ok: true, text: "Exported " + rows.length + " failed recipient(s) — re-upload the CSV to re-send." });
+      }).catch(function (e) { setMsg({ ok: false, text: (e && e.message) || "Couldn't load failures." }); });
+    };
     const duplicate = function (c) {
       adm.fetchCampaign(c.id).then(function (d) {
         setSubject(d.subject || ""); setBody(d.body || ""); setResetKey(function (k) { return k + 1; }); setLoadedTemplateId(null);
@@ -8667,6 +8684,7 @@
                     <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
                       <Button variant="secondary" size="sm" iconLeft={I("copy", 13)} onClick={function () { duplicate(c); }}>Duplicate</Button>
                       {c.status === "scheduled" && <Button variant="ghost" size="sm" onClick={function () { cancelScheduled(c); }} style={{ color: "var(--danger)" }}>Cancel</Button>}
+                      {c.failed_count > 0 && <Button variant="ghost" size="sm" iconLeft={I("download", 13)} onClick={function () { exportFailures(c); }} title="Download failed recipients as CSV to re-send">{"Export errors (" + c.failed_count + ")"}</Button>}
                       {c.status !== "sending" && <Button variant="ghost" size="sm" iconLeft={I("trash-2", 13)} onClick={function () { deleteCampaign(c); }} style={{ color: "var(--danger)" }}>Delete</Button>}
                     </div>
                   </div>

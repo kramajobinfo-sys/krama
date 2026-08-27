@@ -233,7 +233,21 @@ class EmailCampaignController extends Controller
             return response()->json(['message' => 'This campaign is currently sending — wait until it finishes to delete it.'], 422);
         }
         \DB::table('email_campaign_events')->where('campaign_id', $c->id)->delete();
+        \DB::table('email_campaign_failures')->where('campaign_id', $c->id)->delete();
         $c->delete();
         return response()->json(['message' => 'Campaign deleted.']);
+    }
+
+    // GET /api/admin/campaigns/{id}/failures — recipients this campaign failed to send to
+    // (bad address, over the host's hourly cap, etc.), for review + CSV export + re-send.
+    public function failures(Request $request, $id)
+    {
+        $this->requirePermission('site_settings');
+        $rows = \DB::table('email_campaign_failures')
+            ->where('campaign_id', $id)
+            ->orderBy('id')
+            ->get(['email', 'name', 'org', 'error', 'created_at']);
+
+        return response()->json(['data' => $rows, 'count' => $rows->count()]);
     }
 }
