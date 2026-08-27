@@ -26,7 +26,10 @@ class EmailCampaign extends Model
         $name = trim((string) $name);
         $org  = trim((string) $org);
         $nameVal = $name !== '' ? $name : 'there';
-        $orgVal  = $org !== '' ? $org : ($name !== '' ? $name : 'your organization');
+        // No org for this recipient (e.g. a candidate, or an employer with no company on file)
+        // → a neutral phrase. Never fall back to the person's name (that rendered "invite
+        // {{org}}" as "invite <Person Name>").
+        $orgVal  = $org !== '' ? $org : 'your organization';
         $text = preg_replace('/\{\{\s*(name|full[_ ]?name|contact[_ ]?name|contact)\s*\}\}/i', $nameVal, $text);
         $text = preg_replace('/\{\{\s*(org|organi[sz]ation|company)\s*\}\}/i', $orgVal, $text);
         return $text;

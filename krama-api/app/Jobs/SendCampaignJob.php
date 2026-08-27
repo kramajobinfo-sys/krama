@@ -80,10 +80,11 @@ class SendCampaignJob implements ShouldQueue
                 });
             }
         } else {
-            self::audienceQuery($c->audience)->select('id', 'name', 'email')->chunkById(100, function ($users) use ($c, &$sent, &$failed) {
+            self::audienceQuery($c->audience)->select('id', 'name', 'email', 'company_id')->chunkById(100, function ($users) use ($c, &$sent, &$failed) {
+                $orgByUser = self::resolveOrgNames($users);   // {{org}} = the recipient's real company (employers); '' for candidates
                 foreach ($users as $u) {
                     if (! $u->email) continue;
-                    if ($this->deliver($c, $u->id, $u->email, $u->name, '', EmailCampaign::unsubUrl($u->id))) $sent++; else $failed++;
+                    if ($this->deliver($c, $u->id, $u->email, $u->name, $orgByUser[$u->id] ?? '', EmailCampaign::unsubUrl($u->id))) $sent++; else $failed++;
                     usleep(100000); // ~10/sec — gentle on the SMTP gateway
                 }
                 $c->update(['sent_count' => $sent, 'failed_count' => $failed]);
@@ -107,6 +108,28 @@ class SendCampaignJob implements ShouldQueue
             Log::warning("Campaign {$c->id} to {$email} failed: " . $e->getMessage());
             return false;
         }
+    }
+
+    /**
+     * Map user-id → their real company name, so {{org}} renders the actual organization for
+     * employer recipients (candidates have none → left unset → merge() uses "your organization").
+     * Owned company (companies.user_id) is preferred; team members fall back to users.company_id.
+     * Two queries per 100-user chunk — no per-recipient N+1.
+     */
+    private static function resolveOrgNames($users): array
+    {
+        $userIds    = $users->pluck('id')->all();
+        $companyIds = $users->pluck('company_id')->filter()->unique()->values()->all();
+
+        $owned = \App\Models\Company::whereIn('user_id', $userIds)->pluck('name', 'user_id'); // user_id => name
+        $byId  = $companyIds ? \App\Models\Company::whereIn('id', $companyIds)->pluck('name', 'id') : collect(); // id => name
+
+        $out = [];
+        foreach ($users as $u) {
+            $name = $owned[$u->id] ?? ($u->company_id ? ($byId[$u->company_id] ?? null) : null);
+            if ($name) $out[$u->id] = $name;
+        }
+        return $out;
     }
 
     /**
