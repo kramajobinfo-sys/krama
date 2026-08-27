@@ -4110,7 +4110,7 @@
       if (r.percent_off) p.push(r.percent_off + "% off");
       if (r.amount_off) p.push("$" + r.amount_off + " off");
       if (r.credits) p.push(r.credits + " featured credit" + (r.credits !== 1 ? "s" : ""));
-      if (r.free_days) p.push(r.free_days + " free days");
+      if (r.free_days) p.push(r.free_days + " days free");
       if (r.job_posts) p.push(r.job_posts + " job post" + (r.job_posts !== 1 ? "s" : ""));
       return p.join(" + ");
     };
