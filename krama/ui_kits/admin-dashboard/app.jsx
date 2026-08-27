@@ -8467,7 +8467,7 @@
     const [sendMode, setSendMode] = React.useState("now");   // now | schedule
     const [scheduleAt, setScheduleAt] = React.useState("");
     const [batchOn, setBatchOn] = React.useState(false);
-    const [batchSize, setBatchSize] = React.useState("100");
+    const [batchSize, setBatchSize] = React.useState("40");
     const [showUpload, setShowUpload] = React.useState(false);
     const [preview, setPreview] = React.useState(null);   // { subject, html } when the preview modal is open
     const [resetKey, setResetKey] = React.useState(0);    // remounts the RichEditor when body is set programmatically
@@ -8553,7 +8553,7 @@
       adm.fetchCampaign(c.id).then(function (d) {
         setSubject(d.subject || ""); setBody(d.body || ""); setResetKey(function (k) { return k + 1; }); setLoadedTemplateId(null);
         setAudience(d.audience || "all_candidates"); setListId(d.list_id ? String(d.list_id) : "");
-        setBatchOn(!!d.batch_size); setBatchSize(d.batch_size ? String(d.batch_size) : "100");
+        setBatchOn(!!d.batch_size); setBatchSize(d.batch_size ? String(d.batch_size) : "40");
         setSendMode("now"); setScheduleAt(""); setDraftId(null);
         setMsg({ ok: true, text: "Loaded a copy of “" + d.subject + "” — edit and send/schedule as a new campaign." });
         try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch (e) { window.scrollTo(0, 0); }
@@ -8599,12 +8599,12 @@
             {audience === "list" && (
               <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", background: "var(--surface-sunken, var(--surface-page))", borderRadius: "var(--radius-md)", padding: "10px 14px" }}>
                 <label style={{ display: "inline-flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: "var(--text-sm)", color: "var(--text-body)", fontWeight: 600 }}>
-                  <input type="checkbox" checked={batchOn} onChange={function (e) { setBatchOn(e.target.checked); dirty(); }} /> Send in daily batches
+                  <input type="checkbox" checked={batchOn} onChange={function (e) { setBatchOn(e.target.checked); dirty(); }} /> Send in hourly batches
                 </label>
                 {batchOn && <React.Fragment>
                   <span style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>of</span>
                   <input type="number" min="1" value={batchSize} onChange={function (e) { setBatchSize(e.target.value); dirty(); }} style={{ width: 90, height: 36, padding: "0 10px", border: "1px solid var(--border-strong)", borderRadius: "var(--radius-md)", fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)", background: "var(--surface-card)", color: "var(--text-body)" }} />
-                  <span style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>emails/day{count != null && Number(batchSize) > 0 ? " · ~" + Math.ceil(count / Number(batchSize)) + " day(s)" : ""} — protects deliverability</span>
+                  <span style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>emails/hour{count != null && Number(batchSize) > 0 ? " · ~" + Math.ceil(count / Number(batchSize)) + " hour(s)" : ""} — keep under your host's hourly email limit</span>
                 </React.Fragment>}
               </div>
             )}
@@ -8653,7 +8653,7 @@
                       </div>
                       <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", marginTop: 4 }}>
                         {(AUD.filter(function (a) { return a.v === c.audience; })[0] || {}).l || c.audience} · {fmtDate(c.created_at)}
-                        {c.batch_size ? " · " + c.batch_size + "/day" : ""}
+                        {c.batch_size ? " · " + c.batch_size + "/hour" : ""}
                         {c.status === "scheduled" ? " · next " + fmtDT(c.scheduled_at) : ""}
                         {(c.status === "sent" || c.status === "sending") ? " · " + c.sent_count + "/" + c.total_recipients + " sent" + (c.failed_count ? " · " + c.failed_count + " failed" : "") : ""}
                       </div>

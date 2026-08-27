@@ -51,8 +51,9 @@ class SendCampaignJob implements ShouldQueue
             $base = \App\Models\EmailListRecipient::where('list_id', $c->list_id)->where('id', '>', $cursor)->orderBy('id');
 
             if ($batch > 0) {
-                // Daily batch: send the next $batch recipients, advancing the cursor past every
-                // row we look at (incl. unsubscribed) so progress can't stall or repeat.
+                // Hourly batch: send the next $batch recipients, advancing the cursor past every
+                // row we look at (incl. unsubscribed) so progress can't stall or repeat. Re-scheduled
+                // +1h below until done — keeps the send under a host's per-hour email cap.
                 $rows = (clone $base)->limit($batch)->select('id', 'email', 'name', 'org', 'unsubscribed')->get();
                 foreach ($rows as $r) {
                     if (! $r->unsubscribed && $r->email) {
@@ -65,8 +66,8 @@ class SendCampaignJob implements ShouldQueue
 
                 if (\App\Models\EmailListRecipient::where('list_id', $c->list_id)->where('id', '>', $cursor)->exists()) {
                     // More to go — hand back to the scheduler for tomorrow.
-                    $c->update(['status' => 'scheduled', 'scheduled_at' => now()->addDay()]);
-                    Log::info("Campaign {$c->id} batch sent up to recipient {$cursor}; next batch ~24h.");
+                    $c->update(['status' => 'scheduled', 'scheduled_at' => now()->addHour()]);
+                    Log::info("Campaign {$c->id} batch sent up to recipient {$cursor}; next batch ~1h.");
                     return;
                 }
             } else {

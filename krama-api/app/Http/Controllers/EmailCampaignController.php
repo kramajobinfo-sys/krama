@@ -182,7 +182,7 @@ class EmailCampaignController extends Controller
         $c->update(['status' => 'sending', 'scheduled_at' => null, 'total_recipients' => $total, 'sent_count' => 0, 'failed_count' => 0, 'batch_cursor' => 0]);
         SendCampaignJob::dispatch($c->id);
 
-        $note = $c->batch_size ? " First batch of {$c->batch_size}/day starts now." : '';
+        $note = $c->batch_size ? " First batch of {$c->batch_size}/hour starts now." : '';
         return response()->json(['message' => "Sending to {$total} recipient(s). Delivery runs in the background." . $note, 'total_recipients' => $total]);
     }
 
@@ -206,7 +206,7 @@ class EmailCampaignController extends Controller
         $when = \Illuminate\Support\Carbon::parse($data['scheduled_at']);
         $c->update(['status' => 'scheduled', 'scheduled_at' => $when, 'total_recipients' => $total, 'sent_count' => 0, 'failed_count' => 0, 'batch_cursor' => 0]);
 
-        $note = $c->batch_size ? (' Then ' . $c->batch_size . '/day until all ' . $total . ' are sent.') : '';
+        $note = $c->batch_size ? (' Then ' . $c->batch_size . '/hour until all ' . $total . ' are sent.') : '';
         return response()->json(['message' => 'Scheduled for ' . $when->toDayDateTimeString() . '.' . $note, 'scheduled_at' => $when->toIso8601String()]);
     }
 
