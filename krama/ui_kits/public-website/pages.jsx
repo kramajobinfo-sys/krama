@@ -191,6 +191,15 @@
     React.useEffect(() => { if (window.lucide) window.lucide.createIcons(); });
     return (
       <React.Fragment>
+        {/* Pricing (moved above How it works) */}
+        <div className="krm-emp-section" style={{ marginBottom: 64 }}>
+          <div style={{ textAlign: "center", marginBottom: 32 }}>
+            <h2 className="krm-emp-h2" style={{ fontSize: "var(--text-3xl)", fontWeight: 800, color: "var(--text-strong)", letterSpacing: "-0.02em" }}>{TR("Plan grow with yours")}</h2>
+            <p className="krm-emp-sub" style={{ fontSize: "var(--text-lg)", color: "var(--text-muted)", marginTop: 8 }}>{TR("Start free, upgrade when you need more reach.")}</p>
+          </div>
+          <PricingSection onNav={onNav} />
+        </div>
+
         {/* How it works */}
         <div className="krm-emp-section" style={{ marginBottom: 56 }}>
           <div style={{ textAlign: "center", marginBottom: 32 }}>
@@ -250,15 +259,6 @@
               );
             })}
           </div>
-        </div>
-
-        {/* Pricing */}
-        <div className="krm-emp-section" style={{ marginBottom: 64 }}>
-          <div style={{ textAlign: "center", marginBottom: 32 }}>
-            <h2 className="krm-emp-h2" style={{ fontSize: "var(--text-3xl)", fontWeight: 800, color: "var(--text-strong)", letterSpacing: "-0.02em" }}>{TR("Plan grow with yours")}</h2>
-            <p className="krm-emp-sub" style={{ fontSize: "var(--text-lg)", color: "var(--text-muted)", marginTop: 8 }}>{TR("Start free, upgrade when you need more reach.")}</p>
-          </div>
-          <PricingSection onNav={onNav} />
         </div>
 
         {/* CTA strip */}

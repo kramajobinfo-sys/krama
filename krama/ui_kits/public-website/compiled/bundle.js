@@ -10951,6 +10951,33 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
       className: "krm-emp-section",
       style: {
+        marginBottom: 64
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        textAlign: "center",
+        marginBottom: 32
+      }
+    }, /*#__PURE__*/React.createElement("h2", {
+      className: "krm-emp-h2",
+      style: {
+        fontSize: "var(--text-3xl)",
+        fontWeight: 800,
+        color: "var(--text-strong)",
+        letterSpacing: "-0.02em"
+      }
+    }, TR("Plan grow with yours")), /*#__PURE__*/React.createElement("p", {
+      className: "krm-emp-sub",
+      style: {
+        fontSize: "var(--text-lg)",
+        color: "var(--text-muted)",
+        marginTop: 8
+      }
+    }, TR("Start free, upgrade when you need more reach."))), /*#__PURE__*/React.createElement(PricingSection, {
+      onNav: onNav
+    })), /*#__PURE__*/React.createElement("div", {
+      className: "krm-emp-section",
+      style: {
         marginBottom: 56
       }
     }, /*#__PURE__*/React.createElement("div", {
@@ -11127,33 +11154,6 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         }
       }, TR(stat[1])));
     }))), /*#__PURE__*/React.createElement("div", {
-      className: "krm-emp-section",
-      style: {
-        marginBottom: 64
-      }
-    }, /*#__PURE__*/React.createElement("div", {
-      style: {
-        textAlign: "center",
-        marginBottom: 32
-      }
-    }, /*#__PURE__*/React.createElement("h2", {
-      className: "krm-emp-h2",
-      style: {
-        fontSize: "var(--text-3xl)",
-        fontWeight: 800,
-        color: "var(--text-strong)",
-        letterSpacing: "-0.02em"
-      }
-    }, TR("Plan grow with yours")), /*#__PURE__*/React.createElement("p", {
-      className: "krm-emp-sub",
-      style: {
-        fontSize: "var(--text-lg)",
-        color: "var(--text-muted)",
-        marginTop: 8
-      }
-    }, TR("Start free, upgrade when you need more reach."))), /*#__PURE__*/React.createElement(PricingSection, {
-      onNav: onNav
-    })), /*#__PURE__*/React.createElement("div", {
       className: "krm-emp-cta",
       style: {
         background: "var(--teal-800)",
