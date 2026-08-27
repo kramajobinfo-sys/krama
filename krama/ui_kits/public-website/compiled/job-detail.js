@@ -593,6 +593,12 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     // omitted to keep the site load small). Re-fetch the full job on open and merge it in.
     const [full, setFull] = React.useState(job);
     const j = full || job || D.jobs && D.jobs[0];
+    // Open the company profile (only for real, non-external companies that have an id).
+    const goCompany = j && j.companyId != null ? function () {
+      onNav && onNav("company", {
+        companyId: j.companyId
+      });
+    } : null;
     const [applied, setApplied] = React.useState(false);
     // Similar jobs view — List by default, with a Grid option.
     const [similarView, setSimilarView] = React.useState("list");
@@ -687,7 +693,19 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         display: "flex",
         gap: 18
       }
+    }, goCompany ? /*#__PURE__*/React.createElement("span", {
+      onClick: goCompany,
+      style: {
+        cursor: "pointer",
+        flexShrink: 0
+      },
+      title: TR("View company profile")
     }, /*#__PURE__*/React.createElement(Avatar, {
+      src: j.logo || (window.KRAMA_LOGOS || {})[j.company],
+      name: j.company,
+      square: true,
+      size: 64
+    })) : /*#__PURE__*/React.createElement(Avatar, {
       src: j.logo || (window.KRAMA_LOGOS || {})[j.company],
       name: j.company,
       square: true,
@@ -1000,7 +1018,19 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         gap: 12,
         alignItems: "center"
       }
+    }, goCompany ? /*#__PURE__*/React.createElement("span", {
+      onClick: goCompany,
+      style: {
+        cursor: "pointer",
+        flexShrink: 0
+      },
+      title: TR("View company profile")
     }, /*#__PURE__*/React.createElement(Avatar, {
+      src: j.logo || (window.KRAMA_LOGOS || {})[j.company],
+      name: j.company,
+      square: true,
+      size: 44
+    })) : /*#__PURE__*/React.createElement(Avatar, {
       src: j.logo || (window.KRAMA_LOGOS || {})[j.company],
       name: j.company,
       square: true,
@@ -1008,8 +1038,10 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     }), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
       style: {
         fontWeight: 700,
-        color: "var(--text-strong)"
-      }
+        color: "var(--text-strong)",
+        cursor: goCompany ? "pointer" : "default"
+      },
+      onClick: goCompany || undefined
     }, j.company), j.companyIndustry && /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: "var(--text-sm)",
@@ -1045,7 +1077,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         paddingLeft: 0
       },
       iconRight: I("arrow-right", 14),
-      onClick: () => onNav && onNav("companies", {
+      onClick: () => goCompany ? goCompany() : onNav && onNav("companies", {
         company: j.company
       })
     }, TR("View company profile")))))));
