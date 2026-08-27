@@ -666,10 +666,28 @@
 
   // Lightweight rich-text editor (contentEditable) — sets content on mount, so callers
   // remount it via a `key` when the value changes programmatically (form reset / AI draft).
-  function RichEditor({ label, value, onChange, placeholder, rows }) {
+  // Optional `mergeFields` = [{token,label}] renders one-click insert chips (used by email
+  // campaigns for {{name}}/{{org}}); when omitted, no chips show.
+  function RichEditor({ label, value, onChange, placeholder, rows, mergeFields }) {
     const ref = React.useRef(null);
     React.useEffect(function () { if (ref.current) ref.current.innerHTML = value || ""; }, []);
-    const exec = function (cmd) { if (ref.current) ref.current.focus(); document.execCommand(cmd, false, null); };
+    const emit = function () { if (onChange) onChange(ref.current ? ref.current.innerHTML : ""); };
+    const exec = function (cmd, val) { if (ref.current) ref.current.focus(); document.execCommand(cmd, false, val === undefined ? null : val); emit(); };
+    const addLink = function () {
+      var url = window.prompt("Link URL:", "https://");
+      if (!url) return;
+      if (ref.current) ref.current.focus();
+      var sel = window.getSelection();
+      if (sel && sel.rangeCount && !sel.isCollapsed) {
+        document.execCommand("createLink", false, url);
+      } else {
+        // No text selected — insert the URL itself as a clickable link.
+        var safe = url.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        document.execCommand("insertHTML", false, '<a href="' + safe + '">' + safe + "</a>");
+      }
+      emit();
+    };
+    const insertToken = function (tok) { if (ref.current) ref.current.focus(); document.execCommand("insertText", false, tok); emit(); };
     const tb = { border: "1px solid var(--border)", background: "var(--surface-page)", borderRadius: "var(--radius-sm)", cursor: "pointer", padding: "3px 9px", fontSize: "var(--text-xs)", fontFamily: "var(--font-sans)", color: "var(--text-body)", lineHeight: 1.5, display: "inline-flex", alignItems: "center" };
     const sep = <span style={{ display: "inline-block", width: 1, alignSelf: "stretch", background: "var(--border)", margin: "2px 2px" }} />;
     return (
@@ -684,10 +702,15 @@
             <button type="button" onMouseDown={function (e) { e.preventDefault(); exec("insertUnorderedList"); }} style={tb} title="Bullet list">• Bullet list</button>
             <button type="button" onMouseDown={function (e) { e.preventDefault(); exec("insertOrderedList"); }} style={tb} title="Numbered list">1. Numbered</button>
             {sep}
+            <button type="button" onMouseDown={function (e) { e.preventDefault(); addLink(); }} style={tb} title="Insert link">🔗 Link</button>
             <button type="button" onMouseDown={function (e) { e.preventDefault(); exec("removeFormat"); }} style={tb} title="Clear formatting">Clear format</button>
+            {mergeFields && mergeFields.length ? sep : null}
+            {(mergeFields || []).map(function (f) {
+              return <button key={f.token} type="button" onMouseDown={function (e) { e.preventDefault(); insertToken(f.token); }} style={Object.assign({}, tb, { color: "var(--text-brand)", fontWeight: 600 })} title={"Insert " + f.token}>{f.label}</button>;
+            })}
           </div>
           <div ref={ref} contentEditable className="krama-rich-body" data-placeholder={placeholder || "Type here…"} suppressContentEditableWarning
-            onInput={function () { onChange && onChange(ref.current ? ref.current.innerHTML : ""); }}
+            onInput={emit}
             style={{ padding: "10px 12px", minHeight: (rows || 3) * 26, outline: "none", fontSize: "var(--text-sm)", color: "var(--text-body)", lineHeight: 1.65, background: "var(--surface-card)" }} />
         </div>
       </div>
@@ -8429,6 +8452,7 @@
     const [batchSize, setBatchSize] = React.useState("100");
     const [showUpload, setShowUpload] = React.useState(false);
     const [preview, setPreview] = React.useState(null);   // { subject, html } when the preview modal is open
+    const [resetKey, setResetKey] = React.useState(0);    // remounts the RichEditor when body is set programmatically
 
     const loadList = function () { adm.fetchCampaigns().then(function (d) { setList(d.data || []); setSmtpOk(d.smtp_configured !== false); }).catch(function () {}); };
     const loadTemplates = function () { adm.fetchEmailTemplates().then(function (d) { setTemplates(d.data || []); }).catch(function () {}); };
@@ -8443,7 +8467,7 @@
     const invalidate = function (setter) { return function (e) { setter(e.target.value); dirty(); }; };
     const loadTemplate = function (id) {
       var t = templates.filter(function (x) { return String(x.id) === String(id); })[0];
-      if (t) { setSubject(t.subject); setBody(t.body); dirty(); setMsg({ ok: true, text: "Template loaded." }); }
+      if (t) { setSubject(t.subject); setBody(t.body); setResetKey(function (k) { return k + 1; }); dirty(); setMsg({ ok: true, text: "Template loaded." }); }
     };
     const saveTemplate = function () {
       if (!subject.trim() || !body.trim()) { setMsg({ ok: false, text: "Add a subject and message first." }); return; }
@@ -8474,7 +8498,7 @@
       setBusy(true);
       adm.previewCampaign(subject.trim(), body).then(function (r) { setBusy(false); setPreview({ subject: r.subject, html: r.html }); }).catch(function (e) { setBusy(false); setMsg({ ok: false, text: (e && e.message) || "Preview failed." }); });
     };
-    const reset = function () { setSubject(""); setBody(""); setDraftId(null); setScheduleAt(""); setSendMode("now"); };
+    const reset = function () { setSubject(""); setBody(""); setResetKey(function (k) { return k + 1; }); setDraftId(null); setScheduleAt(""); setSendMode("now"); };
     const sendNow = function () {
       ensureDraft().then(function (d) {
         if (!window.confirm("Send “" + subject + "” to " + (count || 0) + " recipient(s) now?\n\nThis cannot be undone.")) return;
@@ -8493,7 +8517,7 @@
     const cancelScheduled = function (c) { if (!window.confirm("Cancel the scheduled send for “" + c.subject + "”?")) return; adm.cancelCampaign(c.id).then(loadList).catch(function () {}); };
     const duplicate = function (c) {
       adm.fetchCampaign(c.id).then(function (d) {
-        setSubject(d.subject || ""); setBody(d.body || "");
+        setSubject(d.subject || ""); setBody(d.body || ""); setResetKey(function (k) { return k + 1; });
         setAudience(d.audience || "all_candidates"); setListId(d.list_id ? String(d.list_id) : "");
         setBatchOn(!!d.batch_size); setBatchSize(d.batch_size ? String(d.batch_size) : "100");
         setSendMode("now"); setScheduleAt(""); setDraftId(null);
@@ -8533,8 +8557,8 @@
               <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: 6 }}>{count == null ? (audience === "list" && !listId ? "Choose a list to see the recipient count." : "Counting recipients…") : (count + " recipient(s) will receive this.")}</div>
             </div>
             <div>
-              <Textarea label="Message (HTML)" value={body} onChange={invalidate(setBody)} rows={10} placeholder={"<p>Dear {{name}},</p>\n<p>We invite {{org}} to post jobs on Krama…</p>\n<p><a href=\"https://kramajob.com/employers\">Learn more</a></p>"} />
-              <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: 6 }}>Wrapped in the branded Krama shell (header + unsubscribe footer). Merge fields: <code>{"{{name}}"}</code> and <code>{"{{org}}"}</code>. Links + opens are tracked.</div>
+              <RichEditor key={"body" + resetKey} label="Message" rows={10} value={body} onChange={function (v) { setBody(v); dirty(); }} placeholder={"Dear {{name}}, we invite {{org}} to post jobs on Krama…"} mergeFields={[{ token: "{{name}}", label: "{{name}}" }, { token: "{{org}}", label: "{{org}}" }]} />
+              <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", marginTop: 6 }}>Wrapped in the branded Krama shell (header + unsubscribe footer). Use the <code>{"{{name}}"}</code> / <code>{"{{org}}"}</code> chips to personalise each email. Links + opens are tracked. Use <strong>Preview</strong> to see the final email.</div>
             </div>
             {msg && <div style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: msg.ok ? "var(--success)" : "var(--danger)" }}>{msg.text}</div>}
 
