@@ -250,4 +250,36 @@ class EmailCampaignController extends Controller
 
         return response()->json(['data' => $rows, 'count' => $rows->count()]);
     }
+
+    // GET /api/admin/campaigns/{id}/engagement?filter=non_openers|openers
+    // Recipients who did (openers) or did NOT (non_openers) open the email, for a follow-up
+    // re-send. NOTE: open-tracking undercounts (image-blocking clients never fire the pixel),
+    // so "non_openers" includes people who read it but didn't load images.
+    public function engagement(Request $request, $id)
+    {
+        $this->requirePermission('site_settings');
+        $c = EmailCampaign::findOrFail($id);
+        $filter = $request->query('filter') === 'openers' ? 'openers' : 'non_openers';
+
+        // event.user_id holds the tracking id: the EmailListRecipient id for list campaigns,
+        // or the User id for audience campaigns (see EmailTracking::apply / SendCampaignJob).
+        $openerIds = \DB::table('email_campaign_events')
+            ->where('campaign_id', $id)->where('type', 'open')
+            ->pluck('user_id')->unique()->values()->all();
+        $ids = $openerIds ?: [0];
+
+        if ($c->audience === 'list') {
+            $q = EmailListRecipient::where('list_id', $c->list_id)->where('unsubscribed', false);
+            $filter === 'openers' ? $q->whereIn('id', $ids) : $q->whereNotIn('id', $ids);
+            $rows = $q->orderBy('id')->get(['email', 'name', 'org'])
+                ->map(fn ($r) => ['email' => $r->email, 'name' => $r->name, 'org' => $r->org]);
+        } else {
+            $q = SendCampaignJob::audienceQuery($c->audience)->select('id', 'name', 'email', 'company_id');
+            $filter === 'openers' ? $q->whereIn('id', $ids) : $q->whereNotIn('id', $ids);
+            $rows = $q->orderBy('id')->get()
+                ->map(fn ($u) => ['email' => $u->email, 'name' => $u->name, 'org' => SendCampaignJob::orgNameForUser($u)]);
+        }
+
+        return response()->json(['data' => $rows->values(), 'count' => $rows->count(), 'opened' => count($openerIds), 'filter' => $filter]);
+    }
 }

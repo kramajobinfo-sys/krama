@@ -427,6 +427,7 @@ Route::middleware(['auth:api', 'permission:site_settings'])->group(function () {
     Route::post('admin/campaigns/{id}/schedule',    [EmailCampaignController::class, 'schedule'])->middleware('throttle:30,1');
     Route::post('admin/campaigns/{id}/cancel',      [EmailCampaignController::class, 'cancel']);
     Route::get('admin/campaigns/{id}/failures',     [EmailCampaignController::class, 'failures'])->whereNumber('id');
+    Route::get('admin/campaigns/{id}/engagement',   [EmailCampaignController::class, 'engagement'])->whereNumber('id');
     Route::delete('admin/campaigns/{id}',           [EmailCampaignController::class, 'destroy'])->whereNumber('id');
     // Reusable email templates
     Route::get('admin/email-templates',             [\App\Http\Controllers\EmailTemplateController::class, 'index']);

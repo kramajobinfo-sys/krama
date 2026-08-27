@@ -8566,6 +8566,24 @@
         setMsg({ ok: true, text: "Exported " + rows.length + " failed recipient(s) — re-upload the CSV to re-send." });
       }).catch(function (e) { setMsg({ ok: false, text: (e && e.message) || "Couldn't load failures." }); });
     };
+    // Download recipients who did NOT open (or did, filter="openers") for a follow-up re-send.
+    // email/name/org columns match the upload format so the CSV re-uploads directly.
+    const exportEngagement = function (c, filter) {
+      adm.fetchCampaignEngagement(c.id, filter).then(function (d) {
+        var rows = d.data || [];
+        var label = filter === "openers" ? "opener" : "non-opener";
+        if (!rows.length) { setMsg({ ok: true, text: "No " + label + "s for “" + c.subject + "”." }); return; }
+        var esc = function (v) { v = (v == null ? "" : String(v)); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+        var csv = "email,name,org\n" + rows.map(function (r) { return [esc(r.email), esc(r.name), esc(r.org)].join(","); }).join("\n");
+        var blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement("a");
+        a.href = url; a.download = "campaign-" + c.id + "-" + (filter === "openers" ? "openers" : "non-openers") + ".csv";
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        setTimeout(function () { URL.revokeObjectURL(url); }, 1500);
+        setMsg({ ok: true, text: "Exported " + rows.length + " " + label + "(s) · " + (d.opened || 0) + " opened. Re-upload the CSV to re-send." });
+      }).catch(function (e) { setMsg({ ok: false, text: (e && e.message) || "Couldn't load engagement." }); });
+    };
     const duplicate = function (c) {
       adm.fetchCampaign(c.id).then(function (d) {
         setSubject(d.subject || ""); setBody(d.body || ""); setResetKey(function (k) { return k + 1; }); setLoadedTemplateId(null);
@@ -8685,6 +8703,7 @@
                       <Button variant="secondary" size="sm" iconLeft={I("copy", 13)} onClick={function () { duplicate(c); }}>Duplicate</Button>
                       {c.status === "scheduled" && <Button variant="ghost" size="sm" onClick={function () { cancelScheduled(c); }} style={{ color: "var(--danger)" }}>Cancel</Button>}
                       {c.failed_count > 0 && <Button variant="ghost" size="sm" iconLeft={I("download", 13)} onClick={function () { exportFailures(c); }} title="Download failed recipients as CSV to re-send">{"Export errors (" + c.failed_count + ")"}</Button>}
+                      {c.status === "sent" && <Button variant="ghost" size="sm" iconLeft={I("download", 13)} onClick={function () { exportEngagement(c, "non_openers"); }} title="Download recipients who haven't opened, to re-send a follow-up">Non-openers</Button>}
                       {c.status !== "sending" && <Button variant="ghost" size="sm" iconLeft={I("trash-2", 13)} onClick={function () { deleteCampaign(c); }} style={{ color: "var(--danger)" }}>Delete</Button>}
                     </div>
                   </div>

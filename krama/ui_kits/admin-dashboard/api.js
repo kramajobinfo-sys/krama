@@ -279,6 +279,7 @@
     cancelCampaign: function (id) { return req("POST", "/admin/campaigns/" + id + "/cancel", {}); },
     deleteCampaign: function (id) { return req("DELETE", "/admin/campaigns/" + id); },
     fetchCampaignFailures: function (id) { return req("GET", "/admin/campaigns/" + id + "/failures"); },
+    fetchCampaignEngagement: function (id, filter) { return req("GET", "/admin/campaigns/" + id + "/engagement?filter=" + (filter || "non_openers")); },
     // Email templates
     fetchEmailTemplates: function () { return req("GET", "/admin/email-templates"); },
     createEmailTemplate: function (data) { return req("POST", "/admin/email-templates", data); },
