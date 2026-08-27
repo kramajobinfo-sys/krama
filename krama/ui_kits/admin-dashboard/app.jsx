@@ -8409,9 +8409,27 @@
   // Parse pasted/uploaded CSV into [{email,name,org}]. Handles a header row (email/name/org
   // columns in any order), a headerless email-first CSV, or a plain one-email-per-line list.
   function parseRecipientCsv(text) {
-    var lines = String(text || "").split(/\r?\n/).map(function (l) { return l.trim(); }).filter(Boolean);
+    var raw = String(text || "");
+    var lines = raw.split(/\r?\n/).filter(function (l) { return l.trim() !== ""; });
     if (!lines.length) return [];
-    var split = function (l) { return l.split(",").map(function (c) { return c.trim().replace(/^"|"$/g, ""); }); };
+    // Tab-delimited when pasted from a spreadsheet (commas inside a field are then safe, e.g.
+    // "Phany Co., Ltd."); otherwise comma-delimited, parsed quote-aware so a quoted field like
+    // "Phany Co., Ltd." stays whole. A naive split(",") used to truncate org at the first comma.
+    var delim = raw.indexOf("\t") !== -1 ? "\t" : ",";
+    var split = function (l) {
+      var out = [], cur = "", inQ = false;
+      for (var i = 0; i < l.length; i++) {
+        var ch = l[i];
+        if (inQ) {
+          if (ch === '"') { if (l[i + 1] === '"') { cur += '"'; i++; } else { inQ = false; } }
+          else { cur += ch; }
+        } else if (ch === '"') { inQ = true; }
+        else if (ch === delim) { out.push(cur); cur = ""; }
+        else { cur += ch; }
+      }
+      out.push(cur);
+      return out.map(function (c) { return c.trim(); });
+    };
     var ei = 0, ni = 1, oi = 2, start = 0;
     if (/email|e-mail/i.test(lines[0]) && lines[0].indexOf("@") === -1) {
       var cols = split(lines[0]).map(function (c) { return c.toLowerCase(); });
@@ -8527,6 +8545,10 @@
       }).catch(function () {});
     };
     const cancelScheduled = function (c) { if (!window.confirm("Cancel the scheduled send for “" + c.subject + "”?")) return; adm.cancelCampaign(c.id).then(loadList).catch(function () {}); };
+    const deleteCampaign = function (c) {
+      if (!window.confirm("Delete campaign “" + c.subject + "”?\n\nThis removes it and its open/click stats. This cannot be undone.")) return;
+      adm.deleteCampaign(c.id).then(function (r) { if (String(draftId) === String(c.id)) reset(); loadList(); setMsg({ ok: true, text: (r && r.message) || "Campaign deleted." }); }).catch(function (e) { setMsg({ ok: false, text: (e && e.message) || "Delete failed." }); });
+    };
     const duplicate = function (c) {
       adm.fetchCampaign(c.id).then(function (d) {
         setSubject(d.subject || ""); setBody(d.body || ""); setResetKey(function (k) { return k + 1; }); setLoadedTemplateId(null);
@@ -8645,6 +8667,7 @@
                     <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
                       <Button variant="secondary" size="sm" iconLeft={I("copy", 13)} onClick={function () { duplicate(c); }}>Duplicate</Button>
                       {c.status === "scheduled" && <Button variant="ghost" size="sm" onClick={function () { cancelScheduled(c); }} style={{ color: "var(--danger)" }}>Cancel</Button>}
+                      {c.status !== "sending" && <Button variant="ghost" size="sm" iconLeft={I("trash-2", 13)} onClick={function () { deleteCampaign(c); }} style={{ color: "var(--danger)" }}>Delete</Button>}
                     </div>
                   </div>
                 </Card>
